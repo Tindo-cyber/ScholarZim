@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('My Profile')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('profile')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('My Academic Profile')}"></nav>
+
+        <main class="sz-content has-mobile-nav p-3 p-md-4">
+
+            <div class="sz-page-header sz-animate-in mb-4">
+                <h1>Academic profile</h1>
+                <p class="text-secondary mb-0">
+                    A complete profile helps ScholarZim match you with the right scholarships.
+                </p>
+            </div>
+
+            <div class="card sz-section-card shadow-sm sz-animate-in">
+                <div class="card-body p-4 p-md-5">
+
+                    <form th:action="@{/applicant/profile}"
+                          method="post"
+                          th:object="${profileRequest}">
+
+                        <div class="sz-form-section">
+                            <div class="sz-form-section-title">
+                                <i class="bi bi-mortarboard me-1"></i>Education
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-semibold">Education level</label>
+                                    <select class="form-select"
+                                            th:field="*{educationLevel}"
+                                            th:classappend="${#fields.hasErrors('educationLevel')} ? 'is-invalid'">
+                                        <option value="">Select your level</option>
+                                        <option th:each="level : ${educationLevels}"
+                                                th:value="${level}" th:text="${level}"></option>
+                                    </select>
+                                    <div class="invalid-feedback"
+                                         th:if="${#fields.hasErrors('educationLevel')}"
+                                         th:errors="*{educationLevel}"></div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-semibold">Institution</label>
+                                    <select class="form-select" th:field="*{institutionName}">
+                                        <option value="">Select institution</option>
+                                        <option th:each="inst : ${institutions}"
+                                                th:value="${inst}" th:text="${inst}"></option>
+                                    </select>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-semibold">Field of study</label>
+                                    <select class="form-select"
+                                            th:field="*{fieldOfStudy}"
+                                            th:classappend="${#fields.hasErrors('fieldOfStudy')} ? 'is-invalid'">
+                                        <option value="">Select field</option>
+                                        <option th:each="field : ${fieldsOfStudy}"
+                                                th:value="${field}" th:text="${field}"></option>
+                                    </select>
+                                    <div class="invalid-feedback"
+                                         th:if="${#fields.hasErrors('fieldOfStudy')}"
+                                         th:errors="*{fieldOfStudy}"></div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-semibold">Academic results</label>
+                                    <input type="text" class="form-control" th:field="*{academicResults}"
+                                           placeholder="e.g. A-Level 15 points, GPA 3.8">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sz-form-section">
+                            <div class="sz-form-section-title">
+                                <i class="bi bi-geo-alt me-1"></i>Location
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-semibold">Country</label>
+                                    <select class="form-select"
+                                            th:field="*{country}"
+                                            th:classappend="${#fields.hasErrors('country')} ? 'is-invalid'">
+                                        <option value="">Select country</option>
+                                        <option th:each="c : ${countries}"
+                                                th:value="${c}" th:text="${c}"></option>
+                                    </select>
+                                    <div class="invalid-feedback"
+                                         th:if="${#fields.hasErrors('country')}"
+                                         th:errors="*{country}"></div>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <label class="form-label fw-semibold">Province</label>
+                                    <select class="form-select" th:field="*{province}">
+                                        <option value="">Select province</option>
+                                        <option th:each="prov : ${provinces}"
+                                                th:value="${prov}" th:text="${prov}"></option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="sz-form-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0;">
+                            <div class="sz-form-section-title">
+                                <i class="bi bi-person me-1"></i>About you
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Biography</label>
+                                <textarea class="form-control" rows="4" th:field="*{biography}"
+                                          placeholder="Tell providers about your goals, achievements, and why you deserve funding…"></textarea>
+                                <div class="form-text">
+                                    A strong biography can improve your chances when providers review applications.
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-top">
+                            <button class="btn btn-primary btn-lg" type="submit">
+                                <i class="bi bi-save me-1"></i>Save profile
+                            </button>
+                        </div>
+
+                    </form>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<nav th:replace="~{fragments/layout :: mobile-nav('profile')}"></nav>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+</html>

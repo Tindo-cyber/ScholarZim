@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Applications Review')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('applications')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('Applications Review')}"></nav>
+
+        <main class="sz-content p-3 p-md-4">
+
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+
+            <div th:if="${applications.isEmpty()}" class="alert alert-info rounded-4">
+                <i class="bi bi-info-circle me-2"></i>
+                No applications have been submitted to your opportunities yet.
+            </div>
+
+            <div th:if="${!applications.isEmpty()}" class="card shadow-sm rounded-4">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                        <tr>
+                            <th>Applicant</th>
+                            <th>Opportunity</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="application : ${applications}">
+                            <td class="fw-semibold" th:text="${application.user.fullName}"></td>
+                            <td th:text="${application.opportunity.title}"></td>
+                            <td>
+                                <span class="badge"
+                                      th:classappend="${application.applicationStatus == 'APPROVED' ? 'text-bg-success'
+                                          : (application.applicationStatus == 'REJECTED' ? 'text-bg-danger' : 'text-bg-warning')}"
+                                      th:text="${application.applicationStatus}"></span>
+                            </td>
+                            <td class="text-end">
+                                <a th:href="@{/provider/applications/{id}(id=${application.applicationId})}"
+                                   class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-eye me-1"></i>Review
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Audit Log')}"></head>
+<body>
+<div class="d-flex sz-shell">
+    <div th:replace="~{fragments/layout :: sidebar('audit')}"></div>
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+        <nav th:replace="~{fragments/layout :: topbar('Audit Log')}"></nav>
+        <main class="sz-content p-3 p-md-4">
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+            <div th:replace="~{fragments/components :: page-header('Audit log', 'Searchable record of platform actions')}"></div>
+            <form class="row g-2 mb-4" method="get" th:action="@{/admin/audit-log}">
+                <div class="col-md-8">
+                    <input class="form-control" name="q" th:value="${query}" placeholder="Search actor, action, details…">
+                </div>
+                <div class="col-md-4">
+                    <button class="btn btn-primary w-100" type="submit">Search</button>
+                </div>
+            </form>
+            <div class="table-responsive card sz-section-card">
+                <table class="table table-hover mb-0">
+                    <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Details</th></tr></thead>
+                    <tbody>
+                    <tr th:each="entry : ${auditPage.content}">
+                        <td class="small text-secondary" th:text="${#temporals.format(entry.createdAt, 'dd MMM yyyy HH:mm')}">time</td>
+                        <td th:text="${entry.actorEmail}">actor</td>
+                        <td><span class="badge text-bg-light text-dark" th:text="${entry.action}">action</span></td>
+                        <td class="small" th:text="${entry.details}">details</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <nav class="mt-3" th:if="${auditPage.totalPages > 1}">
+                <ul class="pagination">
+                    <li class="page-item" th:classappend="${page == 0} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/audit-log(q=${query}, page=${page - 1})}">Previous</a>
+                    </li>
+                    <li class="page-item disabled">
+                        <span class="page-link" th:text="'Page ' + (${page} + 1) + ' of ' + ${auditPage.totalPages}">Page</span>
+                    </li>
+                    <li class="page-item" th:classappend="${page + 1 >= auditPage.totalPages} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/audit-log(q=${query}, page=${page + 1})}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </main>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

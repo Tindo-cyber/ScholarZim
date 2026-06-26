@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Applicant Dashboard')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('Dashboard')}"></nav>
+
+        <main class="sz-content has-mobile-nav p-3 p-md-4">
+
+            <!-- Hero -->
+            <div class="card sz-hero shadow-sm mb-4">
+                <div class="card-body p-4 p-md-5 d-flex flex-wrap align-items-center justify-content-between gap-4">
+                    <div class="flex-grow-1">
+                        <p class="text-uppercase small fw-semibold mb-2 opacity-75"
+                           th:text="${#temporals.format(#temporals.createNow(), 'EEEE, dd MMMM yyyy')}">Today</p>
+                        <h1 class="h3 fw-bold mb-2">
+                            Hello, <span th:text="${userFullName}">Applicant</span>
+                        </h1>
+                        <p class="mb-3 opacity-75" style="max-width: 46ch;">
+                            <span th:if="${stats.profileCompletion >= 100}">
+                                Your profile is complete — explore scholarships matched to you.
+                            </span>
+                            <span th:if="${stats.profileCompletion < 100}">
+                                A complete profile unlocks more accurate scholarship matches.
+                            </span>
+                        </p>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a th:href="@{/applicant/recommendations}" class="btn btn-light fw-semibold">
+                                <i class="bi bi-stars me-1"></i>View matches
+                            </a>
+                            <a th:href="@{/applicant/profile}"
+                               class="btn btn-outline-light fw-semibold">
+                                <i class="bi bi-person-vcard me-1"></i>Edit profile
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="text-center">
+                        <div class="sz-ring mx-auto" th:style="'--val:' + ${stats.profileCompletion}">
+                            <div class="sz-ring__inner">
+                                <div>
+                                    <div class="sz-ring__pct"
+                                         th:text="${stats.profileCompletion} + '%'">0%</div>
+                                    <div class="small opacity-75">complete</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="small mt-2 opacity-75">Profile completion</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="row g-3 g-md-4 mb-4">
+
+                <div class="col-6 col-xl-3">
+                    <div class="card sz-stat-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="sz-stat-icon bg-primary-subtle text-primary">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </div>
+                            <div>
+                                <div class="sz-stat-value" th:text="${stats.applicationsSubmitted}">0</div>
+                                <div class="small text-secondary">Submitted</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-xl-3">
+                    <div class="card sz-stat-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="sz-stat-icon bg-warning-subtle text-warning">
+                                <i class="bi bi-hourglass-split"></i>
+                            </div>
+                            <div>
+                                <div class="sz-stat-value" th:text="${stats.pendingApplications}">0</div>
+                                <div class="small text-secondary">Pending</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-xl-3">
+                    <div class="card sz-stat-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="sz-stat-icon bg-success-subtle text-success">
+                                <i class="bi bi-check2-circle"></i>
+                            </div>
+                            <div>
+                                <div class="sz-stat-value" th:text="${stats.approvedApplications}">0</div>
+                                <div class="small text-secondary">Approved</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-6 col-xl-3">
+                    <div class="card sz-stat-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="sz-stat-icon bg-danger-subtle text-danger">
+                                <i class="bi bi-x-circle"></i>
+                            </div>
+                            <div>
+                                <div class="sz-stat-value" th:text="${stats.rejectedApplications}">0</div>
+                                <div class="small text-secondary">Rejected</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="row g-3 g-md-4">
+
+                <!-- Recommended scholarships -->
+                <div class="col-12 col-lg-7">
+                    <div class="card sz-section-card shadow-sm h-100">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h2 class="h6 fw-bold mb-0">
+                                    <i class="bi bi-stars text-primary me-1"></i>Recommended for you
+                                </h2>
+                                <a th:href="@{/applicant/recommendations}" class="small text-decoration-none">
+                                    See all <i class="bi bi-arrow-right-short"></i>
+                                </a>
+                            </div>
+
+                            <div th:if="${!stats.hasProfile}" class="alert alert-warning rounded-4 mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Complete your
+                                <a th:href="@{/applicant/profile}" class="alert-link">profile</a>
+                                to unlock personalized matches.
+                            </div>
+
+                            <div th:if="${stats.hasProfile and recommendations.isEmpty()}"
+                                 class="text-center text-secondary py-4">
+                                <i class="bi bi-inbox fs-2 d-block mb-2 opacity-50"></i>
+                                No matches yet. Check back as new opportunities are posted.
+                            </div>
+
+                            <div th:if="${stats.hasProfile and !recommendations.isEmpty()}">
+                                <div class="sz-list-row" th:each="scored : ${recommendations}">
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="fw-semibold text-truncate"
+                                             th:text="${scored.opportunity.title}">Title</div>
+                                        <div class="small text-secondary text-truncate">
+                                            <span th:text="${scored.opportunity.providerName}">Provider</span>
+                                            <span th:if="${scored.opportunity.country}">
+                                                · <span th:text="${scored.opportunity.country}">Country</span>
+                                            </span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 mt-1" style="max-width: 280px;">
+                                            <div class="sz-match-bar flex-grow-1">
+                                                <div class="sz-match-bar__fill"
+                                                     th:style="'width:' + ${scored.matchScore} + '%'"></div>
+                                            </div>
+                                            <span class="small fw-semibold text-success"
+                                                  th:text="${scored.matchScore} + '%'">0%</span>
+                                        </div>
+                                    </div>
+                                    <form th:action="@{/apply/{id}(id=${scored.opportunity.opportunityId})}"
+                                          method="post">
+                                        <button class="btn btn-sm btn-primary" type="submit">
+                                            <i class="bi bi-send me-1"></i>Apply
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Side column -->
+                <div class="col-12 col-lg-5">
+
+                    <!-- Recent notifications -->
+                    <div class="card sz-section-card shadow-sm mb-4">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h2 class="h6 fw-bold mb-0">
+                                    <i class="bi bi-bell text-warning me-1"></i>Recent notifications
+                                </h2>
+                                <a th:href="@{/notifications}" class="small text-decoration-none">View all</a>
+                            </div>
+
+                            <div th:if="${notifRecent == null or notifRecent.isEmpty()}"
+                                 class="text-secondary small py-2">
+                                You're all caught up — no notifications yet.
+                            </div>
+
+                            <a th:each="n : ${notifRecent}"
+                               th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
+                               class="sz-list-row text-decoration-none text-reset align-items-start">
+                                <span class="sz-dot"
+                                      th:classappend="${n.read} ? 'bg-secondary' : 'bg-primary'"></span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="small" th:classappend="${n.read} ? '' : 'fw-semibold'"
+                                         th:text="${n.message}">Message</div>
+                                    <div class="text-secondary" style="font-size: .72rem;"
+                                         th:text="${n.createdAt != null
+                                            ? #temporals.format(n.createdAt, 'dd MMM, HH:mm') : ''}"></div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Recent applications -->
+                    <div class="card sz-section-card shadow-sm">
+                        <div class="card-body p-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h2 class="h6 fw-bold mb-0">
+                                    <i class="bi bi-clock-history text-info me-1"></i>Recent applications
+                                </h2>
+                                <a th:href="@{/my-applications}" class="small text-decoration-none">View all</a>
+                            </div>
+
+                            <div th:if="${recentApplications.isEmpty()}"
+                                 class="text-secondary small py-2">
+                                You haven't applied to any opportunities yet.
+                            </div>
+
+                            <div class="sz-list-row" th:each="app : ${recentApplications}">
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="small fw-semibold text-truncate"
+                                         th:text="${app.opportunity != null ? app.opportunity.title : '—'}">Title</div>
+                                    <div class="text-secondary" style="font-size: .72rem;"
+                                         th:text="${app.submittedAt != null
+                                            ? #temporals.format(app.submittedAt, 'dd MMM yyyy') : ''}"></div>
+                                </div>
+                                <span class="badge rounded-pill"
+                                      th:classappend="${app.applicationStatus == 'APPROVED' ? 'text-bg-success'
+                                          : (app.applicationStatus == 'REJECTED' ? 'text-bg-danger' : 'text-bg-warning')}"
+                                      th:text="${app.applicationStatus}">PENDING</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<nav th:replace="~{fragments/layout :: mobile-nav('dashboard')}"></nav>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+</html>

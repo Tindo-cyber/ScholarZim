@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Provider Registration')}"></head>
+<body>
+<div class="sz-auth-wrap">
+    <div class="sz-auth-hero">
+        <div>
+            <h1>Register as a scholarship provider</h1>
+            <p class="lead">Post opportunities, review applications, and reach Zimbabwean students nationwide.</p>
+            <p class="small opacity-75">Accounts require admin approval before you can publish scholarships.</p>
+        </div>
+    </div>
+    <div class="sz-auth-panel">
+        <div class="sz-auth-card">
+            <div class="text-center mb-4">
+                <div class="sz-auth-brand-icon mx-auto"><i class="bi bi-building"></i></div>
+                <div class="sz-auth-brand h4 mb-1">Provider application</div>
+            </div>
+            <div class="alert alert-danger rounded-3" th:if="${#fields.hasGlobalErrors()}">
+                <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+            </div>
+            <form th:action="@{/register/provider}" method="post" th:object="${registerRequest}">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Organisation name</label>
+                    <input type="text" class="form-control" th:field="*{fullName}" placeholder="e.g. CBZ Foundation">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Work email</label>
+                    <input type="email" class="form-control" th:field="*{email}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Phone</label>
+                    <input type="text" class="form-control" th:field="*{phone}" placeholder="+263 4 000 0000">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Password</label>
+                    <input type="password" class="form-control" th:field="*{password}">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Confirm password</label>
+                    <input type="password" class="form-control" th:field="*{confirmPassword}">
+                </div>
+                <div class="d-grid mt-4">
+                    <button class="btn btn-primary btn-lg" type="submit">Submit for approval</button>
+                </div>
+            </form>
+            <p class="text-center text-secondary mt-4 mb-0">
+                Student? <a th:href="@{/register}">Register as applicant</a> ·
+                <a th:href="@{/login}">Sign in</a>
+            </p>
+        </div>
+    </div>
+</div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

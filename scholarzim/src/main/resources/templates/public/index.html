@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/public-layout :: head('Home')}"></head>
+<body>
+
+<nav th:replace="~{fragments/public-layout :: navbar}"></nav>
+
+<main>
+    <section class="sz-public-hero py-5">
+        <div class="container py-4 py-md-5">
+            <div class="row align-items-center g-4">
+                <div class="col-lg-7 text-white">
+                    <p class="text-uppercase small fw-semibold opacity-75 mb-2">Zimbabwe's scholarship platform</p>
+                    <h1 class="display-5 fw-bold mb-3">Find funding for your future</h1>
+                    <p class="lead opacity-90 mb-4">
+                        Discover scholarships from Chevening, CBZ, Higherlife, and more —
+                        matched to your profile and accessible on any phone.
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a th:href="@{/scholarships}" class="btn btn-light btn-lg fw-semibold">
+                            <i class="bi bi-search me-1"></i>Browse scholarships
+                        </a>
+                        <a th:href="@{/register}" class="btn btn-outline-light btn-lg">Create account</a>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="row g-3 text-center text-white">
+                        <div class="col-6">
+                            <div class="sz-public-stat rounded-4 p-3">
+                                <div class="fs-2 fw-bold" th:text="${stats.activeScholarships}">0</div>
+                                <div class="small opacity-75">Active scholarships</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="sz-public-stat rounded-4 p-3">
+                                <div class="fs-2 fw-bold" th:text="${stats.totalApplicants}">0</div>
+                                <div class="small opacity-75">Students registered</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="sz-public-stat rounded-4 p-3">
+                                <div class="fs-2 fw-bold" th:text="${stats.totalProviders}">0</div>
+                                <div class="small opacity-75">Verified providers</div>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="sz-public-stat rounded-4 p-3">
+                                <div class="fs-2 fw-bold" th:text="${stats.totalApplications}">0</div>
+                                <div class="small opacity-75">Applications submitted</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 bg-body">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="h4 fw-bold mb-0">Featured opportunities</h2>
+                <a th:href="@{/scholarships}" class="text-decoration-none">View all <i class="bi bi-arrow-right"></i></a>
+            </div>
+            <div class="sz-opp-grid">
+                <div th:each="opp : ${featured}"
+                     th:replace="~{fragments/components :: scholarship-card(${opp}, true, null)}"></div>
+            </div>
+            <div th:if="${featured.isEmpty()}" class="text-center text-secondary py-5">
+                Scholarships coming soon. <a th:href="@{/register}">Register</a> to get notified.
+            </div>
+        </div>
+    </section>
+
+    <section class="py-5 border-top">
+        <div class="container">
+            <div class="row g-4 text-center">
+                <div class="col-md-4">
+                    <i class="bi bi-stars fs-2 text-primary"></i>
+                    <h3 class="h6 fw-bold mt-2">ScholarFit matching</h3>
+                    <p class="small text-secondary">Personalised scores based on your education, field, and location.</p>
+                </div>
+                <div class="col-md-4">
+                    <i class="bi bi-phone fs-2 text-primary"></i>
+                    <h3 class="h6 fw-bold mt-2">Works on your phone</h3>
+                    <p class="small text-secondary">Browse and apply from Android or iPhone — no app store needed.</p>
+                </div>
+                <div class="col-md-4">
+                    <i class="bi bi-bell fs-2 text-primary"></i>
+                    <h3 class="h6 fw-bold mt-2">Deadline alerts</h3>
+                    <p class="small text-secondary">Never miss a closing date with in-app and email reminders.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="py-4 border-top text-center text-secondary small">
+    <div class="container">&copy; 2026 ScholarZim — Empowering Zimbabwean students</div>
+</footer>
+
+<div id="pwa-install-banner" class="sz-pwa-banner d-none">
+    <span>Install ScholarZim on your phone</span>
+    <button id="pwa-install-btn" class="btn btn-light btn-sm">Install</button>
+    <button id="pwa-dismiss-btn" class="btn btn-link btn-sm text-white">Dismiss</button>
+</div>
+
+<th:block th:replace="~{fragments/public-layout :: scripts}"></th:block>
+</body>
+</html>

@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Admin Dashboard')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('Platform Administration')}"></nav>
+
+        <main class="sz-content p-3 p-md-4">
+
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+
+            <!-- Hero -->
+            <div class="card sz-hero shadow-sm mb-4 sz-animate-in">
+                <div class="card-body p-4 p-md-5">
+                    <div class="row align-items-center g-4">
+                        <div class="col-lg-8">
+                            <p class="text-uppercase small fw-semibold mb-2 opacity-75"
+                               th:text="${#temporals.format(#temporals.createNow(), 'EEEE, dd MMMM yyyy')}">Today</p>
+                            <h1 class="h3 fw-bold mb-2">ScholarZim Platform Overview</h1>
+                            <p class="mb-0 opacity-85" style="max-width: 52ch;">
+                                Monitoring <strong th:text="${stats.totalUsers}">0</strong> registered users across
+                                Zimbabwe — <strong th:text="${stats.totalApplicants}">0</strong> students and
+                                <strong th:text="${stats.totalProviders}">0</strong> scholarship providers
+                                managing <strong th:text="${stats.activeOpportunities}">0</strong> active opportunities.
+                            </p>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="row g-2 text-center">
+                                <div class="col-4">
+                                    <div class="rounded-3 p-2" style="background:rgba(0,0,0,.15)">
+                                        <div class="fs-4 fw-bold" th:text="${stats.approvalRate} + '%'">0%</div>
+                                        <div class="small opacity-75">Approval rate</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="rounded-3 p-2" style="background:rgba(0,0,0,.15)">
+                                        <div class="fs-4 fw-bold" th:text="${stats.completeProfiles}">0</div>
+                                        <div class="small opacity-75">Profiles</div>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="rounded-3 p-2" style="background:rgba(0,0,0,.15)">
+                                        <div class="fs-4 fw-bold" th:text="${stats.pendingApplications}">0</div>
+                                        <div class="small opacity-75">Pending</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stat cards -->
+            <div class="row g-3 g-md-4 mb-4 sz-animate-in">
+                <div class="col-6 col-xl-3">
+                    <div class="card sz-stat-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="sz-stat-icon bg-primary-subtle text-primary">
+                                <i class="bi bi-mortarboard"></i>
+                            </div>
+                            <div>
+                                <div class="sz-stat-value" th:text="${stats.totalApplicants}">0</div>
+                                <div class="small text-secondary">Applicants</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div class="card sz-stat-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="sz-stat-icon bg-success-subtle text-success">
+                                <i class="bi bi-building"></i>
+                            </div>
+                            <div>
+                                <div class="sz-stat-value" th:text="${stats.totalProviders}">0</div>
+                                <div class="small text-secondary">Providers</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div class="card sz-stat-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="sz-stat-icon bg-warning-subtle text-warning">
+                                <i class="bi bi-briefcase"></i>
+                            </div>
+                            <div>
+                                <div class="sz-stat-value" th:text="${stats.totalOpportunities}">0</div>
+                                <div class="small text-secondary">Opportunities</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div class="card sz-stat-card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-center gap-3">
+                            <div class="sz-stat-icon bg-info-subtle text-info">
+                                <i class="bi bi-file-earmark-text"></i>
+                            </div>
+                            <div>
+                                <div class="sz-stat-value" th:text="${stats.totalApplications}">0</div>
+                                <div class="small text-secondary">Applications</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 g-md-4 mb-4">
+
+                <!-- Recent activity -->
+                <div class="col-12 col-lg-5">
+                    <div class="card sz-section-card h-100 sz-animate-in">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold mb-3">
+                                <i class="bi bi-activity text-primary me-1"></i>Recent platform activity
+                            </h2>
+                            <div th:if="${recentActivity.isEmpty()}" class="text-secondary small py-3">
+                                No activity recorded yet.
+                            </div>
+                            <div th:each="entry : ${recentActivity}" class="sz-list-row align-items-start">
+                                <span class="sz-dot bg-primary"></span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="small fw-semibold text-truncate"
+                                         th:text="${entry.details != null ? entry.details : entry.action}">Action</div>
+                                    <div class="text-secondary" style="font-size:.72rem;">
+                                        <span th:text="${entry.actorEmail}">user</span>
+                                        · <span th:text="${entry.createdAt != null
+                                            ? #temporals.format(entry.createdAt, 'dd MMM yyyy HH:mm') : ''}"></span>
+                                    </div>
+                                </div>
+                                <span class="badge text-bg-light text-secondary"
+                                      th:text="${entry.action}">ACTION</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Application status chart -->
+                <div class="col-12 col-lg-7">
+                    <div class="card sz-section-card h-100 sz-animate-in">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold mb-3">
+                                <i class="bi bi-pie-chart text-success me-1"></i>Application outcomes
+                            </h2>
+                            <div style="height: 260px; position: relative;">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                            <div class="row text-center mt-3 g-2">
+                                <div class="col-4">
+                                    <span class="badge text-bg-success w-100 py-2">
+                                        <span th:text="${stats.approvedApplications}">0</span> Approved
+                                    </span>
+                                </div>
+                                <div class="col-4">
+                                    <span class="badge text-bg-warning w-100 py-2">
+                                        <span th:text="${stats.pendingApplications}">0</span> Pending
+                                    </span>
+                                </div>
+                                <div class="col-4">
+                                    <span class="badge text-bg-danger w-100 py-2">
+                                        <span th:text="${stats.rejectedApplications}">0</span> Rejected
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending providers callout -->
+            <div th:if="${!pendingProviders.isEmpty()}" class="card sz-section-card sz-pending-callout mb-4">
+                <div class="card-body p-4 d-flex flex-wrap align-items-center justify-content-between gap-3">
+                    <div>
+                        <h2 class="h6 fw-bold mb-1">
+                            <i class="bi bi-hourglass-split me-1"></i>
+                            <span th:text="${pendingProviders.size()}">0</span> provider(s) awaiting approval
+                        </h2>
+                        <p class="small text-secondary mb-0">Review and approve new provider registrations below.</p>
+                    </div>
+                    <a href="#user-management" class="btn btn-sm btn-warning">Review now</a>
+                </div>
+            </div>
+
+            <!-- User management -->
+            <div id="user-management" class="card sz-section-card mb-4 sz-animate-in">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                        <div>
+                            <h2 class="h6 fw-bold mb-1">
+                                <i class="bi bi-people text-primary me-1"></i>User management
+                            </h2>
+                            <p class="small text-secondary mb-0">
+                                View all registered applicants and providers. Deleting a provider also removes their scholarships.
+                            </p>
+                        </div>
+                    </div>
+
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="tab"
+                                    data-bs-target="#tab-applicants" type="button">
+                                Applicants
+                                <span class="badge text-bg-primary ms-1"
+                                      th:text="${applicants.totalElements}">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="tab"
+                                    data-bs-target="#tab-providers" type="button">
+                                Providers
+                                <span class="badge text-bg-success ms-1"
+                                      th:text="${providers.totalElements}">0</span>
+                            </button>
+                        </li>
+                        <li class="nav-item" th:if="${!pendingProviders.isEmpty()}">
+                            <button class="nav-link" data-bs-toggle="tab"
+                                    data-bs-target="#tab-pending" type="button">
+                                Pending approval
+                                <span class="badge text-bg-warning ms-1"
+                                      th:text="${pendingProviders.size()}">0</span>
+                            </button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Applicants tab -->
+                        <div class="tab-pane fade show active" id="tab-applicants">
+                            <div th:if="${applicants.content.isEmpty()}" class="sz-empty py-4">
+                                <div class="sz-empty-icon"><i class="bi bi-person"></i></div>
+                                <p class="text-secondary mb-0">No applicants registered yet.</p>
+                            </div>
+                            <div th:if="${!applicants.content.isEmpty()}" class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 sz-admin-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Full name</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Profile</th>
+                                        <th>Applications</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="u : ${applicants.content}">
+                                        <td class="fw-semibold" th:text="${u.fullName}">Name</td>
+                                        <td th:text="${u.email}">email</td>
+                                        <td th:text="${u.phone != null ? u.phone : '—'}">phone</td>
+                                        <td class="small text-secondary" th:text="${u.detail}">detail</td>
+                                        <td>
+                                            <span class="badge text-bg-light text-dark"
+                                                  th:text="${u.applicationCount}">0</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge text-bg-success"
+                                                  th:if="${u.accountStatus == 'ACTIVE'}">Active</span>
+                                            <span class="badge text-bg-secondary" th:if="${u.accountStatus != 'ACTIVE'}"
+                                                  th:text="${u.accountStatus}">Status</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="sz-admin-actions">
+                                            <form th:if="${u.accountStatus == 'ACTIVE'}"
+                                                  th:action="@{/admin/users/{id}/suspend(id=${u.userId})}"
+                                                  method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Suspend">
+                                                    <i class="bi bi-pause-circle"></i>
+                                                </button>
+                                            </form>
+                                            <form th:if="${u.accountStatus == 'SUSPENDED'}"
+                                                  th:action="@{/admin/users/{id}/reactivate(id=${u.userId})}"
+                                                  method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate">
+                                                    <i class="bi bi-play-circle"></i>
+                                                </button>
+                                            </form>
+                                            <form th:action="@{/admin/users/applicants/{id}/delete(id=${u.userId})}"
+                                                  method="post" class="d-inline"
+                                                  onsubmit="return confirm('Delete this applicant and all their applications?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        title="Delete applicant">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <nav th:if="${applicants.totalPages > 1}" class="mt-2">
+                                <a class="btn btn-sm btn-outline-secondary me-1"
+                                   th:if="${applicantPage > 0}"
+                                   th:href="@{/admin/dashboard(applicantPage=${applicantPage - 1}, providerPage=${providerPage})}">Previous</a>
+                                <span class="small text-secondary"
+                                      th:text="'Page ' + (${applicantPage} + 1) + ' of ' + ${applicants.totalPages}">Page</span>
+                                <a class="btn btn-sm btn-outline-secondary ms-1"
+                                   th:if="${applicantPage + 1 < applicants.totalPages}"
+                                   th:href="@{/admin/dashboard(applicantPage=${applicantPage + 1}, providerPage=${providerPage})}">Next</a>
+                            </nav>
+                        </div>
+
+                        <!-- Providers tab -->
+                        <div class="tab-pane fade" id="tab-providers">
+                            <div th:if="${providers.content.isEmpty()}" class="sz-empty py-4">
+                                <div class="sz-empty-icon"><i class="bi bi-building"></i></div>
+                                <p class="text-secondary mb-0">No providers registered yet.</p>
+                            </div>
+                            <div th:if="${!providers.content.isEmpty()}" class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 sz-admin-table">
+                                    <thead>
+                                    <tr>
+                                        <th>Organisation</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Opportunities</th>
+                                        <th>Applications received</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Actions</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    <tr th:each="u : ${providers.content}">
+                                        <td class="fw-semibold" th:text="${u.fullName}">Name</td>
+                                        <td th:text="${u.email}">email</td>
+                                        <td th:text="${u.phone != null ? u.phone : '—'}">phone</td>
+                                        <td>
+                                            <span class="badge text-bg-light text-dark"
+                                                  th:text="${u.opportunityCount}">0</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge text-bg-light text-dark"
+                                                  th:text="${u.applicationCount}">0</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge text-bg-success"
+                                                  th:if="${u.accountStatus == 'ACTIVE'}">Active</span>
+                                            <span class="badge text-bg-secondary" th:if="${u.accountStatus != 'ACTIVE'}"
+                                                  th:text="${u.accountStatus}">Status</span>
+                                        </td>
+                                        <td class="text-end">
+                                            <form th:if="${u.accountStatus == 'PENDING_APPROVAL'}"
+                                                  th:action="@{/admin/users/providers/{id}/approve(id=${u.userId})}"
+                                                  method="post" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </button>
+                                            </form>
+                                            <form th:action="@{/admin/users/providers/{id}/delete(id=${u.userId})}"
+                                                  method="post" class="d-inline"
+                                                  onsubmit="return confirm('Delete this provider, their scholarships, and all related applications?');">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        title="Delete provider">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <nav th:if="${providers.totalPages > 1}" class="mt-2">
+                                <a class="btn btn-sm btn-outline-secondary me-1"
+                                   th:if="${providerPage > 0}"
+                                   th:href="@{/admin/dashboard(applicantPage=${applicantPage}, providerPage=${providerPage - 1})}">Previous</a>
+                                <span class="small text-secondary"
+                                      th:text="'Page ' + (${providerPage} + 1) + ' of ' + ${providers.totalPages}">Page</span>
+                                <a class="btn btn-sm btn-outline-secondary ms-1"
+                                   th:if="${providerPage + 1 < providers.totalPages}"
+                                   th:href="@{/admin/dashboard(applicantPage=${applicantPage}, providerPage=${providerPage + 1})}">Next</a>
+                            </nav>
+                        </div>
+
+                        <div class="tab-pane fade" id="tab-pending" th:if="${!pendingProviders.isEmpty()}">
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0">
+                                    <thead><tr><th>Organisation</th><th>Email</th><th></th></tr></thead>
+                                    <tbody>
+                                    <tr th:each="u : ${pendingProviders}">
+                                        <td th:text="${u.fullName}">Name</td>
+                                        <td th:text="${u.email}">email</td>
+                                        <td class="text-end">
+                                            <form th:action="@{/admin/users/providers/{id}/approve(id=${u.userId})}" method="post">
+                                                <button class="btn btn-sm btn-success" type="submit">Approve</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reports -->
+            <div class="card sz-section-card mb-4 sz-animate-in">
+                <div class="card-body p-4">
+                    <h2 class="h6 fw-bold mb-3">
+                        <i class="bi bi-download text-secondary me-1"></i>Export reports
+                    </h2>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-sm btn-outline-danger" th:href="@{/admin/reports/users.pdf}">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Users PDF
+                        </a>
+                        <a class="btn btn-sm btn-outline-danger" th:href="@{/admin/reports/opportunities.pdf}">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Opportunities PDF
+                        </a>
+                        <a class="btn btn-sm btn-outline-danger" th:href="@{/admin/reports/applications.pdf}">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Applications PDF
+                        </a>
+                        <a class="btn btn-sm btn-outline-danger" th:href="@{/admin/reports/recommendations.pdf}">
+                            <i class="bi bi-file-earmark-pdf me-1"></i>Recommendations PDF
+                        </a>
+                        <a class="btn btn-sm btn-outline-success" th:href="@{/admin/reports/users.xlsx}">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Users Excel
+                        </a>
+                        <a class="btn btn-sm btn-outline-success" th:href="@{/admin/reports/opportunities.xlsx}">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Opportunities Excel
+                        </a>
+                        <a class="btn btn-sm btn-outline-success" th:href="@{/admin/reports/applications.xlsx}">
+                            <i class="bi bi-file-earmark-excel me-1"></i>Applications Excel
+                        </a>
+                        <a class="btn btn-sm btn-outline-secondary" th:href="@{/admin/audit-log}">
+                            <i class="bi bi-journal-text me-1"></i>Full audit log
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts row -->
+            <div class="row g-3 g-md-4 sz-animate-in">
+                <div class="col-12 col-lg-7">
+                    <div class="card sz-section-card h-100">
+                        <div class="card-body p-4">
+                            <h3 class="h6 fw-bold mb-3">Applications per month</h3>
+                            <div style="height: 260px; position: relative;">
+                                <canvas id="monthlyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-5">
+                    <div class="card sz-section-card h-100">
+                        <div class="card-body p-4">
+                            <h3 class="h6 fw-bold mb-3">Top providers</h3>
+                            <div style="height: 260px; position: relative;">
+                                <canvas id="providersChart"></canvas>
+                            </div>
+                            <p class="text-secondary small mb-0 mt-2"
+                               th:if="${topProviders.labels.isEmpty()}">No application data yet.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const approved = [[${stats.approvedApplications}]];
+    const rejected = [[${stats.rejectedApplications}]];
+    const pending = [[${stats.pendingApplications}]];
+    const monthlyCounts = [[${monthlyCounts}]];
+    const monthLabels = [[${monthLabels}]];
+
+    new Chart(document.getElementById('statusChart'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Approved', 'Pending', 'Rejected'],
+            datasets: [{
+                data: [approved, pending, rejected],
+                backgroundColor: ['#006b3f', '#f5b800', '#dc2626'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+
+    new Chart(document.getElementById('monthlyChart'), {
+        type: 'bar',
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: 'Applications',
+                data: monthlyCounts,
+                backgroundColor: 'rgba(0, 107, 63, 0.7)',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+
+    const providerLabels = [[${topProviders.labels}]];
+    const providerData = [[${topProviders.data}]];
+
+    if (providerLabels.length) {
+        new Chart(document.getElementById('providersChart'), {
+            type: 'bar',
+            data: {
+                labels: providerLabels,
+                datasets: [{
+                    label: 'Applications',
+                    data: providerData,
+                    backgroundColor: 'rgba(26, 86, 219, 0.65)',
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+    /*]]>*/
+</script>
+
+</body>
+</html>

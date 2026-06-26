@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Opportunities')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('opportunities')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('Scholarships & Funding')}"></nav>
+
+        <main class="sz-content has-mobile-nav p-3 p-md-4">
+
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+
+            <div class="sz-page-header sz-animate-in">
+                <h1>Browse opportunities</h1>
+                <p class="text-secondary mb-0">
+                    Discover scholarships and funding from Zimbabwean and international providers.
+                </p>
+            </div>
+
+            <div class="sz-filter-card mb-4 sz-animate-in">
+                <div class="card-body p-4">
+                    <form th:action="@{/opportunities}" method="get"
+                          th:object="${searchRequest}" class="row g-3 align-items-end">
+
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label class="form-label">Education level</label>
+                            <select class="form-select" th:field="*{educationLevel}">
+                                <option value="">All levels</option>
+                                <option th:each="level : ${educationLevels}"
+                                        th:value="${level}" th:text="${level}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label class="form-label">Field of study</label>
+                            <select class="form-select" th:field="*{fieldOfStudy}">
+                                <option value="">All fields</option>
+                                <option th:each="field : ${fieldsOfStudy}"
+                                        th:value="${field}" th:text="${field}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label class="form-label">Destination</label>
+                            <select class="form-select" th:field="*{country}">
+                                <option value="">All countries</option>
+                                <option th:each="c : ${countries}"
+                                        th:value="${c}" th:text="${c}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label class="form-label">Provider</label>
+                            <select class="form-select" th:field="*{provider}">
+                                <option value="">All providers</option>
+                                <option th:each="p : ${providerNames}"
+                                        th:value="${p}" th:text="${p}"></option>
+                            </select>
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label class="form-label">Keyword</label>
+                            <input type="search" class="form-control" th:field="*{keyword}"
+                                   placeholder="Search title, provider…">
+                        </div>
+
+                        <div class="col-12 col-md-6 col-lg-3">
+                            <label class="form-label">Deadline before</label>
+                            <input type="date" class="form-control" th:field="*{deadlineBefore}">
+                        </div>
+
+                        <div class="col-12 col-lg-9 d-flex gap-2">
+                            <button class="btn btn-primary" type="submit">
+                                <i class="bi bi-funnel me-1"></i>Search
+                            </button>
+                            <a class="btn btn-outline-secondary" th:href="@{/opportunities}">
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+                            </a>
+                        </div>
+
+                    </form>
+                </div>
+            </div>
+
+            <p class="text-secondary small mb-3 sz-animate-in">
+                <strong th:text="${opportunities.size()}">0</strong>
+                opportunit<span th:text="${opportunities.size() == 1} ? 'y' : 'ies'">ies</span> found
+            </p>
+
+            <div th:if="${opportunities.isEmpty()}" class="sz-empty sz-animate-in">
+                <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
+                <h3 class="h5 fw-bold">No opportunities found</h3>
+                <p class="text-secondary mb-3">
+                    Try widening your filters or check back later for new listings.
+                </p>
+                <a th:href="@{/opportunities}" class="btn btn-outline-primary btn-sm">
+                    Reset filters
+                </a>
+            </div>
+
+            <div th:if="${!opportunities.isEmpty()}" class="sz-opp-grid">
+                <div th:each="opp : ${opportunities}"
+                     th:replace="~{fragments/components :: scholarship-card(${opp}, false, true)}"></div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<nav th:replace="~{fragments/layout :: mobile-nav('opportunities')}"></nav>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+</html>

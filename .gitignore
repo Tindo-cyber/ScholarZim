@@ -1,0 +1,19 @@
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Java
+**/target/
+**/uploads/
+
+# Node / Next.js
+**/node_modules/
+**/.next/
+**/.env
+**/.env.local
+**/tsconfig.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db

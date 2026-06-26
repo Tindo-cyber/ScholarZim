@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Recommended Scholarships')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('recommendations')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('Your Matches')}"></nav>
+
+        <main class="sz-content has-mobile-nav p-3 p-md-4">
+
+            <div class="sz-page-header sz-animate-in mb-4">
+                <h1>Recommended for you</h1>
+                <p class="text-secondary mb-0">
+                    Scholarships matched to your education level, field of study, and location.
+                </p>
+            </div>
+
+            <div th:if="${!hasProfile}" class="alert alert-warning rounded-4 sz-animate-in">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Complete your
+                <a th:href="@{/applicant/profile}" class="alert-link fw-semibold">academic profile</a>
+                to unlock personalised recommendations.
+            </div>
+
+            <div th:if="${hasProfile and opportunities.isEmpty()}" class="sz-empty sz-animate-in">
+                <div class="sz-empty-icon"><i class="bi bi-stars"></i></div>
+                <h3 class="h5 fw-bold">No matches yet</h3>
+                <p class="text-secondary mb-3">
+                    Update your profile or check back when new opportunities are posted.
+                </p>
+                <a th:href="@{/applicant/profile}" class="btn btn-outline-primary btn-sm me-2">Edit profile</a>
+                <a th:href="@{/opportunities}" class="btn btn-primary btn-sm">Browse all</a>
+            </div>
+
+            <div th:if="${hasProfile and !opportunities.isEmpty()}" class="sz-opp-grid">
+                <div th:each="scored : ${opportunities}"
+                     th:replace="~{fragments/components :: scored-card(${scored})}"></div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<nav th:replace="~{fragments/layout :: mobile-nav('recommendations')}"></nav>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+</html>

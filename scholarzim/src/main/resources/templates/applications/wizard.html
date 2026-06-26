@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Apply')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('opportunities')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('Apply for scholarship')}"></nav>
+
+        <main class="sz-content p-3 p-md-4 has-mobile-nav">
+
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-8">
+                    <div class="card sz-section-card">
+                        <div class="card-body p-4">
+                            <h1 class="h5 fw-bold mb-1" th:text="${opportunity.title}">Scholarship</h1>
+                            <p class="text-secondary small mb-4" th:text="${opportunity.providerName}">Provider</p>
+
+                            <div class="sz-wizard-progress mb-4" id="applyWizard">
+                                <div class="sz-wizard-step active" data-step="1">
+                                    <span class="sz-wizard-step__num">1</span>
+                                    <span class="sz-wizard-step__label">Statement</span>
+                                </div>
+                                <div class="sz-wizard-step" data-step="2">
+                                    <span class="sz-wizard-step__num">2</span>
+                                    <span class="sz-wizard-step__label">Documents</span>
+                                </div>
+                                <div class="sz-wizard-step" data-step="3">
+                                    <span class="sz-wizard-step__num">3</span>
+                                    <span class="sz-wizard-step__label">Review</span>
+                                </div>
+                            </div>
+
+                            <form th:action="@{/apply/{id}(id=${opportunity.opportunityId})}"
+                                  method="post" enctype="multipart/form-data"
+                                  th:object="${submitRequest}" id="applyForm">
+
+                                <div class="sz-wizard-panel" data-panel="1">
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold">Personal statement *</label>
+                                        <textarea class="form-control" rows="8" th:field="*{personalStatement}"
+                                                  id="personalStatement"
+                                                  placeholder="Explain why you deserve this scholarship, your goals, and how it will impact your community…"
+                                                  th:classappend="${#fields.hasErrors('personalStatement')} ? 'is-invalid'"></textarea>
+                                        <div class="invalid-feedback" th:errors="*{personalStatement}"></div>
+                                        <div class="form-text">Minimum 50 characters.</div>
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-lg w-100 w-md-auto" data-wizard-next>
+                                        Continue to documents <i class="bi bi-arrow-right ms-1"></i>
+                                    </button>
+                                </div>
+
+                                <div class="sz-wizard-panel d-none" data-panel="2">
+                                    <div class="mb-4">
+                                        <label class="form-label fw-semibold">Supporting document</label>
+                                        <input type="file" class="form-control" name="document" id="documentInput"
+                                               accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                               capture="environment">
+                                        <div class="form-text">PDF or photo of transcript/results (max 5 MB). Use camera on mobile.</div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-outline-secondary" data-wizard-back>
+                                            <i class="bi bi-arrow-left me-1"></i>Back
+                                        </button>
+                                        <button type="button" class="btn btn-primary" data-wizard-next>
+                                            Review application <i class="bi bi-arrow-right ms-1"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="sz-wizard-panel d-none" data-panel="3">
+                                    <div class="card bg-body-tertiary border-0 mb-4">
+                                        <div class="card-body p-4">
+                                            <h2 class="h6 fw-bold mb-3">Review before submitting</h2>
+                                            <p class="small text-secondary mb-2">Scholarship</p>
+                                            <p class="fw-semibold mb-3" th:text="${opportunity.title}">Title</p>
+                                            <p class="small text-secondary mb-1">Personal statement preview</p>
+                                            <p class="small mb-3" id="statementPreview" style="white-space: pre-wrap;">—</p>
+                                            <p class="small text-secondary mb-1">Document</p>
+                                            <p class="small mb-0" id="documentPreview">No file selected (optional)</p>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-outline-secondary" data-wizard-back>
+                                            <i class="bi bi-arrow-left me-1"></i>Back
+                                        </button>
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="bi bi-send me-1"></i>Submit application
+                                        </button>
+                                        <a th:href="@{/opportunities}" class="btn btn-link">Cancel</a>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<div th:replace="~{fragments/layout :: mobile-nav('opportunities')}"></div>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

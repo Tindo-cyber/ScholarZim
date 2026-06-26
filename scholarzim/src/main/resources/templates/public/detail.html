@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/public-layout :: head(${opportunity.title})}"></head>
+<body>
+
+<nav th:replace="~{fragments/public-layout :: navbar}"></nav>
+
+<main class="pb-5">
+    <div class="sz-opp-detail-hero py-4 py-md-5 mb-4">
+        <div class="container">
+            <a th:href="@{/scholarships}" class="text-white opacity-75 small text-decoration-none mb-3 d-inline-block">
+                <i class="bi bi-arrow-left"></i> Back to scholarships
+            </a>
+            <h1 class="h2 fw-bold text-white mb-2" th:text="${opportunity.title}">Title</h1>
+            <p class="text-white opacity-85 mb-3">
+                <i class="bi bi-building me-1"></i>
+                <span th:text="${opportunity.providerName}">Provider</span>
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <span class="sz-badge sz-badge--funding" th:if="${opportunity.fundingType}" th:text="${opportunity.fundingType}">Funding</span>
+                <span class="sz-badge sz-badge--level" th:if="${opportunity.educationLevel}" th:text="${opportunity.educationLevel}">Level</span>
+                <span class="sz-badge sz-badge--country" th:if="${opportunity.country}" th:text="${opportunity.country}">Country</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card sz-section-card mb-4">
+                    <div class="card-body p-4">
+                        <h2 class="h6 fw-bold mb-3">About this scholarship</h2>
+                        <p th:text="${opportunity.description != null ? opportunity.description : 'No description provided.'}">Description</p>
+                    </div>
+                </div>
+                <div class="card sz-section-card">
+                    <div class="card-body p-4">
+                        <h2 class="h6 fw-bold mb-3">Eligibility</h2>
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2"><i class="bi bi-mortarboard text-primary me-2"></i>
+                                Education level: <strong th:text="${opportunity.educationLevel ?: 'Any'}">—</strong></li>
+                            <li class="mb-2"><i class="bi bi-book text-primary me-2"></i>
+                                Field of study: <strong th:text="${opportunity.targetField ?: 'Any'}">—</strong></li>
+                            <li><i class="bi bi-geo-alt text-primary me-2"></i>
+                                Target country: <strong th:text="${opportunity.targetCountry ?: 'Any'}">—</strong></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="card sz-section-card sz-sticky-apply">
+                    <div class="card-body p-4">
+                        <h2 class="h6 fw-bold mb-3">Apply now</h2>
+                        <p class="small text-secondary mb-3">
+                            <i class="bi bi-calendar-event me-1"></i>
+                            Deadline:
+                            <strong th:text="${opportunity.deadline != null
+                                ? #temporals.format(opportunity.deadline, 'dd MMMM yyyy') : 'Rolling'}">—</strong>
+                        </p>
+                        <p class="small text-secondary mb-3">
+                            <i class="bi bi-cash-stack me-1"></i>
+                            Funding: <strong th:text="${opportunity.fundingType ?: 'See details'}">—</strong>
+                        </p>
+                        <a th:href="@{/register}" class="btn btn-primary w-100 btn-lg mb-2">
+                            <i class="bi bi-person-plus me-1"></i>Register to apply
+                        </a>
+                        <a th:href="@{/login}" class="btn btn-outline-secondary w-100">Already have an account?</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="sz-mobile-apply-bar d-md-none">
+    <a th:href="@{/register}" class="btn btn-primary w-100">Register to apply</a>
+</div>
+
+<th:block th:replace="~{fragments/public-layout :: scripts}"></th:block>
+</body>
+</html>

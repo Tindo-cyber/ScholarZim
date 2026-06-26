@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Saved Scholarships')}"></head>
+<body>
+<div class="d-flex sz-shell">
+    <div th:replace="~{fragments/layout :: sidebar('saved')}"></div>
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+        <nav th:replace="~{fragments/layout :: topbar('Saved Scholarships')}"></nav>
+        <main class="sz-content has-mobile-nav p-3 p-md-4">
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+            <div th:if="${saved.isEmpty()}" class="sz-empty">
+                <div class="sz-empty-icon"><i class="bi bi-bookmark"></i></div>
+                <p class="text-secondary">No saved scholarships yet.</p>
+                <a th:href="@{/opportunities}" class="btn btn-primary btn-sm">Browse opportunities</a>
+            </div>
+            <div class="sz-opp-grid" th:if="${!saved.isEmpty()}">
+                <div class="sz-opp-card" th:each="opp : ${saved}">
+                    <div class="sz-opp-card__header">
+                        <div class="sz-opp-title" th:text="${opp.title}">Title</div>
+                        <div class="sz-opp-provider"><i class="bi bi-building"></i> <span th:text="${opp.providerName}">Provider</span></div>
+                    </div>
+                    <div class="sz-opp-card__footer d-flex gap-2">
+                        <a th:href="@{/scholarships/{id}(id=${opp.opportunityId})}" class="btn btn-sm btn-primary">View</a>
+                        <form th:action="@{/applicant/saved/{id}/remove(id=${opp.opportunityId})}" method="post">
+                            <button class="btn btn-sm btn-outline-secondary" type="submit">Remove</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: mobile-nav('saved')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

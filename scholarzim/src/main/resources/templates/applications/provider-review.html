@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Review Application')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('applications')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('Review Application')}"></nav>
+
+        <main class="sz-content p-3 p-md-4">
+
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+
+            <a th:href="@{/provider/applications}" class="text-decoration-none small mb-3 d-inline-block">
+                <i class="bi bi-arrow-left"></i> Back to applications
+            </a>
+
+            <div class="sz-review-grid">
+                <aside class="sz-review-sidebar">
+                    <div class="card sz-section-card mb-0">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold mb-3">Applicant</h2>
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="sz-stat-icon bg-primary-subtle text-primary">
+                                    <i class="bi bi-person-fill"></i>
+                                </div>
+                                <div>
+                                    <p class="fw-bold mb-0" th:text="${application.user.fullName}">Name</p>
+                                    <p class="small text-secondary mb-0" th:text="${application.user.email}">email</p>
+                                </div>
+                            </div>
+                            <p class="small mb-2" th:if="${application.user.phone}">
+                                <i class="bi bi-telephone me-1"></i>
+                                <span th:text="${application.user.phone}">phone</span>
+                            </p>
+                            <p class="small text-secondary mb-0">
+                                Applied
+                                <span th:text="${application.submittedAt != null
+                                    ? #temporals.format(application.submittedAt, 'dd MMM yyyy HH:mm') : '—'}"></span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="card sz-section-card">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold mb-2" th:text="${application.opportunity.title}">Opp</h2>
+                            <div class="mb-3">
+                                <span th:replace="~{fragments/components :: status-badge(${application.applicationStatus})}"></span>
+                            </div>
+                            <div class="d-grid gap-2">
+                                <form th:action="@{/provider/applications/{id}/review(id=${application.applicationId})}" method="post">
+                                    <button class="btn btn-outline-primary btn-sm w-100" type="submit">
+                                        <i class="bi bi-eye me-1"></i>Mark under review
+                                    </button>
+                                </form>
+                                <form th:action="@{/provider/applications/{id}/request-docs(id=${application.applicationId})}" method="post">
+                                    <button class="btn btn-outline-warning btn-sm w-100" type="submit">
+                                        <i class="bi bi-file-earmark-plus me-1"></i>Request documents
+                                    </button>
+                                </form>
+                                <form th:action="@{/provider/applications/{id}/approve(id=${application.applicationId})}" method="post">
+                                    <button class="btn btn-success btn-sm w-100" type="submit"
+                                            onclick="return confirm('Approve this application?');">
+                                        <i class="bi bi-check-lg me-1"></i>Approve
+                                    </button>
+                                </form>
+                                <form th:action="@{/provider/applications/{id}/reject(id=${application.applicationId})}" method="post">
+                                    <input type="text" name="rejectionReason" class="form-control form-control-sm mb-2"
+                                           placeholder="Rejection reason (optional)">
+                                    <button class="btn btn-danger btn-sm w-100" type="submit"
+                                            onclick="return confirm('Reject this application?');">
+                                        <i class="bi bi-x-lg me-1"></i>Reject
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+
+                <div>
+                    <div class="card sz-section-card mb-4">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold mb-3">Personal statement</h2>
+                            <div class="p-3 rounded-3 bg-body-tertiary">
+                                <p class="mb-0" style="white-space: pre-wrap;"
+                                   th:if="${application.personalStatement != null}"
+                                   th:text="${application.personalStatement}">Statement</p>
+                                <p th:if="${application.personalStatement == null}" class="text-secondary mb-0">
+                                    No statement provided (quick apply).
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card sz-section-card" th:if="${application.documentPath != null}">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold mb-3">Supporting document</h2>
+                            <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+                                <div>
+                                    <p class="fw-semibold mb-1" th:text="${application.documentFilename}">file.pdf</p>
+                                    <p class="small text-secondary mb-0">Uploaded with application</p>
+                                </div>
+                                <a th:href="@{/uploads/{f}(f=${application.documentPath})}"
+                                   class="btn btn-primary btn-sm" target="_blank">
+                                    <i class="bi bi-download me-1"></i>Download
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>
