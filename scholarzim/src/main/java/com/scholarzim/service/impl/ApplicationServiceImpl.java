@@ -190,7 +190,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             return true;
         }
 
-        if (requester.getRole() != null && "ADMIN".equalsIgnoreCase(requester.getRole().getRoleName())) {
+        if (requester.getRole() != null && "ROLE_ADMIN".equals(requester.getRole().getRoleName())) {
             return true;
         }
 

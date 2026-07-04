@@ -83,6 +83,21 @@ class ApplicationServiceImplDocumentTest {
     }
 
     @Test
+    void adminCanDownloadApplicationDocument() throws Exception {
+        var admin = user(3L, "admin@test.com", "ROLE_ADMIN");
+        var applicant = user(1L, "applicant@test.com", "ROLE_APPLICANT");
+        var application = applicationWithDocument(14L, applicant, "doc-4.pdf");
+        Files.writeString(uploadDir.resolve("doc-4.pdf"), "pdf");
+
+        when(applicationRepository.findById(14L)).thenReturn(Optional.of(application));
+        when(userRepository.findByEmail("admin@test.com")).thenReturn(Optional.of(admin));
+
+        var file = service.loadApplicationDocument(14L, "admin@test.com");
+        assertEquals("resume.pdf", file.displayName());
+        assertEquals(true, file.resource().exists());
+    }
+
+    @Test
     void unrelatedUserCannotDownloadDocument() {
         var applicant = user(1L, "applicant@test.com", "APPLICANT");
         var stranger = user(9L, "other@test.com", "APPLICANT");
