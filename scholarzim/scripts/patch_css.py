@@ -28,8 +28,7 @@ if landing.startswith("/* ═"):
 )
 
 # layout.css - replace old topbar with production
-layout = slice_lines(145, 113)  # sidebar only through role badge area
-layout = slice_lines(145, 257)  # through sidebar footer
+layout = slice_lines(145, 257)  # sidebar through sidebar footer
 layout += "\n" + slice_lines(2988, 3115)  # production topbar
 layout += "\n" + """
 /* Dashboard page structure */

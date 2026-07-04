@@ -155,8 +155,21 @@
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
+    align-items: center;
     gap: .5rem;
     font-size: .8125rem;
+}
+
+.sz-landing-footer__version {
+    opacity: .65;
+    font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 575.98px) {
+    .sz-landing-footer__bottom {
+        flex-direction: column;
+        text-align: center;
+    }
 }
 
 /* Empty state */

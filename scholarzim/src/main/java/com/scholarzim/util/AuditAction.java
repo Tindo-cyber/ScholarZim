@@ -18,4 +18,5 @@ public final class AuditAction {
     public static final String LOGIN_FAILURE = "LOGIN_FAILURE";
     public static final String PASSWORD_RESET_REQUEST = "PASSWORD_RESET_REQUEST";
     public static final String PASSWORD_RESET_COMPLETE = "PASSWORD_RESET_COMPLETE";
+    public static final String EMAIL_DELIVERY_FAILED = "EMAIL_DELIVERY_FAILED";
 }

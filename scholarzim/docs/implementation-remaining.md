@@ -14,7 +14,7 @@ mvn spring-boot:run -Dspring-boot.run.profiles=demo
 ## Verify
 
 ```bash
-mvn clean test   # 71 tests
+mvn clean test   # 74 tests
 ```
 
 See [demo-script.md](demo-script.md) for the viva walkthrough.

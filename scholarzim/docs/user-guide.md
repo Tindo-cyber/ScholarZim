@@ -1,5 +1,7 @@
 # ScholarZim User Guide
 
+Screenshots for printed reports live in [docs/screenshots/](screenshots/) — capture during demo rehearsal (see README there).
+
 ## Applicant (student)
 
 ### Getting started
@@ -9,11 +11,15 @@
 3. Upload your **results certificate (PDF)** — required before applying to scholarships.
 4. Browse scholarships at `/scholarships` or your dashboard recommendations.
 
+![Applicant profile](../docs/screenshots/04-applicant-profile.png)
+
 ### Applying
 
 - Click **Apply** on a scholarship. If your results certificate is missing, you will be redirected to your profile.
 - Complete the application wizard (personal statement; optional supporting document).
 - Track status at `/my-applications`.
+
+![My applications](../docs/screenshots/06-my-applications.png)
 
 ### Saved scholarships
 
@@ -78,7 +84,20 @@
 - View opportunity details and deadlines.
 - Register when ready to apply.
 
+![Landing page](../docs/screenshots/01-landing.png)
+
 ---
+
+## Password reset (email)
+
+1. On the login page, click **Forgot password**.
+2. Enter your account email and submit.
+3. Check your inbox — with Docker demo stack, open **Mailhog** at http://localhost:8025.
+4. Click the reset link in the email (valid for 1 hour).
+
+If delivery fails after retries, an `EMAIL_DELIVERY_FAILED` event is written to the audit log.
+
+![Forgot password](../docs/screenshots/10-forgot-password.png)
 
 ## Demo accounts
 

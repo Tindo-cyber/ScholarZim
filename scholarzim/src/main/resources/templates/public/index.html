@@ -63,8 +63,7 @@
                                 <i class="bi bi-bell text-primary me-1"></i>
                                 <span class="small sz-landing-preview-label">Application status updates</span>
                             </div>
-                            <p class="small sz-landing-muted mb-0 mt-3"
-                               th:if="${stats.activeScholarships > 0}">
+                            <p class="small sz-landing-muted mb-0 mt-3">
                                 <span th:text="${stats.activeScholarships}">0</span> active scholarships on the platform today
                             </p>
                         </div>
@@ -130,17 +129,13 @@
     </section>
 
     <!-- 3. Live stats -->
-    <section class="sz-landing-proof" th:if="${stats.activeScholarships > 0 or stats.totalApplicants > 0 or stats.totalProviders > 0 or stats.totalApplications > 0}">
+    <section class="sz-landing-proof">
         <div class="container sz-container">
             <div class="sz-landing-proof__grid">
-                <div th:if="${stats.activeScholarships > 0}"
-                     th:replace="~{fragments/components :: landing-stat(${stats.activeScholarships}, 'Active scholarships')}"></div>
-                <div th:if="${stats.totalApplicants > 0}"
-                     th:replace="~{fragments/components :: landing-stat(${stats.totalApplicants}, 'Registered students')}"></div>
-                <div th:if="${stats.totalProviders > 0}"
-                     th:replace="~{fragments/components :: landing-stat(${stats.totalProviders}, 'Verified providers')}"></div>
-                <div th:if="${stats.totalApplications > 0}"
-                     th:replace="~{fragments/components :: landing-stat(${stats.totalApplications}, 'Applications submitted')}"></div>
+                <div th:replace="~{fragments/components :: landing-stat(${stats.activeScholarships}, 'Active scholarships')}"></div>
+                <div th:replace="~{fragments/components :: landing-stat(${stats.totalApplicants}, 'Registered students')}"></div>
+                <div th:replace="~{fragments/components :: landing-stat(${stats.totalProviders}, 'Verified providers')}"></div>
+                <div th:replace="~{fragments/components :: landing-stat(${stats.totalApplications}, 'Applications submitted')}"></div>
             </div>
         </div>
     </section>
@@ -329,22 +324,19 @@
                     </p>
                 </div>
                 <div class="col-lg-5">
-                    <div class="sz-landing-about-stats" th:if="${stats.activeScholarships > 0 or stats.totalApplicants > 0 or stats.totalProviders > 0}">
-                        <div class="sz-landing-about-stats__item" th:if="${stats.activeScholarships > 0}">
+                    <div class="sz-landing-about-stats">
+                        <div class="sz-landing-about-stats__item">
                             <div class="sz-landing-about-stats__value" th:text="${stats.activeScholarships}">0</div>
                             <div class="sz-landing-about-stats__label">Active scholarships</div>
                         </div>
-                        <div class="sz-landing-about-stats__item" th:if="${stats.totalApplicants > 0}">
+                        <div class="sz-landing-about-stats__item">
                             <div class="sz-landing-about-stats__value" th:text="${stats.totalApplicants}">0</div>
                             <div class="sz-landing-about-stats__label">Registered students</div>
                         </div>
-                        <div class="sz-landing-about-stats__item" th:if="${stats.totalProviders > 0}">
+                        <div class="sz-landing-about-stats__item">
                             <div class="sz-landing-about-stats__value" th:text="${stats.totalProviders}">0</div>
                             <div class="sz-landing-about-stats__label">Verified providers</div>
                         </div>
-                    </div>
-                    <div class="sz-landing-about-card sz-landing-panel-card" th:if="${stats.activeScholarships == 0 and stats.totalApplicants == 0 and stats.totalProviders == 0}">
-                        <p class="sz-landing-muted mb-0 small">Join the growing community of students and providers using ScholarZim to find and fund education across Zimbabwe.</p>
                     </div>
                 </div>
             </div>

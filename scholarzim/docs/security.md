@@ -5,7 +5,7 @@
 - **Form-based login** with server-side sessions (no JWT in browser MVC flow).
 - **BCrypt** password hashing via Spring Security `PasswordEncoder`.
 - **Account states:** `ACTIVE`, `PENDING_APPROVAL`, `REJECTED`, `SUSPENDED` — non-active accounts cannot authenticate.
-- **Password reset:** UUID token, 1-hour expiry, single use; email delivery via JavaMailSender.
+- **Password reset:** UUID token, 1-hour expiry, single use; email delivery via JavaMailSender with configurable retry (`scholarzim.mail.retry.max-attempts`, default 3). Failed delivery after all retries writes `EMAIL_DELIVERY_FAILED` to the audit log. Demo stack routes mail to **Mailhog** (SMTP `:1025`, UI `:8025`).
 - **Optional 2FA:** TOTP (authenticator app) when `scholarzim.security.2fa.enabled=true` and user has enabled 2FA on their account. Login requires a second step at `/login/2fa-challenge`.
 
 ## Authorization
@@ -59,6 +59,7 @@ Security-relevant events written to `audit_log`:
 | LOGIN_FAILURE | Failed login attempt |
 | PASSWORD_RESET_REQUEST | Reset email requested |
 | PASSWORD_RESET_COMPLETE | Password changed via token |
+| EMAIL_DELIVERY_FAILED | Email could not be sent after retries |
 | VIEW_PROVIDER_CERTIFICATE | Admin downloads provider cert |
 | VIEW_APPLICANT_RESULTS | Provider/admin views results PDF |
 | APPLY, STATUS_UPDATE, admin user ops | Business workflows |

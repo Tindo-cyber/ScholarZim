@@ -11,7 +11,19 @@
 3. Open http://localhost:8080
 4. Optional: Mailhog UI at http://localhost:8025 for password-reset email demo
 
-Run tests beforehand: `mvn clean test` (65+ tests should pass).
+Run tests beforehand: `mvn clean test` (74+ tests should pass).
+
+---
+
+## Optional — Password reset email (1 min)
+
+**Talking point:** Transactional email with retry and audit on failure.
+
+1. Ensure Mailhog is running (`docker compose up -d` includes it on port 8025)
+2. Visit `/forgot-password` while logged out
+3. Enter **simba.ndlovu@student.co.zw** → submit
+4. Open http://localhost:8025 — show reset email with link
+5. Mention: `EmailServiceImpl` retries up to 3 times; failures log `EMAIL_DELIVERY_FAILED` in audit log
 
 ---
 
