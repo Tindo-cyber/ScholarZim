@@ -6,12 +6,28 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.util.List;
 
+
 @ControllerAdvice
 public class GlobalModelAttributes {
 
     @ModelAttribute("educationLevels")
     public List<String> educationLevels() {
         return FormOptions.EDUCATION_LEVELS;
+    }
+
+    @ModelAttribute("primaryGrades")
+    public List<String> primaryGrades() {
+        return FormOptions.PRIMARY_GRADES;
+    }
+
+    @ModelAttribute("secondaryForms")
+    public List<String> secondaryForms() {
+        return FormOptions.SECONDARY_FORMS;
+    }
+
+    @ModelAttribute("tertiaryLevels")
+    public List<String> tertiaryLevels() {
+        return FormOptions.TERTIARY_LEVELS;
     }
 
     @ModelAttribute("fieldsOfStudy")

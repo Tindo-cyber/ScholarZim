@@ -2,11 +2,13 @@ package com.scholarzim.controller;
 
 import com.scholarzim.service.NotificationService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.lang.Nullable;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
+
 
 @Slf4j
 @ControllerAdvice
@@ -19,7 +21,7 @@ public class NotificationModelAdvice {
     }
 
     @ModelAttribute
-    public void populateNotifications(Model model, Authentication authentication) {
+    public void populateNotifications(Model model, @Nullable Authentication authentication) {
 
         if (authentication == null
                 || !authentication.isAuthenticated()

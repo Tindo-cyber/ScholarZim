@@ -6,6 +6,7 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 
+
 public interface NotificationService {
 
     void notifyUser(User recipient, String type, String message, String link, Long relatedId);

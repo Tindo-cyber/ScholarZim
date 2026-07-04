@@ -1,8 +1,9 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
 
-<div th:fragment="scholarship-card(opportunity, showApply, withApplyBtn)"
-     class="sz-opp-card sz-animate-in">
+<div th:fragment="scholarship-card(opportunity, showApply, withApplyBtn, removeId)"
+     class="sz-opp-card">
     <div class="sz-opp-card__header">
         <div class="sz-opp-title" th:text="${opportunity.title}">Title</div>
         <div class="sz-opp-provider">
@@ -31,12 +32,19 @@
                class="btn btn-primary btn-sm">
                 <i class="bi bi-send me-1"></i>Apply
             </a>
+            <form th:if="${removeId != null}"
+                  th:action="@{/applicant/saved/{id}/remove(id=${removeId})}"
+                  method="post"
+                  class="d-inline">
+                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                <button class="btn btn-outline-secondary btn-sm" type="submit">Remove</button>
+            </form>
         </div>
     </div>
 </div>
 
 <!-- Scored recommendation card -->
-<div th:fragment="scored-card(scored)" class="sz-opp-card sz-animate-in">
+<div th:fragment="scored-card(scored)" class="sz-opp-card">
     <div class="sz-opp-card__header">
         <div class="d-flex justify-content-between align-items-start gap-2">
             <div class="sz-opp-title" th:text="${scored.opportunity.title}">Title</div>
@@ -74,19 +82,51 @@
     </div>
 </div>
 
-<div th:fragment="page-header(title, subtitle)" class="sz-page-header sz-animate-in mb-4">
+<div th:fragment="page-header(title, subtitle)" class="sz-page-header">
     <h1 th:text="${title}">Title</h1>
     <p class="text-secondary mb-0" th:if="${subtitle}" th:text="${subtitle}">Subtitle</p>
 </div>
 
-<div th:fragment="empty-state(icon, title, message, actionUrl, actionLabel)" class="sz-empty sz-animate-in">
-    <div class="sz-empty-icon"><i class="bi" th:classappend="${icon}"></i></div>
-    <h3 class="h5 fw-bold" th:text="${title}">Title</h3>
-    <p class="text-secondary mb-3" th:text="${message}">Message</p>
-    <a th:if="${actionUrl}" th:href="${actionUrl}" class="btn btn-primary btn-sm" th:text="${actionLabel}">Action</a>
+<nav th:fragment="breadcrumbs(homeUrl, homeLabel, midUrl, midLabel, current)"
+     class="sz-breadcrumbs" aria-label="Breadcrumb">
+    <ol class="sz-breadcrumbs__list">
+        <li class="sz-breadcrumbs__item">
+            <a th:href="${homeUrl}" th:text="${homeLabel}">Home</a>
+        </li>
+        <li th:if="${midUrl != null}" class="sz-breadcrumbs__item">
+            <a th:href="${midUrl}" th:text="${midLabel}">Section</a>
+        </li>
+        <li class="sz-breadcrumbs__item sz-breadcrumbs__item--current" aria-current="page">
+            <span th:text="${current}">Current</span>
+        </li>
+    </ol>
+</nav>
+
+<!-- Skeleton placeholders (hide with .sz-skeleton-wrap.is-loaded) -->
+<div th:fragment="skeleton-stat-row" class="row g-3 sz-skeleton-wrap" aria-hidden="true">
+    <div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(1, 4)}">
+        <div class="sz-skeleton sz-skeleton-stat"></div>
+    </div>
 </div>
 
-<div th:fragment="stat-card(icon, value, label, color)" class="card sz-stat-card shadow-sm h-100">
+<div th:fragment="skeleton-opp-grid" class="row g-3 sz-skeleton-wrap" aria-hidden="true">
+    <div class="col-md-6 col-lg-4" th:each="i : ${#numbers.sequence(1, 6)}">
+        <div class="sz-skeleton sz-skeleton-card">
+            <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+            <div class="sz-skeleton sz-skeleton-line"></div>
+            <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="empty-state(icon, title, message, actionUrl, actionLabel)" class="sz-empty">
+    <div class="sz-empty-icon"><i class="bi" th:classappend="${icon}"></i></div>
+    <h3 class="h5 fw-bold mb-2" th:text="${title}">Title</h3>
+    <p class="text-secondary mb-3 mx-auto" style="max-width:36ch" th:text="${message}">Message</p>
+    <a th:if="${actionUrl}" th:href="${actionUrl}" class="btn btn-primary" th:text="${actionLabel}">Action</a>
+</div>
+
+<div th:fragment="stat-card(icon, value, label, color)" class="card sz-stat-card h-100">
     <div class="card-body d-flex align-items-center gap-3">
         <div class="sz-stat-icon" th:classappend="${color}">
             <i class="bi" th:classappend="${icon}"></i>
@@ -98,6 +138,38 @@
     </div>
 </div>
 
+<!-- Stacked application outcome bar (widths as percentages 0–100) -->
+<div th:fragment="analytics-bar(pending, approved, rejected)"
+     class="sz-analytics-bar"
+     th:attr="aria-label=${'Applications: ' + pending + '% pending, ' + approved + '% approved, ' + rejected + '% rejected'}">
+    <div class="sz-analytics-bar__track">
+        <span class="sz-analytics-bar__seg sz-analytics-bar__seg--pending"
+              th:if="${pending > 0}"
+              th:style="'width:' + ${pending} + '%'"
+              th:title="${pending} + '% pending'"></span>
+        <span class="sz-analytics-bar__seg sz-analytics-bar__seg--approved"
+              th:if="${approved > 0}"
+              th:style="'width:' + ${approved} + '%'"
+              th:title="${approved} + '% approved'"></span>
+        <span class="sz-analytics-bar__seg sz-analytics-bar__seg--rejected"
+              th:if="${rejected > 0}"
+              th:style="'width:' + ${rejected} + '%'"
+              th:title="${rejected} + '% rejected'"></span>
+    </div>
+    <div class="sz-analytics-bar__legend">
+        <span><i class="sz-analytics-bar__dot sz-analytics-bar__dot--pending"></i> Pending</span>
+        <span><i class="sz-analytics-bar__dot sz-analytics-bar__dot--approved"></i> Approved</span>
+        <span><i class="sz-analytics-bar__dot sz-analytics-bar__dot--rejected"></i> Rejected</span>
+    </div>
+</div>
+
+<div th:fragment="profile-ring(percent)" class="sz-profile-ring"
+     th:style="'--sz-ring-pct:' + ${percent}">
+    <div class="sz-profile-ring__inner">
+        <span class="sz-profile-ring__value" th:text="${percent} + '%'">0%</span>
+    </div>
+</div>
+
 <span th:fragment="status-badge(status)"
       class="badge rounded-pill"
       th:classappend="${status == 'ACTIVE' or status == 'APPROVED'} ? 'text-bg-success'
@@ -106,4 +178,104 @@
           : 'text-bg-secondary'))"
       th:text="${status}">STATUS</span>
 
+<!-- Landing proof stat -->
+<div th:fragment="landing-stat(value, label)" class="sz-landing-proof__item">
+    <div class="sz-landing-proof__value" th:text="${value}">0</div>
+    <div class="sz-landing-proof__label" th:text="${label}">Label</div>
+</div>
+
+<!-- Landing dual CTA card -->
+<div th:fragment="landing-audience-card(icon, title, text, ctaUrl, ctaLabel, variant)"
+     class="sz-landing-audience-card"
+     th:classappend="${variant == 'provider'} ? 'sz-landing-audience-card--provider'">
+    <div class="sz-landing-audience-card__icon">
+        <i class="bi" th:classappend="${icon}"></i>
+    </div>
+    <h3 class="sz-landing-audience-card__title" th:text="${title}">Title</h3>
+    <p class="sz-landing-audience-card__text" th:text="${text}">Text</p>
+    <a th:href="${ctaUrl}" class="btn btn-light text-dark fw-semibold"
+       th:text="${ctaLabel}">CTA</a>
+</div>
+
+<!-- Landing featured card — factual data only -->
+<article th:fragment="featured-scholarship-card(opportunity)" class="card sz-landing-card-prod h-100">
+    <div class="card-body d-flex flex-column">
+        <p class="small sz-landing-muted mb-1">
+            <i class="bi bi-building me-1"></i>
+            <span th:text="${opportunity.providerName}">Provider</span>
+        </p>
+        <h3 class="card-title mb-2" th:text="${opportunity.title}">Title</h3>
+        <p class="small sz-landing-muted mb-3 flex-grow-1" th:if="${opportunity.description}"
+           th:text="${#strings.abbreviate(opportunity.description, 100)}">Description</p>
+        <div class="d-flex flex-wrap gap-1 mb-0">
+            <span class="badge sz-landing-badge"
+                  th:if="${opportunity.country}" th:text="${opportunity.country}">Country</span>
+            <span class="badge sz-landing-badge"
+                  th:if="${opportunity.fundingType}" th:text="${opportunity.fundingType}">Funding</span>
+            <span class="badge sz-landing-badge"
+                  th:if="${opportunity.educationLevel}" th:text="${opportunity.educationLevel}">Level</span>
+        </div>
+    </div>
+    <div class="card-footer bg-transparent border-top d-flex flex-wrap justify-content-between align-items-center gap-2 py-3">
+        <span class="small sz-landing-muted sz-deadline" th:if="${opportunity.deadline != null}"
+              th:attr="data-deadline=${opportunity.deadline}">Deadline</span>
+        <span th:if="${opportunity.deadline == null}" class="small sz-landing-muted">Rolling deadline</span>
+        <a th:href="@{/scholarships/{id}(id=${opportunity.opportunityId})}"
+           class="btn btn-primary btn-sm">View details</a>
+    </div>
+</article>
+
+<!-- Admin report exports -->
+<div th:fragment="report-export-grid" class="card sz-section-card mb-4">
+    <div class="card-body p-4">
+        <h2 class="h6 fw-bold mb-1">
+            <i class="bi bi-download text-secondary me-1"></i>Export reports
+        </h2>
+        <p class="small text-secondary mb-3">Download platform data as PDF or Excel.</p>
+        <div class="row g-2">
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a class="btn btn-sm btn-outline-danger w-100" th:href="@{/admin/reports/users.pdf}">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Users PDF
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a class="btn btn-sm btn-outline-danger w-100" th:href="@{/admin/reports/opportunities.pdf}">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Opportunities PDF
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a class="btn btn-sm btn-outline-danger w-100" th:href="@{/admin/reports/applications.pdf}">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Applications PDF
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a class="btn btn-sm btn-outline-danger w-100" th:href="@{/admin/reports/recommendations.pdf}">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>Recommendations PDF
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a class="btn btn-sm btn-outline-success w-100" th:href="@{/admin/reports/users.xlsx}">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Users Excel
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a class="btn btn-sm btn-outline-success w-100" th:href="@{/admin/reports/opportunities.xlsx}">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Opportunities Excel
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a class="btn btn-sm btn-outline-success w-100" th:href="@{/admin/reports/applications.xlsx}">
+                    <i class="bi bi-file-earmark-excel me-1"></i>Applications Excel
+                </a>
+            </div>
+            <div class="col-12 col-sm-6 col-lg-3">
+                <a class="btn btn-sm btn-outline-secondary w-100" th:href="@{/admin/audit-log}">
+                    <i class="bi bi-journal-text me-1"></i>Full audit log
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
 </html>

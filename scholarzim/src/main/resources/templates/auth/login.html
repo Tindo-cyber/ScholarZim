@@ -3,37 +3,52 @@
 
 <head th:replace="~{fragments/layout :: head('Login')}"></head>
 
-<body>
+<body class="sz-auth-page" th:classappend="${loginRole == 'provider'} ? 'sz-auth-page--provider'">
+
+<header th:replace="~{fragments/layout :: auth-topbar}"></header>
 
 <div class="sz-auth-wrap">
 
     <div class="sz-auth-hero">
         <div>
-            <div class="mb-4">
-                <span class="sz-brand-icon" style="width:52px;height:52px;font-size:1.5rem;">
-                    <i class="bi bi-mortarboard-fill"></i>
-                </span>
+            <nav class="nav sz-auth-audience-tabs" aria-label="Sign in as">
+                <a class="nav-link"
+                   th:classappend="${loginRole == 'student'} ? 'active'"
+                   th:href="@{/login(role='student')}">
+                    <i class="bi bi-mortarboard me-1"></i>Student
+                </a>
+                <a class="nav-link"
+                   th:classappend="${loginRole == 'provider'} ? 'active'"
+                   th:href="@{/login(role='provider')}">
+                    <i class="bi bi-building me-1"></i>Provider
+                </a>
+            </nav>
+
+            <div th:if="${loginRole == 'student'}">
+                <h1>Find your next scholarship</h1>
+                <p class="lead">
+                    Connect with funding from primary school through postgraduate study.
+                </p>
+                <ul class="sz-auth-features">
+                    <li><i class="bi bi-check-circle-fill"></i><span>ScholarFit matches from your profile</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i><span>Track applications end to end</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i><span>Deadline reminders</span></li>
+                </ul>
             </div>
-            <h1>Find your next scholarship</h1>
-            <p class="lead">
-                ScholarZim connects Zimbabwean students with funding opportunities
-                from local and international providers.
-            </p>
-            <ul class="sz-auth-features">
-                <li>
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span>Personalised matches based on your academic profile</span>
-                </li>
-                <li>
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span>Track applications from submission to decision</span>
-                </li>
-                <li>
-                    <i class="bi bi-check-circle-fill"></i>
-                    <span>Deadline reminders so you never miss an opportunity</span>
-                </li>
-            </ul>
-            <div class="sz-auth-stats">
+
+            <div th:if="${loginRole == 'provider'}">
+                <h1>Provider sign in</h1>
+                <p class="lead">
+                    Publish scholarships, review applications, and manage your pipeline.
+                </p>
+                <ul class="sz-auth-features">
+                    <li><i class="bi bi-check-circle-fill"></i><span>List opportunities at any level</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i><span>Review and approve applications</span></li>
+                    <li><i class="bi bi-check-circle-fill"></i><span>Export reports and analytics</span></li>
+                </ul>
+            </div>
+
+            <div class="sz-auth-stats d-none d-lg-flex">
                 <div>
                     <div class="sz-auth-stat-value" th:text="${stats.activeScholarships}">0</div>
                     <div class="sz-auth-stat-label">Scholarships</div>
@@ -42,9 +57,13 @@
                     <div class="sz-auth-stat-value" th:text="${stats.totalApplicants}">0</div>
                     <div class="sz-auth-stat-label">Students</div>
                 </div>
-                <div>
+                <div th:if="${loginRole == 'student'}">
                     <div class="sz-auth-stat-value">Free</div>
                     <div class="sz-auth-stat-label">For students</div>
+                </div>
+                <div th:if="${loginRole == 'provider'}">
+                    <div class="sz-auth-stat-value" th:text="${stats.totalProviders}">0</div>
+                    <div class="sz-auth-stat-label">Providers</div>
                 </div>
             </div>
         </div>
@@ -53,64 +72,95 @@
     <div class="sz-auth-panel">
         <div class="sz-auth-card">
 
-            <div class="text-center mb-4">
+            <div class="text-center mb-3">
                 <div class="sz-auth-brand-icon mx-auto">
-                    <i class="bi bi-mortarboard-fill"></i>
+                    <i class="bi" th:classappend="${loginRole == 'provider'} ? 'bi-building' : 'bi-mortarboard-fill'"></i>
                 </div>
-                <div class="sz-auth-brand h4 mb-1">Welcome back</div>
-                <p class="text-secondary mb-0">Sign in to your ScholarZim account</p>
+                <div class="sz-auth-brand h5 mb-1"
+                     th:text="${loginRole == 'provider'} ? 'Provider sign in' : 'Student sign in'">Sign in</div>
+                <p class="text-secondary small mb-0"
+                   th:text="${loginRole == 'provider'} ? 'Use your provider work email' : 'Use your student account email'">
+                    Sign in to continue
+                </p>
             </div>
 
-            <div class="alert alert-danger rounded-3" th:if="${param.error}">
+            <div class="alert alert-info rounded-3 py-2 small" th:if="${pendingRegistration}">
+                <i class="bi bi-hourglass-split me-2"></i>
+                Your provider application is pending admin review. You will be able to sign in once approved.
+            </div>
+            <div class="alert alert-danger rounded-3 py-2 small" th:if="${loginError == 'pending'}">
+                <i class="bi bi-hourglass-split me-2"></i>
+                Your provider account is still pending admin approval.
+            </div>
+            <div class="alert alert-danger rounded-3 py-2 small" th:if="${loginError == 'rejected'}">
+                <i class="bi bi-x-circle me-2"></i>
+                Your provider application was declined. Check your email for details.
+            </div>
+            <div class="alert alert-danger rounded-3 py-2 small" th:if="${loginError == 'suspended'}">
+                <i class="bi bi-slash-circle me-2"></i>
+                This account has been suspended. Contact support for assistance.
+            </div>
+            <div class="alert alert-danger rounded-3 py-2 small"
+                 th:if="${param.error != null and (loginError == null or loginError == 'credentials')}">
                 <i class="bi bi-exclamation-circle me-2"></i>Invalid email or password.
             </div>
-            <div class="alert alert-success rounded-3" th:if="${param.logout}">
+            <div class="alert alert-success rounded-3 py-2 small" th:if="${param.logout}">
                 <i class="bi bi-check-circle me-2"></i>You have been logged out.
             </div>
-            <div class="alert alert-success rounded-3" th:if="${param.registered}">
+            <div class="alert alert-success rounded-3 py-2 small" th:if="${param.registered}">
                 <i class="bi bi-check-circle me-2"></i>Account created. Sign in to continue.
             </div>
-            <div class="alert alert-success rounded-3" th:if="${successMessage}">
+            <div class="alert alert-success rounded-3 py-2 small" th:if="${successMessage}">
                 <i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span>
             </div>
 
             <form th:action="@{/login}" method="post">
+                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                 <div class="mb-3">
-                    <label for="username" class="form-label fw-semibold">Email address</label>
-                    <div class="input-group">
+                    <label for="username" class="form-label fw-semibold small">Email address</label>
+                    <div class="input-group input-group-sm">
                         <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-                        <input id="username" name="username" type="email"
-                               class="form-control" placeholder="you@example.co.zw" required>
+                        <input id="username" name="username" type="email" class="form-control"
+                               th:placeholder="${loginRole == 'provider'} ? 'org@example.co.zw' : 'you@student.co.zw'"
+                               required autofocus>
                     </div>
                 </div>
                 <div class="mb-3">
                     <div class="d-flex justify-content-between align-items-center">
-                        <label for="password" class="form-label fw-semibold mb-0">Password</label>
-                        <a th:href="@{/forgot-password}" class="small">Forgot password?</a>
+                        <label for="password" class="form-label fw-semibold small mb-0">Password</label>
+                        <a th:href="@{/forgot-password}" class="small">Forgot?</a>
                     </div>
-                    <div class="input-group mt-1">
+                    <div class="input-group input-group-sm mt-1">
                         <span class="input-group-text"><i class="bi bi-lock"></i></span>
                         <input id="password" name="password" type="password"
-                               class="form-control" placeholder="Enter your password" required>
+                               class="form-control" placeholder="Your password" required>
                     </div>
                 </div>
-                <div class="d-grid mt-4">
-                    <button class="btn btn-primary btn-lg" type="submit">
+                <div class="d-grid mt-3">
+                    <button class="btn btn-primary" type="submit">
                         <i class="bi bi-box-arrow-in-right me-1"></i>Sign in
                     </button>
                 </div>
             </form>
 
-            <p class="text-center text-secondary mt-4 mb-0">
-                No account? <a th:href="@{/register}" class="fw-semibold">Create one free</a>
-            </p>
+            <div class="sz-auth-register-links text-center mt-3">
+                <span class="text-secondary small">No account?</span>
+                <a th:if="${loginRole == 'student'}" th:href="@{/register}" class="fw-semibold small">Register as student</a>
+                <a th:if="${loginRole == 'provider'}" th:href="@{/register/provider}" class="fw-semibold small">Apply as provider</a>
+                <span class="text-secondary small">·</span>
+                <a th:if="${loginRole == 'student'}" th:href="@{/login(role='provider')}" class="small">Provider sign in</a>
+                <a th:if="${loginRole == 'provider'}" th:href="@{/login(role='student')}" class="small">Student sign in</a>
+            </div>
 
-            <div class="sz-demo-hint">
-                <strong><i class="bi bi-info-circle me-1"></i>Demo accounts</strong><br>
-                Applicant: <code>tanaka.moyo@student.co.zw</code><br>
-                Provider: <code>scholarships@uk.gov.zw</code><br>
-                Admin: <code>admin@scholarzim.co.zw</code><br>
-                Password: <code>Password123!</code>
+            <div class="sz-demo-hint" th:if="${!@environment.acceptsProfiles('prod')}">
+                <strong><i class="bi bi-info-circle me-1"></i>Demo</strong>
+                <span th:if="${loginRole == 'student'}">
+                    <code>tanaka.moyo@student.co.zw</code>
+                </span>
+                <span th:if="${loginRole == 'provider'}">
+                    <code>scholarships@uk.gov.zw</code>
+                </span>
+                · Password: <code>Password123!</code>
             </div>
 
         </div>
@@ -119,6 +169,5 @@
 </div>
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-
 </body>
 </html>

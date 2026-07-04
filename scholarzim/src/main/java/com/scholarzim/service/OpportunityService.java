@@ -7,6 +7,7 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 
+
 public interface OpportunityService {
 
     void createOpportunity(OpportunityRequest request, String providerEmail);

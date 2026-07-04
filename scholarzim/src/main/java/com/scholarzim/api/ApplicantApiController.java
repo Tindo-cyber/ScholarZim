@@ -5,11 +5,13 @@ import com.scholarzim.dto.ScoredOpportunityDTO;
 import com.scholarzim.entity.Opportunity;
 import com.scholarzim.service.RecommendationService;
 import com.scholarzim.service.SavedScholarshipService;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/applicant")
@@ -27,7 +29,7 @@ public class ApplicantApiController {
     }
 
     @GetMapping("/recommendations")
-    public List<Map<String, Object>> recommendations(Authentication auth) {
+    public List<Map<String, Object>> recommendations(@NonNull Authentication auth) {
 
         return recommendationService.recommendForApplicant(auth.getName()).stream()
                 .map(this::toMatchResponse)
@@ -35,7 +37,7 @@ public class ApplicantApiController {
     }
 
     @GetMapping("/saved")
-    public List<OpportunityApiDTO> saved(Authentication auth) {
+    public List<OpportunityApiDTO> saved(@NonNull Authentication auth) {
 
         return savedScholarshipService.listSaved(auth.getName()).stream()
                 .map(this::toDto)
@@ -43,13 +45,13 @@ public class ApplicantApiController {
     }
 
     @PostMapping("/saved/{id}")
-    public Map<String, String> save(@PathVariable Long id, Authentication auth) {
+    public Map<String, String> save(@PathVariable Long id, @NonNull Authentication auth) {
         savedScholarshipService.save(auth.getName(), id);
         return Map.of("status", "saved");
     }
 
     @DeleteMapping("/saved/{id}")
-    public Map<String, String> unsave(@PathVariable Long id, Authentication auth) {
+    public Map<String, String> unsave(@PathVariable Long id, @NonNull Authentication auth) {
         savedScholarshipService.remove(auth.getName(), id);
         return Map.of("status", "removed");
     }

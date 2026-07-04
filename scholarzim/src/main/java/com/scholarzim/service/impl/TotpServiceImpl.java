@@ -4,13 +4,14 @@ import com.scholarzim.entity.User;
 import com.scholarzim.exception.ResourceNotFoundException;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.TotpService;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import dev.samstevens.totp.code.*;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.secret.SecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
 import dev.samstevens.totp.time.TimeProvider;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class TotpServiceImpl implements TotpService {
@@ -69,5 +70,21 @@ public class TotpServiceImpl implements TotpService {
         user.setTotpSecret(null);
         user.setTotpEnabled(false);
         userRepository.save(user);
+    }
+
+    @Override
+    public boolean requiresTwoFactor(String email) {
+        return userRepository.findByEmail(email)
+                .map(User::isTotpEnabled)
+                .orElse(false);
+    }
+
+    @Override
+    public boolean verifyForUser(String email, String code) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null || !user.isTotpEnabled() || user.getTotpSecret() == null) {
+            return false;
+        }
+        return verify(user.getTotpSecret(), code);
     }
 }

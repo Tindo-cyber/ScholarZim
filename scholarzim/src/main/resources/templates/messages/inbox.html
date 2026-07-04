@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<head th:replace="~{fragments/layout :: head('Messages')}"></head>
+
+<body>
+
+<div class="d-flex sz-shell">
+
+    <div th:replace="~{fragments/layout :: sidebar('messages')}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+
+        <nav th:replace="~{fragments/layout :: topbar('Messages')}"></nav>
+
+        <main class="sz-content has-mobile-nav p-3 p-md-4">
+
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+
+            <th:block sec:authorize="hasRole('APPLICANT')">
+                <nav th:replace="~{fragments/components :: breadcrumbs(
+                    @{/applicant/dashboard}, 'Dashboard',
+                    null, null,
+                    'Messages')}"></nav>
+            </th:block>
+            <th:block sec:authorize="hasRole('PROVIDER')">
+                <nav th:replace="~{fragments/components :: breadcrumbs(
+                    @{/provider/dashboard}, 'Dashboard',
+                    null, null,
+                    'Messages')}"></nav>
+            </th:block>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                <div th:replace="~{fragments/components :: page-header('Messages', 'Notification inbox — updates from providers and the ScholarZim platform.')}"></div>
+                <form th:if="${unreadCount > 0}"
+                      th:action="@{/notifications/read-all}" method="post" class="m-0">
+                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                    <button class="btn btn-sm btn-outline-primary" type="submit">
+                        <i class="bi bi-check2-all me-1"></i>Mark all read
+                    </button>
+                </form>
+            </div>
+
+            <div th:if="${messages.isEmpty()}"
+                 th:replace="~{fragments/components :: empty-state(
+                    'bi-chat-dots',
+                    'No messages yet',
+                    'When providers update your applications or ScholarZim sends alerts, they will appear here.',
+                    @{/opportunities},
+                    'Browse scholarships')}"></div>
+
+            <div th:if="${!messages.isEmpty()}" class="sz-messages-layout">
+                <aside class="sz-messages-sidebar">
+                    <div class="fw-semibold mb-2">Inbox</div>
+                    <div class="sz-messages-sidebar__stat">
+                        <span>Total</span>
+                        <span class="badge text-bg-secondary" th:text="${messages.size()}">0</span>
+                    </div>
+                    <div class="sz-messages-sidebar__stat">
+                        <span>Unread</span>
+                        <span class="badge text-bg-primary" th:text="${unreadCount}">0</span>
+                    </div>
+                    <hr class="my-2 opacity-25">
+                    <p class="small text-secondary mb-0">
+                        Messages are synced from your notification feed. Open a message to jump to the related page.
+                    </p>
+                </aside>
+
+                <div class="sz-messages-thread" role="log" aria-label="Message thread">
+                    <div th:each="m : ${messages}"
+                         class="sz-message-bubble sz-message-bubble--in"
+                         th:classappend="${m.unread} ? 'sz-message-bubble--unread'">
+                        <div th:text="${m.message}">Message body</div>
+                        <div class="sz-message-bubble__meta">
+                            <span th:if="${m.createdAt != null}"
+                                  th:text="${#temporals.format(m.createdAt, 'dd MMM yyyy · HH:mm')}"></span>
+                            <span th:if="${m.type != null}" class="badge text-bg-light border"
+                                  th:text="${m.type}">TYPE</span>
+                            <a th:if="${m.link != null}"
+                               th:href="@{/notifications/{id}/open(id=${m.notificationId})}"
+                               class="sz-message-bubble__link">
+                                Open <i class="bi bi-arrow-right-short"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<nav th:replace="~{fragments/layout :: mobile-nav('messages')}" sec:authorize="hasRole('APPLICANT')"></nav>
+<nav th:replace="~{fragments/layout :: provider-mobile-nav('messages')}" sec:authorize="hasRole('PROVIDER')"></nav>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+</html>

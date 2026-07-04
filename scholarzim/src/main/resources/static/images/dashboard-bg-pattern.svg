@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" fill="none">
+  <defs>
+    <pattern id="dashGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" stroke="#16A34A" stroke-opacity="0.12" stroke-width="1"/>
+    </pattern>
+    <pattern id="dashDots" width="20" height="20" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.25" fill="#3B82F6" fill-opacity="0.1"/>
+    </pattern>
+  </defs>
+  <rect width="400" height="400" fill="url(#dashGrid)"/>
+  <rect width="400" height="400" fill="url(#dashDots)"/>
+</svg>

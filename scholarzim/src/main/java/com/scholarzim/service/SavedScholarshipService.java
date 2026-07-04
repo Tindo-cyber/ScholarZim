@@ -5,6 +5,7 @@ import org.springframework.lang.NonNull;
 
 import java.util.List;
 
+
 public interface SavedScholarshipService {
 
     void save(String email, @NonNull Long opportunityId);

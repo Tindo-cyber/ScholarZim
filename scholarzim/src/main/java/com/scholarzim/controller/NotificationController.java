@@ -1,6 +1,7 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.service.NotificationService;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+
 
 @Controller
 public class NotificationController {
@@ -19,7 +21,7 @@ public class NotificationController {
     }
 
     @GetMapping("/notifications")
-    public String list(Authentication authentication, Model model) {
+    public String list(@NonNull Authentication authentication, Model model) {
 
         model.addAttribute(
                 "notifications",
@@ -31,7 +33,7 @@ public class NotificationController {
     @GetMapping("/notifications/{id}/open")
     public String open(
             @PathVariable Long id,
-            Authentication authentication) {
+            @NonNull Authentication authentication) {
 
         String link = notificationService.open(id, authentication.getName());
         return "redirect:" + link;
@@ -39,7 +41,7 @@ public class NotificationController {
 
     @PostMapping("/notifications/read-all")
     public String markAllRead(
-            Authentication authentication,
+            @NonNull Authentication authentication,
             @RequestHeader(value = "Referer", required = false) String referer) {
 
         notificationService.markAllRead(authentication.getName());

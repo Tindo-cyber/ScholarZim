@@ -4,6 +4,7 @@ import com.scholarzim.entity.Application;
 import com.scholarzim.entity.User;
 import com.scholarzim.repository.ApplicationRepository;
 import com.scholarzim.repository.UserRepository;
+import org.springframework.lang.NonNull;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+
 
 @Controller
 public class ComplianceController {
@@ -29,9 +31,10 @@ public class ComplianceController {
     }
 
     @GetMapping("/account/export-data")
-    public ResponseEntity<byte[]> exportMyData(Authentication auth) {
+    public ResponseEntity<byte[]> exportMyData(@NonNull Authentication auth) {
 
-        User user = userRepository.findByEmail(auth.getName()).orElseThrow();
+        User user = userRepository.findByEmail(auth.getName())
+                .orElseThrow(() -> new com.scholarzim.exception.ResourceNotFoundException("User not found"));
         List<Application> apps = applicationRepository.findByUser(user);
 
         StringBuilder sb = new StringBuilder();

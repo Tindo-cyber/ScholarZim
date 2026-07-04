@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="800" viewBox="0 0 1440 800" fill="none">
+  <defs>
+    <pattern id="szGrid" width="48" height="48" patternUnits="userSpaceOnUse">
+      <path d="M48 0H0V48" stroke="#16A34A" stroke-opacity="0.07" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="szGlowA" cx="15%" cy="10%" r="55%">
+      <stop offset="0%" stop-color="#16A34A" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#16A34A" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="szGlowB" cx="88%" cy="18%" r="45%">
+      <stop offset="0%" stop-color="#3B82F6" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#3B82F6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="szGlowC" cx="50%" cy="95%" r="50%">
+      <stop offset="0%" stop-color="#22C55E" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#22C55E" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1440" height="800" fill="url(#szGrid)"/>
+  <rect width="1440" height="800" fill="url(#szGlowA)"/>
+  <rect width="1440" height="800" fill="url(#szGlowB)"/>
+  <rect width="1440" height="800" fill="url(#szGlowC)"/>
+  <circle cx="1180" cy="140" r="90" stroke="#16A34A" stroke-opacity="0.12" stroke-width="1.5"/>
+  <circle cx="1180" cy="140" r="130" stroke="#3B82F6" stroke-opacity="0.08" stroke-width="1"/>
+  <path d="M180 620c40-80 120-120 200-80s120 160 40 200-160-20-240-120z" fill="#16A34A" fill-opacity="0.06"/>
+</svg>

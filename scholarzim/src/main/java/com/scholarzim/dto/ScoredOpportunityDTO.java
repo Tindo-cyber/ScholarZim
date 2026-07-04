@@ -4,6 +4,7 @@ import com.scholarzim.entity.Opportunity;
 import lombok.Getter;
 import lombok.Setter;
 
+
 @Getter
 @Setter
 public class ScoredOpportunityDTO {

@@ -6,6 +6,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+
 @Entity
 @Table(name = "notifications")
 @Getter
@@ -35,6 +36,10 @@ public class Notification {
 
     @Column(name = "is_read")
     private boolean read;
+
+    public boolean isUnread() {
+        return !read;
+    }
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

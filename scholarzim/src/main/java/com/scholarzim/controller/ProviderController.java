@@ -1,68 +1,52 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.entity.Application;
-import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.User;
-import com.scholarzim.repository.ApplicationRepository;
-import com.scholarzim.repository.OpportunityRepository;
 import com.scholarzim.repository.UserRepository;
-import com.scholarzim.util.ApplicationStatus;
+import com.scholarzim.service.ProviderService;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
+
 
 @Controller
 public class ProviderController {
 
     private final UserRepository userRepository;
-    private final OpportunityRepository opportunityRepository;
-    private final ApplicationRepository applicationRepository;
+    private final ProviderService providerService;
 
     public ProviderController(
             UserRepository userRepository,
-            OpportunityRepository opportunityRepository,
-            ApplicationRepository applicationRepository) {
+            ProviderService providerService) {
 
         this.userRepository = userRepository;
-        this.opportunityRepository = opportunityRepository;
-        this.applicationRepository = applicationRepository;
+        this.providerService = providerService;
     }
 
     @GetMapping("/provider/dashboard")
-    public String dashboard(Authentication auth, Model model) {
+    public String dashboard(@NonNull Authentication auth, Model model) {
 
-        User provider = userRepository.findByEmail(auth.getName()).orElseThrow();
-        List<Opportunity> opportunities = opportunityRepository.findByProvider(provider);
-        List<Application> applications = opportunities.isEmpty()
-                ? List.of()
-                : applicationRepository.findByOpportunityIn(opportunities);
+        String email = auth.getName();
+        User provider = userRepository.findByEmail(email).orElseThrow();
+        var stats = providerService.getDashboardStats(email);
+        List<Application> recentApplications = providerService.getRecentApplications(email, 8);
 
         model.addAttribute("providerName", provider.getFullName());
-        model.addAttribute("opportunityCount", opportunities.size());
-        model.addAttribute("applicationCount", applications.size());
-        model.addAttribute("pendingCount", applications.stream().filter(a ->
-                ApplicationStatus.SUBMITTED.equals(a.getApplicationStatus())
-                        || ApplicationStatus.UNDER_REVIEW.equals(a.getApplicationStatus())
-                        || ApplicationStatus.PENDING.equals(a.getApplicationStatus())).count());
-
-        Map<String, Long> statusCounts = new HashMap<>();
-        for (Application app : applications) {
-            String status = app.getApplicationStatus() != null ? app.getApplicationStatus() : "UNKNOWN";
-            statusCounts.merge(status, 1L, (left, right) -> left + right);
-        }
-        model.addAttribute("statusCounts", statusCounts);
-        model.addAttribute("recentApplications", applications.stream()
-                .sorted((a, b) -> {
-                    if (a.getSubmittedAt() == null) return 1;
-                    if (b.getSubmittedAt() == null) return -1;
-                    return b.getSubmittedAt().compareTo(a.getSubmittedAt());
-                })
-                .limit(8)
+        model.addAttribute("stats", stats);
+        model.addAttribute("opportunities", providerService.getMyOpportunities(email));
+        model.addAttribute("opportunityCount", stats.getTotalOpportunities());
+        model.addAttribute("applicationCount", stats.getApplicationsReceived());
+        model.addAttribute("pendingCount", stats.getPendingApplications());
+        model.addAttribute("recentApplications", recentApplications);
+        model.addAttribute("upcomingDeadlines", providerService.getMyOpportunities(email).stream()
+                .filter(o -> o.getDeadline() != null)
+                .sorted(Comparator.comparing(o -> o.getDeadline()))
+                .limit(5)
                 .toList());
 
         return "provider/dashboard";

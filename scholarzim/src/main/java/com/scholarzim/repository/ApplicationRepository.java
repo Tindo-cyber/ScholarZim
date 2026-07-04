@@ -1,13 +1,14 @@
 package com.scholarzim.repository;
 
 import com.scholarzim.entity.Application;
-import com.scholarzim.entity.User;
 import com.scholarzim.entity.Opportunity;
+import com.scholarzim.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
+
 
 public interface ApplicationRepository
         extends JpaRepository<Application, Long> {

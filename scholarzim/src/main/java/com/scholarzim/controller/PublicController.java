@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 
+
 @Controller
 public class PublicController {
 
@@ -25,7 +26,9 @@ public class PublicController {
     }
 
     @GetMapping("/")
-    public String landing(Model model) {
+    public String landing(
+            @ModelAttribute("searchRequest") OpportunitySearchRequest searchRequest,
+            Model model) {
 
         model.addAttribute("stats", platformStatsService.getPublicStats());
         model.addAttribute("featured", opportunityService.getActiveOpportunities().stream().limit(6).toList());

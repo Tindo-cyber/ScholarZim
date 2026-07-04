@@ -1,47 +1,52 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/public-layout :: head('Scholarships')}"></head>
-<body>
+<body class="sz-landing">
 
 <nav th:replace="~{fragments/public-layout :: navbar}"></nav>
 
-<main class="py-4">
-    <div class="container">
-        <div class="mb-4">
-            <h1 class="h3 fw-bold">Browse scholarships</h1>
-            <p class="text-secondary mb-0">
-                <strong th:text="${opportunities.size()}">0</strong> active opportunities ·
-                <a th:href="@{/register}">Register</a> to apply
-            </p>
-        </div>
+<main class="py-4 py-md-5">
+    <div class="container sz-container">
+        <div th:replace="~{fragments/components :: page-header('Browse scholarships', 'Search and filter active opportunities. Register to apply.')}"></div>
+        <p class="text-secondary mb-4">
+            <strong th:text="${opportunities.size()}">0</strong> active opportunities ·
+            <a th:href="@{/register}" class="fw-semibold">Register</a> to apply
+        </p>
 
-        <div class="sz-filter-card mb-4">
+        <div class="card sz-filter-card shadow-sm mb-4">
             <div class="card-body p-4">
                 <form th:action="@{/scholarships}" method="get" th:object="${searchRequest}" class="row g-3 align-items-end">
-                    <div class="col-6 col-md-3">
+                    <div class="col-12 col-md-6 col-lg-4">
+                        <label class="form-label">Keyword</label>
+                        <input type="search" class="form-control" th:field="*{keyword}"
+                               placeholder="Search title, provider, description…">
+                    </div>
+                    <div class="col-6 col-md-3 col-lg-2">
                         <label class="form-label">Level</label>
                         <select class="form-select" th:field="*{educationLevel}">
                             <option value="">All</option>
                             <option th:each="l : ${educationLevels}" th:value="${l}" th:text="${l}"></option>
                         </select>
                     </div>
-                    <div class="col-6 col-md-3">
+                    <div class="col-6 col-md-3 col-lg-2">
                         <label class="form-label">Field</label>
                         <select class="form-select" th:field="*{fieldOfStudy}">
                             <option value="">All</option>
                             <option th:each="f : ${fieldsOfStudy}" th:value="${f}" th:text="${f}"></option>
                         </select>
                     </div>
-                    <div class="col-6 col-md-3">
+                    <div class="col-6 col-md-3 col-lg-2">
                         <label class="form-label">Country</label>
                         <select class="form-select" th:field="*{country}">
                             <option value="">All</option>
                             <option th:each="c : ${countries}" th:value="${c}" th:text="${c}"></option>
                         </select>
                     </div>
-                    <div class="col-6 col-md-3 d-flex gap-2">
-                        <button class="btn btn-primary flex-grow-1" type="submit">Search</button>
-                        <a class="btn btn-outline-secondary" th:href="@{/scholarships}">Reset</a>
+                    <div class="col-6 col-md-3 col-lg-2 d-flex gap-2">
+                        <button class="btn btn-primary flex-grow-1" type="submit">
+                            <i class="bi bi-search me-1"></i>Search
+                        </button>
+                        <a class="btn btn-outline-secondary" th:href="@{/scholarships}" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
                     </div>
                 </form>
             </div>
@@ -49,31 +54,20 @@
 
         <div th:if="${opportunities.isEmpty()}" class="sz-empty">
             <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
-            <p class="text-secondary">No scholarships match your filters.</p>
+            <h3 class="h5 fw-bold">No scholarships found</h3>
+            <p class="text-secondary mb-3">Try widening your filters or check back later.</p>
+            <a th:href="@{/scholarships}" class="btn btn-outline-primary btn-sm">Reset filters</a>
         </div>
 
         <div class="sz-opp-grid" th:if="${!opportunities.isEmpty()}">
-            <div class="sz-opp-card" th:each="opp : ${opportunities}">
-                <div class="sz-opp-card__header">
-                    <div class="sz-opp-title" th:text="${opp.title}">Title</div>
-                    <div class="sz-opp-provider"><i class="bi bi-building"></i>
-                        <span th:text="${opp.providerName}">Provider</span></div>
-                </div>
-                <div class="sz-opp-card__body">
-                    <p class="sz-opp-desc" th:text="${opp.description}">Desc</p>
-                    <div class="sz-opp-meta">
-                        <span class="sz-badge sz-badge--level" th:text="${opp.educationLevel}">Level</span>
-                        <span class="sz-badge sz-badge--funding" th:if="${opp.fundingType}" th:text="${opp.fundingType}">Funding</span>
-                    </div>
-                </div>
-                <div class="sz-opp-card__footer">
-                    <span class="sz-deadline" th:if="${opp.deadline != null}" th:attr="data-deadline=${opp.deadline}">Deadline</span>
-                    <a th:href="@{/scholarships/{id}(id=${opp.opportunityId})}" class="btn btn-primary btn-sm">View details</a>
-                </div>
-            </div>
+            <th:block th:each="opp : ${opportunities}">
+                <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=false, removeId=null)}"></div>
+            </th:block>
         </div>
     </div>
 </main>
+
+<footer th:replace="~{fragments/public-layout :: public-footer}"></footer>
 
 <th:block th:replace="~{fragments/public-layout :: scripts}"></th:block>
 </body>

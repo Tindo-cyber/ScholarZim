@@ -3,6 +3,19 @@
       xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 
+<!-- ============ STYLES ============ -->
+<!-- App shell styles only — landing.css is public pages only -->
+<th:block th:fragment="styles">
+    <link rel="stylesheet" th:href="@{/css/tokens.css(v=28)}">
+    <link rel="stylesheet" th:href="@{/css/base.css(v=28)}">
+    <link rel="stylesheet" th:href="@{/css/layout.css(v=28)}">
+    <link rel="stylesheet" th:href="@{/css/components.css(v=28)}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css(v=28)}">
+    <link rel="stylesheet" th:href="@{/css/glass.css(v=28)}">
+    <link rel="stylesheet" th:href="@{/css/dark.css(v=28)}">
+    <link rel="stylesheet" th:href="@{/css/auth.css(v=28)}">
+</th:block>
+
 <!-- ============ HEAD ============ -->
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
@@ -13,16 +26,30 @@
           rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
           rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
     <link rel="manifest" th:href="@{/manifest.json}">
-    <meta name="theme-color" content="#006b3f">
-
-    <!-- Apply persisted theme before paint to avoid flash -->
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#16A34A" id="szThemeColor">
+    <link rel="icon" type="image/png" th:href="@{/icons/icon-192.png}">
     <script>
         (function () {
             var t = localStorage.getItem('sz-theme') || 'light';
             document.documentElement.setAttribute('data-bs-theme', t);
+            var meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) meta.setAttribute('content', t === 'dark' ? '#0f172a' : '#16A34A');
         })();
     </script>
+    <th:block th:replace="~{fragments/layout :: styles}"></th:block>
+
+    <style>
+        /* Critical shell — color only; mesh canvas comes from glass.css */
+        body { margin: 0; color: var(--sz-text, #0f172a); }
+        .sz-shell { display: flex; min-height: 100vh; width: 100%; position: relative; z-index: 1; }
+        .sz-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; background: transparent; }
+        .sz-content { flex: 1 1 auto; width: 100%; }
+    </style>
 </head>
 
 <body>
@@ -30,14 +57,14 @@
 <!-- ============ SIDEBAR ============ -->
 <aside th:fragment="sidebar(active)"
        id="sidebar"
-       class="sz-sidebar offcanvas-md offcanvas-start text-bg-dark">
+       class="sz-sidebar offcanvas-md offcanvas-start">
 
-    <div class="offcanvas-header d-md-none">
-        <h5 class="offcanvas-title text-white">
-            <i class="bi bi-mortarboard-fill me-2"></i>ScholarZim
+    <div class="offcanvas-header d-md-none border-bottom">
+        <h5 class="offcanvas-title fw-bold">
+            <i class="bi bi-mortarboard-fill me-2 text-primary"></i>ScholarZim
         </h5>
         <button type="button"
-                class="btn-close btn-close-white"
+                class="btn-close"
                 data-bs-dismiss="offcanvas"
                 data-bs-target="#sidebar"></button>
     </div>
@@ -93,7 +120,19 @@
                 <li class="nav-item">
                     <a th:href="@{/my-applications}" class="nav-link"
                        th:classappend="${active == 'my-applications'} ? 'active'">
-                        <i class="bi bi-file-earmark-text me-2"></i>My Applications
+                        <i class="bi bi-file-earmark-text me-2"></i>Applications
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a th:href="@{/messages}" class="nav-link"
+                       th:classappend="${active == 'messages'} ? 'active'">
+                        <i class="bi bi-chat-dots me-2"></i>Messages
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a th:href="@{/notifications}" class="nav-link"
+                       th:classappend="${active == 'notifications'} ? 'active'">
+                        <i class="bi bi-bell me-2"></i>Notifications
                     </a>
                 </li>
                 <li class="nav-item">
@@ -105,7 +144,7 @@
                 <li class="nav-item">
                     <a th:href="@{/account/security}" class="nav-link"
                        th:classappend="${active == 'security'} ? 'active'">
-                        <i class="bi bi-shield-lock me-2"></i>Security
+                        <i class="bi bi-gear me-2"></i>Settings
                     </a>
                 </li>
             </th:block>
@@ -128,6 +167,18 @@
                     <a th:href="@{/provider/applications}" class="nav-link"
                        th:classappend="${active == 'applications'} ? 'active'">
                         <i class="bi bi-inbox me-2"></i>Review Applications
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a th:href="@{/messages}" class="nav-link"
+                       th:classappend="${active == 'messages'} ? 'active'">
+                        <i class="bi bi-chat-dots me-2"></i>Messages
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a th:href="@{/notifications}" class="nav-link"
+                       th:classappend="${active == 'notifications'} ? 'active'">
+                        <i class="bi bi-bell me-2"></i>Notifications
                     </a>
                 </li>
             </th:block>
@@ -155,7 +206,8 @@
             <div sec:authorize="hasRole('PROVIDER')" class="sz-role-badge">Provider</div>
             <div sec:authorize="hasRole('ADMIN')" class="sz-role-badge">Administrator</div>
             <form th:action="@{/logout}" method="post" class="d-grid">
-                <button class="btn btn-outline-light btn-sm" type="submit">
+                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                <button class="btn btn-outline-secondary btn-sm" type="submit">
                     <i class="bi bi-box-arrow-right me-1"></i>Logout
                 </button>
             </form>
@@ -166,31 +218,32 @@
 
 <!-- ============ TOPBAR ============ -->
 <nav th:fragment="topbar(title)"
-     class="navbar bg-body-tertiary border-bottom sticky-top sz-topbar">
-    <div class="container-fluid">
-        <button class="btn btn-outline-secondary d-md-none me-2"
-                type="button"
-                data-bs-toggle="offcanvas"
-                data-bs-target="#sidebar"
-                aria-label="Toggle navigation">
-            <i class="bi bi-list"></i>
-        </button>
+     class="navbar sticky-top sz-topbar">
+    <div class="container-fluid sz-topbar__inner">
+        <div class="sz-topbar__start">
+            <button class="btn sz-topbar-btn d-md-none"
+                    type="button"
+                    data-bs-toggle="offcanvas"
+                    data-bs-target="#sidebar"
+                    aria-label="Toggle navigation">
+                <i class="bi bi-list"></i>
+            </button>
+            <span class="sz-topbar__title" th:text="${title}">Dashboard</span>
+        </div>
 
-        <span class="navbar-brand mb-0 h5 fw-semibold" th:text="${title}">Dashboard</span>
-
-        <div class="ms-auto d-flex align-items-center gap-2">
-            <button id="themeToggle" class="btn btn-outline-secondary"
-                    type="button" title="Toggle dark mode">
+        <div class="sz-topbar__end">
+            <button id="themeToggle" class="btn sz-topbar-btn"
+                    type="button" title="Toggle dark mode" aria-label="Toggle theme">
                 <i class="bi bi-moon-stars"></i>
             </button>
 
             <div class="dropdown">
-                <button class="btn btn-outline-secondary position-relative"
+                <button class="btn sz-topbar-btn position-relative"
                         type="button" data-bs-toggle="dropdown"
-                        aria-expanded="false" title="Notifications">
+                        aria-expanded="false" title="Notifications" aria-label="Notifications">
                     <i class="bi bi-bell"></i>
                     <span th:if="${notifUnreadCount != null and notifUnreadCount > 0}"
-                          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger sz-topbar-badge"
                           th:text="${notifUnreadCount > 9} ? '9+' : ${notifUnreadCount}">0</span>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end shadow"
@@ -208,16 +261,21 @@
                          class="px-3 py-3 text-secondary small">
                         You have no notifications.
                     </div>
-                    <a th:each="n : ${notifRecent}"
-                       class="dropdown-item d-flex align-items-start gap-2 py-2"
-                       th:classappend="${!n.read} ? 'bg-body-secondary'"
-                       th:href="@{/notifications/{id}/open(id=${n.notificationId})}">
-                        <i class="bi bi-circle-fill mt-1"
-                           th:style="${!n.read} ? 'font-size:.5rem;color:var(--bs-primary)' : 'font-size:.5rem;color:transparent'"></i>
-                        <span class="small" style="white-space: normal;"
-                              th:text="${n.message}">message</span>
-                    </a>
+                    <th:block th:if="${notifRecent != null and !notifRecent.isEmpty()}">
+                        <a th:each="n : ${notifRecent}"
+                           class="dropdown-item d-flex align-items-start gap-2 py-2"
+                           th:classappend="${n.unread} ? 'bg-body-secondary'"
+                           th:href="@{/notifications/{id}/open(id=${n.notificationId})}">
+                            <i class="bi bi-circle-fill mt-1"
+                               th:style="${n.unread} ? 'font-size:.5rem;color:var(--bs-primary)' : 'font-size:.5rem;color:transparent'"></i>
+                            <span class="small" style="white-space: normal;"
+                                  th:text="${n.message}">message</span>
+                        </a>
+                    </th:block>
                     <div class="dropdown-divider my-0"></div>
+                    <a class="dropdown-item text-center small" th:href="@{/messages}">
+                        Messages
+                    </a>
                     <a class="dropdown-item text-center small" th:href="@{/notifications}">
                         View all notifications
                     </a>
@@ -225,14 +283,15 @@
             </div>
 
             <div class="dropdown">
-                <button class="btn btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2"
+                <button class="btn sz-topbar-user dropdown-toggle"
                         type="button" data-bs-toggle="dropdown" aria-expanded="false">
                     <span class="sz-user-avatar"><i class="bi bi-person-fill"></i></span>
-                    <span class="d-none d-sm-inline" sec:authentication="name">User</span>
+                    <span class="sz-topbar-user__name d-none d-sm-inline" sec:authentication="name">User</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li>
                         <form th:action="@{/logout}" method="post">
+                            <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                             <button class="dropdown-item" type="submit">
                                 <i class="bi bi-box-arrow-right me-2"></i>Logout
                             </button>
@@ -260,6 +319,21 @@
     </div>
 </div>
 
+<!-- ============ MOBILE BOTTOM NAV (providers) ============ -->
+<nav th:fragment="provider-mobile-nav(active)"
+     sec:authorize="hasRole('PROVIDER')"
+     class="sz-mobile-bottom-nav d-md-none">
+    <a th:href="@{/provider/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'">
+        <i class="bi bi-house"></i><span>Home</span>
+    </a>
+    <a th:href="@{/opportunities/create}" th:classappend="${active == 'create'} ? 'active'">
+        <i class="bi bi-plus-circle"></i><span>Create</span>
+    </a>
+    <a th:href="@{/provider/applications}" th:classappend="${active == 'applications'} ? 'active'">
+        <i class="bi bi-inbox"></i><span>Review</span>
+    </a>
+</nav>
+
 <!-- ============ MOBILE BOTTOM NAV (applicants) ============ -->
 <nav th:fragment="mobile-nav(active)"
      sec:authorize="hasRole('APPLICANT')"
@@ -282,10 +356,24 @@
 </nav>
 
 <!-- ============ SCRIPTS ============ -->
+<!-- ============ CSRF (include in POST forms) ============ -->
+<input th:fragment="csrf" type="hidden" th:if="${_csrf != null}"
+       th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+
+<header th:fragment="auth-topbar" class="sz-auth-topbar">
+    <a class="sz-auth-topbar__back" th:href="@{/}">
+        <i class="bi bi-arrow-left"></i> Back to home
+    </a>
+    <a class="sz-auth-topbar__brand" th:href="@{/}">
+        <span class="sz-auth-topbar__brand-icon"><i class="bi bi-mortarboard-fill"></i></span>
+        <span>ScholarZim</span>
+    </a>
+</header>
+
 <th:block th:fragment="scripts">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/app.js}"></script>
-    <script th:src="@{/js/pwa.js}"></script>
+    <script th:src="@{/js/app.js(v=28)}"></script>
+    <script th:src="@{/js/pwa.js(v=28)}"></script>
 </th:block>
 
 </body>

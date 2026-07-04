@@ -6,6 +6,7 @@ import com.scholarzim.dto.ChartData;
 
 import java.util.List;
 
+
 public interface AnalyticsService {
 
     AdminDashboardDTO getDashboardStats();

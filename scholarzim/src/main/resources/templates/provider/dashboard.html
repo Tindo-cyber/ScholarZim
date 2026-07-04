@@ -13,139 +13,209 @@
 
     <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
 
-        <nav th:replace="~{fragments/layout :: topbar('Dashboard')}"></nav>
+        <nav th:replace="~{fragments/layout :: topbar('Provider Dashboard')}"></nav>
 
-        <main class="sz-content p-3 p-md-4">
+        <main class="sz-content has-mobile-nav p-3 p-md-4">
 
-            <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white">
-                <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
-                    <div>
-                        <h2 class="h4 mb-1">
-                            Welcome, <span sec:authentication="name">Provider</span>
-                        </h2>
-                        <p class="mb-0 opacity-75">
-                            Here's an overview of your opportunities and applications.
-                        </p>
-                    </div>
-                    <a th:href="@{/opportunities/create}" class="btn btn-light">
-                        <i class="bi bi-plus-circle me-1"></i>New Opportunity
-                    </a>
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+
+            <div class="sz-dashboard-header">
+                <div>
+                    <p class="sz-dashboard-header__meta"
+                       th:text="${#temporals.format(#temporals.createNow(), 'EEEE, d MMMM yyyy')}">Today</p>
+                    <h1 class="sz-dashboard-header__title"
+                        th:text="${providerName != null ? providerName : 'Provider dashboard'}">Provider</h1>
+                    <p class="text-secondary mb-0">Publish opportunities and review student applications.</p>
+                </div>
+                <div class="sz-dashboard-header__actions d-none d-sm-flex">
+                    <a th:href="@{/opportunities/create}" class="btn btn-primary btn-sm">New opportunity</a>
+                    <a th:href="@{/provider/applications}" class="btn btn-outline-secondary btn-sm">Review applications</a>
                 </div>
             </div>
 
-            <h2 class="h6 text-uppercase text-secondary mb-3">Overview</h2>
-
-            <div class="row g-3 g-md-4 mb-2">
-
-                <div class="col-12 col-sm-6 col-xl-3">
-                    <div class="card sz-stat-card shadow-sm h-100">
-                        <div class="card-body d-flex align-items-center gap-3">
-                            <div class="sz-stat-icon bg-primary-subtle text-primary">
-                                <i class="bi bi-briefcase"></i>
-                            </div>
-                            <div>
-                                <div class="sz-stat-value" th:text="${stats.totalOpportunities}">0</div>
-                                <div class="small text-secondary">
-                                    My Opportunities
-                                    (<span th:text="${stats.activeOpportunities}">0</span> active)
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-sm-6 col-xl-3">
-                    <div class="card sz-stat-card shadow-sm h-100">
-                        <div class="card-body d-flex align-items-center gap-3">
-                            <div class="sz-stat-icon bg-info-subtle text-info">
-                                <i class="bi bi-inbox"></i>
-                            </div>
-                            <div>
-                                <div class="sz-stat-value" th:text="${stats.applicationsReceived}">0</div>
-                                <div class="small text-secondary">Applications Received</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-sm-6 col-xl-3">
-                    <div class="card sz-stat-card shadow-sm h-100">
-                        <div class="card-body d-flex align-items-center gap-3">
-                            <div class="sz-stat-icon bg-success-subtle text-success">
-                                <i class="bi bi-check-circle"></i>
-                            </div>
-                            <div>
-                                <div class="sz-stat-value" th:text="${stats.approvedApplications}">0</div>
-                                <div class="small text-secondary">Approved</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-12 col-sm-6 col-xl-3">
-                    <div class="card sz-stat-card shadow-sm h-100">
-                        <div class="card-body d-flex align-items-center gap-3">
-                            <div class="sz-stat-icon bg-danger-subtle text-danger">
-                                <i class="bi bi-x-circle"></i>
-                            </div>
-                            <div>
-                                <div class="sz-stat-value" th:text="${stats.rejectedApplications}">0</div>
-                                <div class="small text-secondary">Rejected</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="d-flex justify-content-between align-items-center mt-4 mb-3">
-                <h2 class="h6 text-uppercase text-secondary mb-0">My Opportunities</h2>
-                <a th:href="@{/provider/applications}" class="btn btn-sm btn-outline-primary">
-                    <i class="bi bi-inbox me-1"></i>Review Applications
+            <div class="sz-dashboard-quick-actions">
+                <a th:href="@{/opportunities/create}" class="btn btn-primary">
+                    <i class="bi bi-plus-circle"></i> Create
+                </a>
+                <a th:href="@{/provider/applications}" class="btn">
+                    <i class="bi bi-inbox"></i> Applications
+                    <span th:if="${pendingCount > 0}" class="badge text-bg-warning ms-1" th:text="${pendingCount}">0</span>
+                </a>
+                <a th:href="@{/provider/applications}" class="btn">
+                    <i class="bi bi-check2-square"></i> Review queue
                 </a>
             </div>
 
-            <div th:if="${opportunities.isEmpty()}" class="alert alert-info rounded-4">
-                <i class="bi bi-info-circle me-2"></i>
-                You haven't posted any opportunities yet.
-                <a th:href="@{/opportunities/create}" class="alert-link">Create one</a>.
+            <section class="sz-dashboard-hero" th:if="${stats != null}">
+                <div class="sz-dashboard-hero__profile">
+                    <div class="sz-profile-ring sz-profile-ring--complete">
+                        <div class="sz-profile-ring__inner">
+                            <i class="bi bi-building"></i>
+                        </div>
+                    </div>
+                    <div class="sz-dashboard-hero__copy">
+                        <h2>Provider workspace</h2>
+                        <p class="small text-secondary mb-0">
+                            <span th:text="${stats.activeOpportunities}">0</span> active listings ·
+                            <span th:text="${stats.applicationsReceived}">0</span> applications received
+                        </p>
+                    </div>
+                </div>
+                <div class="sz-dashboard-hero__metrics">
+                    <div class="sz-metric-chip">
+                        <strong th:text="${stats.totalOpportunities}">0</strong>
+                        <span>Listings</span>
+                    </div>
+                    <div class="sz-metric-chip">
+                        <strong th:text="${pendingCount}">0</strong>
+                        <span>Pending</span>
+                    </div>
+                    <div class="sz-metric-chip">
+                        <strong th:text="${stats.approvedApplications}">0</strong>
+                        <span>Awarded</span>
+                    </div>
+                </div>
+            </section>
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-briefcase', value=${stats.totalOpportunities}, label='Opportunities', color='bg-primary-subtle text-primary')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-inbox', value=${stats.applicationsReceived}, label='Received', color='bg-info-subtle text-info')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-hourglass-split', value=${pendingCount}, label='Pending review', color='bg-warning-subtle text-warning')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-check-circle', value=${stats.approvedApplications}, label='Approved', color='bg-success-subtle text-success')}"></div>
+                </div>
             </div>
 
-            <div th:if="${!opportunities.isEmpty()}" class="card shadow-sm rounded-4">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
-                        <tr>
-                            <th>Title</th>
-                            <th>Education Level</th>
-                            <th>Field</th>
-                            <th>Country</th>
-                            <th>Deadline</th>
-                            <th>Status</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <tr th:each="opp : ${opportunities}">
-                            <td class="fw-semibold" th:text="${opp.title}"></td>
-                            <td th:text="${opp.educationLevel}"></td>
-                            <td th:text="${opp.targetField}"></td>
-                            <td th:text="${opp.country}"></td>
-                            <td th:text="${opp.deadline != null
-                                ? #temporals.format(opp.deadline, 'dd MMM yyyy') : '—'}"></td>
-                            <td>
-                                <span class="badge"
-                                      th:classappend="${opp.status == 'ACTIVE'} ? 'text-bg-success' : 'text-bg-secondary'"
-                                      th:text="${opp.status}"></span>
-                            </td>
-                        </tr>
-                        </tbody>
-                    </table>
+            <div class="row g-3 mb-4" th:if="${stats.applicationsReceived > 0}"
+                 th:with="appTotal=${stats.applicationsReceived},
+                          pendPct=${(pendingCount * 100) / stats.applicationsReceived},
+                          apprPct=${(stats.approvedApplications * 100) / stats.applicationsReceived},
+                          rejPct=${(stats.rejectedApplications * 100) / stats.applicationsReceived}">
+                <div class="col-12">
+                    <div class="sz-analytics-panel">
+                        <div class="sz-analytics-panel__title">
+                            <i class="bi bi-pie-chart text-primary me-1"></i> Application pipeline
+                        </div>
+                        <div th:replace="~{fragments/components :: analytics-bar(${pendPct}, ${apprPct}, ${rejPct})}"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-3 g-md-4">
+                <div class="col-12 col-lg-7">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-briefcase text-primary me-1"></i> My opportunities</h2>
+                            <a th:href="@{/opportunities/create}" class="small text-decoration-none fw-medium">Add new</a>
+                        </div>
+                        <div class="sz-dashboard-panel__body sz-dashboard-panel__body--flush">
+                            <div th:if="${opportunities == null or opportunities.isEmpty()}" class="p-4">
+                                <div th:replace="~{fragments/components :: empty-state('bi-briefcase', 'No opportunities yet', 'Create your first scholarship listing for students to discover.', @{/opportunities/create}, 'Create opportunity')}"></div>
+                            </div>
+                            <div th:if="${opportunities != null and !opportunities.isEmpty()}" class="sz-pro-table">
+                                <div class="table-responsive">
+                                    <table class="table align-middle mb-0">
+                                        <thead>
+                                        <tr>
+                                            <th>Title</th>
+                                            <th>Level</th>
+                                            <th>Deadline</th>
+                                            <th>Status</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr th:each="opp : ${opportunities}">
+                                            <td class="fw-semibold" th:text="${opp.title}">Title</td>
+                                            <td th:text="${opp.educationLevel != null ? opp.educationLevel : '—'}">Level</td>
+                                            <td>
+                                                <span th:if="${opp.deadline != null}"
+                                                      class="sz-deadline small"
+                                                      th:attr="data-deadline=${opp.deadline}">Deadline</span>
+                                                <span th:if="${opp.deadline == null}" class="text-secondary small">Rolling</span>
+                                            </td>
+                                            <td>
+                                                <span th:replace="~{fragments/components :: status-badge(${opp.status})}"></span>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="col-12 col-lg-5 d-flex flex-column gap-3 gap-md-4">
+                    <section class="sz-dashboard-panel" th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-calendar-event text-warning me-1"></i> Upcoming deadlines</h2>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div class="sz-list-row" th:each="opp : ${upcomingDeadlines}">
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="small fw-semibold text-truncate" th:text="${opp.title}">Title</div>
+                                </div>
+                                <span class="sz-deadline small" th:attr="data-deadline=${opp.deadline}">Deadline</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="sz-dashboard-panel">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-bell text-warning me-1"></i> Notifications</h2>
+                            <a th:href="@{/notifications}" class="small text-decoration-none fw-medium">View all</a>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div th:if="${notifRecent == null or notifRecent.isEmpty()}"
+                                 class="text-secondary small py-2">No new notifications.</div>
+                            <th:block th:if="${notifRecent != null and !notifRecent.isEmpty()}">
+                                <a th:each="n : ${notifRecent}"
+                                   th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
+                                   class="sz-list-row text-decoration-none text-reset align-items-start">
+                                    <span class="sz-dot"
+                                          th:classappend="${n.unread} ? 'bg-primary' : 'bg-secondary'"></span>
+                                    <div class="flex-grow-1 min-w-0">
+                                        <div class="small" th:classappend="${n.unread} ? 'fw-semibold' : ''"
+                                             th:text="${n.message}">Message</div>
+                                    </div>
+                                </a>
+                            </th:block>
+                        </div>
+                    </section>
+
+                    <section class="sz-dashboard-panel">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-people text-info me-1"></i> Recent applicants</h2>
+                            <a th:href="@{/provider/applications}" class="small text-decoration-none fw-medium">Review all</a>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div th:if="${recentApplications == null or recentApplications.isEmpty()}"
+                                 class="text-secondary small py-2">No applications received yet.</div>
+                            <div class="sz-list-row" th:each="app : ${recentApplications}">
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="small fw-semibold text-truncate"
+                                         th:text="${app.user != null ? app.user.fullName : 'Applicant'}">Name</div>
+                                    <div class="text-secondary text-truncate" style="font-size:.75rem;"
+                                         th:text="${app.opportunity != null ? app.opportunity.title : '—'}">Opp</div>
+                                </div>
+                                <span th:replace="~{fragments/components :: status-badge(${app.applicationStatus})}"></span>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </div>
 
         </main>
     </div>
 </div>
+
+<div th:replace="~{fragments/layout :: provider-mobile-nav('dashboard')}"></div>
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 

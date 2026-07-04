@@ -6,12 +6,14 @@ import com.scholarzim.service.ApplicantDashboardService;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.ApplicationService;
 import com.scholarzim.service.RecommendationService;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import java.util.Comparator;
+
 
 @Controller
 public class ApplicantDashboardController {
@@ -37,7 +39,7 @@ public class ApplicantDashboardController {
     }
 
     @GetMapping("/applicant/dashboard")
-    public String dashboard(Authentication auth, Model model) {
+    public String dashboard(@NonNull Authentication auth, Model model) {
 
         userRepository.findByEmail(auth.getName())
                 .ifPresent(u -> model.addAttribute("userFullName", u.getFullName()));
@@ -55,7 +57,7 @@ public class ApplicantDashboardController {
     }
 
     @GetMapping("/applicant/recommendations")
-    public String recommendations(Authentication auth, Model model) {
+    public String recommendations(@NonNull Authentication auth, Model model) {
 
         model.addAttribute("hasProfile", profileService.hasProfile(auth.getName()));
         model.addAttribute("opportunities", recommendationService.recommendForApplicant(auth.getName()));

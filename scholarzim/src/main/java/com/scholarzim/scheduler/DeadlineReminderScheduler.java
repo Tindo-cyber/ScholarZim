@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDate;
 import java.util.List;
 
+
 @Slf4j
 @Component
 public class DeadlineReminderScheduler {
@@ -78,6 +79,9 @@ public class DeadlineReminderScheduler {
                 }
 
                 User applicant = application.getUser();
+                if (applicant == null) {
+                    continue;
+                }
                 Long opportunityId = opportunity.getOpportunityId();
 
                 if (notificationService.hasNotification(

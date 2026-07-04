@@ -3,8 +3,10 @@ package com.scholarzim.controller;
 import com.scholarzim.dto.ApplicationSubmitRequest;
 import com.scholarzim.exception.DuplicateApplicationException;
 import com.scholarzim.service.ApplicationService;
+import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.OpportunityService;
 import jakarta.validation.Valid;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -13,29 +15,43 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+
 @Controller
 public class ApplicationController {
 
     private final ApplicationService applicationService;
     private final OpportunityService opportunityService;
+    private final ApplicantProfileService applicantProfileService;
 
     public ApplicationController(
             ApplicationService applicationService,
-            OpportunityService opportunityService) {
+            OpportunityService opportunityService,
+            ApplicantProfileService applicantProfileService) {
 
         this.applicationService = applicationService;
         this.opportunityService = opportunityService;
+        this.applicantProfileService = applicantProfileService;
     }
 
     @GetMapping("/my-applications")
-    public String myApplications(Authentication authentication, Model model) {
+    public String myApplications(@NonNull Authentication authentication, Model model) {
         model.addAttribute("applications",
                 applicationService.getApplicationsByUser(authentication.getName()));
         return "applications/my-applications";
     }
 
     @GetMapping("/apply/{opportunityId}")
-    public String applyWizard(@PathVariable Long opportunityId, Model model) {
+    public String applyWizard(
+            @PathVariable Long opportunityId,
+            @NonNull Authentication authentication,
+            RedirectAttributes redirect,
+            Model model) {
+
+        if (!applicantProfileService.hasResultsCertificate(authentication.getName())) {
+            redirect.addFlashAttribute("errorMessage",
+                    "Upload your results certificate on your academic profile before applying.");
+            return "redirect:/applicant/profile?resultsRequired=1";
+        }
 
         model.addAttribute("opportunity", opportunityService.findById(opportunityId)
                 .orElseThrow());
@@ -51,7 +67,7 @@ public class ApplicationController {
             @Valid @ModelAttribute("submitRequest") ApplicationSubmitRequest request,
             BindingResult bindingResult,
             @RequestParam(value = "document", required = false) MultipartFile document,
-            Authentication authentication,
+            @NonNull Authentication authentication,
             Model model,
             RedirectAttributes redirect) {
 
@@ -62,21 +78,32 @@ public class ApplicationController {
             return "applications/wizard";
         }
 
+        Long applicationId;
         try {
-            applicationService.submitApplication(request, document, authentication.getName());
+            applicationId = applicationService.submitApplication(request, document, authentication.getName());
         } catch (DuplicateApplicationException | IllegalArgumentException ex) {
             redirect.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/opportunities";
         }
 
-        redirect.addFlashAttribute("successMessage", "Your application was submitted successfully.");
-        return "redirect:/my-applications";
+        return "redirect:/applications/" + applicationId + "/confirmation";
+    }
+
+    @GetMapping("/applications/{applicationId}/confirmation")
+    public String confirmation(
+            @PathVariable Long applicationId,
+            @NonNull Authentication authentication,
+            Model model) {
+
+        model.addAttribute("application",
+                applicationService.getApplicationForUser(applicationId, authentication.getName()));
+        return "applications/confirmation";
     }
 
     @PostMapping("/apply/{opportunityId}/quick")
     public String quickApply(
             @PathVariable Long opportunityId,
-            Authentication authentication,
+            @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
         try {
@@ -89,24 +116,28 @@ public class ApplicationController {
     }
 
     @GetMapping("/provider/applications")
-    public String providerApplications(Authentication authentication, Model model) {
+    public String providerApplications(@NonNull Authentication authentication, Model model) {
         model.addAttribute("applications",
                 applicationService.getApplicationsForProvider(authentication.getName()));
         return "applications/provider-applications";
     }
 
     @GetMapping("/provider/applications/{id}")
-    public String providerReview(@PathVariable Long id, Authentication authentication, Model model) {
+    public String providerReview(@PathVariable Long id, @NonNull Authentication authentication, Model model) {
 
         var apps = applicationService.getApplicationsForProvider(authentication.getName());
         var app = apps.stream().filter(a -> a.getApplicationId().equals(id)).findFirst()
                 .orElseThrow();
         model.addAttribute("application", app);
+        if (app.getUser() != null) {
+            model.addAttribute("applicantProfile",
+                    applicantProfileService.getProfileByUserId(app.getUser().getUserId()));
+        }
         return "applications/provider-review";
     }
 
     @PostMapping("/provider/applications/{id}/approve")
-    public String approve(@PathVariable Long id, Authentication authentication, RedirectAttributes redirect) {
+    public String approve(@PathVariable Long id, @NonNull Authentication authentication, RedirectAttributes redirect) {
         applicationService.updateStatus(id, "APPROVED", authentication.getName());
         redirect.addFlashAttribute("successMessage", "Application approved.");
         return "redirect:/provider/applications";
@@ -116,7 +147,7 @@ public class ApplicationController {
     public String reject(
             @PathVariable Long id,
             @RequestParam(required = false) String rejectionReason,
-            Authentication authentication,
+            @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
         applicationService.updateStatus(id, "REJECTED", rejectionReason, authentication.getName());
@@ -125,14 +156,14 @@ public class ApplicationController {
     }
 
     @PostMapping("/provider/applications/{id}/review")
-    public String markUnderReview(@PathVariable Long id, Authentication authentication, RedirectAttributes redirect) {
+    public String markUnderReview(@PathVariable Long id, @NonNull Authentication authentication, RedirectAttributes redirect) {
         applicationService.updateStatus(id, "UNDER_REVIEW", authentication.getName());
         redirect.addFlashAttribute("successMessage", "Marked as under review.");
         return "redirect:/provider/applications/" + id;
     }
 
     @PostMapping("/provider/applications/{id}/request-docs")
-    public String requestDocs(@PathVariable Long id, Authentication authentication, RedirectAttributes redirect) {
+    public String requestDocs(@PathVariable Long id, @NonNull Authentication authentication, RedirectAttributes redirect) {
         applicationService.updateStatus(id, "DOCUMENTS_REQUESTED", authentication.getName());
         redirect.addFlashAttribute("successMessage", "Document request sent to applicant.");
         return "redirect:/provider/applications/" + id;

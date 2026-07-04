@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+
 @Entity
 @Table(name = "applicant_profiles")
 @Getter
@@ -37,4 +38,13 @@ public class ApplicantProfile {
 
     @Column(columnDefinition = "TEXT")
     private String biography;
+
+    @Column(name = "results_certificate_path")
+    private String resultsCertificatePath;
+
+    @Column(name = "results_certificate_filename")
+    private String resultsCertificateFilename;
+
+    @Column(name = "results_uploaded_at")
+    private java.time.LocalDateTime resultsUploadedAt;
 }

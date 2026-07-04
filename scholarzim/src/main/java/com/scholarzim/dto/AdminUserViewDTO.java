@@ -3,6 +3,7 @@ package com.scholarzim.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+
 @Getter
 @Setter
 public class AdminUserViewDTO {
@@ -16,4 +17,8 @@ public class AdminUserViewDTO {
     private String detail;
     private long applicationCount;
     private long opportunityCount;
+    private String organisationType;
+    private String registrationNumber;
+    private java.time.LocalDateTime submittedAt;
+    private boolean hasCertificate;
 }

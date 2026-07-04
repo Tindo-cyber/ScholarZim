@@ -1,0 +1,183 @@
+/* ScholarZim v2 — Enterprise SaaS design tokens */
+
+:root {
+    /* Brand */
+    --sz-primary: #16A34A;
+    --sz-primary-dark: #15803D;
+    --sz-secondary: #22C55E;
+    --sz-accent: #3B82F6;
+    --sz-accent-soft: #EFF6FF;
+    --sz-success: #22C55E;
+    --sz-warning: #F59E0B;
+    --sz-danger: #EF4444;
+    --sz-bg: #EEF2F6;
+    --sz-card: #F8FAFC;
+    --sz-text: #0F172A;
+    --sz-muted: #64748B;
+    --sz-border: #E2E8F0;
+
+    /* Semantic surfaces */
+    --sz-green-light: #F0FDF4;
+    --sz-blue-light: #EFF6FF;
+    --sz-gold-soft: #FFFBEB;
+    --sz-sidebar: #FFFFFF;
+    --sz-sidebar-hover: #F1F5F9;
+
+    /* Surfaces */
+    --sz-main-bg: #e8ecf1;
+    --sz-surface-hover: #f8fafc;
+    --sz-surface-muted: #f1f5f9;
+    --sz-input-bg: #ffffff;
+    --sz-progress-bg: #f1f5f9;
+    --sz-ring-track: #e2e8f0;
+    --sz-role-badge-bg: #ecfdf5;
+    --sz-notif-unread-bg: #ecfdf5;
+    --sz-analytics-track: #f1f5f9;
+    --sz-topbar-bg: rgba(255, 255, 255, 0.92);
+    --sz-topbar-border: rgba(15, 23, 42, 0.06);
+    --sz-glass-header: rgba(255, 255, 255, 0.8);
+
+    /* Glassmorphism */
+    --sz-glass-blur: 20px;
+    --sz-glass-saturate: 180%;
+    --sz-glass-bg: rgba(255, 255, 255, 0.52);
+    --sz-glass-bg-strong: rgba(255, 255, 255, 0.68);
+    --sz-glass-border: rgba(255, 255, 255, 0.65);
+    --sz-glass-border-outer: rgba(15, 23, 42, 0.08);
+    --sz-glass-highlight: rgba(255, 255, 255, 0.9);
+
+    /* Legacy aliases */
+    --sz-green: var(--sz-primary);
+    --sz-green-dark: var(--sz-primary-dark);
+    --sz-gold: var(--sz-warning);
+    --sz-blue: var(--sz-accent);
+
+    /* 8-point grid */
+    --sz-space-1: 0.25rem;
+    --sz-space-2: 0.5rem;
+    --sz-space-3: 0.75rem;
+    --sz-space-4: 1rem;
+    --sz-space-5: 1.25rem;
+    --sz-space-6: 1.5rem;
+    --sz-space-8: 2rem;
+    --sz-space-10: 2.5rem;
+    --sz-space-12: 3rem;
+    --sz-space-page: 1.5rem;
+    --sz-space-section: 4rem;
+    --sz-space-block: 1.25rem;
+
+    /* Radius — 20–24px cards per design brief */
+    --sz-radius: 12px;
+    --sz-radius-ui: 12px;
+    --sz-radius-lg: 20px;
+    --sz-radius-xl: 24px;
+
+    /* Elevation */
+    --sz-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 20px rgba(15, 23, 42, 0.06);
+    --sz-shadow-hover: 0 8px 28px rgba(15, 23, 42, 0.1);
+    --sz-shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 8px 32px rgba(15, 23, 42, 0.08);
+
+    /* Typography */
+    --sz-font: 'Inter', system-ui, -apple-system, sans-serif;
+    --sz-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
+
+    /* Bootstrap bridge */
+    --bs-primary: #16A34A;
+    --bs-primary-rgb: 22, 163, 74;
+    --bs-success: #22C55E;
+    --bs-danger: #EF4444;
+    --bs-link-color: #16A34A;
+    --bs-link-hover-color: #15803D;
+    --bs-border-color: #E2E8F0;
+    --bs-border-radius: 12px;
+    --bs-border-radius-lg: 20px;
+    --bs-body-bg: #F8FAFC;
+    --bs-body-color: #0F172A;
+    --bs-secondary-color: #64748B;
+
+    --sz-border-subtle: 1px solid #E2E8F0;
+}
+
+@media (min-width: 768px) {
+    :root {
+        --sz-space-page: 2rem;
+        --sz-space-section: 5rem;
+    }
+}
+
+[data-bs-theme="dark"] {
+    color-scheme: dark;
+
+    --sz-primary: #22C55E;
+    --sz-primary-dark: #16A34A;
+    --sz-secondary: #4ade80;
+
+    --sz-green-light: #052e16;
+    --sz-blue-light: #172554;
+    --sz-gold-soft: #422006;
+
+    --sz-bg: #0f172a;
+    --sz-card: #1e293b;
+    --sz-text: #f1f5f9;
+    --sz-muted: #94a3b8;
+    --sz-border: #334155;
+
+    --sz-sidebar: #1e293b;
+    --sz-sidebar-hover: #334155;
+
+    --sz-main-bg: #0b1220;
+    --sz-surface-hover: #334155;
+    --sz-surface-muted: #1e293b;
+    --sz-input-bg: #0f172a;
+    --sz-progress-bg: #334155;
+    --sz-ring-track: #475569;
+    --sz-role-badge-bg: #052e16;
+    --sz-notif-unread-bg: rgba(22, 163, 74, 0.12);
+    --sz-analytics-track: #334155;
+    --sz-topbar-bg: rgba(15, 23, 42, 0.92);
+    --sz-topbar-border: rgba(255, 255, 255, 0.08);
+    --sz-glass-header: rgba(15, 23, 42, 0.85);
+
+    --sz-glass-bg: rgba(30, 41, 59, 0.65);
+    --sz-glass-bg-strong: rgba(30, 41, 59, 0.8);
+    --sz-glass-border: rgba(255, 255, 255, 0.1);
+    --sz-glass-border-outer: rgba(255, 255, 255, 0.06);
+    --sz-glass-highlight: rgba(255, 255, 255, 0.06);
+
+    --sz-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 20px rgba(0, 0, 0, 0.3);
+    --sz-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.4);
+    --sz-shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 32px rgba(0, 0, 0, 0.35);
+
+    --sz-border-subtle: 1px solid #334155;
+
+    --bs-body-bg: #0f172a;
+    --bs-body-color: #f1f5f9;
+    --bs-border-color: #334155;
+    --bs-secondary-color: #94a3b8;
+    --bs-tertiary-bg: #1e293b;
+    --bs-secondary-bg: #334155;
+    --bs-emphasis-color: #f8fafc;
+    --bs-link-color: #4ade80;
+    --bs-link-hover-color: #22C55E;
+}
+
+body.sz-landing {
+    --sz-lp-primary: var(--sz-primary);
+    --sz-lp-primary-dark: var(--sz-primary-dark);
+    --sz-lp-secondary: var(--sz-secondary);
+    --sz-lp-accent: var(--sz-accent);
+    --sz-lp-bg: var(--sz-bg);
+    --sz-lp-text: var(--sz-text);
+    --sz-lp-muted: var(--sz-muted);
+    --sz-lp-card: var(--sz-card);
+    --sz-lp-radius: var(--sz-radius-lg);
+    --sz-lp-shadow: var(--sz-shadow);
+    --sz-lp-shadow-hover: var(--sz-shadow-hover);
+    --sz-landing-muted: #475569;
+    --sz-landing-panel: rgba(255, 255, 255, 0.92);
+}
+
+[data-bs-theme="dark"] body.sz-landing {
+    --sz-landing-muted: #cbd5e1;
+    --sz-landing-panel: rgba(30, 41, 59, 0.92);
+}

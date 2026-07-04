@@ -1,29 +1,34 @@
 package com.scholarzim.service.impl;
 
 import com.scholarzim.dto.ApplicantDashboardDTO;
-import com.scholarzim.entity.Application;
 import com.scholarzim.entity.ApplicantProfile;
+import com.scholarzim.entity.Application;
 import com.scholarzim.service.ApplicantDashboardService;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.ApplicationService;
+import com.scholarzim.service.SavedScholarshipService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.function.Function;
 
+
 @Service
 public class ApplicantDashboardServiceImpl implements ApplicantDashboardService {
 
     private final ApplicantProfileService profileService;
     private final ApplicationService applicationService;
+    private final SavedScholarshipService savedScholarshipService;
 
     public ApplicantDashboardServiceImpl(
             ApplicantProfileService profileService,
-            ApplicationService applicationService) {
+            ApplicationService applicationService,
+            SavedScholarshipService savedScholarshipService) {
 
         this.profileService = profileService;
         this.applicationService = applicationService;
+        this.savedScholarshipService = savedScholarshipService;
     }
 
     @Override
@@ -42,6 +47,7 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
         dto.setPendingApplications(countPending(applications));
         dto.setApprovedApplications(countByStatus(applications, "APPROVED"));
         dto.setRejectedApplications(countByStatus(applications, "REJECTED"));
+        dto.setSavedCount(savedScholarshipService.listSaved(email).size());
 
         return dto;
     }

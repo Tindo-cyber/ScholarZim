@@ -6,6 +6,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
 
+
 @Getter
 @Setter
 public class OpportunitySearchRequest {
@@ -15,6 +16,7 @@ public class OpportunitySearchRequest {
     private String fieldOfStudy;
     private String provider;
     private String keyword;
+    private String fundingType;
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate deadlineBefore;
@@ -25,6 +27,7 @@ public class OpportunitySearchRequest {
                 && isBlank(fieldOfStudy)
                 && isBlank(provider)
                 && isBlank(keyword)
+                && isBlank(fundingType)
                 && deadlineBefore == null;
     }
 

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080" fill="none">
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14532d" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#16a34a" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#1e40af" stop-opacity="0.35"/>
+    </linearGradient>
+    <pattern id="dots" width="32" height="32" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1.5" fill="#fff" fill-opacity="0.08"/>
+    </pattern>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#sky)"/>
+  <rect width="1920" height="1080" fill="url(#dots)"/>
+  <ellipse cx="1600" cy="200" rx="280" ry="180" fill="#fff" fill-opacity="0.06"/>
+  <ellipse cx="300" cy="850" rx="400" ry="220" fill="#22c55e" fill-opacity="0.12"/>
+  <path d="M200 720 L420 520 L640 620 L860 400 L1080 500 L1300 320 L1520 420 L1720 280" stroke="#fff" stroke-opacity="0.15" stroke-width="2" fill="none"/>
+  <g fill="#fff" fill-opacity="0.12">
+    <rect x="140" y="480" width="120" height="90" rx="8"/>
+    <rect x="280" y="440" width="100" height="130" rx="8"/>
+    <rect x="400" y="500" width="140" height="70" rx="8"/>
+    <circle cx="1550" cy="650" r="60"/>
+    <path d="M1480 750 Q1550 680 1620 750 L1620 820 L1480 820 Z"/>
+  </g>
+  <text x="960" y="540" text-anchor="middle" font-family="system-ui,sans-serif" font-size="48" font-weight="700" fill="#fff" fill-opacity="0.04">ScholarZim</text>
+</svg>

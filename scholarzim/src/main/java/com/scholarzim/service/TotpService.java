@@ -11,4 +11,8 @@ public interface TotpService {
     void enableForUser(String email, String secret, String code);
 
     void disableForUser(String email);
+
+    boolean requiresTwoFactor(String email);
+
+    boolean verifyForUser(String email, String code);
 }

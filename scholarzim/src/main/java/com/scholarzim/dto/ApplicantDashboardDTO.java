@@ -3,6 +3,7 @@ package com.scholarzim.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+
 @Getter
 @Setter
 public class ApplicantDashboardDTO {
@@ -13,4 +14,5 @@ public class ApplicantDashboardDTO {
     private long pendingApplications;
     private long approvedApplications;
     private long rejectedApplications;
+    private long savedCount;
 }

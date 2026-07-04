@@ -3,12 +3,15 @@ package com.scholarzim.controller;
 import com.scholarzim.dto.OpportunityRequest;
 import com.scholarzim.dto.OpportunitySearchRequest;
 import com.scholarzim.service.OpportunityService;
+import com.scholarzim.util.FormOptions;
 import jakarta.validation.Valid;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+
 
 @Controller
 public class OpportunityController {
@@ -31,7 +34,9 @@ public class OpportunityController {
 
     @GetMapping("/opportunities/create")
     public String createPage(Model model) {
-        model.addAttribute("opportunityRequest", new OpportunityRequest());
+        OpportunityRequest request = new OpportunityRequest();
+        request.setCountry(FormOptions.DEFAULT_COUNTRY);
+        model.addAttribute("opportunityRequest", request);
         return "opportunities/create";
     }
 
@@ -39,7 +44,7 @@ public class OpportunityController {
     public String createOpportunity(
             @Valid @ModelAttribute("opportunityRequest") OpportunityRequest request,
             BindingResult bindingResult,
-            Authentication authentication) {
+            @NonNull Authentication authentication) {
 
         if (bindingResult.hasErrors()) {
             return "opportunities/create";

@@ -1,13 +1,36 @@
 package com.scholarzim.util;
 
 import java.util.List;
+import java.util.stream.Stream;
+
 
 public final class FormOptions {
+
+    public static final String DEFAULT_COUNTRY = "Zimbabwe";
 
     private FormOptions() {
     }
 
-    public static final List<String> EDUCATION_LEVELS = List.of(
+    public static final List<String> PRIMARY_GRADES = List.of(
+            "Primary — Grade 1",
+            "Primary — Grade 2",
+            "Primary — Grade 3",
+            "Primary — Grade 4",
+            "Primary — Grade 5",
+            "Primary — Grade 6",
+            "Primary — Grade 7"
+    );
+
+    public static final List<String> SECONDARY_FORMS = List.of(
+            "Secondary — Form 1",
+            "Secondary — Form 2",
+            "Secondary — Form 3",
+            "Secondary — Form 4",
+            "Secondary — Form 5",
+            "Secondary — Form 6"
+    );
+
+    public static final List<String> TERTIARY_LEVELS = List.of(
             "High School (A-Level)",
             "Certificate",
             "Diploma",
@@ -17,6 +40,13 @@ public final class FormOptions {
             "Masters",
             "PhD"
     );
+
+    public static final List<String> EDUCATION_LEVELS = Stream.of(
+                    PRIMARY_GRADES.stream(),
+                    SECONDARY_FORMS.stream(),
+                    TERTIARY_LEVELS.stream())
+            .flatMap(s -> s)
+            .toList();
 
     public static final List<String> FIELDS_OF_STUDY = List.of(
             "Computer Science & IT",
@@ -32,7 +62,9 @@ public final class FormOptions {
             "Nursing",
             "Accounting",
             "Environmental Science",
-            "Mining & Metallurgy"
+            "Mining & Metallurgy",
+            "General Primary",
+            "General Secondary"
     );
 
     public static final List<String> COUNTRIES = List.of(
@@ -49,8 +81,7 @@ public final class FormOptions {
             "Canada",
             "Australia",
             "Germany",
-            "China",
-            "Other"
+            "China"
     );
 
     public static final List<String> ZIMBABWE_PROVINCES = List.of(
@@ -82,8 +113,7 @@ public final class FormOptions {
             "Bulawayo Polytechnic",
             "Harare Polytechnic",
             "Gweru Polytechnic",
-            "Mutare Polytechnic",
-            "Other"
+            "Mutare Polytechnic"
     );
 
     public static final List<String> FUNDING_TYPES = List.of(

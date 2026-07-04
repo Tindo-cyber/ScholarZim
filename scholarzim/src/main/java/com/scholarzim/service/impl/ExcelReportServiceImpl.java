@@ -7,6 +7,11 @@ import com.scholarzim.repository.ApplicationRepository;
 import com.scholarzim.repository.OpportunityRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.ExcelReportService;
+import org.springframework.stereotype.Service;
+
+import java.io.ByteArrayOutputStream;
+import java.time.format.DateTimeFormatter;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Font;
@@ -15,10 +20,6 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.stereotype.Service;
-
-import java.io.ByteArrayOutputStream;
-import java.time.format.DateTimeFormatter;
 
 @Service
 public class ExcelReportServiceImpl implements ExcelReportService {

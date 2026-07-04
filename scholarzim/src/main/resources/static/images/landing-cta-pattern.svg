@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="400" viewBox="0 0 1440 400" fill="none">
+  <defs>
+    <pattern id="ctaLines" width="60" height="60" patternUnits="userSpaceOnUse" patternTransform="rotate(12)">
+      <line x1="0" y1="0" x2="0" y2="60" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1"/>
+      <line x1="0" y1="0" x2="60" y2="0" stroke="#ffffff" stroke-opacity="0.06" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="1440" height="400" fill="url(#ctaLines)"/>
+  <ellipse cx="200" cy="200" rx="180" ry="120" fill="#ffffff" fill-opacity="0.04"/>
+  <ellipse cx="1240" cy="120" rx="220" ry="140" fill="#ffffff" fill-opacity="0.05"/>
+</svg>

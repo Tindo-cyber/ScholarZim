@@ -1,8 +1,10 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.dto.ForgotPasswordRequest;
+import com.scholarzim.dto.ProviderRegisterRequest;
 import com.scholarzim.dto.RegisterRequest;
 import com.scholarzim.dto.ResetPasswordRequest;
+import com.scholarzim.util.ProviderOrgType;
 import com.scholarzim.service.AuthService;
 import com.scholarzim.service.PasswordResetService;
 import com.scholarzim.service.PlatformStatsService;
@@ -14,7 +16,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 
 @Controller
 public class AuthController {
@@ -37,8 +41,10 @@ public class AuthController {
     }
 
     @GetMapping("/register")
-    public String showRegisterPage(Model model) {
-        model.addAttribute("registerRequest", new RegisterRequest());
+    public String showRegisterPage(
+            @ModelAttribute("registerRequest") RegisterRequest registerRequest,
+            Model model) {
+
         model.addAttribute("stats", platformStatsService.getPublicStats());
         return "auth/register";
     }
@@ -63,42 +69,62 @@ public class AuthController {
     }
 
     @GetMapping("/register/provider")
-    public String showProviderRegister(Model model) {
-        model.addAttribute("registerRequest", new RegisterRequest());
+    public String showProviderRegister(
+            @ModelAttribute("registerRequest") ProviderRegisterRequest registerRequest,
+            Model model) {
+
+        model.addAttribute("organisationTypes", ProviderOrgType.ALL);
         return "auth/register-provider";
     }
 
     @PostMapping("/register/provider")
     public String registerProvider(
-            @Valid @ModelAttribute("registerRequest") RegisterRequest request,
+            @Valid @ModelAttribute("registerRequest") ProviderRegisterRequest request,
             BindingResult bindingResult,
-            RedirectAttributes redirect) {
+            @RequestParam(value = "certificate", required = false) MultipartFile certificate,
+            RedirectAttributes redirect,
+            Model model) {
+
+        if (certificate == null || certificate.isEmpty()) {
+            bindingResult.reject("certificateRequired", "Registration certificate (PDF) is required.");
+        }
 
         if (bindingResult.hasErrors()) {
+            model.addAttribute("organisationTypes", ProviderOrgType.ALL);
             return "auth/register-provider";
         }
 
         try {
-            providerRegistrationService.registerProvider(request);
+            providerRegistrationService.registerProvider(request, certificate);
             redirect.addFlashAttribute("successMessage",
-                    "Provider application submitted. An admin will review your account.");
+                    "Application submitted. An admin will review your registration documents.");
         } catch (RegistrationException ex) {
             bindingResult.reject("registrationError", registrationErrorMessage(ex));
+            model.addAttribute("organisationTypes", ProviderOrgType.ALL);
             return "auth/register-provider";
         }
 
-        return "redirect:/login";
+        return "redirect:/login?role=provider&pending=1";
     }
 
     @GetMapping("/login")
-    public String loginPage(Model model) {
+    public String loginPage(
+            @RequestParam(name = "role", required = false, defaultValue = "student") String role,
+            @RequestParam(name = "pending", required = false) Boolean pending,
+            @RequestParam(name = "error", required = false) String error,
+            Model model) {
+
         model.addAttribute("stats", platformStatsService.getPublicStats());
+        model.addAttribute("loginRole", "provider".equalsIgnoreCase(role) ? "provider" : "student");
+        model.addAttribute("pendingRegistration", Boolean.TRUE.equals(pending));
+        model.addAttribute("loginError", error);
         return "auth/login";
     }
 
     @GetMapping("/forgot-password")
-    public String forgotPasswordPage(Model model) {
-        model.addAttribute("forgotRequest", new ForgotPasswordRequest());
+    public String forgotPasswordPage(
+            @ModelAttribute("forgotRequest") ForgotPasswordRequest forgotRequest) {
+
         return "auth/forgot-password";
     }
 
@@ -119,10 +145,11 @@ public class AuthController {
     }
 
     @GetMapping("/reset-password/{token}")
-    public String resetPasswordPage(@PathVariable String token, Model model) {
-        ResetPasswordRequest req = new ResetPasswordRequest();
-        req.setToken(token);
-        model.addAttribute("resetRequest", req);
+    public String resetPasswordPage(
+            @PathVariable String token,
+            @ModelAttribute("resetRequest") ResetPasswordRequest resetRequest) {
+
+        resetRequest.setToken(token);
         return "auth/reset-password";
     }
 

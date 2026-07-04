@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/public-layout :: head(${opportunity.title})}"></head>
-<body>
+<body class="sz-landing">
 
 <nav th:replace="~{fragments/public-layout :: navbar}"></nav>
 
@@ -42,7 +42,7 @@
                             <li class="mb-2"><i class="bi bi-book text-primary me-2"></i>
                                 Field of study: <strong th:text="${opportunity.targetField ?: 'Any'}">—</strong></li>
                             <li><i class="bi bi-geo-alt text-primary me-2"></i>
-                                Target country: <strong th:text="${opportunity.targetCountry ?: 'Any'}">—</strong></li>
+                                Host country: <strong th:text="${opportunity.country ?: 'Zimbabwe'}">—</strong></li>
                         </ul>
                     </div>
                 </div>
@@ -71,6 +71,8 @@
         </div>
     </div>
 </main>
+
+<footer th:replace="~{fragments/public-layout :: public-footer}"></footer>
 
 <div class="sz-mobile-apply-bar d-md-none">
     <a th:href="@{/register}" class="btn btn-primary w-100">Register to apply</a>

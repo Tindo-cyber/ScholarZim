@@ -3,10 +3,10 @@ package com.scholarzim.service.impl;
 import com.scholarzim.dto.AdminDashboardDTO;
 import com.scholarzim.dto.AuditActivityDTO;
 import com.scholarzim.dto.ChartData;
+import com.scholarzim.repository.ApplicantProfileRepository;
 import com.scholarzim.repository.ApplicationRepository;
 import com.scholarzim.repository.AuditLogRepository;
 import com.scholarzim.repository.OpportunityRepository;
-import com.scholarzim.repository.ApplicantProfileRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.AnalyticsService;
 import org.springframework.stereotype.Service;
@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 
 @Service
 public class AnalyticsServiceImpl

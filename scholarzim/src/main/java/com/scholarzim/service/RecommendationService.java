@@ -6,6 +6,7 @@ import com.scholarzim.entity.User;
 
 import java.util.List;
 
+
 public interface RecommendationService {
 
     List<ScoredOpportunityDTO> recommendForApplicant(String email);

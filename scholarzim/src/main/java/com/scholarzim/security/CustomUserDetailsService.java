@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
@@ -27,6 +28,10 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         boolean enabled = user.getAccountStatus() == null
                 || "ACTIVE".equalsIgnoreCase(user.getAccountStatus());
+
+        if (user.getRole() == null) {
+            throw new UsernameNotFoundException("User role not configured");
+        }
 
         return org.springframework.security.core.userdetails.User
                 .withUsername(user.getEmail())

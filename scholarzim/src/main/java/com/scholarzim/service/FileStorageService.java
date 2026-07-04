@@ -13,6 +13,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.UUID;
 
+
 @Service
 public class FileStorageService {
 
@@ -48,14 +49,60 @@ public class FileStorageService {
             throw new IllegalArgumentException("File must be smaller than 5 MB.");
         }
 
-        String ext = StringUtils.getFilenameExtension(file.getOriginalFilename());
-        String filename = prefix + "-" + UUID.randomUUID() + (ext != null ? "." + ext : "");
+        return writeFile(file, prefix, extOf(file));
+    }
+
+    public String storePdf(MultipartFile file, String prefix) throws IOException {
+
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("Registration certificate (PDF) is required.");
+        }
+
+        String contentType = file.getContentType();
+        if (!"application/pdf".equals(contentType)) {
+            throw new IllegalArgumentException("Registration certificate must be a PDF file.");
+        }
+
+        if (file.getSize() > 5 * 1024 * 1024) {
+            throw new IllegalArgumentException("Certificate must be smaller than 5 MB.");
+        }
+
+        return writeFile(file, prefix, ".pdf");
+    }
+
+    public void deleteIfExists(String filename) {
+
+        if (filename == null || filename.isBlank()) {
+            return;
+        }
+        try {
+            Path path = resolve(filename);
+            Files.deleteIfExists(path);
+        } catch (org.springframework.security.access.AccessDeniedException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new IllegalStateException("Could not delete stored file: " + filename, ex);
+        }
+    }
+
+    private String writeFile(MultipartFile file, String prefix, String ext) throws IOException {
+
+        String filename = prefix + "-" + UUID.randomUUID() + ext;
         Path target = root.resolve(filename);
         Files.copy(file.getInputStream(), target, StandardCopyOption.REPLACE_EXISTING);
         return filename;
     }
 
+    private static String extOf(MultipartFile file) {
+        String ext = StringUtils.getFilenameExtension(file.getOriginalFilename());
+        return ext != null ? "." + ext : "";
+    }
+
     public Path resolve(String filename) {
-        return root.resolve(filename).normalize();
+        Path resolved = root.resolve(filename).normalize();
+        if (!resolved.startsWith(root)) {
+            throw new org.springframework.security.access.AccessDeniedException("Invalid file path.");
+        }
+        return resolved;
     }
 }

@@ -1,6 +1,8 @@
 package com.scholarzim.service;
 
+import com.scholarzim.dto.StoredFileResource;
 import org.springframework.lang.NonNull;
+
 
 public interface AdminUserService {
 
@@ -19,4 +21,8 @@ public interface AdminUserService {
     void reactivateUser(@NonNull Long userId, String adminEmail);
 
     void approveProvider(@NonNull Long userId, String adminEmail);
+
+    void rejectProvider(@NonNull Long userId, String adminEmail, String reason);
+
+    StoredFileResource loadProviderCertificate(@NonNull Long userId, String adminEmail);
 }

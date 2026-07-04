@@ -2,15 +2,24 @@ package com.scholarzim.service.impl;
 
 import com.scholarzim.dto.AdminUserViewDTO;
 import com.scholarzim.dto.PageResult;
+import com.scholarzim.dto.StoredFileResource;
 import com.scholarzim.entity.Application;
 import com.scholarzim.entity.Opportunity;
+import com.scholarzim.entity.ProviderProfile;
 import com.scholarzim.entity.User;
 import com.scholarzim.exception.AdminOperationException;
 import com.scholarzim.exception.ResourceNotFoundException;
 import com.scholarzim.repository.*;
 import com.scholarzim.service.AdminUserService;
 import com.scholarzim.service.AuditService;
+import com.scholarzim.service.EmailService;
+import com.scholarzim.service.FileStorageService;
+import com.scholarzim.service.NotificationService;
 import com.scholarzim.util.AuditAction;
+import com.scholarzim.util.NotificationType;
+import com.scholarzim.util.ProviderOrgType;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -18,34 +27,51 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.nio.file.Files;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+
 
 @Service
 public class AdminUserServiceImpl implements AdminUserService {
 
     private final UserRepository userRepository;
     private final ApplicantProfileRepository profileRepository;
+    private final ProviderProfileRepository providerProfileRepository;
     private final ApplicationRepository applicationRepository;
     private final OpportunityRepository opportunityRepository;
     private final NotificationRepository notificationRepository;
     private final AuditService auditService;
+    private final FileStorageService fileStorageService;
+    private final NotificationService notificationService;
+    private final EmailService emailService;
 
     public AdminUserServiceImpl(
             UserRepository userRepository,
             ApplicantProfileRepository profileRepository,
+            ProviderProfileRepository providerProfileRepository,
             ApplicationRepository applicationRepository,
             OpportunityRepository opportunityRepository,
             NotificationRepository notificationRepository,
-            AuditService auditService) {
+            AuditService auditService,
+            FileStorageService fileStorageService,
+            NotificationService notificationService,
+            EmailService emailService) {
 
         this.userRepository = userRepository;
         this.profileRepository = profileRepository;
+        this.providerProfileRepository = providerProfileRepository;
         this.applicationRepository = applicationRepository;
         this.opportunityRepository = opportunityRepository;
         this.notificationRepository = notificationRepository;
         this.auditService = auditService;
+        this.fileStorageService = fileStorageService;
+        this.notificationService = notificationService;
+        this.emailService = emailService;
     }
 
     @Override
@@ -107,6 +133,11 @@ public class AdminUserServiceImpl implements AdminUserService {
 
         User user = loadDeletableUser(userId, adminEmail, "ROLE_PROVIDER");
 
+        providerProfileRepository.findByUser(user).ifPresent(profile -> {
+            fileStorageService.deleteIfExists(profile.getCertificatePath());
+            providerProfileRepository.delete(profile);
+        });
+
         List<Opportunity> opportunities = opportunityRepository.findByProvider(user);
         if (!opportunities.isEmpty()) {
             List<Application> apps = applicationRepository.findByOpportunityIn(opportunities);
@@ -164,11 +195,131 @@ public class AdminUserServiceImpl implements AdminUserService {
             throw new AdminOperationException("Only provider accounts can be approved here.");
         }
 
+        ProviderProfile profile = providerProfileRepository.findByUser(user)
+                .orElseThrow(() -> new AdminOperationException(
+                        "Cannot approve provider without a verification profile."));
+
+        if (profile.getCertificatePath() == null || profile.getCertificatePath().isBlank()) {
+            throw new AdminOperationException("Cannot approve provider without a registration certificate.");
+        }
+
+        if (!Files.exists(fileStorageService.resolve(profile.getCertificatePath()))) {
+            throw new AdminOperationException("Registration certificate file is missing on disk.");
+        }
+
         user.setAccountStatus("ACTIVE");
         userRepository.save(user);
 
+        profile.setReviewedAt(LocalDateTime.now());
+        profile.setReviewedBy(adminEmail);
+        profile.setRejectionReason(null);
+        providerProfileRepository.save(profile);
+
         auditService.log(adminEmail, AuditAction.UPDATE_USER, "USER", userId,
                 "Approved provider: " + user.getFullName());
+
+        notificationService.notifyUser(
+                user,
+                NotificationType.PROVIDER_APPROVED,
+                "Your provider account has been approved. You can now sign in and publish scholarships.",
+                "/login?role=provider",
+                userId);
+
+        emailService.sendStatusUpdateEmail(
+                user.getEmail(),
+                "ScholarZim provider account approved",
+                """
+                        Hi %s,
+
+                        Your provider application for %s has been approved.
+                        Sign in at ScholarZim to publish scholarships and review applications.
+
+                        — The ScholarZim Team
+                        """.formatted(user.getFullName(), user.getFullName()));
+    }
+
+    @Override
+    @Transactional
+    public void rejectProvider(@NonNull Long userId, String adminEmail, String reason) {
+
+        if (reason == null || reason.isBlank()) {
+            throw new AdminOperationException("A rejection reason is required.");
+        }
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getRole() == null || !"ROLE_PROVIDER".equals(user.getRole().getRoleName())) {
+            throw new AdminOperationException("Only provider accounts can be rejected here.");
+        }
+
+        if (!"PENDING_APPROVAL".equals(user.getAccountStatus())) {
+            throw new AdminOperationException("Only pending provider applications can be rejected.");
+        }
+
+        user.setAccountStatus("REJECTED");
+        userRepository.save(user);
+
+        providerProfileRepository.findByUser(user).ifPresent(profile -> {
+            profile.setReviewedAt(LocalDateTime.now());
+            profile.setReviewedBy(adminEmail);
+            profile.setRejectionReason(reason.trim());
+            providerProfileRepository.save(profile);
+        });
+
+        auditService.log(adminEmail, AuditAction.REJECT_PROVIDER, "USER", userId,
+                "Rejected provider: " + user.getFullName() + " — " + reason.trim());
+
+        emailService.sendStatusUpdateEmail(
+                user.getEmail(),
+                "ScholarZim provider application update",
+                """
+                        Hi %s,
+
+                        Your provider application for %s was not approved at this time.
+
+                        Reason: %s
+
+                        If you believe this is an error, contact support with updated documentation.
+
+                        — The ScholarZim Team
+                        """.formatted(user.getFullName(), user.getFullName(), reason.trim()));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public StoredFileResource loadProviderCertificate(@NonNull Long userId, String adminEmail) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getRole() == null || !"ROLE_PROVIDER".equals(user.getRole().getRoleName())) {
+            throw new AdminOperationException("Certificate download is only available for provider accounts.");
+        }
+
+        ProviderProfile profile = providerProfileRepository.findByUser(user)
+                .orElseThrow(() -> new ResourceNotFoundException("Provider verification profile not found."));
+
+        if (profile.getCertificatePath() == null) {
+            throw new ResourceNotFoundException("No certificate uploaded for this provider.");
+        }
+
+        auditService.log(adminEmail, AuditAction.VIEW_PROVIDER_CERTIFICATE, "USER", userId,
+                "Viewed registration certificate for: " + user.getFullName());
+
+        try {
+            var path = fileStorageService.resolve(profile.getCertificatePath());
+            if (!Files.exists(path)) {
+                throw new ResourceNotFoundException("Certificate file not found.");
+            }
+            Resource resource = new UrlResource(path.toUri());
+            String displayName = profile.getCertificateFilename() != null
+                    ? profile.getCertificateFilename()
+                    : profile.getCertificatePath();
+            return new StoredFileResource(resource, "application/pdf", displayName);
+        } catch (MalformedURLException ex) {
+            throw new IllegalStateException("Invalid stored certificate path.", ex);
+        }
     }
 
     private User loadDeletableUser(@NonNull Long userId, String adminEmail, String requiredRole) {
@@ -220,10 +371,24 @@ public class AdminUserServiceImpl implements AdminUserService {
         long appsReceived = opps.isEmpty() ? 0
                 : applicationRepository.findByOpportunityIn(opps).size();
         dto.setApplicationCount(appsReceived);
-        dto.setDetail(opps.size() + " opportunit"
-                + (opps.size() == 1 ? "y" : "ies")
-                + " · " + appsReceived + " application"
-                + (appsReceived == 1 ? "" : "s"));
+
+        providerProfileRepository.findByUser(user).ifPresent(profile -> {
+            dto.setOrganisationType(ProviderOrgType.label(profile.getOrganisationType()));
+            dto.setRegistrationNumber(profile.getRegistrationNumber());
+            dto.setSubmittedAt(profile.getSubmittedAt());
+            dto.setHasCertificate(profile.getCertificatePath() != null && !profile.getCertificatePath().isBlank());
+            if ("PENDING_APPROVAL".equals(user.getAccountStatus())) {
+                dto.setDetail(ProviderOrgType.label(profile.getOrganisationType())
+                        + " · Reg# " + profile.getRegistrationNumber());
+            }
+        });
+
+        if (dto.getDetail() == null) {
+            dto.setDetail(opps.size() + " opportunit"
+                    + (opps.size() == 1 ? "y" : "ies")
+                    + " · " + appsReceived + " application"
+                    + (appsReceived == 1 ? "" : "s"));
+        }
 
         return dto;
     }

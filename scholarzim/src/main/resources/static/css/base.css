@@ -1,0 +1,138 @@
+body {
+    min-height: 100vh;
+    font-family: var(--sz-font);
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Bootstrap overrides (SaaS polish) ── */
+.btn {
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    padding: 0.5rem 1rem;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.btn-lg {
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: var(--sz-primary);
+    border-color: var(--sz-primary);
+    box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background: var(--sz-primary-dark);
+    border-color: var(--sz-primary-dark);
+    transform: none;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28);
+}
+
+.btn-outline-primary {
+    border-color: rgba(22, 163, 74, 0.35);
+    color: var(--sz-primary);
+}
+
+.btn-outline-primary:hover {
+    background: rgba(22, 163, 74, 0.08);
+    border-color: var(--sz-primary);
+    color: var(--sz-primary-dark);
+}
+
+.card {
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius-lg);
+    background: var(--sz-card);
+    box-shadow: var(--sz-shadow);
+}
+
+.form-control,
+.form-select {
+    border-radius: 10px;
+    border-color: var(--sz-border);
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--sz-secondary);
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
+.input-group-text {
+    border-radius: 10px 0 0 10px;
+    border-color: var(--sz-border);
+    background: var(--sz-bg);
+    color: var(--sz-muted);
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: var(--sz-font-display);
+}
+
+.min-w-0 { min-width: 0; }
+
+.sz-shell { min-height: 100vh; }
+.sz-main {
+    background-color: transparent;
+}
+
+/* Mesh shows through frosted panels — do not paint a solid main column */
+[data-bs-theme="light"] .sz-main {
+    background: transparent !important;
+}
+
+
+
+
+
+:root {
+    --sz-space-page: 1.5rem;
+    --sz-space-section: 4rem;
+    --sz-space-block: 1.25rem;
+    --sz-radius-ui: 8px;
+    --sz-border-subtle: 1px solid #e2e8f0;
+}
+
+@media (min-width: 768px) {
+    :root {
+        --sz-space-page: 2rem;
+        --sz-space-section: 5rem;
+    }
+}
+
+/* Disable decorative motion */
+.sz-animate-in,
+.sz-reveal,
+.sz-landing.js-reveal .sz-reveal {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+}
+
+.sz-stat-card:hover,
+.sz-opp-card:hover,
+.sz-landing-card:hover,
+.sz-landing-stat-card:hover,
+.sz-landing-step:hover,
+.sz-testimonial:hover,
+.sz-btn-landing-primary:hover,
+.sz-btn-landing-outline:hover {
+    transform: none;
+}
+
+.sz-stat-card:hover,
+.sz-opp-card:hover {
+    box-shadow: var(--sz-shadow);
+}

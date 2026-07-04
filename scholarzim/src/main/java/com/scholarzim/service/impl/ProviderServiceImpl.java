@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+
 @Service
 public class ProviderServiceImpl implements ProviderService {
 
@@ -54,7 +55,7 @@ public class ProviderServiceImpl implements ProviderService {
         dto.setApplicationsReceived(applications.size());
         dto.setApprovedApplications(countByStatus(applications, "APPROVED"));
         dto.setRejectedApplications(countByStatus(applications, "REJECTED"));
-        dto.setPendingApplications(countByStatus(applications, "PENDING"));
+        dto.setPendingApplications(countPending(applications));
 
         return dto;
     }
@@ -67,9 +68,36 @@ public class ProviderServiceImpl implements ProviderService {
         return opportunityRepository.findByProvider(provider);
     }
 
+    @Override
+    public List<Application> getRecentApplications(String providerEmail, int limit) {
+        List<Opportunity> opportunities = getMyOpportunities(providerEmail);
+        if (opportunities.isEmpty()) {
+            return List.of();
+        }
+        return applicationRepository.findByOpportunityIn(opportunities).stream()
+                .sorted((a, b) -> {
+                    if (a.getSubmittedAt() == null) return 1;
+                    if (b.getSubmittedAt() == null) return -1;
+                    return b.getSubmittedAt().compareTo(a.getSubmittedAt());
+                })
+                .limit(limit)
+                .toList();
+    }
+
     private long countByStatus(List<Application> applications, String status) {
         return applications.stream()
                 .filter(a -> status.equals(a.getApplicationStatus()))
+                .count();
+    }
+
+    private long countPending(List<Application> applications) {
+        return applications.stream()
+                .filter(a -> {
+                    String s = a.getApplicationStatus();
+                    return "PENDING".equals(s) || "SUBMITTED".equals(s)
+                            || "UNDER_REVIEW".equals(s) || "DOCUMENTS_REQUESTED".equals(s)
+                            || "WAITLISTED".equals(s);
+                })
                 .count();
     }
 }

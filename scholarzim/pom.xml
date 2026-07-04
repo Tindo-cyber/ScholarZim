@@ -10,9 +10,9 @@
 	</parent>
 	<groupId>com.scholarzim</groupId>
 	<artifactId>scholarzim</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
-	<name/>
-	<description/>
+	<version>1.0.0</version>
+	<name>ScholarZim</name>
+	<description>Scholarship and academic opportunity management platform for Zimbabwe</description>
 	<url/>
 	<licenses>
 		<license/>

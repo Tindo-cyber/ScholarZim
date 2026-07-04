@@ -4,8 +4,10 @@ import com.scholarzim.entity.PasswordResetToken;
 import com.scholarzim.entity.User;
 import com.scholarzim.repository.PasswordResetTokenRepository;
 import com.scholarzim.repository.UserRepository;
+import com.scholarzim.service.AuditService;
 import com.scholarzim.service.EmailService;
 import com.scholarzim.service.PasswordResetService;
+import com.scholarzim.util.AuditAction;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -14,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+
 @Service
 public class PasswordResetServiceImpl implements PasswordResetService {
 
@@ -21,6 +24,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final EmailService emailService;
+    private final AuditService auditService;
     private final String baseUrl;
 
     public PasswordResetServiceImpl(
@@ -28,12 +32,14 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             PasswordResetTokenRepository tokenRepository,
             PasswordEncoder passwordEncoder,
             EmailService emailService,
+            AuditService auditService,
             @Value("${scholarzim.app.base-url:http://localhost:8080}") String baseUrl) {
 
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.emailService = emailService;
+        this.auditService = auditService;
         this.baseUrl = baseUrl;
     }
 
@@ -49,6 +55,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             token.setUsed(false);
             tokenRepository.save(token);
             emailService.sendPasswordResetEmail(email, baseUrl + "/reset-password/" + token.getToken());
+            auditService.log(email, AuditAction.PASSWORD_RESET_REQUEST, "USER", user.getUserId(),
+                    "Password reset requested");
         });
     }
 
@@ -77,5 +85,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         token.setUsed(true);
         tokenRepository.save(token);
+
+        auditService.log(user.getEmail(), AuditAction.PASSWORD_RESET_COMPLETE, "USER", user.getUserId(),
+                "Password reset completed");
     }
 }

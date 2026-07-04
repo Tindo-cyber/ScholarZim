@@ -1,0 +1,232 @@
+/* ScholarZim — glassmorphism system */
+
+/* Fixed mesh canvas — survives other body background rules */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background-color: var(--sz-bg);
+    background-image:
+        radial-gradient(ellipse 90% 60% at 0% 0%, rgba(22, 163, 74, 0.14), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 100% 10%, rgba(59, 130, 246, 0.12), transparent 50%),
+        radial-gradient(ellipse 55% 45% at 50% 100%, rgba(34, 197, 94, 0.1), transparent 45%),
+        radial-gradient(ellipse 40% 35% at 80% 75%, rgba(245, 158, 11, 0.06), transparent 50%);
+    background-attachment: fixed;
+}
+
+[data-bs-theme="dark"] body::before {
+    background-color: var(--sz-bg);
+    background-image:
+        radial-gradient(ellipse 90% 60% at 0% 0%, rgba(34, 197, 94, 0.1), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 100% 10%, rgba(59, 130, 246, 0.08), transparent 50%),
+        radial-gradient(ellipse 55% 45% at 50% 100%, rgba(22, 163, 74, 0.06), transparent 45%);
+}
+
+body {
+    position: relative;
+    background-color: var(--sz-bg) !important;
+}
+
+.sz-auth-wrap,
+.sz-auth-panel {
+    position: relative;
+    z-index: 1;
+}
+
+.sz-main,
+.sz-content,
+.sz-shell {
+    background: transparent !important;
+}
+
+body.sz-landing {
+    background-color: var(--sz-bg) !important;
+}
+
+/* Core glass utility */
+.sz-glass {
+    background: var(--sz-glass-bg) !important;
+    backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
+    border: 1px solid var(--sz-glass-border-outer);
+    box-shadow: var(--sz-shadow-glass);
+}
+
+.sz-glass--strong {
+    background: var(--sz-glass-bg-strong) !important;
+}
+
+/* ── App shell ── */
+.sz-sidebar,
+.sz-topbar,
+.sz-landing-header,
+.sz-landing-header.scrolled {
+    background: var(--sz-glass-bg-strong) !important;
+    backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
+    border-color: var(--sz-glass-border-outer) !important;
+    box-shadow: var(--sz-shadow-glass);
+}
+
+.sz-sidebar {
+    border-right: 1px solid var(--sz-glass-border-outer) !important;
+}
+
+.sz-topbar {
+    border-bottom: 1px solid var(--sz-glass-border-outer) !important;
+}
+
+.sz-landing-header.scrolled {
+    box-shadow: var(--sz-shadow-glass), 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+[data-bs-theme="dark"] .sz-landing-header.scrolled {
+    box-shadow: var(--sz-shadow-glass), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.sz-mobile-bottom-nav,
+.sz-mobile-apply-bar {
+    background: var(--sz-glass-bg-strong) !important;
+    backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
+    border-color: var(--sz-glass-border-outer) !important;
+    box-shadow: var(--sz-shadow-glass);
+}
+
+/* ── Cards & panels ── */
+.card,
+.sz-stat-card,
+.sz-section-card,
+.sz-filter-card,
+.sz-action-card,
+.sz-opp-card,
+.sz-app-card,
+.sz-hero,
+.sz-dashboard-panel,
+.sz-analytics-panel,
+.sz-settings-panel,
+.sz-dashboard-hero,
+.sz-wizard-main,
+.sz-wizard-sidebar,
+.sz-wizard-review,
+.sz-file-upload,
+.sz-auth-card,
+.sz-notif-list,
+.sz-error-card,
+.sz-messages-sidebar,
+.sz-messages-thread,
+.sz-confirm-card,
+.sz-landing-search__card,
+.sz-landing-proof__item,
+.sz-scholarfit-demo,
+.sz-hero-preview__panel,
+.sz-feature-card,
+.sz-landing-stat-card,
+.sz-landing-search__card,
+.sz-landing-step,
+.sz-landing-card-prod,
+.sz-hero-preview,
+.sz-university-pill,
+.sz-landing-empty,
+.sz-profile-banner,
+.sz-metric-chip,
+.sz-pro-table,
+.dropdown-menu,
+.offcanvas.sz-sidebar,
+.accordion-item {
+    background: var(--sz-glass-bg) !important;
+    backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
+    -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
+    border-color: var(--sz-glass-border-outer) !important;
+    box-shadow: var(--sz-shadow-glass);
+}
+
+/* Table heads stay readable on glass */
+.sz-pro-table thead th {
+    background: var(--sz-glass-bg-strong) !important;
+    backdrop-filter: blur(var(--sz-glass-blur));
+    -webkit-backdrop-filter: blur(var(--sz-glass-blur));
+}
+
+.sz-dashboard-panel__head,
+.sz-settings-panel__head,
+.sz-notif-list__item {
+    border-color: var(--sz-glass-border-outer) !important;
+}
+
+.sz-hero-preview__chrome {
+    background: var(--sz-glass-bg-strong) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Forms: solid inputs on glass for contrast */
+.form-control,
+.form-select,
+.input-group-text {
+    background-color: var(--sz-input-bg) !important;
+    backdrop-filter: none;
+}
+
+/* Dropdown / offcanvas items */
+.dropdown-item:hover,
+.sz-list-row:hover {
+    background-color: var(--sz-surface-hover) !important;
+}
+
+/* Toast container glass */
+.toast {
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+/* Auth hero stays gradient — panel is glass */
+.sz-auth-hero {
+    background: linear-gradient(145deg, #15803D 0%, var(--sz-primary) 45%, var(--sz-secondary) 100%);
+}
+
+/* Scholarship detail hero — gradient, not glass */
+.sz-opp-detail-hero {
+    backdrop-filter: none;
+}
+
+/* Footer stays solid dark */
+.sz-landing-footer {
+    background: #0f172a !important;
+    backdrop-filter: none;
+}
+
+[data-bs-theme="dark"] .sz-landing-footer {
+    background: #020617 !important;
+}
+
+/* Hover lift keeps glass shadow */
+.sz-stat-card:hover,
+.sz-opp-card:hover,
+.sz-action-card:hover,
+.sz-feature-card:hover {
+    box-shadow: var(--sz-shadow-glass), var(--sz-shadow-hover);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+    body::before {
+        background-image: none;
+    }
+
+    .sz-glass,
+    .sz-sidebar,
+    .sz-topbar,
+    .card,
+    .sz-stat-card,
+    .sz-dashboard-panel,
+    .sz-auth-card,
+    .sz-landing-header,
+    .sz-feature-card,
+    .sz-hero-preview {
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        background: var(--sz-card) !important;
+    }
+}

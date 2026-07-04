@@ -7,7 +7,7 @@ import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.User;
 import com.scholarzim.repository.ApplicantProfileRepository;
 import com.scholarzim.repository.OpportunityRepository;
-import com.scholarzim.repository.UserRepository;
+import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.RecommendationService;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 
 @Service
 public class RecommendationServiceImpl implements RecommendationService {
@@ -39,22 +40,22 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     private final ApplicantProfileRepository profileRepository;
     private final OpportunityRepository opportunityRepository;
-    private final UserRepository userRepository;
+    private final ApplicantProfileService profileService;
 
     public RecommendationServiceImpl(
             ApplicantProfileRepository profileRepository,
             OpportunityRepository opportunityRepository,
-            UserRepository userRepository) {
+            ApplicantProfileService profileService) {
 
         this.profileRepository = profileRepository;
         this.opportunityRepository = opportunityRepository;
-        this.userRepository = userRepository;
+        this.profileService = profileService;
     }
 
     @Override
     public List<ScoredOpportunityDTO> recommendForApplicant(String email) {
 
-        ApplicantProfile profile = getProfileByEmail(email);
+        ApplicantProfile profile = profileService.getProfileByEmail(email);
         if (profile == null) {
             return List.of();
         }
@@ -179,11 +180,5 @@ public class RecommendationServiceImpl implements RecommendationService {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
-    }
-
-    public ApplicantProfile getProfileByEmail(String email) {
-
-        User user = userRepository.findByEmail(email).orElseThrow();
-        return profileRepository.findByUser(user).orElse(null);
     }
 }

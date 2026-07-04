@@ -15,23 +15,20 @@
 
         <nav th:replace="~{fragments/layout :: topbar('Your Matches')}"></nav>
 
+        <div th:replace="~{fragments/layout :: alerts}"></div>
+
         <main class="sz-content has-mobile-nav p-3 p-md-4">
 
-            <div class="sz-page-header sz-animate-in mb-4">
-                <h1>Recommended for you</h1>
-                <p class="text-secondary mb-0">
-                    Scholarships matched to your education level, field of study, and location.
-                </p>
-            </div>
+            <div th:replace="~{fragments/components :: page-header('Recommended for you', 'Scholarships matched to your education level, field of study, and location.')}"></div>
 
-            <div th:if="${!hasProfile}" class="alert alert-warning rounded-4 sz-animate-in">
+            <div th:if="${!hasProfile}" class="alert alert-warning rounded-4">
                 <i class="bi bi-exclamation-triangle me-2"></i>
                 Complete your
                 <a th:href="@{/applicant/profile}" class="alert-link fw-semibold">academic profile</a>
                 to unlock personalised recommendations.
             </div>
 
-            <div th:if="${hasProfile and opportunities.isEmpty()}" class="sz-empty sz-animate-in">
+            <div th:if="${hasProfile and opportunities.isEmpty()}" class="sz-empty">
                 <div class="sz-empty-icon"><i class="bi bi-stars"></i></div>
                 <h3 class="h5 fw-bold">No matches yet</h3>
                 <p class="text-secondary mb-3">
@@ -42,8 +39,9 @@
             </div>
 
             <div th:if="${hasProfile and !opportunities.isEmpty()}" class="sz-opp-grid">
-                <div th:each="scored : ${opportunities}"
-                     th:replace="~{fragments/components :: scored-card(${scored})}"></div>
+                <th:block th:each="scored : ${opportunities}">
+                    <div th:replace="~{fragments/components :: scored-card(scored=${scored})}"></div>
+                </th:block>
             </div>
 
         </main>

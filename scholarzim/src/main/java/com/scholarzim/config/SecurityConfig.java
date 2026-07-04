@@ -1,20 +1,33 @@
 package com.scholarzim.config;
 
 import com.scholarzim.security.RoleBasedAuthenticationSuccessHandler;
+import com.scholarzim.security.ScholarzimAuthenticationFailureHandler;
+import com.scholarzim.security.TwoFactorAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+
 
 @Configuration
 public class SecurityConfig {
 
     private final RoleBasedAuthenticationSuccessHandler successHandler;
+    private final ScholarzimAuthenticationFailureHandler failureHandler;
+    private final TwoFactorAuthenticationFilter twoFactorAuthenticationFilter;
 
-    public SecurityConfig(RoleBasedAuthenticationSuccessHandler successHandler) {
+    public SecurityConfig(
+            RoleBasedAuthenticationSuccessHandler successHandler,
+            ScholarzimAuthenticationFailureHandler failureHandler,
+            TwoFactorAuthenticationFilter twoFactorAuthenticationFilter) {
+
         this.successHandler = successHandler;
+        this.failureHandler = failureHandler;
+        this.twoFactorAuthenticationFilter = twoFactorAuthenticationFilter;
     }
 
     @Bean
@@ -30,16 +43,17 @@ public class SecurityConfig {
                                 "/register",
                                 "/register/provider",
                                 "/login",
+                                "/login/2fa-challenge",
                                 "/forgot-password",
                                 "/reset-password/**",
                                 "/403",
+                                "/error",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/icons/**",
                                 "/manifest.json",
                                 "/sw.js",
-                                "/uploads/**",
                                 "/api/public/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
@@ -50,14 +64,16 @@ public class SecurityConfig {
                                 "/provider/**",
                                 "/opportunities/create"
                         ).hasRole("PROVIDER")
+                        .requestMatchers(HttpMethod.GET, "/opportunities").authenticated()
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .requestMatchers(
                                 "/my-applications",
                                 "/applicant/**",
-                                "/opportunities",
                                 "/apply/**"
                         ).hasRole("APPLICANT")
                         .requestMatchers("/account/**").authenticated()
+                        .requestMatchers("/applications/*/document").authenticated()
+                        .requestMatchers("/applications/*/results-certificate").authenticated()
                         .requestMatchers("/api/applicant/**").hasRole("APPLICANT")
                         .requestMatchers("/api/**").authenticated()
                         .requestMatchers("/dashboard").authenticated()
@@ -67,6 +83,7 @@ public class SecurityConfig {
                 .formLogin(form -> form
                         .loginPage("/login")
                         .successHandler(successHandler)
+                        .failureHandler(failureHandler)
                         .permitAll()
                 )
                 .logout(logout -> logout
@@ -79,7 +96,8 @@ public class SecurityConfig {
                         .frameOptions(frame -> frame.sameOrigin())
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'"))
-                );
+                )
+                .addFilterAfter(twoFactorAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

@@ -5,6 +5,11 @@ import com.scholarzim.exception.ResourceNotFoundException;
 import com.scholarzim.service.AdminUserService;
 import com.scholarzim.service.AnalyticsService;
 import com.scholarzim.service.AuditLogService;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -18,6 +23,7 @@ import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
 
 @Controller
 public class AdminController {
@@ -86,7 +92,7 @@ public class AdminController {
     @PostMapping("/admin/users/applicants/{id}/delete")
     public String deleteApplicant(
             @PathVariable Long id,
-            Authentication authentication,
+            @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
         return handleUserAction(() ->
@@ -97,7 +103,7 @@ public class AdminController {
     @PostMapping("/admin/users/providers/{id}/delete")
     public String deleteProvider(
             @PathVariable Long id,
-            Authentication authentication,
+            @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
         return handleUserAction(() ->
@@ -108,7 +114,7 @@ public class AdminController {
     @PostMapping("/admin/users/{id}/suspend")
     public String suspendUser(
             @PathVariable Long id,
-            Authentication authentication,
+            @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
         return handleUserAction(() ->
@@ -119,7 +125,7 @@ public class AdminController {
     @PostMapping("/admin/users/{id}/reactivate")
     public String reactivateUser(
             @PathVariable Long id,
-            Authentication authentication,
+            @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
         return handleUserAction(() ->
@@ -130,12 +136,37 @@ public class AdminController {
     @PostMapping("/admin/users/providers/{id}/approve")
     public String approveProvider(
             @PathVariable Long id,
-            Authentication authentication,
+            @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
         return handleUserAction(() ->
                 adminUserService.approveProvider(id, authentication.getName()),
                 redirect, "Provider approved.");
+    }
+
+    @PostMapping("/admin/users/providers/{id}/reject")
+    public String rejectProvider(
+            @PathVariable Long id,
+            @RequestParam String reason,
+            @NonNull Authentication authentication,
+            RedirectAttributes redirect) {
+
+        return handleUserAction(() ->
+                adminUserService.rejectProvider(id, authentication.getName(), reason),
+                redirect, "Provider application rejected.");
+    }
+
+    @GetMapping("/admin/providers/{userId}/certificate")
+    public ResponseEntity<Resource> downloadProviderCertificate(
+            @PathVariable Long userId,
+            @NonNull Authentication authentication) {
+
+        var file = adminUserService.loadProviderCertificate(userId, authentication.getName());
+        String filename = file.displayName() != null ? file.displayName() : "registration-certificate.pdf";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .body(file.resource());
     }
 
     private String handleUserAction(Runnable action, RedirectAttributes redirect, String success) {

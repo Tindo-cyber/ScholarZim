@@ -8,6 +8,7 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 
+
 @Getter
 @Setter
 public class OpportunityRequest {
@@ -30,7 +31,4 @@ public class OpportunityRequest {
 
     @NotBlank(message = "Target field is required")
     private String targetField;
-
-    @NotBlank(message = "Target country is required")
-    private String targetCountry;
 }

@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 
+
 public interface OpportunityRepository
         extends JpaRepository<Opportunity, Long> {
 
@@ -19,9 +20,10 @@ public interface OpportunityRepository
             WHERE o.status = 'ACTIVE'
               AND (o.deadline IS NULL OR o.deadline >= :today)
               AND (:educationLevel IS NULL OR :educationLevel = '' OR o.educationLevel = :educationLevel)
-              AND (:country IS NULL OR :country = '' OR o.country = :country)
+              AND (:country IS NULL OR :country = '' OR o.country = :country OR o.targetCountry = :country)
               AND (:fieldOfStudy IS NULL OR :fieldOfStudy = '' OR o.targetField = :fieldOfStudy)
               AND (:provider IS NULL OR :provider = '' OR o.providerName = :provider)
+              AND (:fundingType IS NULL OR :fundingType = '' OR o.fundingType = :fundingType)
               AND (:deadlineBefore IS NULL OR o.deadline <= :deadlineBefore)
             ORDER BY o.createdAt DESC
             """)
@@ -31,6 +33,7 @@ public interface OpportunityRepository
             @Param("country") String country,
             @Param("fieldOfStudy") String fieldOfStudy,
             @Param("provider") String provider,
+            @Param("fundingType") String fundingType,
             @Param("deadlineBefore") LocalDate deadlineBefore);
 
     @Query("""
@@ -47,9 +50,10 @@ public interface OpportunityRepository
             WHERE o.status = 'ACTIVE'
               AND (o.deadline IS NULL OR o.deadline >= :today)
               AND (:educationLevel IS NULL OR :educationLevel = '' OR o.educationLevel = :educationLevel)
-              AND (:country IS NULL OR :country = '' OR o.country = :country)
+              AND (:country IS NULL OR :country = '' OR o.country = :country OR o.targetCountry = :country)
               AND (:fieldOfStudy IS NULL OR :fieldOfStudy = '' OR o.targetField = :fieldOfStudy)
               AND (:provider IS NULL OR :provider = '' OR o.providerName = :provider)
+              AND (:fundingType IS NULL OR :fundingType = '' OR o.fundingType = :fundingType)
               AND (:deadlineBefore IS NULL OR o.deadline <= :deadlineBefore)
               AND (:keyword IS NULL OR :keyword = ''
                    OR LOWER(o.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
@@ -63,6 +67,7 @@ public interface OpportunityRepository
             @Param("country") String country,
             @Param("fieldOfStudy") String fieldOfStudy,
             @Param("provider") String provider,
+            @Param("fundingType") String fundingType,
             @Param("deadlineBefore") LocalDate deadlineBefore,
             @Param("keyword") String keyword);
 }

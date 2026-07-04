@@ -1,6 +1,7 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.service.SavedScholarshipService;
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
 
 @Controller
 public class SavedScholarshipController {
@@ -19,7 +21,7 @@ public class SavedScholarshipController {
     }
 
     @GetMapping("/applicant/saved")
-    public String listSaved(Authentication auth, Model model) {
+    public String listSaved(@NonNull Authentication auth, Model model) {
         model.addAttribute("saved", savedScholarshipService.listSaved(auth.getName()));
         return "applicant/saved";
     }
@@ -27,7 +29,7 @@ public class SavedScholarshipController {
     @PostMapping("/applicant/saved/{id}")
     public String save(
             @PathVariable Long id,
-            Authentication auth,
+            @NonNull Authentication auth,
             RedirectAttributes redirect) {
 
         savedScholarshipService.save(auth.getName(), id);
@@ -38,7 +40,7 @@ public class SavedScholarshipController {
     @PostMapping("/applicant/saved/{id}/remove")
     public String remove(
             @PathVariable Long id,
-            Authentication auth,
+            @NonNull Authentication auth,
             RedirectAttributes redirect) {
 
         savedScholarshipService.remove(auth.getName(), id);

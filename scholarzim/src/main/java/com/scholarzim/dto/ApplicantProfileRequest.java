@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 
+
 @Getter
 @Setter
 public class ApplicantProfileRequest {
@@ -20,6 +21,9 @@ public class ApplicantProfileRequest {
     private String country;
 
     private String province;
+
+    @NotBlank(message = "Academic results summary is required")
     private String academicResults;
+
     private String biography;
 }

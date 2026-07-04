@@ -19,14 +19,9 @@
 
             <div th:replace="~{fragments/layout :: alerts}"></div>
 
-            <div class="sz-page-header sz-animate-in">
-                <h1>Browse opportunities</h1>
-                <p class="text-secondary mb-0">
-                    Discover scholarships and funding from Zimbabwean and international providers.
-                </p>
-            </div>
+            <div th:replace="~{fragments/components :: page-header('Browse opportunities', 'Discover scholarships and funding from Zimbabwean and international providers.')}"></div>
 
-            <div class="sz-filter-card mb-4 sz-animate-in">
+            <div class="sz-filter-card card shadow-sm mb-4">
                 <div class="card-body p-4">
                     <form th:action="@{/opportunities}" method="get"
                           th:object="${searchRequest}" class="row g-3 align-items-end">
@@ -91,12 +86,12 @@
                 </div>
             </div>
 
-            <p class="text-secondary small mb-3 sz-animate-in">
+            <p class="text-secondary small mb-3">
                 <strong th:text="${opportunities.size()}">0</strong>
                 opportunit<span th:text="${opportunities.size() == 1} ? 'y' : 'ies'">ies</span> found
             </p>
 
-            <div th:if="${opportunities.isEmpty()}" class="sz-empty sz-animate-in">
+            <div th:if="${opportunities.isEmpty()}" class="sz-empty">
                 <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
                 <h3 class="h5 fw-bold">No opportunities found</h3>
                 <p class="text-secondary mb-3">
@@ -108,8 +103,9 @@
             </div>
 
             <div th:if="${!opportunities.isEmpty()}" class="sz-opp-grid">
-                <div th:each="opp : ${opportunities}"
-                     th:replace="~{fragments/components :: scholarship-card(${opp}, false, true)}"></div>
+                <th:block th:each="opp : ${opportunities}">
+                    <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=true)}"></div>
+                </th:block>
             </div>
 
         </main>

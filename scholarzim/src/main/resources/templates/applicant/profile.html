@@ -15,21 +15,30 @@
 
         <nav th:replace="~{fragments/layout :: topbar('My Academic Profile')}"></nav>
 
+        <div th:replace="~{fragments/layout :: alerts}"></div>
+
         <main class="sz-content has-mobile-nav p-3 p-md-4">
 
-            <div class="sz-page-header sz-animate-in mb-4">
-                <h1>Academic profile</h1>
-                <p class="text-secondary mb-0">
-                    A complete profile helps ScholarZim match you with the right scholarships.
-                </p>
+            <div th:replace="~{fragments/components :: page-header('Academic profile', 'A complete profile helps ScholarZim match you with the right scholarships.')}"></div>
+
+            <div class="alert alert-warning rounded-3 py-2 small mb-3" th:if="${resultsRequired}">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Upload your official results certificate (PDF) before you can apply for scholarships.
             </div>
 
-            <div class="card sz-section-card shadow-sm sz-animate-in">
-                <div class="card-body p-4 p-md-5">
+            <div class="sz-settings-panel">
+                <div class="sz-settings-panel__body p-4 p-md-5">
 
                     <form th:action="@{/applicant/profile}"
                           method="post"
+                          enctype="multipart/form-data"
                           th:object="${profileRequest}">
+
+                        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+
+                        <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
+                            <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+                        </div>
 
                         <div class="sz-form-section">
                             <div class="sz-form-section-title">
@@ -42,8 +51,18 @@
                                             th:field="*{educationLevel}"
                                             th:classappend="${#fields.hasErrors('educationLevel')} ? 'is-invalid'">
                                         <option value="">Select your level</option>
-                                        <option th:each="level : ${educationLevels}"
-                                                th:value="${level}" th:text="${level}"></option>
+                                        <optgroup label="Primary school (Grade 1–7)">
+                                            <option th:each="level : ${primaryGrades}"
+                                                    th:value="${level}" th:text="${level}"></option>
+                                        </optgroup>
+                                        <optgroup label="Secondary school (Form 1–6)">
+                                            <option th:each="level : ${secondaryForms}"
+                                                    th:value="${level}" th:text="${level}"></option>
+                                        </optgroup>
+                                        <optgroup label="Tertiary &amp; postgraduate">
+                                            <option th:each="level : ${tertiaryLevels}"
+                                                    th:value="${level}" th:text="${level}"></option>
+                                        </optgroup>
                                     </select>
                                     <div class="invalid-feedback"
                                          th:if="${#fields.hasErrors('educationLevel')}"
@@ -52,31 +71,61 @@
 
                                 <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">Institution</label>
-                                    <select class="form-select" th:field="*{institutionName}">
-                                        <option value="">Select institution</option>
-                                        <option th:each="inst : ${institutions}"
-                                                th:value="${inst}" th:text="${inst}"></option>
-                                    </select>
+                                    <input type="text" class="form-control" th:field="*{institutionName}"
+                                           list="profileInstitutionList"
+                                           placeholder="Select or type your school / university">
+                                    <datalist id="profileInstitutionList">
+                                        <option th:each="inst : ${institutions}" th:value="${inst}"></option>
+                                    </datalist>
+                                    <div class="form-text">Not listed? Type the full name of your school or university.</div>
                                 </div>
 
                                 <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">Field of study</label>
-                                    <select class="form-select"
-                                            th:field="*{fieldOfStudy}"
-                                            th:classappend="${#fields.hasErrors('fieldOfStudy')} ? 'is-invalid'">
-                                        <option value="">Select field</option>
-                                        <option th:each="field : ${fieldsOfStudy}"
-                                                th:value="${field}" th:text="${field}"></option>
-                                    </select>
+                                    <input type="text" class="form-control"
+                                           th:field="*{fieldOfStudy}"
+                                           list="profileFieldList"
+                                           placeholder="Select or type a field"
+                                           th:classappend="${#fields.hasErrors('fieldOfStudy')} ? 'is-invalid'">
+                                    <datalist id="profileFieldList">
+                                        <option th:each="field : ${fieldsOfStudy}" th:value="${field}"></option>
+                                    </datalist>
                                     <div class="invalid-feedback"
                                          th:if="${#fields.hasErrors('fieldOfStudy')}"
                                          th:errors="*{fieldOfStudy}"></div>
                                 </div>
 
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label fw-semibold">Academic results</label>
+                                    <label class="form-label fw-semibold">Academic results summary *</label>
                                     <input type="text" class="form-control" th:field="*{academicResults}"
-                                           placeholder="e.g. A-Level 15 points, GPA 3.8">
+                                           placeholder="e.g. A-Level 15 points, GPA 3.8"
+                                           th:classappend="${#fields.hasErrors('academicResults')} ? 'is-invalid'">
+                                    <div class="form-text">Short summary as it appears on your certificate.</div>
+                                    <div class="invalid-feedback" th:errors="*{academicResults}"></div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label fw-semibold">
+                                        Results certificate (PDF)
+                                        <span th:if="${!hasResultsCertificate}" class="text-danger">*</span>
+                                    </label>
+                                    <div th:if="${existingProfile != null and existingProfile.resultsCertificateFilename != null}"
+                                         class="alert alert-success py-2 small mb-2">
+                                        <i class="bi bi-file-earmark-pdf me-1"></i>
+                                        <span th:text="${existingProfile.resultsCertificateFilename}">cert.pdf</span>
+                                        <span th:if="${existingProfile.resultsUploadedAt != null}"
+                                              class="text-secondary ms-1">
+                                            · Uploaded
+                                            <span th:text="${#temporals.format(existingProfile.resultsUploadedAt, 'dd MMM yyyy')}"></span>
+                                        </span>
+                                    </div>
+                                    <input type="file" class="form-control" name="resultsCertificate"
+                                           accept="application/pdf,.pdf"
+                                           th:required="${!hasResultsCertificate}">
+                                    <div class="form-text">
+                                        Upload your official results slip, transcript, or report card (PDF only, max 5 MB).
+                                        <span th:if="${hasResultsCertificate}">Leave empty to keep your current file.</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -88,13 +137,14 @@
                             <div class="row g-3">
                                 <div class="col-12 col-md-6">
                                     <label class="form-label fw-semibold">Country</label>
-                                    <select class="form-select"
-                                            th:field="*{country}"
-                                            th:classappend="${#fields.hasErrors('country')} ? 'is-invalid'">
-                                        <option value="">Select country</option>
-                                        <option th:each="c : ${countries}"
-                                                th:value="${c}" th:text="${c}"></option>
-                                    </select>
+                                    <input type="text" class="form-control"
+                                           th:field="*{country}"
+                                           list="profileCountryList"
+                                           placeholder="Select or type your country"
+                                           th:classappend="${#fields.hasErrors('country')} ? 'is-invalid'">
+                                    <datalist id="profileCountryList">
+                                        <option th:each="c : ${countries}" th:value="${c}"></option>
+                                    </datalist>
                                     <div class="invalid-feedback"
                                          th:if="${#fields.hasErrors('country')}"
                                          th:errors="*{country}"></div>

@@ -2,7 +2,9 @@ package com.scholarzim.config;
 
 import com.scholarzim.entity.*;
 import com.scholarzim.repository.*;
+import com.scholarzim.service.FileStorageService;
 import com.scholarzim.util.NotificationType;
+import com.scholarzim.util.ProviderOrgType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -14,6 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+
 
 @Slf4j
 @Component
@@ -29,7 +32,11 @@ public class DemoDataSeeder implements CommandLineRunner {
     private final ApplicantProfileRepository profileRepository;
     private final ApplicationRepository applicationRepository;
     private final NotificationRepository notificationRepository;
+    private final ProviderProfileRepository providerProfileRepository;
+    private final FileStorageService fileStorageService;
     private final PasswordEncoder passwordEncoder;
+
+    private static final String DEMO_CERT_FILENAME = "provider-verification-demo.pdf";
 
     public DemoDataSeeder(
             @Value("${scholarzim.demo.seed:true}") boolean seedEnabled,
@@ -39,6 +46,8 @@ public class DemoDataSeeder implements CommandLineRunner {
             ApplicantProfileRepository profileRepository,
             ApplicationRepository applicationRepository,
             NotificationRepository notificationRepository,
+            ProviderProfileRepository providerProfileRepository,
+            FileStorageService fileStorageService,
             PasswordEncoder passwordEncoder) {
 
         this.seedEnabled = seedEnabled;
@@ -48,6 +57,8 @@ public class DemoDataSeeder implements CommandLineRunner {
         this.profileRepository = profileRepository;
         this.applicationRepository = applicationRepository;
         this.notificationRepository = notificationRepository;
+        this.providerProfileRepository = providerProfileRepository;
+        this.fileStorageService = fileStorageService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -79,6 +90,18 @@ public class DemoDataSeeder implements CommandLineRunner {
         User simba = ensureUser("Simbarashe Ndlovu", "simba.ndlovu@student.co.zw",
                 "+263 78 456 7890", hash, roles.get("ROLE_APPLICANT"));
 
+        User pendingProvider = ensurePendingProvider(
+                "Zimbabwe Education Trust",
+                "pending.provider@org.co.zw",
+                "+263 77 999 0000",
+                hash,
+                roles.get("ROLE_PROVIDER"));
+
+        ensureProviderProfile(chevening, ProviderOrgType.GOVERNMENT, "GOV-UK-001");
+        ensureProviderProfile(higherlife, ProviderOrgType.FOUNDATION, "TRUST-HLF-2010");
+        ensureProviderProfile(cbz, ProviderOrgType.PRIVATE_COMPANY, "12345/2010");
+        ensureProviderProfile(mastercard, ProviderOrgType.FOUNDATION, "MCF-AFR-001");
+
         saveProfile(tanaka, "Undergraduate", "University of Zimbabwe (UZ)",
                 "Computer Science & IT", "Zimbabwe", "Harare",
                 "A-Level: 15 points (Maths A, Physics B, Chemistry B)",
@@ -89,11 +112,17 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "BEng Mechanical Engineering — First Class Honours (GPA 3.8)",
                 "Mechanical engineer researching renewable energy systems for "
                         + "off-grid communities in Matabeleland.");
+        saveProfileWithoutCertificate(simba, "Undergraduate", "Midlands State University",
+                "Accounting", "Zimbabwe", "Gweru",
+                "A-Level: 12 points",
+                "First-year student exploring scholarship opportunities.");
+
+        ensurePendingProviderProfile(pendingProvider, ProviderOrgType.NGO, "NGO-PENDING-2026");
 
         if (opportunityRepository.count() > 0) {
             log.info("Demo accounts ready (password: {}). Scholarships already in database.",
                     DEMO_PASSWORD);
-            log.info("  Applicant: {}", DEMO_APPLICANT_EMAIL);
+            logDemoAccounts();
             return;
         }
 
@@ -200,9 +229,67 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "/applicant/profile", null, false, LocalDateTime.now().minusHours(1));
 
         log.info("Demo data seeded. Login with any account using password: {}", DEMO_PASSWORD);
-        log.info("  Admin:     admin@scholarzim.co.zw");
-        log.info("  Applicant: tanaka.moyo@student.co.zw");
-        log.info("  Provider:  scholarships@uk.gov.zw");
+        logDemoAccounts();
+    }
+
+    private void logDemoAccounts() {
+        log.info("  Admin:            admin@scholarzim.co.zw");
+        log.info("  Provider (active): scholarships@uk.gov.zw");
+        log.info("  Provider (pending): pending.provider@org.co.zw");
+        log.info("  Applicant (cert):  {}", DEMO_APPLICANT_EMAIL);
+        log.info("  Applicant (no cert): simba.ndlovu@student.co.zw");
+    }
+
+    private User ensurePendingProvider(String name, String email, String phone,
+                                       String hash, Role role) {
+        User user = userRepository.findByEmail(email).orElseGet(() -> {
+            User created = new User();
+            created.setEmail(email);
+            return created;
+        });
+        user.setFullName(name);
+        user.setPhone(phone);
+        user.setPasswordHash(hash);
+        user.setRole(role);
+        user.setAccountStatus("PENDING_APPROVAL");
+        return userRepository.save(user);
+    }
+
+    private void ensurePendingProviderProfile(User user, String organisationType,
+                                              String registrationNumber) {
+        if (providerProfileRepository.findByUser(user).isPresent()) {
+            return;
+        }
+        String storedPath = ensureDemoCertificateOnDisk();
+        ProviderProfile profile = new ProviderProfile();
+        profile.setUser(user);
+        profile.setOrganisationType(organisationType);
+        profile.setRegistrationNumber(registrationNumber);
+        profile.setCertificatePath(storedPath);
+        profile.setCertificateFilename(DEMO_CERT_FILENAME);
+        profile.setSubmittedAt(LocalDateTime.now().minusDays(2));
+        providerProfileRepository.save(profile);
+    }
+
+    private void saveProfileWithoutCertificate(User user, String level, String institution,
+                                                 String field, String country, String province,
+                                                 String results, String bio) {
+        ApplicantProfile profile = profileRepository.findByUser(user).orElseGet(() -> {
+            ApplicantProfile created = new ApplicantProfile();
+            created.setUser(user);
+            return created;
+        });
+        profile.setEducationLevel(level);
+        profile.setInstitutionName(institution);
+        profile.setFieldOfStudy(field);
+        profile.setCountry(country);
+        profile.setProvince(province);
+        profile.setAcademicResults(results);
+        profile.setBiography(bio);
+        profile.setResultsCertificatePath(null);
+        profile.setResultsCertificateFilename(null);
+        profile.setResultsUploadedAt(null);
+        profileRepository.save(profile);
     }
 
     private Map<String, Role> ensureRoles() {
@@ -246,16 +333,50 @@ public class DemoDataSeeder implements CommandLineRunner {
         return userRepository.save(user);
     }
 
+    private void ensureProviderProfile(User user, String organisationType, String registrationNumber) {
+
+        if (providerProfileRepository.findByUser(user).isPresent()) {
+            return;
+        }
+
+        String storedPath = ensureDemoCertificateOnDisk();
+
+        ProviderProfile profile = new ProviderProfile();
+        profile.setUser(user);
+        profile.setOrganisationType(organisationType);
+        profile.setRegistrationNumber(registrationNumber);
+        profile.setCertificatePath(storedPath);
+        profile.setCertificateFilename(DEMO_CERT_FILENAME);
+        profile.setSubmittedAt(LocalDateTime.now().minusDays(30));
+        profile.setReviewedAt(LocalDateTime.now().minusDays(29));
+        profile.setReviewedBy("admin@scholarzim.co.zw");
+        providerProfileRepository.save(profile);
+    }
+
+    private String ensureDemoCertificateOnDisk() {
+
+        String storedName = "provider-verification-demo-stub.pdf";
+        try {
+            var path = fileStorageService.resolve(storedName);
+            if (!java.nio.file.Files.exists(path)) {
+                java.nio.file.Files.writeString(path, "%PDF-1.4 ScholarZim demo certificate stub");
+            }
+        } catch (Exception ex) {
+            log.warn("Could not create demo provider certificate stub: {}", ex.getMessage());
+        }
+        return storedName;
+    }
+
     private void saveProfile(User user, String level, String institution,
                              String field, String country, String province,
                              String results, String bio) {
 
-        if (profileRepository.findByUser(user).isPresent()) {
-            return;
-        }
+        ApplicantProfile profile = profileRepository.findByUser(user).orElseGet(() -> {
+            ApplicantProfile created = new ApplicantProfile();
+            created.setUser(user);
+            return created;
+        });
 
-        ApplicantProfile profile = new ApplicantProfile();
-        profile.setUser(user);
         profile.setEducationLevel(level);
         profile.setInstitutionName(institution);
         profile.setFieldOfStudy(field);
@@ -263,7 +384,29 @@ public class DemoDataSeeder implements CommandLineRunner {
         profile.setProvince(province);
         profile.setAcademicResults(results);
         profile.setBiography(bio);
+        ensureApplicantResultsCertificate(profile);
         profileRepository.save(profile);
+    }
+
+    private void ensureApplicantResultsCertificate(ApplicantProfile profile) {
+
+        if (profile.getResultsCertificatePath() != null && !profile.getResultsCertificatePath().isBlank()) {
+            return;
+        }
+
+        String storedName = "applicant-results-demo-stub.pdf";
+        try {
+            var path = fileStorageService.resolve(storedName);
+            if (!java.nio.file.Files.exists(path)) {
+                java.nio.file.Files.writeString(path, "%PDF-1.4 ScholarZim demo results stub");
+            }
+        } catch (Exception ex) {
+            log.warn("Could not create demo applicant results stub: {}", ex.getMessage());
+        }
+
+        profile.setResultsCertificatePath(storedName);
+        profile.setResultsCertificateFilename("demo-results.pdf");
+        profile.setResultsUploadedAt(LocalDateTime.now().minusDays(60));
     }
 
     private Opportunity saveOpportunity(User provider, String title, String description,
