@@ -6,16 +6,27 @@ import com.scholarzim.repository.NotificationRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.EmailService;
 import com.scholarzim.service.NotificationService;
+import com.scholarzim.util.NotificationType;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
 public class NotificationServiceImpl implements NotificationService {
+
+    private static final Set<String> EMAIL_TYPES = Set.of(
+            NotificationType.APPLICATION_APPROVED,
+            NotificationType.APPLICATION_REJECTED,
+            NotificationType.APPLICATION_SUBMITTED,
+            NotificationType.DOCUMENTS_REQUESTED,
+            NotificationType.DEADLINE_REMINDER,
+            NotificationType.PROFILE_INCOMPLETE);
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
@@ -50,8 +61,7 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.save(notification);
 
-        if (recipient.getEmail() != null && type != null
-                && (type.contains("STATUS") || type.contains("DEADLINE"))) {
+        if (recipient.getEmail() != null && type != null && EMAIL_TYPES.contains(type)) {
             emailService.sendStatusUpdateEmail(
                     recipient.getEmail(),
                     "ScholarZim update",
@@ -78,11 +88,29 @@ public class NotificationServiceImpl implements NotificationService {
 
     @Override
     public List<Notification> allForUser(String email) {
+        return allForUser(email, null);
+    }
+
+    @Override
+    public List<Notification> allForUser(String email, String typeFilter) {
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) {
             return List.of();
         }
+        if (StringUtils.hasText(typeFilter)) {
+            return notificationRepository.findByUserAndTypeOrderByCreatedAtDesc(
+                    user, typeFilter.trim());
+        }
         return notificationRepository.findByUserOrderByCreatedAtDesc(user);
+    }
+
+    @Override
+    public List<String> listTypesForUser(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return List.of();
+        }
+        return notificationRepository.findDistinctTypesByUser(user);
     }
 
     @Override

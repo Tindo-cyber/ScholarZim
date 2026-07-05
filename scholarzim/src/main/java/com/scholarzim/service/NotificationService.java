@@ -17,6 +17,10 @@ public interface NotificationService {
 
     List<Notification> allForUser(String email);
 
+    List<Notification> allForUser(String email, String typeFilter);
+
+    List<String> listTypesForUser(String email);
+
     long unreadCount(String email);
 
     void markAllRead(String email);

@@ -280,7 +280,32 @@ public class ApplicationServiceImpl implements ApplicationService {
         auditService.log(user.getEmail(), AuditAction.APPLY, "APPLICATION", saved.getApplicationId(),
                 "Applied to \"" + opportunity.getTitle() + "\"");
         log.info("Application created: user={} opportunity={}", user.getEmail(), opportunity.getOpportunityId());
+        notifyOnApplicationSubmitted(saved, user, opportunity);
         return saved;
+    }
+
+    private void notifyOnApplicationSubmitted(Application application, User applicant, Opportunity opportunity) {
+
+        Long applicationId = application.getApplicationId();
+        String title = opportunity.getTitle();
+        Long opportunityId = opportunity.getOpportunityId();
+
+        notificationService.notifyUser(
+                applicant,
+                NotificationType.APPLICATION_SUBMITTED,
+                "Your application for \"" + title + "\" was submitted successfully.",
+                "/my-applications",
+                applicationId);
+
+        User provider = opportunity.getProvider();
+        if (provider != null) {
+            notificationService.notifyUser(
+                    provider,
+                    NotificationType.NEW_APPLICATION,
+                    applicant.getFullName() + " applied to \"" + title + "\".",
+                    "/provider/applications/" + applicationId,
+                    applicationId);
+        }
     }
 
     private User findUserByEmail(String email) {
@@ -315,7 +340,7 @@ public class ApplicationServiceImpl implements ApplicationService {
                     "Your application for \"" + title + "\" was not successful this round.",
                     "/my-applications", opportunityId);
         } else if (ApplicationStatus.DOCUMENTS_REQUESTED.equals(status)) {
-            notificationService.notifyUser(applicant, NotificationType.NEW_OPPORTUNITY,
+            notificationService.notifyUser(applicant, NotificationType.DOCUMENTS_REQUESTED,
                     "Additional documents requested for \"" + title + "\".",
                     "/my-applications", opportunityId);
         }

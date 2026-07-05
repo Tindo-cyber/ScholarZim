@@ -17,6 +17,9 @@ public class AdminDashboardDTO {
     private long rejectedApplications;
     private long pendingApplications;
     private long activeOpportunities;
+    private long closedOpportunities;
+    private long activeUsers;
+    private long distinctInstitutions;
     private int approvalRate;
     private long completeProfiles;
 }

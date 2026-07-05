@@ -17,6 +17,6 @@ public interface SavedScholarshipRepository extends JpaRepository<SavedScholarsh
     boolean existsByUserAndOpportunityOpportunityId(User user, Long opportunityId);
 
     void deleteByUserAndOpportunityOpportunityId(User user, Long opportunityId);
-}
 
-                       
+    List<SavedScholarship> findByOpportunityOpportunityId(Long opportunityId);
+}

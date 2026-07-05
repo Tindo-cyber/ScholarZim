@@ -224,9 +224,9 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "/my-applications", ausSch.getOpportunityId(), true,
                 LocalDateTime.now().minusDays(10));
 
-        saveNotification(simba, NotificationType.NEW_OPPORTUNITY,
-                "Welcome to ScholarZim! Complete your profile to unlock personalised matches.",
-                "/applicant/profile", null, false, LocalDateTime.now().minusHours(1));
+        saveNotification(simba, NotificationType.PROFILE_INCOMPLETE,
+                "Welcome to ScholarZim! Complete your profile and upload your results certificate to apply.",
+                "/applicant/profile", simba.getUserId(), false, LocalDateTime.now().minusHours(1));
 
         log.info("Demo data seeded. Login with any account using password: {}", DEMO_PASSWORD);
         logDemoAccounts();

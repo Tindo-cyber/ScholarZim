@@ -15,7 +15,12 @@ public interface NotificationRepository
 
     List<Notification> findByUserOrderByCreatedAtDesc(User user);
 
+    List<Notification> findByUserAndTypeOrderByCreatedAtDesc(User user, String type);
+
     List<Notification> findTop10ByUserOrderByCreatedAtDesc(User user);
+
+    @Query("SELECT DISTINCT n.type FROM Notification n WHERE n.user = :user ORDER BY n.type")
+    List<String> findDistinctTypesByUser(@Param("user") User user);
 
     long countByUserAndReadFalse(User user);
 

@@ -6,6 +6,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import org.springframework.data.domain.Pageable;
+
 import java.time.LocalDate;
 import java.util.List;
 
@@ -70,4 +72,15 @@ public interface OpportunityRepository
             @Param("fundingType") String fundingType,
             @Param("deadlineBefore") LocalDate deadlineBefore,
             @Param("keyword") String keyword);
+
+    @Query("""
+            SELECT o FROM Opportunity o
+            WHERE LOWER(o.title) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(o.providerName) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(o.description) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(o.country) LIKE LOWER(CONCAT('%', :q, '%'))
+               OR LOWER(o.targetField) LIKE LOWER(CONCAT('%', :q, '%'))
+            ORDER BY o.createdAt DESC
+            """)
+    List<Opportunity> adminSearchByKeyword(@Param("q") String query, Pageable pageable);
 }

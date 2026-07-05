@@ -25,7 +25,9 @@ class AuthMvcTest {
     void loginPageLoads() throws Exception {
         mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("auth/login"));
+                .andExpect(view().name("auth/login"))
+                .andExpect(content().string(containsString("Skip to main content")))
+                .andExpect(content().string(containsString("accessibility.css")));
     }
 
     @Test
@@ -37,7 +39,10 @@ class AuthMvcTest {
     @Test
     void homePageLoads() throws Exception {
         mockMvc.perform(get("/"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Skip to main content")))
+                .andExpect(content().string(containsString("id=\"main-content\"")))
+                .andExpect(content().string(containsString("mobile.css")));
     }
 
     @Test

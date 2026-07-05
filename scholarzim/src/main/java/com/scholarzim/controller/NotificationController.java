@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
 
 
 @Controller
@@ -21,11 +22,16 @@ public class NotificationController {
     }
 
     @GetMapping("/notifications")
-    public String list(@NonNull Authentication authentication, Model model) {
+    public String list(
+            @RequestParam(required = false) String type,
+            @NonNull Authentication authentication,
+            Model model) {
 
-        model.addAttribute(
-                "notifications",
-                notificationService.allForUser(authentication.getName()));
+        String email = authentication.getName();
+        model.addAttribute("notifications", notificationService.allForUser(email, type));
+        model.addAttribute("typeFilter", type != null ? type : "");
+        model.addAttribute("notificationTypes", notificationService.listTypesForUser(email));
+        model.addAttribute("unreadCount", notificationService.unreadCount(email));
 
         return "notifications/list";
     }

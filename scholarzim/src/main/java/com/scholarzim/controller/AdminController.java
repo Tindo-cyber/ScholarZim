@@ -1,10 +1,13 @@
 package com.scholarzim.controller;
 
+import com.scholarzim.dto.AdminDashboardDTO;
 import com.scholarzim.exception.AdminOperationException;
 import com.scholarzim.exception.ResourceNotFoundException;
+import com.scholarzim.service.AdminSearchService;
 import com.scholarzim.service.AdminUserService;
 import com.scholarzim.service.AnalyticsService;
 import com.scholarzim.service.AuditLogService;
+import com.scholarzim.util.ChartMonths;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -19,9 +22,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -33,15 +33,18 @@ public class AdminController {
     private final AnalyticsService analyticsService;
     private final AdminUserService adminUserService;
     private final AuditLogService auditLogService;
+    private final AdminSearchService adminSearchService;
 
     public AdminController(
             AnalyticsService analyticsService,
             AdminUserService adminUserService,
-            AuditLogService auditLogService) {
+            AuditLogService auditLogService,
+            AdminSearchService adminSearchService) {
 
         this.analyticsService = analyticsService;
         this.adminUserService = adminUserService;
         this.auditLogService = auditLogService;
+        this.adminSearchService = adminSearchService;
     }
 
     @GetMapping("/admin/dashboard")
@@ -59,16 +62,8 @@ public class AdminController {
         model.addAttribute("providerPage", providerPage);
 
         int months = 6;
-        List<Long> monthlyCounts = analyticsService.getMonthlyApplicationCounts(months);
-        model.addAttribute("monthlyCounts", monthlyCounts);
-
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MMM yyyy");
-        List<String> monthLabels = new ArrayList<>();
-        YearMonth now = YearMonth.now();
-        for (int i = months - 1; i >= 0; i--) {
-            monthLabels.add(now.minusMonths(i).format(fmt));
-        }
-        model.addAttribute("monthLabels", monthLabels);
+        model.addAttribute("monthlyCounts", analyticsService.getMonthlyApplicationCounts(months));
+        model.addAttribute("monthLabels", ChartMonths.labelsForLastMonths(months));
 
         model.addAttribute("topProviders", analyticsService.getTopProviders(5));
         model.addAttribute("mostAppliedOpportunities",
@@ -77,16 +72,66 @@ public class AdminController {
         return "admin/dashboard";
     }
 
+    @GetMapping("/admin/reports")
+    public String reportsHub() {
+        return "admin/reports";
+    }
+
+    @GetMapping("/admin/analytics")
+    public String analytics(
+            @RequestParam(defaultValue = "12") int months,
+            Model model) {
+
+        int range = Math.min(Math.max(months, 3), 24);
+        AdminDashboardDTO stats = analyticsService.getDashboardStats();
+
+        model.addAttribute("stats", stats);
+        model.addAttribute("months", range);
+
+        List<Long> monthlyCounts = analyticsService.getMonthlyApplicationCounts(range);
+        model.addAttribute("monthlyCounts", monthlyCounts);
+        model.addAttribute("monthLabels", ChartMonths.labelsForLastMonths(range));
+
+        model.addAttribute("statusBreakdown", analyticsService.getApplicationStatusBreakdown());
+        model.addAttribute("userRoles", analyticsService.getUserRoleBreakdown());
+        model.addAttribute("scholarshipAvailability", analyticsService.getScholarshipAvailabilityBreakdown());
+        model.addAttribute("topProviders", analyticsService.getTopProviders(10));
+        model.addAttribute("mostAppliedOpportunities", analyticsService.getMostAppliedOpportunities(10));
+
+        long profileRate = stats.getTotalApplicants() == 0 ? 0
+                : (int) Math.round(100.0 * stats.getCompleteProfiles() / stats.getTotalApplicants());
+        model.addAttribute("profileCoverageRate", profileRate);
+
+        long monthlyTotal = monthlyCounts.stream().mapToLong(Long::longValue).sum();
+        model.addAttribute("monthlyAverage", range == 0 ? 0 : Math.round((double) monthlyTotal / range));
+
+        return "admin/analytics";
+    }
+
     @GetMapping("/admin/audit-log")
     public String auditLog(
             @RequestParam(required = false) String q,
+            @RequestParam(required = false) String action,
             @RequestParam(defaultValue = "0") int page,
             Model model) {
 
-        model.addAttribute("auditPage", auditLogService.search(q, page, 25));
+        model.addAttribute("auditPage", auditLogService.search(q, action, page, 25));
         model.addAttribute("query", q != null ? q : "");
+        model.addAttribute("actionFilter", action != null ? action : "");
+        model.addAttribute("auditActions", auditLogService.listDistinctActions());
         model.addAttribute("page", page);
         return "admin/audit-log";
+    }
+
+    @GetMapping("/admin/search")
+    public String globalSearch(
+            @RequestParam(required = false) String q,
+            Model model) {
+
+        String query = q != null ? q : "";
+        model.addAttribute("query", query);
+        model.addAttribute("results", adminSearchService.search(query));
+        return "admin/search";
     }
 
     @PostMapping("/admin/users/applicants/{id}/delete")

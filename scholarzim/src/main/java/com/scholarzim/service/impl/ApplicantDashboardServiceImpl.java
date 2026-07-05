@@ -38,9 +38,10 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
 
         boolean hasProfile = profileService.hasProfile(email);
         dto.setHasProfile(hasProfile);
-        dto.setProfileCompletion(hasProfile
-                ? computeCompletion(profileService.getProfileByEmail(email))
-                : 0);
+        ApplicantProfile profile = hasProfile ? profileService.getProfileByEmail(email) : null;
+        dto.setHasResultsCertificate(profile != null
+                && StringUtils.hasText(profile.getResultsCertificatePath()));
+        dto.setProfileCompletion(hasProfile ? computeCompletion(profile) : 0);
 
         List<Application> applications = applicationService.getApplicationsByUser(email);
         dto.setApplicationsSubmitted(applications.size());
@@ -71,7 +72,12 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
                 .filter(StringUtils::hasText)
                 .count();
 
-        return (int) Math.round((filled * 100.0) / fields.size());
+        if (StringUtils.hasText(profile.getResultsCertificatePath())) {
+            filled++;
+        }
+
+        int total = fields.size() + 1;
+        return (int) Math.round((filled * 100.0) / total);
     }
 
     private long countPending(List<Application> applications) {

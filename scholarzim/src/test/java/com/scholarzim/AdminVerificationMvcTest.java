@@ -80,6 +80,25 @@ class AdminVerificationMvcTest extends MvcIntegrationTestBase {
     }
 
     @Test
+    void adminGlobalSearchFindsUsers() throws Exception {
+        User pending = data.savePendingProviderWithProfile("findme-" + UUID.randomUUID() + "@org.co.zw");
+
+        mockMvc.perform(get("/admin/search").param("q", pending.getFullName().substring(0, 6))
+                        .with(MvcTestSupport.asAdmin("admin@test.com")))
+                .andExpect(status().isOk())
+                .andExpect(view().name("admin/search"))
+                .andExpect(content().string(containsString(pending.getFullName())))
+                .andExpect(content().string(containsString("sz-mobile-bottom-nav")));
+    }
+
+    @Test
+    void applicantCannotAccessAdminSearch() throws Exception {
+        mockMvc.perform(get("/admin/search").param("q", "test")
+                        .with(MvcTestSupport.asApplicant("student@test.com")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void providerCannotDownloadCertificateViaAdminEndpoint() throws Exception {
         User pending = data.savePendingProviderWithProfile("blocked-" + UUID.randomUUID() + "@org.co.zw");
 

@@ -2,13 +2,16 @@ package com.scholarzim.scheduler;
 
 import com.scholarzim.entity.Application;
 import com.scholarzim.entity.Opportunity;
+import com.scholarzim.entity.SavedScholarship;
 import com.scholarzim.entity.User;
 import com.scholarzim.repository.ApplicationRepository;
 import com.scholarzim.repository.OpportunityRepository;
+import com.scholarzim.repository.SavedScholarshipRepository;
 import com.scholarzim.service.NotificationService;
 import com.scholarzim.service.SmsService;
 import com.scholarzim.util.ApplicationStatus;
 import com.scholarzim.util.NotificationType;
+import com.scholarzim.util.OpportunityStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -25,17 +28,20 @@ public class DeadlineReminderScheduler {
 
     private final OpportunityRepository opportunityRepository;
     private final ApplicationRepository applicationRepository;
+    private final SavedScholarshipRepository savedScholarshipRepository;
     private final NotificationService notificationService;
     private final SmsService smsService;
 
     public DeadlineReminderScheduler(
             OpportunityRepository opportunityRepository,
             ApplicationRepository applicationRepository,
+            SavedScholarshipRepository savedScholarshipRepository,
             NotificationService notificationService,
             SmsService smsService) {
 
         this.opportunityRepository = opportunityRepository;
         this.applicationRepository = applicationRepository;
+        this.savedScholarshipRepository = savedScholarshipRepository;
         this.notificationService = notificationService;
         this.smsService = smsService;
     }
@@ -57,52 +63,110 @@ public class DeadlineReminderScheduler {
 
             LocalDate deadline = opportunity.getDeadline();
 
-            boolean closingSoon = deadline != null
-                    && "ACTIVE".equalsIgnoreCase(opportunity.getStatus())
-                    && !deadline.isBefore(today)
-                    && !deadline.isAfter(windowEnd);
-
-            if (!closingSoon) {
+            if (!isClosingSoon(deadline, today, windowEnd, opportunity.getStatus())) {
                 continue;
             }
 
-            List<Application> applications =
-                    applicationRepository.findByOpportunity(opportunity);
-
-            for (Application application : applications) {
-
-                String status = application.getApplicationStatus();
-                if (status == null || (!ApplicationStatus.SUBMITTED.equals(status)
-                        && !ApplicationStatus.UNDER_REVIEW.equals(status)
-                        && !ApplicationStatus.PENDING.equals(status))) {
-                    continue;
-                }
-
-                User applicant = application.getUser();
-                if (applicant == null) {
-                    continue;
-                }
-                Long opportunityId = opportunity.getOpportunityId();
-
-                if (notificationService.hasNotification(
-                        applicant, NotificationType.DEADLINE_REMINDER, opportunityId)) {
-                    continue;
-                }
-
-                notificationService.notifyUser(
-                        applicant,
-                        NotificationType.DEADLINE_REMINDER,
-                        "Deadline approaching for \"" + opportunity.getTitle()
-                                + "\" (closes " + deadline + ").",
-                        "/my-applications",
-                        opportunityId);
-                smsService.sendDeadlineReminder(
-                        applicant.getPhone(),
-                        "ScholarZim: \"" + opportunity.getTitle() + "\" closes " + deadline + ".");
-                remindersSent++;
-            }
+            Long opportunityId = opportunity.getOpportunityId();
+            remindersSent += remindPendingApplicants(opportunity, deadline, opportunityId);
+            remindersSent += remindSavedNotApplied(opportunity, deadline, opportunityId);
         }
 
         log.info("Deadline reminder job finished — {} reminders sent", remindersSent);
+    }
+
+    private boolean isClosingSoon(LocalDate deadline, LocalDate today, LocalDate windowEnd, String status) {
+        return deadline != null
+                && OpportunityStatus.ACTIVE.equalsIgnoreCase(status)
+                && !deadline.isBefore(today)
+                && !deadline.isAfter(windowEnd);
+    }
+
+    private int remindPendingApplicants(Opportunity opportunity, LocalDate deadline, Long opportunityId) {
+
+        int sent = 0;
+        List<Application> applications = applicationRepository.findByOpportunity(opportunity);
+
+        for (Application application : applications) {
+
+            if (!isPendingForReminder(application.getApplicationStatus())) {
+                continue;
+            }
+
+            User applicant = application.getUser();
+            if (applicant == null) {
+                continue;
+            }
+
+            if (sendReminderIfNeeded(
+                    applicant,
+                    opportunity,
+                    opportunityId,
+                    "Deadline approaching for \"" + opportunity.getTitle()
+                            + "\" (closes " + deadline + ").",
+                    "/my-applications",
+                    "ScholarZim: \"" + opportunity.getTitle() + "\" closes " + deadline + ".")) {
+                sent++;
+            }
+        }
+        return sent;
+    }
+
+    private int remindSavedNotApplied(Opportunity opportunity, LocalDate deadline, Long opportunityId) {
+
+        int sent = 0;
+
+        for (SavedScholarship saved : savedScholarshipRepository.findByOpportunityOpportunityId(opportunityId)) {
+
+            User applicant = saved.getUser();
+            if (applicant == null) {
+                continue;
+            }
+
+            if (applicationRepository.existsByUserAndOpportunity(applicant, opportunity)) {
+                continue;
+            }
+
+            if (sendReminderIfNeeded(
+                    applicant,
+                    opportunity,
+                    opportunityId,
+                    "Saved scholarship \"" + opportunity.getTitle()
+                            + "\" closes " + deadline + ". Apply before the deadline.",
+                    "/apply/" + opportunityId,
+                    "ScholarZim: saved \"" + opportunity.getTitle() + "\" closes " + deadline + ".")) {
+                sent++;
+            }
+        }
+        return sent;
+    }
+
+    private static boolean isPendingForReminder(String status) {
+        return status != null && (ApplicationStatus.SUBMITTED.equals(status)
+                || ApplicationStatus.UNDER_REVIEW.equals(status)
+                || ApplicationStatus.PENDING.equals(status));
+    }
+
+    private boolean sendReminderIfNeeded(
+            User applicant,
+            Opportunity opportunity,
+            Long opportunityId,
+            String notificationMessage,
+            String link,
+            String smsMessage) {
+
+        if (notificationService.hasNotification(
+                applicant, NotificationType.DEADLINE_REMINDER, opportunityId)) {
+            return false;
+        }
+
+        notificationService.notifyUser(
+                applicant,
+                NotificationType.DEADLINE_REMINDER,
+                notificationMessage,
+                link,
+                opportunityId);
+        smsService.sendDeadlineReminder(applicant.getPhone(), smsMessage);
+        return true;
     }
 }

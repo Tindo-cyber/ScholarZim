@@ -28,4 +28,10 @@ public interface AnalyticsService {
      * Opportunities ranked by number of applications received, limited to {@code limit}.
      */
     ChartData getMostAppliedOpportunities(int limit);
+
+    ChartData getApplicationStatusBreakdown();
+
+    ChartData getUserRoleBreakdown();
+
+    ChartData getScholarshipAvailabilityBreakdown();
 }

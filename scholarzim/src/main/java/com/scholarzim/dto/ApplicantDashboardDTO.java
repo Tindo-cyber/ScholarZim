@@ -15,4 +15,5 @@ public class ApplicantDashboardDTO {
     private long approvedApplications;
     private long rejectedApplications;
     private long savedCount;
+    private boolean hasResultsCertificate;
 }
