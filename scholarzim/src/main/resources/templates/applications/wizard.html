@@ -6,6 +6,7 @@
 
 <body>
 
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
 <div class="d-flex sz-shell">
 
     <div th:replace="~{fragments/layout :: sidebar('opportunities')}"></div>
@@ -100,13 +101,18 @@
                                     Your results certificate is already on your academic profile.
                                     Add an extra file here only if needed (e.g. recommendation letter or ID).
                                 </p>
-                                <div class="sz-file-upload" id="fileDropzone">
+                                <div class="sz-file-upload" id="fileDropzone"
+                                     data-file-upload="documentInput"
+                                     data-accept-types="pdf,image"
+                                     data-empty-label="No file selected">
                                     <input type="file" class="sz-file-upload__input" name="document" id="documentInput"
                                            accept=".pdf,.jpg,.jpeg,.png,.webp">
                                     <div class="sz-file-upload__icon"><i class="bi bi-cloud-arrow-up"></i></div>
                                     <div class="fw-semibold">Drop file here or tap to browse</div>
                                     <div class="small text-secondary">PDF or photo — max 5 MB</div>
                                     <div class="sz-file-upload__name text-primary" id="fileNameLabel">No file selected</div>
+                                    <div class="sz-file-upload__error d-none" role="alert"></div>
+                                    <div class="sz-file-upload__preview d-none"></div>
                                 </div>
                             </div>
                             <div class="d-flex flex-wrap gap-2">

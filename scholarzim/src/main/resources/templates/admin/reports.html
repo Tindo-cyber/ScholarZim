@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Reports')}"></head>
+<body>
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
+<div class="d-flex sz-shell">
+    <div th:replace="~{fragments/layout :: sidebar('reports')}"></div>
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+        <nav th:replace="~{fragments/layout :: topbar('Reports')}"></nav>
+        <main id="main-content" tabindex="-1" class="sz-content has-mobile-nav p-3 p-md-4">
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+            <div th:replace="~{fragments/components :: page-header('Reports', 'Export platform data for compliance, analysis, and viva evidence.')}"></div>
+            <div th:replace="~{fragments/components :: report-export-grid}"></div>
+            <section class="sz-dashboard-panel">
+                <div class="sz-dashboard-panel__head">
+                    <h2><i class="bi bi-info-circle text-primary me-1"></i> Export notes</h2>
+                </div>
+                <div class="sz-dashboard-panel__body">
+                    <ul class="small text-secondary mb-0 ps-3">
+                        <li class="mb-2">PDF reports are formatted for printing and examiner review.</li>
+                        <li class="mb-2">Excel exports open in Microsoft Excel or Google Sheets for further analysis.</li>
+                        <li>Audit history is available separately on the <a th:href="@{/admin/audit-log}">audit log</a> page.</li>
+                    </ul>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: admin-mobile-nav('reports')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

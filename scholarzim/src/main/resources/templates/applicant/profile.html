@@ -7,6 +7,7 @@
 
 <body>
 
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
 <div class="d-flex sz-shell">
 
     <div th:replace="~{fragments/layout :: sidebar('profile')}"></div>
@@ -119,11 +120,16 @@
                                             <span th:text="${#temporals.format(existingProfile.resultsUploadedAt, 'dd MMM yyyy')}"></span>
                                         </span>
                                     </div>
-                                    <input type="file" class="form-control" name="resultsCertificate"
-                                           accept="application/pdf,.pdf"
-                                           th:required="${!hasResultsCertificate}">
-                                    <div class="form-text">
-                                        Upload your official results slip, transcript, or report card (PDF only, max 5 MB).
+                                    <div th:replace="~{fragments/components :: file-upload-zone(
+                                        'resultsCertificateInput',
+                                        'resultsCertificate',
+                                        'pdf',
+                                        'application/pdf,.pdf',
+                                        'No file selected',
+                                        'PDF only — max 5 MB',
+                                        ${!hasResultsCertificate})}"></div>
+                                    <div class="form-text mt-2">
+                                        Upload your official results slip, transcript, or report card.
                                         <span th:if="${hasResultsCertificate}">Leave empty to keep your current file.</span>
                                     </div>
                                 </div>

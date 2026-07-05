@@ -3,6 +3,7 @@
 <head th:replace="~{fragments/layout :: head('Provider Registration')}"></head>
 <body class="sz-auth-page sz-auth-page--provider">
 
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
 <header th:replace="~{fragments/layout :: auth-topbar}"></header>
 
 <div class="sz-auth-wrap">
@@ -58,9 +59,15 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Registration certificate (PDF)</label>
-                        <input type="file" class="form-control form-control-sm" name="certificate"
-                               accept="application/pdf,.pdf" required>
-                        <div class="form-text">PDF only, max 5 MB. Must prove the organisation is registered in Zimbabwe.</div>
+                        <div th:replace="~{fragments/components :: file-upload-zone(
+                            'providerCertInput',
+                            'certificate',
+                            'pdf',
+                            'application/pdf,.pdf',
+                            'No file selected',
+                            'PDF only — max 5 MB',
+                            true)}"></div>
+                        <div class="form-text mt-2">Must prove the organisation is registered in Zimbabwe.</div>
                     </div>
                     <div class="mb-3">
                         <label class="form-label fw-semibold small">Work email</label>

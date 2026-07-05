@@ -126,8 +126,47 @@ body:has(.sz-shell)::after {
 .sz-dashboard-panel {
     border: 1px solid var(--sz-border);
     border-radius: var(--sz-radius-lg);
-    box-shadow: var(--sz-shadow);
+    box-shadow: var(--sz-shadow-card);
+    background: var(--sz-card);
     height: 100%;
+    transition: box-shadow var(--sz-duration) var(--sz-ease);
+}
+
+.sz-dashboard-panel:hover {
+    box-shadow: var(--sz-shadow);
+}
+
+.sz-chart-wrap {
+    height: 260px;
+    position: relative;
+}
+
+.sz-chart-wrap--wide {
+    height: 280px;
+}
+
+.sz-analytics-insight {
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius-ui);
+    background: var(--sz-surface-muted);
+    padding: 1rem 1.125rem;
+    height: 100%;
+}
+
+.sz-analytics-insight__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sz-muted);
+    margin-bottom: 0.35rem;
+}
+
+.sz-analytics-insight__value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--sz-text);
+    line-height: 1.1;
 }
 
 .sz-dashboard-panel__head {
@@ -479,4 +518,42 @@ body:has(.sz-shell)::after {
 
 .sz-profile-banner .progress-bar {
     border-radius: 999px;
+}
+
+/* Admin global search */
+.sz-admin-search-form .input-group {
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius-lg);
+    background: var(--sz-card);
+    box-shadow: var(--sz-shadow-card);
+    overflow: hidden;
+}
+
+.sz-admin-search-form .input-group-text,
+.sz-admin-search-form .form-control {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sz-search-results {
+    border-radius: var(--sz-radius-lg);
+    border: 1px solid var(--sz-border);
+    overflow: hidden;
+}
+
+.sz-search-hit-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: var(--sz-radius);
+    background: var(--sz-surface-hover);
+    color: var(--sz-primary);
+    flex-shrink: 0;
+}
+
+.sz-search-hit-icon i {
+    font-size: 1.1rem;
 }

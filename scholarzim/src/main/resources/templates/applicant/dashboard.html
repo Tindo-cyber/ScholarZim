@@ -7,6 +7,7 @@
 
 <body>
 
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
 <div class="d-flex sz-shell">
 
     <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
@@ -94,6 +95,22 @@
                     </div>
                 </div>
             </section>
+
+            <div class="row g-3 mb-4" th:if="${stats.profileCompletion < 100 or !stats.hasResultsCertificate}">
+                <div class="col-12 col-lg-5">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-list-check text-primary me-1"></i> Document checklist</h2>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div th:replace="~{fragments/components :: document-checklist(
+                                ${stats.hasProfile},
+                                ${stats.hasResultsCertificate},
+                                ${stats.profileCompletion})}"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
 
             <div class="row g-3 mb-4">
                 <div class="col-6 col-xl-3">
@@ -201,9 +218,12 @@
                         </div>
                         <div class="sz-dashboard-panel__body">
                             <div th:if="${notifRecent == null or notifRecent.isEmpty()}"
-                                 class="text-secondary small py-2">
-                                You're all caught up — no notifications yet.
-                            </div>
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-bell',
+                                    'All caught up',
+                                    'Notifications about applications and deadlines will appear here.',
+                                    null,
+                                    null)}"></div>
                             <th:block th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                                 <a th:each="n : ${notifRecent}"
                                    th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
@@ -229,10 +249,12 @@
                         </div>
                         <div class="sz-dashboard-panel__body">
                             <div th:if="${recentApplications.isEmpty()}"
-                                 class="text-secondary small py-2">
-                                You haven't applied to any opportunities yet.
-                                <a th:href="@{/opportunities}" class="d-block mt-2 fw-medium">Browse opportunities</a>
-                            </div>
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-file-earmark-text',
+                                    'No applications yet',
+                                    'Browse scholarships and submit your first application.',
+                                    @{/opportunities},
+                                    'Browse opportunities')}"></div>
                             <div class="sz-list-row" th:each="app : ${recentApplications}">
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="small fw-semibold text-truncate"

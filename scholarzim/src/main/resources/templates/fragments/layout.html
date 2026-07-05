@@ -6,14 +6,17 @@
 <!-- ============ STYLES ============ -->
 <!-- App shell styles only — landing.css is public pages only -->
 <th:block th:fragment="styles">
-    <link rel="stylesheet" th:href="@{/css/tokens.css(v=28)}">
-    <link rel="stylesheet" th:href="@{/css/base.css(v=28)}">
-    <link rel="stylesheet" th:href="@{/css/layout.css(v=28)}">
-    <link rel="stylesheet" th:href="@{/css/components.css(v=28)}">
-    <link rel="stylesheet" th:href="@{/css/dashboard.css(v=28)}">
-    <link rel="stylesheet" th:href="@{/css/glass.css(v=28)}">
-    <link rel="stylesheet" th:href="@{/css/dark.css(v=28)}">
-    <link rel="stylesheet" th:href="@{/css/auth.css(v=28)}">
+    <link rel="stylesheet" th:href="@{/css/tokens.css(v=29)}">
+    <link rel="stylesheet" th:href="@{/css/base.css(v=29)}">
+    <link rel="stylesheet" th:href="@{/css/layout.css(v=33)}">
+    <link rel="stylesheet" th:href="@{/css/components.css(v=31)}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css(v=33)}">
+    <link rel="stylesheet" th:href="@{/css/glass.css(v=30)}">
+    <link rel="stylesheet" th:href="@{/css/dark.css(v=30)}">
+    <link rel="stylesheet" th:href="@{/css/auth.css(v=30)}">
+    <link rel="stylesheet" th:href="@{/css/accessibility.css(v=34)}">
+    <link rel="stylesheet" th:href="@{/css/mobile.css(v=35)}">
+    <link rel="stylesheet" th:href="@{/css/polish.css(v=36)}">
 </th:block>
 
 <!-- ============ HEAD ============ -->
@@ -54,10 +57,14 @@
 
 <body>
 
+<!-- ============ SKIP LINK ============ -->
+<a th:fragment="skip-link" class="sz-skip-link" href="#main-content">Skip to main content</a>
+
 <!-- ============ SIDEBAR ============ -->
 <aside th:fragment="sidebar(active)"
        id="sidebar"
-       class="sz-sidebar offcanvas-md offcanvas-start">
+       class="sz-sidebar offcanvas-md offcanvas-start"
+       aria-label="Main navigation">
 
     <div class="offcanvas-header d-md-none border-bottom">
         <h5 class="offcanvas-title fw-bold">
@@ -66,7 +73,8 @@
         <button type="button"
                 class="btn-close"
                 data-bs-dismiss="offcanvas"
-                data-bs-target="#sidebar"></button>
+                data-bs-target="#sidebar"
+                aria-label="Close navigation menu"></button>
     </div>
 
     <div class="offcanvas-body d-flex flex-column p-0">
@@ -89,7 +97,7 @@
             <div class="sz-nav-label px-3">Administration</div>
         </th:block>
 
-        <ul class="nav nav-pills flex-column mb-auto px-2 pt-1 pt-md-2">
+        <ul class="nav nav-pills flex-column mb-auto px-2 pt-1 pt-md-2" role="list">
 
             <!-- APPLICANT -->
             <th:block sec:authorize="hasRole('APPLICANT')">
@@ -192,6 +200,24 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a th:href="@{/admin/analytics}" class="nav-link"
+                       th:classappend="${active == 'analytics'} ? 'active'">
+                        <i class="bi bi-graph-up-arrow me-2"></i>Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a th:href="@{/admin/search}" class="nav-link"
+                       th:classappend="${active == 'search'} ? 'active'">
+                        <i class="bi bi-search me-2"></i>Search
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a th:href="@{/admin/reports}" class="nav-link"
+                       th:classappend="${active == 'reports'} ? 'active'">
+                        <i class="bi bi-file-earmark-bar-graph me-2"></i>Reports
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a th:href="@{/admin/audit-log}" class="nav-link"
                        th:classappend="${active == 'audit'} ? 'active'">
                         <i class="bi bi-journal-text me-2"></i>Audit Log
@@ -218,7 +244,8 @@
 
 <!-- ============ TOPBAR ============ -->
 <nav th:fragment="topbar(title)"
-     class="navbar sticky-top sz-topbar">
+     class="navbar sticky-top sz-topbar"
+     aria-label="Page header">
     <div class="container-fluid sz-topbar__inner">
         <div class="sz-topbar__start">
             <button class="btn sz-topbar-btn d-md-none"
@@ -228,8 +255,28 @@
                     aria-label="Toggle navigation">
                 <i class="bi bi-list"></i>
             </button>
-            <span class="sz-topbar__title" th:text="${title}">Dashboard</span>
+            <span class="sz-topbar__title" th:text="${title}" id="sz-page-title">Dashboard</span>
         </div>
+
+        <form sec:authorize="hasRole('ADMIN')"
+              class="sz-topbar-search d-none d-lg-flex mx-3 flex-grow-1"
+              method="get"
+              th:action="@{/admin/search}"
+              role="search">
+            <div class="input-group input-group-sm">
+                <span class="input-group-text bg-transparent border-end-0" aria-hidden="true">
+                    <i class="bi bi-search text-secondary"></i>
+                </span>
+                <input class="form-control border-start-0 ps-0"
+                       type="search"
+                       name="q"
+                       th:value="${query != null ? query : ''}"
+                       placeholder="Search users, scholarships, applications…"
+                       aria-label="Global admin search"
+                       minlength="2"
+                       autocomplete="off">
+            </div>
+        </form>
 
         <div class="sz-topbar__end">
             <button id="themeToggle" class="btn sz-topbar-btn"
@@ -244,10 +291,15 @@
                     <i class="bi bi-bell"></i>
                     <span th:if="${notifUnreadCount != null and notifUnreadCount > 0}"
                           class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger sz-topbar-badge"
+                          aria-hidden="true"
                           th:text="${notifUnreadCount > 9} ? '9+' : ${notifUnreadCount}">0</span>
+                    <span th:if="${notifUnreadCount != null and notifUnreadCount > 0}" class="sz-sr-only"
+                          th:text="${notifUnreadCount} + ' unread notifications'">Unread</span>
                 </button>
                 <div class="dropdown-menu dropdown-menu-end shadow"
-                     style="min-width: 320px; max-width: 360px;">
+                     style="min-width: 320px; max-width: 360px;"
+                     role="menu"
+                     aria-label="Recent notifications">
                     <div class="d-flex justify-content-between align-items-center px-3 py-2">
                         <span class="fw-semibold">Notifications</span>
                         <form th:if="${notifUnreadCount != null and notifUnreadCount > 0}"
@@ -266,9 +318,8 @@
                            class="dropdown-item d-flex align-items-start gap-2 py-2"
                            th:classappend="${n.unread} ? 'bg-body-secondary'"
                            th:href="@{/notifications/{id}/open(id=${n.notificationId})}">
-                            <i class="bi bi-circle-fill mt-1"
-                               th:style="${n.unread} ? 'font-size:.5rem;color:var(--bs-primary)' : 'font-size:.5rem;color:transparent'"></i>
-                            <span class="small" style="white-space: normal;"
+                            <span th:replace="~{fragments/components :: notification-icon(${n.type})}"></span>
+                            <span class="small flex-grow-1" style="white-space: normal;"
                                   th:text="${n.message}">message</span>
                         </a>
                     </th:block>
@@ -284,8 +335,9 @@
 
             <div class="dropdown">
                 <button class="btn sz-topbar-user dropdown-toggle"
-                        type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <span class="sz-user-avatar"><i class="bi bi-person-fill"></i></span>
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                        aria-label="Account menu">
+                    <span class="sz-user-avatar" aria-hidden="true"><i class="bi bi-person-fill"></i></span>
                     <span class="sz-topbar-user__name d-none d-sm-inline" sec:authentication="name">User</span>
                 </button>
                 <ul class="dropdown-menu dropdown-menu-end">
@@ -304,7 +356,7 @@
 </nav>
 
 <!-- ============ FLASH ALERTS ============ -->
-<div th:fragment="alerts" class="mb-3">
+<div th:fragment="alerts" class="mb-3" aria-live="polite" aria-atomic="true">
     <div th:if="${successMessage}"
          class="alert alert-success alert-dismissible fade show rounded-4" role="alert">
         <i class="bi bi-check-circle me-2"></i>
@@ -317,12 +369,68 @@
         <span th:text="${errorMessage}"></span>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
+    <div th:if="${warningMessage}"
+         class="alert alert-warning alert-dismissible fade show rounded-4" role="alert">
+        <i class="bi bi-exclamation-circle me-2"></i>
+        <span th:text="${warningMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    <div th:if="${infoMessage}"
+         class="alert alert-info alert-dismissible fade show rounded-4" role="alert">
+        <i class="bi bi-info-circle me-2"></i>
+        <span th:text="${infoMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
 </div>
+
+<!-- ============ CONFIRM DIALOG ============ -->
+<div th:fragment="confirm-dialog" class="modal fade sz-confirm-modal" id="szConfirmModal" tabindex="-1"
+     aria-labelledby="szConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <div>
+                    <div class="sz-confirm-modal__icon" id="szConfirmIcon" aria-hidden="true">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <h2 class="modal-title h5 fw-bold mb-0" id="szConfirmTitle">Confirm action</h2>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cancel"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="mb-0" id="szConfirmBody">Are you sure?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger btn-sm" id="szConfirmBtn">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============ MOBILE BOTTOM NAV (admins) ============ -->
+<nav th:fragment="admin-mobile-nav(active)"
+     sec:authorize="hasRole('ADMIN')"
+     class="sz-mobile-bottom-nav d-md-none">
+    <a th:href="@{/admin/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'">
+        <i class="bi bi-speedometer2"></i><span>Home</span>
+    </a>
+    <a th:href="@{/admin/search}" th:classappend="${active == 'search'} ? 'active'">
+        <i class="bi bi-search"></i><span>Search</span>
+    </a>
+    <a th:href="@{/admin/analytics}" th:classappend="${active == 'analytics'} ? 'active'">
+        <i class="bi bi-graph-up-arrow"></i><span>Analytics</span>
+    </a>
+    <a th:href="@{/admin/audit-log}" th:classappend="${active == 'audit'} ? 'active'">
+        <i class="bi bi-journal-text"></i><span>Audit</span>
+    </a>
+</nav>
 
 <!-- ============ MOBILE BOTTOM NAV (providers) ============ -->
 <nav th:fragment="provider-mobile-nav(active)"
      sec:authorize="hasRole('PROVIDER')"
-     class="sz-mobile-bottom-nav d-md-none">
+     class="sz-mobile-bottom-nav d-md-none"
+     aria-label="Provider mobile navigation">
     <a th:href="@{/provider/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'">
         <i class="bi bi-house"></i><span>Home</span>
     </a>
@@ -332,12 +440,16 @@
     <a th:href="@{/provider/applications}" th:classappend="${active == 'applications'} ? 'active'">
         <i class="bi bi-inbox"></i><span>Review</span>
     </a>
+    <a th:href="@{/messages}" th:classappend="${active == 'messages'} ? 'active'">
+        <i class="bi bi-chat-dots"></i><span>Messages</span>
+    </a>
 </nav>
 
 <!-- ============ MOBILE BOTTOM NAV (applicants) ============ -->
 <nav th:fragment="mobile-nav(active)"
      sec:authorize="hasRole('APPLICANT')"
-     class="sz-mobile-bottom-nav d-md-none">
+     class="sz-mobile-bottom-nav d-md-none"
+     aria-label="Student mobile navigation">
     <a th:href="@{/applicant/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'">
         <i class="bi bi-house"></i><span>Home</span>
     </a>
@@ -371,9 +483,10 @@
 </header>
 
 <th:block th:fragment="scripts">
+    <div th:replace="~{fragments/layout :: confirm-dialog}"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/app.js(v=28)}"></script>
-    <script th:src="@{/js/pwa.js(v=28)}"></script>
+    <script th:src="@{/js/app.js(v=36)}"></script>
+    <script th:src="@{/js/pwa.js(v=36)}"></script>
 </th:block>
 
 </body>

@@ -31,10 +31,18 @@
 
     /* Flash alerts → Bootstrap toasts */
     (function initToasts() {
-        const alerts = document.querySelectorAll(".alert-success, .alert-danger");
+        var alertSelectors = ".alert-success, .alert-danger, .alert-warning, .alert-info";
+        var alerts = document.querySelectorAll(alertSelectors);
         if (!alerts.length) return;
 
-        let container = document.getElementById("sz-toast-container");
+        var toneMap = {
+            "alert-success": "success",
+            "alert-danger": "danger",
+            "alert-warning": "warning",
+            "alert-info": "info"
+        };
+
+        var container = document.getElementById("sz-toast-container");
         if (!container) {
             container = document.createElement("div");
             container.id = "sz-toast-container";
@@ -44,22 +52,30 @@
         }
 
         alerts.forEach(function (alert) {
-            const isSuccess = alert.classList.contains("alert-success");
-            const message = alert.querySelector("span")?.textContent?.trim() || alert.textContent.trim();
+            var tone = "primary";
+            Object.keys(toneMap).some(function (cls) {
+                if (alert.classList.contains(cls)) {
+                    tone = toneMap[cls];
+                    return true;
+                }
+                return false;
+            });
+
+            var message = alert.querySelector("span")?.textContent?.trim() || alert.textContent.trim();
             if (!message) return;
 
-            const toastEl = document.createElement("div");
-            toastEl.className = "toast align-items-center text-bg-" + (isSuccess ? "success" : "danger") + " border-0";
+            var toastEl = document.createElement("div");
+            toastEl.className = "toast align-items-center text-bg-" + tone + " border-0";
             toastEl.setAttribute("role", "alert");
             toastEl.innerHTML =
                 '<div class="d-flex">' +
                 '<div class="toast-body">' + message + '</div>' +
-                '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
+                '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Dismiss notification"></button>' +
                 '</div>';
             container.appendChild(toastEl);
 
             if (window.bootstrap && bootstrap.Toast) {
-                const toast = new bootstrap.Toast(toastEl, { delay: 4500 });
+                var toast = new bootstrap.Toast(toastEl, { delay: 4500 });
                 toast.show();
             }
 
@@ -82,8 +98,6 @@
         const documentPreview = document.getElementById("documentPreview");
         const statementCount = document.getElementById("statementCount");
         const draftHint = document.getElementById("draftHint");
-        const fileNameLabel = document.getElementById("fileNameLabel");
-        const dropzone = document.getElementById("fileDropzone");
         const oppId = form.getAttribute("data-opp-id");
         const draftKey = "sz-apply-draft-" + oppId;
         let draftTimer;
@@ -155,35 +169,6 @@
             });
         }
 
-        if (fileInput && fileNameLabel) {
-            fileInput.addEventListener("change", function () {
-                fileNameLabel.textContent = fileInput.files.length
-                    ? fileInput.files[0].name
-                    : "No file selected";
-            });
-        }
-
-        if (dropzone && fileInput) {
-            ["dragenter", "dragover"].forEach(function (ev) {
-                dropzone.addEventListener(ev, function (e) {
-                    e.preventDefault();
-                    dropzone.classList.add("dragover");
-                });
-            });
-            ["dragleave", "drop"].forEach(function (ev) {
-                dropzone.addEventListener(ev, function (e) {
-                    e.preventDefault();
-                    dropzone.classList.remove("dragover");
-                });
-            });
-            dropzone.addEventListener("drop", function (e) {
-                if (e.dataTransfer.files.length) {
-                    fileInput.files = e.dataTransfer.files;
-                    fileInput.dispatchEvent(new Event("change"));
-                }
-            });
-        }
-
         document.querySelectorAll("[data-wizard-next]").forEach(function (btn) {
             btn.addEventListener("click", function () {
                 if (step === 1 && statement && statement.value.trim().length < 50) {
@@ -235,6 +220,214 @@
     function formatDate(d) {
         return d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
     }
+
+    /* Drag-and-drop uploads: validation, preview, submit guard */
+    (function initFileUploads() {
+        var MAX_BYTES = 5 * 1024 * 1024;
+        var TYPE_MAP = {
+            pdf: {
+                mimes: ["application/pdf"],
+                exts: [".pdf"],
+                label: "PDF"
+            },
+            image: {
+                mimes: ["image/jpeg", "image/png", "image/webp"],
+                exts: [".jpg", ".jpeg", ".png", ".webp"],
+                label: "image (JPG, PNG, WebP)"
+            }
+        };
+
+        function parseKinds(typesStr) {
+            return (typesStr || "pdf,image").split(",").map(function (s) {
+                return s.trim();
+            }).filter(Boolean);
+        }
+
+        function validateFile(file, kinds) {
+            if (!file) return null;
+            if (file.size > MAX_BYTES) {
+                return "File must be smaller than 5 MB.";
+            }
+            var name = (file.name || "").toLowerCase();
+            var ok = kinds.some(function (kind) {
+                var spec = TYPE_MAP[kind];
+                if (!spec) return false;
+                if (file.type && spec.mimes.indexOf(file.type) !== -1) return true;
+                return spec.exts.some(function (ext) {
+                    return name.endsWith(ext);
+                });
+            });
+            if (!ok) {
+                return "Please choose a " + kinds.map(function (k) {
+                    return TYPE_MAP[k] ? TYPE_MAP[k].label : k;
+                }).join(" or ") + " file.";
+            }
+            return null;
+        }
+
+        function formatSize(bytes) {
+            if (bytes < 1024) return bytes + " B";
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
+            return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+        }
+
+        function assignFiles(input, fileList) {
+            try {
+                var dt = new DataTransfer();
+                for (var i = 0; i < fileList.length; i++) {
+                    dt.items.add(fileList[i]);
+                }
+                input.files = dt.files;
+            } catch (err) {
+                input.files = fileList;
+            }
+        }
+
+        document.querySelectorAll("[data-file-upload]").forEach(function (zone) {
+            var inputId = zone.getAttribute("data-file-upload");
+            var input = inputId
+                ? document.getElementById(inputId)
+                : zone.querySelector(".sz-file-upload__input");
+            if (!input) return;
+
+            var nameEl = zone.querySelector(".sz-file-upload__name");
+            var errorEl = zone.querySelector(".sz-file-upload__error");
+            var previewEl = zone.querySelector(".sz-file-upload__preview");
+            var emptyLabel = zone.getAttribute("data-empty-label") || "No file selected";
+            var kinds = parseKinds(zone.getAttribute("data-accept-types"));
+            var objectUrl = null;
+
+            function clearPreview() {
+                if (objectUrl) {
+                    URL.revokeObjectURL(objectUrl);
+                    objectUrl = null;
+                }
+                if (previewEl) {
+                    previewEl.classList.add("d-none");
+                    previewEl.innerHTML = "";
+                }
+            }
+
+            function setError(msg) {
+                zone.classList.add("sz-file-upload--error");
+                zone.classList.remove("sz-file-upload--valid");
+                if (errorEl) {
+                    errorEl.textContent = msg;
+                    errorEl.classList.remove("d-none");
+                }
+                input.setCustomValidity(msg || "Invalid file");
+            }
+
+            function clearError() {
+                zone.classList.remove("sz-file-upload--error");
+                if (errorEl) {
+                    errorEl.classList.add("d-none");
+                    errorEl.textContent = "";
+                }
+                input.setCustomValidity("");
+            }
+
+            function handleFile(file) {
+                clearError();
+                if (!file) {
+                    clearPreview();
+                    zone.classList.remove("sz-file-upload--valid");
+                    if (nameEl) nameEl.textContent = emptyLabel;
+                    return true;
+                }
+                var err = validateFile(file, kinds);
+                if (err) {
+                    setError(err);
+                    clearPreview();
+                    if (nameEl) nameEl.textContent = emptyLabel;
+                    return false;
+                }
+                zone.classList.add("sz-file-upload--valid");
+                if (nameEl) nameEl.textContent = file.name + " · " + formatSize(file.size);
+
+                if (previewEl) {
+                    clearPreview();
+                    previewEl.classList.remove("d-none");
+                    var lower = (file.name || "").toLowerCase();
+                    if (file.type === "application/pdf" || lower.endsWith(".pdf")) {
+                        objectUrl = URL.createObjectURL(file);
+                        previewEl.innerHTML =
+                            '<div class="sz-file-preview"><iframe class="sz-file-preview__pdf" title="PDF preview" src="' +
+                            objectUrl + '#toolbar=0"></iframe></div>';
+                    } else if (file.type && file.type.indexOf("image/") === 0) {
+                        objectUrl = URL.createObjectURL(file);
+                        previewEl.innerHTML =
+                            '<div class="sz-file-preview"><img class="sz-file-preview__img" alt="Preview" src="' +
+                            objectUrl + '"></div>';
+                    }
+                }
+                return true;
+            }
+
+            input.addEventListener("change", function () {
+                handleFile(input.files.length ? input.files[0] : null);
+            });
+
+            ["dragenter", "dragover"].forEach(function (ev) {
+                zone.addEventListener(ev, function (e) {
+                    e.preventDefault();
+                    zone.classList.add("dragover");
+                });
+            });
+            ["dragleave", "drop"].forEach(function (ev) {
+                zone.addEventListener(ev, function (e) {
+                    e.preventDefault();
+                    zone.classList.remove("dragover");
+                });
+            });
+            zone.addEventListener("drop", function (e) {
+                if (e.dataTransfer.files.length) {
+                    assignFiles(input, e.dataTransfer.files);
+                    input.dispatchEvent(new Event("change"));
+                }
+            });
+        });
+
+        document.querySelectorAll("form[enctype='multipart/form-data']").forEach(function (form) {
+            form.addEventListener("submit", function (e) {
+                var valid = true;
+                form.querySelectorAll("[data-file-upload]").forEach(function (zone) {
+                    var inputId = zone.getAttribute("data-file-upload");
+                    var inp = inputId
+                        ? document.getElementById(inputId)
+                        : zone.querySelector(".sz-file-upload__input");
+                    if (!inp) return;
+
+                    if (inp.required && (!inp.files || !inp.files.length)) {
+                        valid = false;
+                        zone.classList.add("sz-file-upload--error");
+                        var reqErr = zone.querySelector(".sz-file-upload__error");
+                        if (reqErr) {
+                            reqErr.textContent = "Please select a file.";
+                            reqErr.classList.remove("d-none");
+                        }
+                        zone.scrollIntoView({ behavior: "smooth", block: "center" });
+                        return;
+                    }
+
+                    if (inp.files && inp.files.length) {
+                        var err = validateFile(inp.files[0], parseKinds(zone.getAttribute("data-accept-types")));
+                        if (err) {
+                            valid = false;
+                            zone.classList.add("sz-file-upload--error");
+                            var errBox = zone.querySelector(".sz-file-upload__error");
+                            if (errBox) {
+                                errBox.textContent = err;
+                                errBox.classList.remove("d-none");
+                            }
+                            inp.setCustomValidity(err);
+                        }
+                    }
+                });
+                if (!valid) e.preventDefault();
+            });
+        });
+    })();
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (!reducedMotion) {
@@ -300,6 +493,47 @@
 
     /* Scroll reveal disabled — production UX keeps all content immediately visible */
 
+    /* Accessibility — skip link target, live region, theme announcement */
+    (function initAccessibility() {
+        var main = document.getElementById("main-content")
+            || document.querySelector("main")
+            || document.querySelector(".sz-content")
+            || document.querySelector(".sz-auth-wrap");
+        if (main && main.id !== "main-content") {
+            main.id = "main-content";
+        }
+        if (main && !main.hasAttribute("tabindex")) {
+            main.setAttribute("tabindex", "-1");
+        }
+
+        var skip = document.querySelector(".sz-skip-link");
+        if (skip && main) {
+            skip.addEventListener("click", function (e) {
+                e.preventDefault();
+                main.focus({ preventScroll: false });
+            });
+        }
+
+        if (!document.getElementById("sz-live-region")) {
+            var live = document.createElement("div");
+            live.id = "sz-live-region";
+            live.setAttribute("aria-live", "polite");
+            live.setAttribute("aria-atomic", "true");
+            document.body.appendChild(live);
+        }
+
+        var themeBtn = document.getElementById("themeToggle");
+        if (themeBtn) {
+            themeBtn.addEventListener("click", function () {
+                var mode = root.getAttribute("data-bs-theme") === "dark" ? "Dark" : "Light";
+                var liveRegion = document.getElementById("sz-live-region");
+                if (liveRegion) {
+                    liveRegion.textContent = mode + " mode enabled";
+                }
+            });
+        }
+    })();
+
     /* Close mobile sidebar after navigation */
     (function initSidebarDismiss() {
         const sidebar = document.getElementById("sidebar");
@@ -314,6 +548,118 @@
         });
     })();
 
+    /* Smooth page enter */
+    (function initPageReveal() {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            document.body.classList.add("sz-page-ready");
+            return;
+        }
+        requestAnimationFrame(function () {
+            document.body.classList.add("sz-page-ready");
+        });
+    })();
+
+    /* Accessible confirmation dialogs (replaces native confirm) */
+    (function initConfirmDialogs() {
+        var modalEl = document.getElementById("szConfirmModal");
+        if (!modalEl || !window.bootstrap) return;
+
+        var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        var titleEl = document.getElementById("szConfirmTitle");
+        var bodyEl = document.getElementById("szConfirmBody");
+        var iconEl = document.getElementById("szConfirmIcon");
+        var confirmBtn = document.getElementById("szConfirmBtn");
+        var pendingForm = null;
+        var pendingSubmitter = null;
+
+        function openConfirm(form, message, title, variant, submitter) {
+            pendingForm = form;
+            pendingSubmitter = submitter || null;
+
+            if (titleEl) titleEl.textContent = title || "Confirm action";
+            if (bodyEl) bodyEl.textContent = message;
+
+            if (iconEl) {
+                iconEl.className = "sz-confirm-modal__icon"
+                    + (variant === "warning" ? " sz-confirm-modal__icon--warning" : "");
+                iconEl.innerHTML = variant === "warning"
+                    ? '<i class="bi bi-exclamation-circle-fill"></i>'
+                    : '<i class="bi bi-exclamation-triangle-fill"></i>';
+            }
+
+            if (confirmBtn) {
+                confirmBtn.className = "btn btn-sm "
+                    + (variant === "warning" ? "btn-warning" : "btn-danger");
+                confirmBtn.textContent = variant === "warning" ? "Continue" : "Confirm";
+            }
+
+            modal.show();
+        }
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener("click", function () {
+                if (!pendingForm) return;
+                var form = pendingForm;
+                var submitter = pendingSubmitter;
+                pendingForm = null;
+                pendingSubmitter = null;
+                modal.hide();
+                form.dataset.szConfirmed = "1";
+                if (typeof form.requestSubmit === "function") {
+                    form.requestSubmit(submitter || undefined);
+                } else {
+                    form.submit();
+                }
+            });
+        }
+
+        document.addEventListener("submit", function (e) {
+            var form = e.target;
+            if (!form || !form.tagName || form.tagName.toLowerCase() !== "form") return;
+            var message = form.getAttribute("data-confirm");
+            if (!message) return;
+            if (form.dataset.szConfirmed === "1") {
+                delete form.dataset.szConfirmed;
+                return;
+            }
+            e.preventDefault();
+            openConfirm(
+                form,
+                message,
+                form.getAttribute("data-confirm-title"),
+                form.getAttribute("data-confirm-variant") || "danger",
+                e.submitter || null
+            );
+        }, true);
+    })();
+
+    /* Prevent double-submit and show button loading state */
+    (function initSubmitButtons() {
+        document.addEventListener("submit", function (e) {
+            var form = e.target;
+            if (!form || !form.tagName || form.tagName.toLowerCase() !== "form") return;
+            if (form.method && form.method.toLowerCase() === "get") return;
+            if (form.hasAttribute("data-no-loader")) return;
+            if (e.defaultPrevented) return;
+
+            form.querySelectorAll('[type="submit"]').forEach(function (btn) {
+                if (btn.disabled || btn.classList.contains("is-loading")) return;
+                btn.disabled = true;
+                btn.classList.add("is-loading");
+                var label = btn.textContent.trim();
+                btn.innerHTML = '<span class="sz-btn-spinner spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>'
+                    + label;
+            });
+        });
+    })();
+
+    /* Mark chart panels ready after Chart.js renders */
+    window.szMarkChartsReady = function () {
+        document.querySelectorAll(".sz-chart-wrap").forEach(function (panel) {
+            panel.classList.add("is-ready");
+        });
+    };
+
     /* Brief loader on in-app navigation */
     (function initPageLoader() {
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -325,11 +671,30 @@
             loader.className = "sz-page-loader";
             loader.setAttribute("aria-hidden", "true");
             loader.innerHTML =
-                '<div class="sz-page-loader__ring" role="status" aria-label="Loading"></div>';
+                '<div class="sz-page-loader__panel">' +
+                '<div class="sz-page-loader__ring" role="status" aria-live="polite"></div>' +
+                '<p class="sz-page-loader__text small text-secondary mb-0 mt-3 d-none" id="sz-page-loader-text"></p>' +
+                '<div class="sz-upload-progress d-none" id="sz-page-loader-progress">' +
+                '<div class="sz-upload-progress__bar"></div></div></div>';
             document.body.appendChild(loader);
         }
 
-        function showLoader() {
+        var loaderText = document.getElementById("sz-page-loader-text");
+        var loaderProgress = document.getElementById("sz-page-loader-progress");
+
+        function showLoader(message) {
+            if (loaderText) {
+                if (message) {
+                    loaderText.textContent = message;
+                    loaderText.classList.remove("d-none");
+                } else {
+                    loaderText.textContent = "";
+                    loaderText.classList.add("d-none");
+                }
+            }
+            if (loaderProgress) {
+                loaderProgress.classList.toggle("d-none", !message);
+            }
             loader.classList.add("is-active");
         }
 
@@ -352,7 +717,15 @@
             if (!form || !form.tagName || form.tagName.toLowerCase() !== "form") return;
             if (form.method && form.method.toLowerCase() === "get") return;
             if (form.hasAttribute("data-no-loader")) return;
-            showLoader();
+            if (e.defaultPrevented) return;
+
+            var uploadMsg = null;
+            if (form.getAttribute("enctype") === "multipart/form-data") {
+                form.querySelectorAll('input[type="file"]').forEach(function (inp) {
+                    if (inp.files && inp.files.length) uploadMsg = "Uploading file…";
+                });
+            }
+            showLoader(uploadMsg);
         });
     })();
 })();

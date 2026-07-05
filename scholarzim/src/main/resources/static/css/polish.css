@@ -1,0 +1,96 @@
+/* Phase 15 — final UX polish: transitions, confirmations, submit states */
+
+body:not(.sz-page-ready) .sz-content,
+body:not(.sz-page-ready) .sz-auth-wrap,
+body:not(.sz-page-ready) .sz-error-page .container,
+body:not(.sz-page-ready) .sz-landing .sz-container {
+    opacity: 0;
+}
+
+body.sz-page-ready .sz-content,
+body.sz-page-ready .sz-auth-wrap,
+body.sz-page-ready .sz-error-page .container,
+body.sz-page-ready .sz-landing .sz-container {
+    opacity: 1;
+    transition: opacity 0.22s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    body:not(.sz-page-ready) .sz-content,
+    body:not(.sz-page-ready) .sz-auth-wrap,
+    body:not(.sz-page-ready) .sz-error-page .container,
+    body:not(.sz-page-ready) .sz-landing .sz-container {
+        opacity: 1;
+    }
+
+    body.sz-page-ready .sz-content,
+    body.sz-page-ready .sz-auth-wrap,
+    body.sz-page-ready .sz-error-page .container,
+    body.sz-page-ready .sz-landing .sz-container {
+        transition: none;
+    }
+}
+
+/* Accessible confirmation dialog */
+.sz-confirm-modal .modal-content {
+    border: none;
+    border-radius: var(--sz-radius-lg, 1.25rem);
+    box-shadow: var(--sz-shadow-lg, 0 24px 48px rgba(15, 23, 42, 0.18));
+}
+
+.sz-confirm-modal .modal-header {
+    border-bottom-color: var(--bs-border-color-translucent);
+    padding: 1.25rem 1.25rem 0.75rem;
+}
+
+.sz-confirm-modal .modal-body {
+    padding: 0.75rem 1.25rem 1rem;
+    color: var(--sz-text-secondary, #64748b);
+}
+
+.sz-confirm-modal .modal-footer {
+    border-top: none;
+    padding: 0.75rem 1.25rem 1.25rem;
+    gap: 0.5rem;
+}
+
+.sz-confirm-modal__icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    margin-bottom: 0.75rem;
+    background: var(--bs-danger-bg-subtle);
+    color: var(--bs-danger);
+}
+
+.sz-confirm-modal__icon--warning {
+    background: var(--bs-warning-bg-subtle);
+    color: var(--bs-warning-text-emphasis, #997404);
+}
+
+/* Submit button loading */
+.btn.is-loading {
+    pointer-events: none;
+    opacity: 0.85;
+}
+
+.btn .sz-btn-spinner {
+    vertical-align: -0.125em;
+}
+
+/* Chart panels — subtle ready transition */
+.sz-chart-wrap canvas {
+    transition: opacity 0.2s ease;
+}
+
+.sz-chart-wrap:not(.is-ready) canvas {
+    opacity: 0;
+}
+
+.sz-chart-wrap.is-ready canvas {
+    opacity: 1;
+}

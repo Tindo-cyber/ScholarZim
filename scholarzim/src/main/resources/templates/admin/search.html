@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Search')}"></head>
+<body>
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
+<div class="d-flex sz-shell">
+    <div th:replace="~{fragments/layout :: sidebar('search')}"></div>
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+        <nav th:replace="~{fragments/layout :: topbar('Search')}"></nav>
+        <main id="main-content" tabindex="-1" class="sz-content has-mobile-nav p-3 p-md-4">
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+            <div th:replace="~{fragments/components :: page-header(
+                'Global search',
+                'Find students, providers, scholarships, and applications across the platform')}"></div>
+
+            <form class="sz-admin-search-form mb-4" method="get" th:action="@{/admin/search}">
+                <div class="input-group input-group-lg">
+                    <span class="input-group-text bg-transparent border-end-0">
+                        <i class="bi bi-search text-secondary"></i>
+                    </span>
+                    <input class="form-control border-start-0 ps-0"
+                           type="search"
+                           name="q"
+                           th:value="${query}"
+                           placeholder="Search by name, email, scholarship title, or status…"
+                           autofocus
+                           minlength="2"
+                           autocomplete="off">
+                    <button class="btn btn-primary px-4" type="submit">Search</button>
+                </div>
+                <p class="form-text mb-0 mt-2">Enter at least 2 characters. Up to 10 results per category.</p>
+            </form>
+
+            <div th:if="${query.isBlank()}"
+                 class="sz-empty py-5">
+                <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
+                <h3 class="h5 mb-2">Search the platform</h3>
+                <p class="text-secondary mb-0">Look up users, scholarships, and applications from one place.</p>
+            </div>
+
+            <div th:if="${!query.isBlank() and query.length() < 2}"
+                 class="alert alert-warning d-flex align-items-center gap-2">
+                <i class="bi bi-info-circle"></i>
+                <span>Type at least 2 characters to search.</span>
+            </div>
+
+            <div th:if="${!query.isBlank() and query.length() >= 2 and results.empty}"
+                 th:replace="~{fragments/components :: empty-state(
+                    'bi-search',
+                    'No results',
+                    'Nothing matched your query. Try a different name, email, or scholarship title.',
+                    @{/admin/search},
+                    'Clear search')}"></div>
+
+            <div th:if="${!query.isBlank() and query.length() >= 2 and !results.empty}">
+                <p class="text-secondary small mb-4">
+                    <span th:text="${results.totalCount}">0</span> result(s) for
+                    <strong th:text="'&quot;' + ${query} + '&quot;'">query</strong>
+                </p>
+
+                <section class="mb-4" th:if="${!results.users.isEmpty()}">
+                    <h2 class="h6 text-uppercase text-secondary fw-semibold mb-3">
+                        <i class="bi bi-people me-1"></i> Users
+                        <span class="badge text-bg-light text-dark ms-1" th:text="${results.users.size()}">0</span>
+                    </h2>
+                    <div class="list-group shadow-sm sz-search-results">
+                        <a th:each="hit : ${results.users}"
+                           class="list-group-item list-group-item-action d-flex align-items-start gap-3 py-3"
+                           th:href="${hit.link}">
+                            <span class="sz-search-hit-icon"><i class="bi" th:classappend="${hit.icon}"></i></span>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="d-block fw-semibold text-truncate" th:text="${hit.title}">Title</span>
+                                <span class="d-block small text-secondary text-truncate" th:text="${hit.subtitle}">Subtitle</span>
+                            </span>
+                            <span class="badge text-bg-light text-dark flex-shrink-0" th:text="${hit.badge}">Badge</span>
+                        </a>
+                    </div>
+                </section>
+
+                <section class="mb-4" th:if="${!results.scholarships.isEmpty()}">
+                    <h2 class="h6 text-uppercase text-secondary fw-semibold mb-3">
+                        <i class="bi bi-mortarboard me-1"></i> Scholarships
+                        <span class="badge text-bg-light text-dark ms-1" th:text="${results.scholarships.size()}">0</span>
+                    </h2>
+                    <div class="list-group shadow-sm sz-search-results">
+                        <a th:each="hit : ${results.scholarships}"
+                           class="list-group-item list-group-item-action d-flex align-items-start gap-3 py-3"
+                           th:href="${hit.link}">
+                            <span class="sz-search-hit-icon"><i class="bi" th:classappend="${hit.icon}"></i></span>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="d-block fw-semibold text-truncate" th:text="${hit.title}">Title</span>
+                                <span class="d-block small text-secondary text-truncate" th:text="${hit.subtitle}">Subtitle</span>
+                            </span>
+                            <span class="badge text-bg-light text-dark flex-shrink-0" th:text="${hit.badge}">Badge</span>
+                        </a>
+                    </div>
+                </section>
+
+                <section class="mb-4" th:if="${!results.applications.isEmpty()}">
+                    <h2 class="h6 text-uppercase text-secondary fw-semibold mb-3">
+                        <i class="bi bi-file-earmark-text me-1"></i> Applications
+                        <span class="badge text-bg-light text-dark ms-1" th:text="${results.applications.size()}">0</span>
+                    </h2>
+                    <div class="list-group shadow-sm sz-search-results">
+                        <a th:each="hit : ${results.applications}"
+                           class="list-group-item list-group-item-action d-flex align-items-start gap-3 py-3"
+                           th:href="${hit.link}">
+                            <span class="sz-search-hit-icon"><i class="bi" th:classappend="${hit.icon}"></i></span>
+                            <span class="flex-grow-1 min-w-0">
+                                <span class="d-block fw-semibold text-truncate" th:text="${hit.title}">Title</span>
+                                <span class="d-block small text-secondary text-truncate" th:text="${hit.subtitle}">Subtitle</span>
+                            </span>
+                            <span class="badge text-bg-light text-dark flex-shrink-0" th:text="${hit.badge}">Badge</span>
+                        </a>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: admin-mobile-nav('search')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</body>
+</html>

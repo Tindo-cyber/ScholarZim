@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Analytics')}"></head>
+<body>
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
+<div class="d-flex sz-shell">
+    <div th:replace="~{fragments/layout :: sidebar('analytics')}"></div>
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+        <nav th:replace="~{fragments/layout :: topbar('Platform analytics')}"></nav>
+        <main id="main-content" tabindex="-1" class="sz-content has-mobile-nav p-3 p-md-4">
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+                <div th:replace="~{fragments/components :: page-header(
+                    'Analytics',
+                    'Trends, distributions, and platform health for decision-making and viva evidence.')}"></div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <div class="btn-group btn-group-sm" role="group" aria-label="Time range">
+                        <a th:href="@{/admin/analytics(months=6)}"
+                           class="btn"
+                           th:classappend="${months == 6} ? 'btn-primary' : 'btn-outline-secondary'">6 mo</a>
+                        <a th:href="@{/admin/analytics(months=12)}"
+                           class="btn"
+                           th:classappend="${months == 12} ? 'btn-primary' : 'btn-outline-secondary'">12 mo</a>
+                        <a th:href="@{/admin/analytics(months=24)}"
+                           class="btn"
+                           th:classappend="${months == 24} ? 'btn-primary' : 'btn-outline-secondary'">24 mo</a>
+                    </div>
+                    <a th:href="@{/admin/reports}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-download me-1"></i>Export reports
+                    </a>
+                </div>
+            </div>
+
+            <!-- KPI row -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(
+                        icon='bi-file-earmark-text', value=${stats.totalApplications},
+                        label='Total applications', color='bg-primary-subtle text-primary')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(
+                        icon='bi-percent', value=${stats.approvalRate + '%'},
+                        label='Approval rate', color='bg-success-subtle text-success')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(
+                        icon='bi-graph-up', value=${monthlyAverage},
+                        label='Avg applications / month', color='bg-info-subtle text-info')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(
+                        icon='bi-person-check', value=${profileCoverageRate + '%'},
+                        label='Students with profiles', color='bg-warning-subtle text-warning')}"></div>
+                </div>
+            </div>
+
+            <div class="row g-3 g-md-4 mb-4">
+                <div class="col-12 col-xl-8">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-activity text-primary me-1"></i> Application volume</h2>
+                            <span class="small text-secondary" th:text="'Last ' + ${months} + ' months'">Range</span>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div class="sz-chart-wrap sz-chart-wrap--wide">
+                                <canvas id="trendChart"></canvas>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <div class="col-12 col-xl-4">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-pie-chart text-success me-1"></i> By status</h2>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div class="sz-chart-wrap" th:if="${!statusBreakdown.labels.isEmpty()}">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                            <div th:if="${statusBreakdown.labels.isEmpty()}"
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-pie-chart', 'No applications yet',
+                                    'Status distribution will appear after the first submissions.',
+                                    null, null)}"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="row g-3 g-md-4 mb-4">
+                <div class="col-12 col-md-6">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-people text-primary me-1"></i> Users by role</h2>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div class="sz-chart-wrap">
+                                <canvas id="rolesChart"></canvas>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+                <div class="col-12 col-md-6">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-briefcase text-warning me-1"></i> Scholarship availability</h2>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div class="sz-chart-wrap">
+                                <canvas id="scholarshipChart"></canvas>
+                            </div>
+                            <p class="small text-secondary text-center mb-0 mt-2">
+                                <span th:text="${stats.activeOpportunities}">0</span> open ·
+                                <span th:text="${stats.closedOpportunities}">0</span> closed
+                            </p>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="row g-3 g-md-4 mb-4">
+                <div class="col-12 col-lg-6">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2>Top providers by applications</h2>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!topProviders.labels.isEmpty()}">
+                                <canvas id="providersChart"></canvas>
+                            </div>
+                            <div th:if="${topProviders.labels.isEmpty()}"
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-building', 'No provider data', 'Rankings appear once students apply.', null, null)}"></div>
+                        </div>
+                    </section>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2>Most applied scholarships</h2>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!mostAppliedOpportunities.labels.isEmpty()}">
+                                <canvas id="opportunitiesChart"></canvas>
+                            </div>
+                            <div th:if="${mostAppliedOpportunities.labels.isEmpty()}"
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-mortarboard', 'No scholarship data', 'Popularity rankings appear after applications.', null, null)}"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <section class="sz-dashboard-panel">
+                <div class="sz-dashboard-panel__head">
+                    <h2><i class="bi bi-lightbulb text-warning me-1"></i> Platform insights</h2>
+                </div>
+                <div class="sz-dashboard-panel__body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="sz-analytics-insight">
+                                <div class="sz-analytics-insight__label">Active users</div>
+                                <div class="sz-analytics-insight__value" th:text="${stats.activeUsers}">0</div>
+                                <div class="small text-secondary">of <span th:text="${stats.totalUsers}">0</span> total accounts</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="sz-analytics-insight">
+                                <div class="sz-analytics-insight__label">Universities represented</div>
+                                <div class="sz-analytics-insight__value" th:text="${stats.distinctInstitutions}">0</div>
+                                <div class="small text-secondary">distinct institutions on student profiles</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="sz-analytics-insight">
+                                <div class="sz-analytics-insight__label">Pending decisions</div>
+                                <div class="sz-analytics-insight__value" th:text="${stats.pendingApplications}">0</div>
+                                <div class="small text-secondary">applications awaiting provider action</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+</div>
+<nav th:replace="~{fragments/layout :: admin-mobile-nav('analytics')}"></nav>
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    const monthLabels = [[${monthLabels}]];
+    const monthlyCounts = [[${monthlyCounts}]];
+    const statusLabels = [[${statusBreakdown.labels}]];
+    const statusData = [[${statusBreakdown.data}]];
+    const roleLabels = [[${userRoles.labels}]];
+    const roleData = [[${userRoles.data}]];
+    const scholarshipLabels = [[${scholarshipAvailability.labels}]];
+    const scholarshipData = [[${scholarshipAvailability.data}]];
+    const providerLabels = [[${topProviders.labels}]];
+    const providerData = [[${topProviders.data}]];
+    const oppLabels = [[${mostAppliedOpportunities.labels}]];
+    const oppData = [[${mostAppliedOpportunities.data}]];
+
+    const rootStyles = getComputedStyle(document.documentElement);
+    const chartSuccess = rootStyles.getPropertyValue('--sz-chart-success').trim() || '#22C55E';
+    const chartWarning = rootStyles.getPropertyValue('--sz-chart-warning').trim() || '#F59E0B';
+    const chartDanger = rootStyles.getPropertyValue('--sz-chart-danger').trim() || '#EF4444';
+    const chartPrimary = rootStyles.getPropertyValue('--sz-chart-primary').trim() || 'rgba(22, 163, 74, 0.75)';
+    const chartAccent = rootStyles.getPropertyValue('--sz-chart-accent').trim() || 'rgba(59, 130, 246, 0.7)';
+
+    const palette = [chartPrimary, chartAccent, chartSuccess, chartWarning, chartDanger,
+        'rgba(168, 85, 247, 0.72)', 'rgba(236, 72, 153, 0.68)'];
+
+    function doughnutOptions() {
+        return {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } } }
+        };
+    }
+
+    function horizontalBarOptions() {
+        return {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+        };
+    }
+
+    new Chart(document.getElementById('trendChart'), {
+        type: 'line',
+        data: {
+            labels: monthLabels,
+            datasets: [{
+                label: 'Applications',
+                data: monthlyCounts,
+                borderColor: chartSuccess,
+                backgroundColor: 'rgba(34, 197, 94, 0.12)',
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+        }
+    });
+
+    if (statusLabels.length) {
+        new Chart(document.getElementById('statusChart'), {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels,
+                datasets: [{ data: statusData, backgroundColor: palette, borderWidth: 0 }]
+            },
+            options: doughnutOptions()
+        });
+    }
+
+    new Chart(document.getElementById('rolesChart'), {
+        type: 'doughnut',
+        data: {
+            labels: roleLabels,
+            datasets: [{ data: roleData, backgroundColor: [chartAccent, chartSuccess, chartWarning], borderWidth: 0 }]
+        },
+        options: doughnutOptions()
+    });
+
+    new Chart(document.getElementById('scholarshipChart'), {
+        type: 'doughnut',
+        data: {
+            labels: scholarshipLabels,
+            datasets: [{ data: scholarshipData, backgroundColor: [chartSuccess, chartDanger], borderWidth: 0 }]
+        },
+        options: doughnutOptions()
+    });
+
+    if (providerLabels.length) {
+        new Chart(document.getElementById('providersChart'), {
+            type: 'bar',
+            data: {
+                labels: providerLabels,
+                datasets: [{ label: 'Applications', data: providerData, backgroundColor: chartAccent, borderRadius: 6 }]
+            },
+            options: horizontalBarOptions()
+        });
+    }
+
+    if (oppLabels.length) {
+        new Chart(document.getElementById('opportunitiesChart'), {
+            type: 'bar',
+            data: {
+                labels: oppLabels,
+                datasets: [{ label: 'Applications', data: oppData, backgroundColor: chartPrimary, borderRadius: 6 }]
+            },
+            options: horizontalBarOptions()
+        });
+    }
+    if (window.szMarkChartsReady) szMarkChartsReady();
+    /*]]>*/
+</script>
+</body>
+</html>

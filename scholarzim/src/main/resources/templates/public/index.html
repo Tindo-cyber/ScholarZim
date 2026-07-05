@@ -3,9 +3,10 @@
 <head th:replace="~{fragments/public-layout :: head('Home')}"></head>
 <body class="sz-landing">
 
+    <div th:replace="~{fragments/public-layout :: skip-link}"></div>
 <header th:replace="~{fragments/public-layout :: navbar}"></header>
 
-<main class="sz-landing-main">
+<main id="main-content" tabindex="-1" class="sz-landing-main">
     <!-- 1. Hero — dual audience -->
     <section class="sz-landing-hero">
         <div class="sz-landing-hero__bg" aria-hidden="true"></div>

@@ -17,3 +17,8 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Local dev artifacts (never commit)
+cookies.txt
+rec.html
+rec2.html

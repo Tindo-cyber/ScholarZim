@@ -7,6 +7,7 @@
 
 <body>
 
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
 <div class="d-flex sz-shell">
 
     <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
@@ -173,7 +174,12 @@
                         </div>
                         <div class="sz-dashboard-panel__body">
                             <div th:if="${notifRecent == null or notifRecent.isEmpty()}"
-                                 class="text-secondary small py-2">No new notifications.</div>
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-bell',
+                                    'No notifications',
+                                    'Alerts about new applications will appear here.',
+                                    null,
+                                    null)}"></div>
                             <th:block th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                                 <a th:each="n : ${notifRecent}"
                                    th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
@@ -196,7 +202,12 @@
                         </div>
                         <div class="sz-dashboard-panel__body">
                             <div th:if="${recentApplications == null or recentApplications.isEmpty()}"
-                                 class="text-secondary small py-2">No applications received yet.</div>
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-inbox',
+                                    'No applications yet',
+                                    'Students will appear here when they apply to your scholarships.',
+                                    @{/opportunities/create},
+                                    'Create opportunity')}"></div>
                             <div class="sz-list-row" th:each="app : ${recentApplications}">
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="small fw-semibold text-truncate"

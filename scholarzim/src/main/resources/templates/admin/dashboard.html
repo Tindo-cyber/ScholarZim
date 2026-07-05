@@ -7,6 +7,7 @@
 
 <body>
 
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
 <div class="d-flex sz-shell">
 
     <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
@@ -15,7 +16,7 @@
 
         <nav th:replace="~{fragments/layout :: topbar('Platform Administration')}"></nav>
 
-        <main class="sz-content has-mobile-nav p-3 p-md-4">
+        <main id="main-content" tabindex="-1" class="sz-content has-mobile-nav p-3 p-md-4">
 
             <div th:replace="~{fragments/layout :: alerts}"></div>
 
@@ -31,6 +32,12 @@
                     </p>
                 </div>
                 <div class="sz-dashboard-header__actions d-none d-md-flex">
+                    <a th:href="@{/admin/analytics}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-graph-up-arrow me-1"></i>Analytics
+                    </a>
+                    <a th:href="@{/admin/reports}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-file-earmark-bar-graph me-1"></i>Reports
+                    </a>
                     <a th:href="@{/admin/audit-log}" class="btn btn-outline-secondary btn-sm">
                         <i class="bi bi-journal-text me-1"></i>Audit log
                     </a>
@@ -40,8 +47,9 @@
 
             <div class="sz-dashboard-quick-actions">
                 <a href="#user-management" class="btn btn-primary"><i class="bi bi-people"></i> Users</a>
+                <a th:href="@{/admin/analytics}" class="btn"><i class="bi bi-graph-up-arrow"></i> Analytics</a>
                 <a th:href="@{/admin/audit-log}" class="btn"><i class="bi bi-journal-text"></i> Audit log</a>
-                <a th:href="@{/admin/reports/applications.pdf}" class="btn"><i class="bi bi-file-pdf"></i> Reports</a>
+                <a th:href="@{/admin/reports}" class="btn"><i class="bi bi-file-earmark-bar-graph"></i> Reports</a>
             </div>
 
             <div class="sz-health-row">
@@ -63,19 +71,19 @@
                 </span>
             </div>
 
-            <!-- Stat cards -->
+            <!-- Executive metrics -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-xl-3">
-                    <div th:replace="~{fragments/components :: stat-card(icon='bi-people', value=${stats.totalUsers}, label='Total users', color='bg-secondary-subtle text-secondary')}"></div>
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-mortarboard', value=${stats.totalApplicants}, label='Total students', color='bg-primary-subtle text-primary')}"></div>
                 </div>
                 <div class="col-6 col-xl-3">
-                    <div th:replace="~{fragments/components :: stat-card(icon='bi-mortarboard', value=${stats.totalApplicants}, label='Students', color='bg-primary-subtle text-primary')}"></div>
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-briefcase', value=${stats.totalOpportunities}, label='Total scholarships', color='bg-warning-subtle text-warning')}"></div>
                 </div>
                 <div class="col-6 col-xl-3">
-                    <div th:replace="~{fragments/components :: stat-card(icon='bi-building', value=${stats.totalProviders}, label='Providers', color='bg-success-subtle text-success')}"></div>
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-door-open', value=${stats.activeOpportunities}, label='Open scholarships', color='bg-success-subtle text-success')}"></div>
                 </div>
                 <div class="col-6 col-xl-3">
-                    <div th:replace="~{fragments/components :: stat-card(icon='bi-briefcase', value=${stats.totalOpportunities}, label='Opportunities', color='bg-warning-subtle text-warning')}"></div>
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-door-closed', value=${stats.closedOpportunities}, label='Closed scholarships', color='bg-secondary-subtle text-secondary')}"></div>
                 </div>
             </div>
 
@@ -84,13 +92,28 @@
                     <div th:replace="~{fragments/components :: stat-card(icon='bi-file-earmark-text', value=${stats.totalApplications}, label='Applications', color='bg-info-subtle text-info')}"></div>
                 </div>
                 <div class="col-6 col-xl-3">
-                    <div th:replace="~{fragments/components :: stat-card(icon='bi-check2-circle', value=${stats.approvedApplications}, label='Approved', color='bg-success-subtle text-success')}"></div>
-                </div>
-                <div class="col-6 col-xl-3">
                     <div th:replace="~{fragments/components :: stat-card(icon='bi-hourglass-split', value=${stats.pendingApplications}, label='Pending', color='bg-warning-subtle text-warning')}"></div>
                 </div>
                 <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-check2-circle', value=${stats.approvedApplications}, label='Approved', color='bg-success-subtle text-success')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
                     <div th:replace="~{fragments/components :: stat-card(icon='bi-x-circle', value=${stats.rejectedApplications}, label='Rejected', color='bg-danger-subtle text-danger')}"></div>
+                </div>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-building', value=${stats.totalProviders}, label='Providers', color='bg-success-subtle text-success')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-bank', value=${stats.distinctInstitutions}, label='Universities', color='bg-info-subtle text-info')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-person-check', value=${stats.activeUsers}, label='Active users', color='bg-primary-subtle text-primary')}"></div>
+                </div>
+                <div class="col-6 col-xl-3">
+                    <div th:replace="~{fragments/components :: stat-card(icon='bi-people', value=${stats.totalUsers}, label='Total users', color='bg-secondary-subtle text-secondary')}"></div>
                 </div>
             </div>
 
@@ -104,9 +127,13 @@
                             <a th:href="@{/admin/audit-log}" class="small text-decoration-none fw-medium">Audit log</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div th:if="${recentActivity.isEmpty()}" class="text-secondary small py-3">
-                                No activity recorded yet.
-                            </div>
+                            <div th:if="${recentActivity.isEmpty()}"
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-activity',
+                                    'No activity yet',
+                                    'Platform events will appear here as users register, apply, and admins take action.',
+                                    @{/admin/audit-log},
+                                    'View audit log')}"></div>
                             <div th:each="entry : ${recentActivity}" class="sz-list-row align-items-start">
                                 <span class="sz-dot bg-primary"></span>
                                 <div class="flex-grow-1 min-w-0">
@@ -132,7 +159,7 @@
                             <h2><i class="bi bi-pie-chart text-success me-1"></i> Application outcomes</h2>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div style="height: 260px; position: relative;">
+                            <div class="sz-chart-wrap">
                                 <canvas id="statusChart"></canvas>
                             </div>
                             <div class="row text-center mt-3 g-2">
@@ -249,7 +276,11 @@
                                             <div class="sz-admin-actions">
                                             <form th:if="${u.accountStatus == 'ACTIVE'}"
                                                   th:action="@{/admin/users/{id}/suspend(id=${u.userId})}"
-                                                  method="post" class="d-inline">
+                                                  method="post" class="d-inline"
+                                                  data-confirm="Suspend this applicant? They will not be able to sign in until reactivated."
+                                                  data-confirm-title="Suspend applicant"
+                                                  data-confirm-variant="warning">
+                                                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                                                 <button type="submit" class="btn btn-sm btn-outline-warning" title="Suspend">
                                                     <i class="bi bi-pause-circle"></i>
                                                 </button>
@@ -257,13 +288,16 @@
                                             <form th:if="${u.accountStatus == 'SUSPENDED'}"
                                                   th:action="@{/admin/users/{id}/reactivate(id=${u.userId})}"
                                                   method="post" class="d-inline">
+                                                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                                                 <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate">
                                                     <i class="bi bi-play-circle"></i>
                                                 </button>
                                             </form>
                                             <form th:action="@{/admin/users/applicants/{id}/delete(id=${u.userId})}"
                                                   method="post" class="d-inline"
-                                                  onsubmit="return confirm('Delete this applicant and all their applications?');">
+                                                  data-confirm="Delete this applicant and all their applications? This cannot be undone."
+                                                  data-confirm-title="Delete applicant">
+                                                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
                                                         title="Delete applicant">
                                                     <i class="bi bi-trash"></i>
@@ -329,13 +363,16 @@
                                             <form th:if="${u.accountStatus == 'PENDING_APPROVAL'}"
                                                   th:action="@{/admin/users/providers/{id}/approve(id=${u.userId})}"
                                                   method="post" class="d-inline">
+                                                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                                                 <button type="submit" class="btn btn-sm btn-success" title="Approve">
                                                     <i class="bi bi-check-lg"></i>
                                                 </button>
                                             </form>
                                             <form th:action="@{/admin/users/providers/{id}/delete(id=${u.userId})}"
                                                   method="post" class="d-inline"
-                                                  onsubmit="return confirm('Delete this provider, their scholarships, and all related applications?');">
+                                                  data-confirm="Delete this provider, their scholarships, and all related applications? This cannot be undone."
+                                                  data-confirm-title="Delete provider">
+                                                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
                                                         title="Delete provider">
                                                     <i class="bi bi-trash"></i>
@@ -445,14 +482,14 @@
             <div th:replace="~{fragments/components :: report-export-grid}"></div>
 
             <!-- Charts row -->
-            <div class="row g-3 g-md-4">
+            <div class="row g-3 g-md-4 mb-4">
                 <div class="col-12 col-lg-7">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2>Applications per month</h2>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div style="height: 260px; position: relative;">
+                            <div class="sz-chart-wrap">
                                 <canvas id="monthlyChart"></canvas>
                             </div>
                         </div>
@@ -464,11 +501,38 @@
                             <h2>Top providers</h2>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div style="height: 260px; position: relative;">
+                            <div class="sz-chart-wrap" th:if="${!topProviders.labels.isEmpty()}">
                                 <canvas id="providersChart"></canvas>
                             </div>
-                            <p class="text-secondary small mb-0 mt-2"
-                               th:if="${topProviders.labels.isEmpty()}">No application data yet.</p>
+                            <div th:if="${topProviders.labels.isEmpty()}"
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-building',
+                                    'No provider data',
+                                    'Application counts by provider will appear once students start applying.',
+                                    null,
+                                    null)}"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+
+            <div class="row g-3 g-md-4">
+                <div class="col-12">
+                    <section class="sz-dashboard-panel h-100">
+                        <div class="sz-dashboard-panel__head">
+                            <h2><i class="bi bi-graph-up-arrow text-primary me-1"></i> Most applied scholarships</h2>
+                        </div>
+                        <div class="sz-dashboard-panel__body">
+                            <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!mostAppliedOpportunities.labels.isEmpty()}">
+                                <canvas id="mostAppliedChart"></canvas>
+                            </div>
+                            <div th:if="${mostAppliedOpportunities.labels.isEmpty()}"
+                                 th:replace="~{fragments/components :: empty-state(
+                                    'bi-briefcase',
+                                    'No application data',
+                                    'Scholarship popularity will be charted here after the first applications are submitted.',
+                                    null,
+                                    null)}"></div>
                         </div>
                     </section>
                 </div>
@@ -477,6 +541,8 @@
         </main>
     </div>
 </div>
+
+<nav th:replace="~{fragments/layout :: admin-mobile-nav('dashboard')}"></nav>
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -488,6 +554,12 @@
     const pending = [[${stats.pendingApplications}]];
     const monthlyCounts = [[${monthlyCounts}]];
     const monthLabels = [[${monthLabels}]];
+    const rootStyles = getComputedStyle(document.documentElement);
+    const chartSuccess = rootStyles.getPropertyValue('--sz-chart-success').trim() || '#22C55E';
+    const chartWarning = rootStyles.getPropertyValue('--sz-chart-warning').trim() || '#F59E0B';
+    const chartDanger = rootStyles.getPropertyValue('--sz-chart-danger').trim() || '#EF4444';
+    const chartPrimary = rootStyles.getPropertyValue('--sz-chart-primary').trim() || 'rgba(22, 163, 74, 0.75)';
+    const chartAccent = rootStyles.getPropertyValue('--sz-chart-accent').trim() || 'rgba(59, 130, 246, 0.7)';
 
     new Chart(document.getElementById('statusChart'), {
         type: 'doughnut',
@@ -495,7 +567,7 @@
             labels: ['Approved', 'Pending', 'Rejected'],
             datasets: [{
                 data: [approved, pending, rejected],
-                backgroundColor: ['#22C55E', '#F59E0B', '#EF4444'],
+                backgroundColor: [chartSuccess, chartWarning, chartDanger],
                 borderWidth: 0
             }]
         },
@@ -514,7 +586,7 @@
             datasets: [{
                 label: 'Applications',
                 data: monthlyCounts,
-                backgroundColor: 'rgba(22, 163, 74, 0.75)',
+                backgroundColor: chartPrimary,
                 borderRadius: 6
             }]
         },
@@ -537,7 +609,7 @@
                 datasets: [{
                     label: 'Applications',
                     data: providerData,
-                    backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                    backgroundColor: chartAccent,
                     borderRadius: 6
                 }]
             },
@@ -550,6 +622,31 @@
             }
         });
     }
+
+    const mostAppliedLabels = [[${mostAppliedOpportunities.labels}]];
+    const mostAppliedData = [[${mostAppliedOpportunities.data}]];
+
+    if (mostAppliedLabels.length) {
+        new Chart(document.getElementById('mostAppliedChart'), {
+            type: 'bar',
+            data: {
+                labels: mostAppliedLabels,
+                datasets: [{
+                    label: 'Applications',
+                    data: mostAppliedData,
+                    backgroundColor: chartPrimary,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+    if (window.szMarkChartsReady) szMarkChartsReady();
     /*]]>*/
 </script>
 

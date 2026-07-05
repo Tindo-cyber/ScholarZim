@@ -35,7 +35,10 @@
             <form th:if="${removeId != null}"
                   th:action="@{/applicant/saved/{id}/remove(id=${removeId})}"
                   method="post"
-                  class="d-inline">
+                  class="d-inline"
+                  data-confirm="Remove this scholarship from your saved list?"
+                  data-confirm-title="Remove saved scholarship"
+                  data-confirm-variant="warning">
                 <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                 <button class="btn btn-outline-secondary btn-sm" type="submit">Remove</button>
             </form>
@@ -126,9 +129,49 @@
     <a th:if="${actionUrl}" th:href="${actionUrl}" class="btn btn-primary" th:text="${actionLabel}">Action</a>
 </div>
 
+<div th:fragment="document-checklist(hasProfile, hasResultsCert, profileCompletion)" class="sz-checklist">
+    <div class="sz-checklist__item" th:classappend="${hasProfile} ? 'sz-checklist__item--done' : ''">
+        <span class="sz-checklist__icon"><i class="bi" th:classappend="${hasProfile} ? 'bi-check-circle-fill' : 'bi-circle'"></i></span>
+        <div>
+            <div class="sz-checklist__label">Academic profile</div>
+            <div class="small text-secondary" th:text="${profileCompletion} + '% complete'">0% complete</div>
+        </div>
+    </div>
+    <div class="sz-checklist__item" th:classappend="${hasResultsCert} ? 'sz-checklist__item--done' : ''">
+        <span class="sz-checklist__icon"><i class="bi" th:classappend="${hasResultsCert} ? 'bi-check-circle-fill' : 'bi-circle'"></i></span>
+        <div>
+            <div class="sz-checklist__label">Results certificate (PDF)</div>
+            <div class="small text-secondary" th:text="${hasResultsCert} ? 'Uploaded — required to apply' : 'Required before applying'">Status</div>
+        </div>
+    </div>
+    <a th:if="${!hasResultsCert or profileCompletion < 100}" th:href="@{/applicant/profile}" class="btn btn-sm btn-outline-primary mt-3">
+        Complete profile
+    </a>
+</div>
+
+<span th:fragment="notification-icon(type)"
+      class="sz-notif-list__icon"
+      th:classappend="' sz-notif-list__icon--' + ${T(com.scholarzim.util.NotificationPresentation).tone(type)}">
+    <i class="bi" th:classappend="${T(com.scholarzim.util.NotificationPresentation).icon(type)}"></i>
+</span>
+
+<div th:fragment="file-upload-zone(inputId, inputName, acceptTypes, acceptAttr, emptyLabel, hint, required)"
+     class="sz-file-upload"
+     th:id="|${inputId}Dropzone|"
+     th:attr="data-file-upload=${inputId}, data-accept-types=${acceptTypes}, data-empty-label=${emptyLabel}">
+    <input type="file" class="sz-file-upload__input" th:id="${inputId}" th:name="${inputName}"
+           th:accept="${acceptAttr}" th:required="${required}">
+    <div class="sz-file-upload__icon" aria-hidden="true"><i class="bi bi-cloud-arrow-up"></i></div>
+    <div class="fw-semibold">Drop file here or tap to browse</div>
+    <div class="small text-secondary" th:text="${hint}">PDF — max 5 MB</div>
+    <div class="sz-file-upload__name text-primary" th:text="${emptyLabel}">No file selected</div>
+    <div class="sz-file-upload__error d-none" role="alert"></div>
+    <div class="sz-file-upload__preview d-none"></div>
+</div>
+
 <div th:fragment="stat-card(icon, value, label, color)" class="card sz-stat-card h-100">
     <div class="card-body d-flex align-items-center gap-3">
-        <div class="sz-stat-icon" th:classappend="${color}">
+        <div class="sz-stat-icon" th:classappend="${color}" aria-hidden="true">
             <i class="bi" th:classappend="${icon}"></i>
         </div>
         <div>

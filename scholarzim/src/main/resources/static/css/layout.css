@@ -248,6 +248,29 @@
     white-space: nowrap;
 }
 
+.sz-topbar-search {
+    max-width: 28rem;
+}
+
+.sz-topbar-search .input-group {
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius);
+    background: var(--sz-surface);
+    overflow: hidden;
+}
+
+.sz-topbar-search .input-group-text,
+.sz-topbar-search .form-control {
+    border: none;
+    background: transparent;
+    box-shadow: none;
+}
+
+.sz-topbar-search .form-control::placeholder {
+    color: var(--sz-text-muted);
+    opacity: 0.85;
+}
+
 
 
 /* Dashboard page structure */

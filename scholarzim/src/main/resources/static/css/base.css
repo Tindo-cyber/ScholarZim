@@ -121,7 +121,6 @@ h1, h2, h3, h4, h5, h6,
     transition: none !important;
 }
 
-.sz-stat-card:hover,
 .sz-opp-card:hover,
 .sz-landing-card:hover,
 .sz-landing-stat-card:hover,
@@ -132,7 +131,16 @@ h1, h2, h3, h4, h5, h6,
     transform: none;
 }
 
-.sz-stat-card:hover,
 .sz-opp-card:hover {
     box-shadow: var(--sz-shadow);
+}
+
+/* Accessible focus rings */
+.btn:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+.nav-link:focus-visible,
+a.btn:focus-visible {
+    outline: none;
+    box-shadow: var(--sz-focus-ring);
 }

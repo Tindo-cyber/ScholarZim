@@ -5,6 +5,7 @@
 
 <body class="sz-landing">
 
+    <div th:replace="~{fragments/public-layout :: skip-link}"></div>
 <header th:replace="~{fragments/public-layout :: navbar}"></header>
 
 <main class="sz-error-page">
@@ -31,7 +32,10 @@
                     </p>
                     <p class="text-secondary small mb-4" th:if="${error}" th:text="${error}"></p>
                     <p class="text-secondary small mb-4" th:if="${status == null}">
-                        Please try again, or return to the home page.
+                        Please try again, or return to the home page. If the problem persists, contact support.
+                    </p>
+                    <p class="text-secondary small mb-4" th:if="${status == 500}">
+                        Our team has been notified. Try refreshing the page or come back in a few minutes.
                     </p>
 
                     <div class="d-flex justify-content-center gap-2 flex-wrap">

@@ -5,6 +5,7 @@
 
 <body class="sz-auth-page" th:classappend="${loginRole == 'provider'} ? 'sz-auth-page--provider'">
 
+    <div th:replace="~{fragments/layout :: skip-link}"></div>
 <header th:replace="~{fragments/layout :: auth-topbar}"></header>
 
 <div class="sz-auth-wrap">
