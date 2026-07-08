@@ -67,6 +67,8 @@ public class DemoDataSeeder implements CommandLineRunner {
     public void run(String... args) {
 
         if (!seedEnabled) {
+            log.info("Demo data seeding is disabled (scholarzim.demo.seed=false). "
+                    + "No demo logins are created — register a new account or set SCHOLARZIM_DEMO_SEED=true.");
             return;
         }
 

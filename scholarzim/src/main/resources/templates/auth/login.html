@@ -71,6 +71,10 @@
                 <div class="alert alert-danger rounded-3 py-2 small"
                      th:if="${param.error != null and (loginError == null or loginError == 'credentials')}">
                     <i class="bi bi-exclamation-circle me-2"></i>Invalid email or password.
+                    <span th:if="${!demoLoginEnabled}" class="d-block mt-1">
+                        New here? <a th:href="@{/register}" class="alert-link">Create a student account</a>
+                        or <a th:href="@{/register/provider}" class="alert-link">apply as a provider</a>.
+                    </span>
                 </div>
                 <div class="alert alert-success rounded-3 py-2 small" th:if="${param.logout}">
                     <i class="bi bi-check-circle me-2"></i>You have been logged out.
@@ -117,13 +121,13 @@
                     <a th:if="${loginRole == 'provider'}" th:href="@{/register/provider}" class="fw-semibold small">Apply as provider</a>
                 </div>
 
-                <div class="sz-demo-hint" th:if="${!@environment.acceptsProfiles('prod')}">
-                    <strong><i class="bi bi-info-circle me-1"></i>Demo</strong>
+                <div class="sz-demo-hint" th:if="${demoLoginEnabled}">
+                    <strong><i class="bi bi-info-circle me-1"></i>Demo accounts</strong>
                     <span th:if="${loginRole == 'student'}">
-                        <code>tanaka.moyo@student.co.zw</code>
+                        Student: <code>tanaka.moyo@student.co.zw</code>
                     </span>
                     <span th:if="${loginRole == 'provider'}">
-                        <code>scholarships@uk.gov.zw</code>
+                        Provider: <code>scholarships@uk.gov.zw</code>
                     </span>
                     · Password: <code>Password123!</code>
                 </div>

@@ -12,6 +12,7 @@ import com.scholarzim.service.ProviderRegistrationService;
 import com.scholarzim.service.RegistrationException;
 import jakarta.validation.Valid;
 import org.springframework.lang.NonNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -27,17 +28,20 @@ public class AuthController {
     private final PasswordResetService passwordResetService;
     private final ProviderRegistrationService providerRegistrationService;
     private final PlatformStatsService platformStatsService;
+    private final boolean demoLoginEnabled;
 
     public AuthController(
             AuthService authService,
             PasswordResetService passwordResetService,
             ProviderRegistrationService providerRegistrationService,
-            PlatformStatsService platformStatsService) {
+            PlatformStatsService platformStatsService,
+            @Value("${scholarzim.demo.seed:true}") boolean demoLoginEnabled) {
 
         this.authService = authService;
         this.passwordResetService = passwordResetService;
         this.providerRegistrationService = providerRegistrationService;
         this.platformStatsService = platformStatsService;
+        this.demoLoginEnabled = demoLoginEnabled;
     }
 
     @GetMapping("/register")
@@ -115,6 +119,7 @@ public class AuthController {
             Model model) {
 
         model.addAttribute("stats", platformStatsService.getPublicStats());
+        model.addAttribute("demoLoginEnabled", demoLoginEnabled);
         model.addAttribute("loginRole", "provider".equalsIgnoreCase(role) ? "provider" : "student");
         model.addAttribute("pendingRegistration", Boolean.TRUE.equals(pending));
         model.addAttribute("loginError", error);

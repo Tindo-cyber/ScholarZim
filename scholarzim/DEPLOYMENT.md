@@ -26,7 +26,7 @@ SPRING_MAIL_HOST=
 SPRING_MAIL_PORT=587
 SPRING_MAIL_USERNAME=
 SPRING_MAIL_PASSWORD=
-# FYP demo: populate sample scholarships and users on startup (turn off for real production)
+# FYP demo: populate sample scholarships and users on startup (set SCHOLARZIM_DEMO_SEED=false for real production)
 SCHOLARZIM_DEMO_SEED=true
 ```
 
