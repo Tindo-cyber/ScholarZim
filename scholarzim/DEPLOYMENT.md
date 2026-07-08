@@ -11,6 +11,7 @@ ScholarZim is a **Spring Boot + Thymeleaf monolith** (no separate Next.js fronte
    - **Runtime:** Docker
    - Dockerfile is at repo root (`Dockerfile`) and also at `scholarzim/Dockerfile`
    - Health check path: `/actuator/health`
+   - The app binds to Render’s `PORT` (see `server.port` in `application-prod.properties`)
 4. Set environment variables:
 
 ```bash
