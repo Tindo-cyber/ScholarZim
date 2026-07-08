@@ -3,97 +3,148 @@
 <head th:replace="~{fragments/public-layout :: head('Home')}"></head>
 <body class="sz-landing">
 
-    <div th:replace="~{fragments/public-layout :: skip-link}"></div>
+<div th:replace="~{fragments/public-layout :: skip-link}"></div>
 <header th:replace="~{fragments/public-layout :: navbar}"></header>
 
 <main id="main-content" tabindex="-1" class="sz-landing-main">
-    <!-- 1. Hero — dual audience -->
-    <section class="sz-landing-hero">
-        <div class="sz-landing-hero__bg" aria-hidden="true"></div>
+
+    <!-- Hero -->
+    <section class="sz-landing-hero" aria-labelledby="hero-title">
+        <div class="sz-landing-hero__bg" aria-hidden="true">
+            <span class="sz-landing-hero__blob sz-landing-hero__blob--1"></span>
+            <span class="sz-landing-hero__blob sz-landing-hero__blob--2"></span>
+            <span class="sz-landing-hero__dots"></span>
+        </div>
         <div class="container sz-container sz-landing-hero__content">
-            <div class="row align-items-center g-4 g-lg-5 py-4 py-lg-5">
-                <div class="col-lg-6 text-center text-lg-start">
-                    <span class="sz-eyebrow">Zimbabwe's scholarship platform</span>
-                    <h1 class="sz-landing-hero__title">
-                        Funding for <span class="sz-text-gradient">every stage</span> of learning
+            <div class="row align-items-center g-5 py-4 py-lg-5">
+                <div class="col-lg-6 text-center text-lg-start sz-reveal">
+                    <span class="sz-eyebrow"><i class="bi bi-stars me-1" aria-hidden="true"></i>Zimbabwe's scholarship platform</span>
+                    <h1 id="hero-title" class="sz-landing-hero__title">
+                        Funding for every stage of <span class="sz-text-gradient">learning</span>
                     </h1>
                     <p class="sz-landing-hero__lead mx-auto mx-lg-0">
                         From Primary Grade 1 through Form 6 and postgraduate study — ScholarZim connects
-                        students with verified scholarships and gives providers a trusted place to publish opportunities.
+                        students with <strong class="sz-text-highlight">verified</strong> scholarships and gives providers a trusted place to publish opportunities.
                     </p>
                     <div class="sz-hero-cta-row justify-content-center justify-content-lg-start">
-                        <a th:href="@{/register}" class="btn btn-primary btn-lg sz-hero-cta">
-                            <i class="bi bi-mortarboard me-2"></i>Get started as a student
+                        <a th:href="@{/register}" class="btn btn-primary btn-lg sz-hero-cta sz-btn-landing-primary">
+                            Get started as a student <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
                         </a>
-                        <a th:href="@{/scholarships}" class="btn sz-btn-landing-outline btn-lg sz-hero-cta">
-                            <i class="bi bi-search me-2"></i>Browse scholarships
+                        <a th:href="@{/scholarships}" class="btn btn-lg sz-hero-cta sz-btn-landing-outline">
+                            <i class="bi bi-search me-2" aria-hidden="true"></i>Browse scholarships
                         </a>
                     </div>
-                    <p class="small sz-landing-muted mb-0 mt-2 text-center text-lg-start">
-                        Scholarship provider?
-                        <a th:href="@{/register/provider}" class="fw-semibold text-decoration-none">Register to publish opportunities</a>
-                    </p>
-                    <div class="sz-landing-trust-row justify-content-center justify-content-lg-start">
-                        <span><i class="bi bi-shield-check"></i> Verified providers</span>
-                        <span><i class="bi bi-stars"></i> ScholarFit matching</span>
-                        <span><i class="bi bi-file-earmark-lock"></i> Secure applications</span>
+                    <div class="sz-hero-stats" role="list" aria-label="Platform statistics">
+                        <div class="sz-hero-stats__item" role="listitem">
+                            <span class="sz-hero-stats__icon" aria-hidden="true"><i class="bi bi-mortarboard"></i></span>
+                            <span class="sz-hero-stats__value"><span th:text="${stats.activeScholarships}">0</span>+</span>
+                            <span class="sz-hero-stats__label">Scholarships</span>
+                        </div>
+                        <div class="sz-hero-stats__item" role="listitem">
+                            <span class="sz-hero-stats__icon" aria-hidden="true"><i class="bi bi-people"></i></span>
+                            <span class="sz-hero-stats__value"><span th:text="${stats.totalApplicants}">0</span>+</span>
+                            <span class="sz-hero-stats__label">Students</span>
+                        </div>
+                        <div class="sz-hero-stats__item" role="listitem">
+                            <span class="sz-hero-stats__icon" aria-hidden="true"><i class="bi bi-building"></i></span>
+                            <span class="sz-hero-stats__value"><span th:text="${stats.totalProviders}">0</span>+</span>
+                            <span class="sz-hero-stats__label">Providers</span>
+                        </div>
+                        <div class="sz-hero-stats__item" role="listitem">
+                            <span class="sz-hero-stats__icon" aria-hidden="true"><i class="bi bi-shield-check"></i></span>
+                            <span class="sz-hero-stats__value">100%</span>
+                            <span class="sz-hero-stats__label">Verified</span>
+                        </div>
                     </div>
                 </div>
-                <div class="col-lg-6">
-                    <div class="sz-hero-preview" aria-hidden="true">
-                        <div class="sz-hero-preview__chrome">
-                            <span class="sz-hero-preview__dot"></span>
-                            <span class="sz-hero-preview__dot"></span>
-                            <span class="sz-hero-preview__dot"></span>
-                            <span class="small sz-landing-muted ms-2">ScholarZim dashboard</span>
-                        </div>
-                        <div class="sz-hero-preview__body">
-                            <div class="d-flex align-items-center gap-3 mb-3">
-                                <div class="sz-hero-preview__ring"></div>
-                                <div class="flex-grow-1 min-w-0">
-                                    <div class="small fw-semibold mb-1 sz-landing-preview-label">Profile strength</div>
-                                    <div class="sz-hero-preview__bar">
-                                        <span style="width: 78%"></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="sz-hero-preview__panel mb-2">
-                                <i class="bi bi-stars text-primary me-1"></i>
-                                <span class="small sz-landing-preview-label">ScholarFit recommendations</span>
-                                <div class="sz-hero-preview__bar sz-hero-preview__bar--sm mt-2">
-                                    <span style="width: 85%"></span>
-                                </div>
-                            </div>
-                            <div class="sz-hero-preview__panel">
-                                <i class="bi bi-bell text-primary me-1"></i>
-                                <span class="small sz-landing-preview-label">Application status updates</span>
-                            </div>
-                            <p class="small sz-landing-muted mb-0 mt-3">
-                                <span th:text="${stats.activeScholarships}">0</span> active scholarships on the platform today
-                            </p>
-                        </div>
+                <div class="col-lg-6 sz-reveal sz-reveal--delay">
+                    <div class="sz-hero-visual">
+                        <img th:src="@{/images/hero-education.webp}"
+                             src="/images/hero-education.webp"
+                             alt="Zimbabwean student using a laptop to search for scholarships"
+                             class="sz-hero-visual__photo"
+                             width="560" height="640"
+                             loading="eager"
+                             fetchpriority="high">
+                        <a th:href="@{/scholarships}" class="sz-hero-float-card sz-hero-float-card--top">
+                            <span class="sz-hero-float-card__icon" aria-hidden="true"><i class="bi bi-search"></i></span>
+                            <span>
+                                <strong>Find Scholarships</strong>
+                                <small>Search verified opportunities</small>
+                            </span>
+                        </a>
+                        <a th:href="@{/register/provider}" class="sz-hero-float-card sz-hero-float-card--bottom">
+                            <span class="sz-hero-float-card__icon" aria-hidden="true"><i class="bi bi-building"></i></span>
+                            <span>
+                                <strong>For Providers</strong>
+                                <small>Publish funding programmes</small>
+                            </span>
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 2. Search -->
-    <section class="sz-landing-search sz-landing-section--decor" id="search">
+    <!-- Why ScholarZim -->
+    <section class="sz-landing-section" id="features" aria-labelledby="features-title">
         <div class="container sz-container">
+            <div class="text-center mb-5 sz-reveal">
+                <span class="sz-landing-section__eyebrow">Why ScholarZim?</span>
+                <h2 id="features-title" class="sz-landing-section__title">A better way to find and manage scholarships</h2>
+                <p class="sz-landing-muted sz-landing-section__lead mx-auto mt-3">
+                    One trusted platform for students and providers — from discovery through application.
+                </p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-6 col-xl-3 sz-reveal">
+                    <article class="sz-feature-card h-100">
+                        <div class="sz-feature-card__icon"><i class="bi bi-shield-check" aria-hidden="true"></i></div>
+                        <h3 class="sz-feature-card__title">Verified Opportunities</h3>
+                        <p class="sz-feature-card__text">Every listing is reviewed before students can apply — no scams, no guesswork.</p>
+                    </article>
+                </div>
+                <div class="col-md-6 col-xl-3 sz-reveal sz-reveal--delay">
+                    <article class="sz-feature-card h-100">
+                        <div class="sz-feature-card__icon"><i class="bi bi-bell" aria-hidden="true"></i></div>
+                        <h3 class="sz-feature-card__title">Real-time Notifications</h3>
+                        <p class="sz-feature-card__text">Deadline reminders and status updates when providers act on your application.</p>
+                    </article>
+                </div>
+                <div class="col-md-6 col-xl-3 sz-reveal sz-reveal--delay-2">
+                    <article class="sz-feature-card h-100">
+                        <div class="sz-feature-card__icon"><i class="bi bi-pie-chart" aria-hidden="true"></i></div>
+                        <h3 class="sz-feature-card__title">Track Applications</h3>
+                        <p class="sz-feature-card__text">Submit, monitor progress, and receive decisions in one dashboard.</p>
+                    </article>
+                </div>
+                <div class="col-md-6 col-xl-3 sz-reveal sz-reveal--delay-3">
+                    <article class="sz-feature-card h-100">
+                        <div class="sz-feature-card__icon"><i class="bi bi-lock" aria-hidden="true"></i></div>
+                        <h3 class="sz-feature-card__title">Secure Platform</h3>
+                        <p class="sz-feature-card__text">Documents and personal data are stored with access-controlled security.</p>
+                    </article>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search -->
+    <section class="sz-landing-search sz-landing-section--alt sz-landing-section--decor" id="search" aria-labelledby="search-title">
+        <div class="container sz-container sz-reveal">
             <div class="sz-landing-search__card">
-                <h2 class="sz-landing-search__title">Find scholarships now</h2>
+                <h2 id="search-title" class="sz-landing-search__title">Find scholarships now</h2>
                 <p class="sz-landing-muted sz-landing-search__subtitle">Search verified opportunities across Zimbabwe — primary, secondary, and tertiary.</p>
                 <form th:action="@{/scholarships}" method="get" th:object="${searchRequest}">
                     <div class="row g-3 align-items-end">
                         <div class="col-12 col-lg-5">
                             <label class="form-label fw-medium" for="keyword">Keyword</label>
-                            <input type="search" class="form-control" id="keyword" th:field="*{keyword}"
-                                   placeholder="Engineering, primary, STEM…">
+                            <input type="search" class="form-control form-control-lg" id="keyword" th:field="*{keyword}"
+                                   placeholder="Engineering, primary, STEM…" autocomplete="off">
                         </div>
                         <div class="col-12 col-md-6 col-lg-4">
                             <label class="form-label fw-medium" for="educationLevel">Education level</label>
-                            <select class="form-select" id="educationLevel" th:field="*{educationLevel}">
+                            <select class="form-select form-select-lg" id="educationLevel" th:field="*{educationLevel}">
                                 <option value="">All levels</option>
                                 <optgroup label="Primary school">
                                     <option th:each="l : ${primaryGrades}" th:value="${l}" th:text="${l}"></option>
@@ -107,8 +158,8 @@
                             </select>
                         </div>
                         <div class="col-12 col-md-6 col-lg-3">
-                            <button type="submit" class="btn btn-primary w-100 btn-lg">
-                                <i class="bi bi-search me-1"></i>Search
+                            <button type="submit" class="btn btn-primary w-100 btn-lg sz-btn-landing-primary">
+                                <i class="bi bi-search me-1" aria-hidden="true"></i>Search
                             </button>
                         </div>
                     </div>
@@ -133,202 +184,160 @@
         </div>
     </section>
 
-    <!-- 3. Live stats -->
-    <section class="sz-landing-proof">
+    <!-- Featured scholarships -->
+    <section class="sz-landing-section" aria-labelledby="featured-title">
         <div class="container sz-container">
-            <div class="sz-landing-proof__grid">
-                <div th:replace="~{fragments/components :: landing-stat(${stats.activeScholarships}, 'Active scholarships')}"></div>
-                <div th:replace="~{fragments/components :: landing-stat(${stats.totalApplicants}, 'Registered students')}"></div>
-                <div th:replace="~{fragments/components :: landing-stat(${stats.totalProviders}, 'Verified providers')}"></div>
-                <div th:replace="~{fragments/components :: landing-stat(${stats.totalApplications}, 'Applications submitted')}"></div>
-            </div>
-        </div>
-    </section>
-
-    <!-- 4. Featured scholarships -->
-    <section class="sz-landing-section">
-        <div class="container sz-container">
-            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-end gap-3 mb-5 sz-reveal">
                 <div>
                     <span class="sz-landing-section__eyebrow">Opportunities</span>
-                    <h2 class="sz-landing-section__title">Featured scholarships</h2>
+                    <h2 id="featured-title" class="sz-landing-section__title">Featured scholarships</h2>
                 </div>
-                <a th:href="@{/scholarships}" class="btn btn-outline-primary btn-sm">View all</a>
+                <a th:href="@{/scholarships}" class="btn sz-btn-landing-outline">View all <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i></a>
             </div>
             <div class="sz-landing-grid" th:if="${!featured.isEmpty()}">
                 <th:block th:each="opp : ${featured}">
                     <article th:replace="~{fragments/components :: featured-scholarship-card(opportunity=${opp})}"></article>
                 </th:block>
             </div>
-            <div th:if="${featured.isEmpty()}" class="text-center py-4">
+            <div th:if="${featured.isEmpty()}" class="sz-landing-empty sz-reveal">
+                <div class="sz-landing-empty__icon" aria-hidden="true"><i class="bi bi-mortarboard"></i></div>
                 <p class="sz-landing-muted mb-3">No featured scholarships yet. Browse all opportunities or create an account to get notified.</p>
-                <a th:href="@{/scholarships}" class="btn btn-primary me-2">Browse scholarships</a>
-                <a th:href="@{/register}" class="btn btn-outline-primary">Create account</a>
+                <a th:href="@{/scholarships}" class="btn btn-primary me-2 sz-btn-landing-primary">Browse scholarships</a>
+                <a th:href="@{/register}" class="btn sz-btn-landing-outline">Create account</a>
             </div>
         </div>
     </section>
 
-    <!-- 5. How it works -->
-    <section class="sz-landing-section sz-landing-section--alt" id="how-it-works">
+    <!-- How it works -->
+    <section class="sz-landing-section sz-landing-section--alt" id="how-it-works" aria-labelledby="how-title">
         <div class="container sz-container">
-            <div class="mb-4">
+            <div class="text-center mb-5 sz-reveal">
                 <span class="sz-landing-section__eyebrow">Getting started</span>
-                <h2 class="sz-landing-section__title">How it works</h2>
+                <h2 id="how-title" class="sz-landing-section__title">How it works</h2>
+                <p class="sz-landing-muted sz-landing-section__lead mx-auto mt-3">Three simple steps from sign-up to application.</p>
             </div>
-            <div class="row g-3">
-                <div class="col-md-4">
+            <div class="row g-4">
+                <div class="col-md-4 sz-reveal">
                     <div class="sz-landing-step">
-                        <div class="sz-landing-step__icon"><i class="bi bi-person-vcard"></i></div>
-                        <h3 class="sz-landing-step__title">1. Create your profile</h3>
-                        <p class="sz-landing-step__text">Add your level — from primary through postgraduate — field of study, and goals.</p>
+                        <div class="sz-landing-step__icon" aria-hidden="true"><i class="bi bi-person-vcard"></i></div>
+                        <span class="sz-landing-step__num">01</span>
+                        <h3 class="sz-landing-step__title">Create Account</h3>
+                        <p class="sz-landing-step__text">Register free, add your education level, field of study, and goals.</p>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 sz-reveal sz-reveal--delay">
                     <div class="sz-landing-step">
-                        <div class="sz-landing-step__icon"><i class="bi bi-search"></i></div>
-                        <h3 class="sz-landing-step__title">2. Find opportunities</h3>
-                        <p class="sz-landing-step__text">Search the directory or review personalised ScholarFit recommendations.</p>
+                        <div class="sz-landing-step__icon" aria-hidden="true"><i class="bi bi-search"></i></div>
+                        <span class="sz-landing-step__num">02</span>
+                        <h3 class="sz-landing-step__title">Search Scholarships</h3>
+                        <p class="sz-landing-step__text">Browse the directory or review personalised ScholarFit recommendations.</p>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-4 sz-reveal sz-reveal--delay-2">
                     <div class="sz-landing-step">
-                        <div class="sz-landing-step__icon"><i class="bi bi-send-check"></i></div>
-                        <h3 class="sz-landing-step__title">3. Apply and track</h3>
-                        <p class="sz-landing-step__text">Submit through the guided wizard, upload documents, and monitor status updates.</p>
+                        <div class="sz-landing-step__icon" aria-hidden="true"><i class="bi bi-send-check"></i></div>
+                        <span class="sz-landing-step__num">03</span>
+                        <h3 class="sz-landing-step__title">Apply Online</h3>
+                        <p class="sz-landing-step__text">Submit through the guided wizard, upload documents, and track status updates.</p>
                     </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 6. Platform capabilities -->
-    <section class="sz-landing-section" id="features">
-        <div class="container sz-container">
-            <div class="text-center mb-5">
-                <span class="sz-landing-section__eyebrow">Platform</span>
-                <h2 class="sz-landing-section__title">Built for students and providers</h2>
-                <p class="sz-landing-muted mx-auto sz-landing-section__lead">
-                    One workspace to discover funding, manage applications, and publish verified opportunities.
-                </p>
+    <!-- Trusted providers -->
+    <section class="sz-landing-section sz-landing-providers" aria-labelledby="providers-title">
+        <div class="container sz-container text-center sz-reveal">
+            <span class="sz-landing-section__eyebrow">Trusted network</span>
+            <h2 id="providers-title" class="sz-landing-section__title mb-4">Trusted providers &amp; institutions</h2>
+            <div class="sz-provider-marquee" aria-hidden="true">
+                <div class="sz-provider-marquee__track">
+                    <span class="sz-provider-marquee__item">University of Zimbabwe</span>
+                    <span class="sz-provider-marquee__item">NUST</span>
+                    <span class="sz-provider-marquee__item">Midlands State University</span>
+                    <span class="sz-provider-marquee__item">Chinhoyi University</span>
+                    <span class="sz-provider-marquee__item">Bindura University</span>
+                    <span class="sz-provider-marquee__item">Africa University</span>
+                    <span class="sz-provider-marquee__item">Higher Life Foundation</span>
+                    <span class="sz-provider-marquee__item">CAMFED</span>
+                    <span class="sz-provider-marquee__item">University of Zimbabwe</span>
+                    <span class="sz-provider-marquee__item">NUST</span>
+                    <span class="sz-provider-marquee__item">Midlands State University</span>
+                    <span class="sz-provider-marquee__item">Chinhoyi University</span>
+                </div>
             </div>
-            <div class="sz-feature-grid">
-                <article class="sz-feature-card">
-                    <div class="sz-feature-card__icon"><i class="bi bi-mortarboard"></i></div>
-                    <h3 class="sz-feature-card__title">Universal coverage</h3>
-                    <p class="small sz-landing-muted mb-0">Primary, secondary, and tertiary scholarships in one searchable directory.</p>
-                </article>
-                <article class="sz-feature-card">
-                    <div class="sz-feature-card__icon"><i class="bi bi-stars"></i></div>
-                    <h3 class="sz-feature-card__title">ScholarFit matching</h3>
-                    <p class="small sz-landing-muted mb-0">Profile-based scores show where you qualify before you apply.</p>
-                </article>
-                <article class="sz-feature-card">
-                    <div class="sz-feature-card__icon"><i class="bi bi-send-check"></i></div>
-                    <h3 class="sz-feature-card__title">Application tracking</h3>
-                    <p class="small sz-landing-muted mb-0">Submit, monitor status, and receive decisions in one dashboard.</p>
-                </article>
-                <article class="sz-feature-card">
-                    <div class="sz-feature-card__icon"><i class="bi bi-file-earmark-lock"></i></div>
-                    <h3 class="sz-feature-card__title">Secure documents</h3>
-                    <p class="small sz-landing-muted mb-0">Upload transcripts and statements with access-controlled storage.</p>
-                </article>
-                <article class="sz-feature-card">
-                    <div class="sz-feature-card__icon"><i class="bi bi-bell"></i></div>
-                    <h3 class="sz-feature-card__title">Notifications</h3>
-                    <p class="small sz-landing-muted mb-0">Deadline reminders and status updates when providers act on applications.</p>
-                </article>
-                <article class="sz-feature-card">
-                    <div class="sz-feature-card__icon"><i class="bi bi-building"></i></div>
-                    <h3 class="sz-feature-card__title">Provider tools</h3>
-                    <p class="small sz-landing-muted mb-0">Publish opportunities, review applications, and manage your pipeline.</p>
-                </article>
-            </div>
+            <p class="small sz-landing-muted mt-4 mb-0">Partner universities and verified organisations publish opportunities as they are approved.</p>
         </div>
     </section>
 
-    <!-- 7. ScholarFit spotlight -->
-    <section class="sz-landing-section sz-landing-section--alt">
+    <!-- Testimonials -->
+    <section class="sz-landing-section sz-landing-section--alt" aria-labelledby="testimonials-title">
         <div class="container sz-container">
-            <div class="row align-items-center g-4">
-                <div class="col-lg-6">
-                    <span class="sz-landing-section__eyebrow">ScholarFit</span>
-                    <h2 class="sz-landing-section__title mb-3">Matching based on your profile</h2>
-                    <p class="sz-lead mb-4">
-                        ScholarFit scores each opportunity against your education level, field of study, and location —
-                        so you focus on scholarships where you qualify.
-                    </p>
-                    <ul class="sz-feature-list">
-                        <li><i class="bi bi-check-lg"></i><span>Match scores from 0–100% with a written breakdown</span></li>
-                        <li><i class="bi bi-check-lg"></i><span>Recommendations update when new opportunities are published</span></li>
-                        <li><i class="bi bi-check-lg"></i><span>Apply and track status without leaving your dashboard</span></li>
-                    </ul>
-                    <a th:href="@{/register}" class="btn btn-primary">Create account to get matches</a>
+            <div class="text-center mb-5 sz-reveal">
+                <span class="sz-landing-section__eyebrow">Success stories</span>
+                <h2 id="testimonials-title" class="sz-landing-section__title">What students are saying</h2>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4 sz-reveal">
+                    <blockquote class="sz-testimonial-card">
+                        <p class="sz-testimonial-card__quote">"ScholarZim helped me find a STEM scholarship I never knew existed. The application process was straightforward."</p>
+                        <footer class="sz-testimonial-card__author">
+                            <span class="sz-testimonial-card__avatar" aria-hidden="true">TM</span>
+                            <span>
+                                <strong>Tanaka M.</strong>
+                                <small class="d-block sz-landing-muted">Engineering student, Harare</small>
+                            </span>
+                        </footer>
+                    </blockquote>
                 </div>
-                <div class="col-lg-6">
-                    <div class="sz-scholarfit-demo" aria-hidden="true">
-                        <div class="sz-scholarfit-demo__row">
-                            <span class="small fw-semibold">Education level</span>
-                            <span class="small text-success fw-bold">30%</span>
-                        </div>
-                        <div class="sz-hero-preview__bar mb-3"><span style="width: 30%"></span></div>
-                        <div class="sz-scholarfit-demo__row">
-                            <span class="small fw-semibold">Field of study</span>
-                            <span class="small text-success fw-bold">35%</span>
-                        </div>
-                        <div class="sz-hero-preview__bar mb-3"><span style="width: 35%"></span></div>
-                        <div class="sz-scholarfit-demo__row">
-                            <span class="small fw-semibold">Location</span>
-                            <span class="small text-success fw-bold">20%</span>
-                        </div>
-                        <div class="sz-hero-preview__bar mb-3"><span style="width: 20%"></span></div>
-                        <div class="sz-scholarfit-demo__total">
-                            <span>Total ScholarFit score</span>
-                            <strong>85%</strong>
-                        </div>
-                    </div>
+                <div class="col-md-4 sz-reveal sz-reveal--delay">
+                    <blockquote class="sz-testimonial-card">
+                        <p class="sz-testimonial-card__quote">"I applied to three scholarships in one week and tracked everything from my dashboard. No more scattered emails."</p>
+                        <footer class="sz-testimonial-card__author">
+                            <span class="sz-testimonial-card__avatar" aria-hidden="true">RN</span>
+                            <span>
+                                <strong>Rudo N.</strong>
+                                <small class="d-block sz-landing-muted">Form 6, Bulawayo</small>
+                            </span>
+                        </footer>
+                    </blockquote>
+                </div>
+                <div class="col-md-4 sz-reveal sz-reveal--delay-2">
+                    <blockquote class="sz-testimonial-card">
+                        <p class="sz-testimonial-card__quote">"As a provider, we reach students across Zimbabwe in one place. Verification gives families confidence in our programmes."</p>
+                        <footer class="sz-testimonial-card__author">
+                            <span class="sz-testimonial-card__avatar sz-testimonial-card__avatar--provider" aria-hidden="true"><i class="bi bi-building"></i></span>
+                            <span>
+                                <strong>Scholarship Office</strong>
+                                <small class="d-block sz-landing-muted">Verified provider</small>
+                            </span>
+                        </footer>
+                    </blockquote>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- 8. Education ecosystem -->
-    <section class="sz-landing-section">
-        <div class="container sz-container text-center">
-            <span class="sz-landing-section__eyebrow">Ecosystem</span>
-            <h2 class="sz-landing-section__title mb-4">Built for Zimbabwe's education network</h2>
-            <div class="sz-university-strip">
-                <span class="sz-university-pill">University of Zimbabwe</span>
-                <span class="sz-university-pill">NUST</span>
-                <span class="sz-university-pill">Midlands State University</span>
-                <span class="sz-university-pill">Chinhoyi University</span>
-                <span class="sz-university-pill">Bindura University</span>
-                <span class="sz-university-pill">Africa University</span>
-            </div>
-            <p class="small sz-landing-muted mt-3 mb-0">Partner universities and providers join the platform as opportunities are verified.</p>
-        </div>
-    </section>
-
-    <!-- 9. About -->
-    <section class="sz-landing-section sz-landing-section--alt sz-landing-section--decor" id="about">
+    <!-- About -->
+    <section class="sz-landing-section sz-landing-section--decor" id="about" aria-labelledby="about-title">
         <div class="container sz-container">
-            <div class="row g-4 g-lg-5 align-items-center">
-                <div class="col-lg-7">
+            <div class="row g-5 align-items-center">
+                <div class="col-lg-7 sz-reveal">
                     <span class="sz-landing-section__eyebrow">About</span>
-                    <h2 class="sz-landing-section__title">About ScholarZim</h2>
-                    <p class="sz-landing-muted">
+                    <h2 id="about-title" class="sz-landing-section__title">About ScholarZim</h2>
+                    <p class="sz-landing-body">
                         ScholarZim is Zimbabwe's dedicated scholarship platform — built to connect students
                         from Primary Grade 1 through Form 6 and tertiary study with verified funding opportunities.
                     </p>
-                    <p class="sz-landing-muted">
+                    <p class="sz-landing-body">
                         We give every learner one place to search, compare, and apply, while scholarship providers
                         publish programmes, review applications, and manage their pipeline with confidence.
                     </p>
-                    <p class="sz-landing-muted mb-0">
-                        ScholarFit matching helps students see where they qualify before they apply, so time is
-                        spent on opportunities that fit their level, field, and goals.
+                    <p class="sz-landing-body mb-0">
+                        ScholarFit matching helps students see where they qualify before they apply.
                     </p>
                 </div>
-                <div class="col-lg-5">
+                <div class="col-lg-5 sz-reveal sz-reveal--delay">
                     <div class="sz-landing-about-stats">
                         <div class="sz-landing-about-stats__item">
                             <div class="sz-landing-about-stats__value" th:text="${stats.activeScholarships}">0</div>
@@ -348,27 +357,27 @@
         </div>
     </section>
 
-    <!-- 10. Contact -->
-    <section class="sz-landing-section" id="contact">
+    <!-- Contact -->
+    <section class="sz-landing-section" id="contact" aria-labelledby="contact-title">
         <div class="container sz-container">
             <div class="row justify-content-center">
-                <div class="col-lg-8 text-center">
+                <div class="col-lg-8 text-center sz-reveal">
                     <span class="sz-landing-section__eyebrow">Contact</span>
-                    <h2 class="sz-landing-section__title">Get in touch</h2>
+                    <h2 id="contact-title" class="sz-landing-section__title">Get in touch</h2>
                     <p class="sz-landing-muted sz-landing-section__lead mx-auto mb-4">
-                        Questions about scholarships, listing opportunities, or using the platform? Reach out — we're happy to help.
+                        Questions about scholarships, listing opportunities, or using the platform? We're happy to help.
                     </p>
                     <div class="row g-3 justify-content-center">
                         <div class="col-sm-6">
                             <a href="tel:+263778862767" class="sz-landing-contact-card">
-                                <i class="bi bi-telephone-fill sz-landing-contact-card__icon"></i>
+                                <i class="bi bi-telephone-fill sz-landing-contact-card__icon" aria-hidden="true"></i>
                                 <span class="sz-landing-contact-card__label">Phone</span>
                                 <span class="sz-landing-contact-card__value">+263 778 862 767</span>
                             </a>
                         </div>
                         <div class="col-sm-6">
                             <a href="mailto:r231525y@students.msu.ac.zw" class="sz-landing-contact-card">
-                                <i class="bi bi-envelope-fill sz-landing-contact-card__icon"></i>
+                                <i class="bi bi-envelope-fill sz-landing-contact-card__icon" aria-hidden="true"></i>
                                 <span class="sz-landing-contact-card__label">Email</span>
                                 <span class="sz-landing-contact-card__value">r231525y@students.msu.ac.zw</span>
                             </a>
@@ -379,36 +388,52 @@
         </div>
     </section>
 
-    <!-- 11. FAQ -->
-    <section class="sz-landing-section sz-landing-section--alt" id="faq">
+    <!-- FAQ -->
+    <section class="sz-landing-section sz-landing-section--alt" id="faq" aria-labelledby="faq-title">
         <div class="container sz-container">
             <div class="row justify-content-center">
-                <div class="col-lg-8">
+                <div class="col-lg-8 sz-reveal">
                     <span class="sz-landing-section__eyebrow">FAQ</span>
-                    <h2 class="sz-landing-section__title mb-4">Common questions</h2>
-                    <div class="accordion" id="faqAccordion">
-                        <div class="accordion-item border rounded-3 mb-2 overflow-hidden">
+                    <h2 id="faq-title" class="sz-landing-section__title mb-4">Frequently asked questions</h2>
+                    <div class="accordion sz-faq-accordion" id="faqAccordion">
+                        <div class="accordion-item">
                             <h3 class="accordion-header">
-                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">Is ScholarZim free for students?</button>
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1" aria-expanded="true" aria-controls="faq1">
+                                    Is ScholarZim free for students?
+                                </button>
                             </h3>
                             <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body sz-landing-muted small">Yes. Creating an account, searching scholarships, and applying is free for students from primary school through postgraduate study.</div>
+                                <div class="accordion-body sz-landing-muted">Yes. Creating an account, searching scholarships, and applying is free for students from primary school through postgraduate study.</div>
                             </div>
                         </div>
-                        <div class="accordion-item border rounded-3 mb-2 overflow-hidden">
+                        <div class="accordion-item">
                             <h3 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">How does ScholarFit matching work?</button>
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2" aria-expanded="false" aria-controls="faq2">
+                                    How does ScholarFit matching work?
+                                </button>
                             </h3>
                             <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body sz-landing-muted small">After you complete your profile, we score opportunities against your education level, field, and location — surfacing scholarships where you are most likely to qualify.</div>
+                                <div class="accordion-body sz-landing-muted">After you complete your profile, we score opportunities against your education level, field, and location — surfacing scholarships where you are most likely to qualify.</div>
                             </div>
                         </div>
-                        <div class="accordion-item border rounded-3 mb-2 overflow-hidden">
+                        <div class="accordion-item">
                             <h3 class="accordion-header">
-                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">Who can publish scholarships?</button>
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3" aria-expanded="false" aria-controls="faq3">
+                                    Who can publish scholarships?
+                                </button>
                             </h3>
                             <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
-                                <div class="accordion-body sz-landing-muted small">Verified scholarship providers and organisations register separately. All listings are reviewed before students can apply.</div>
+                                <div class="accordion-body sz-landing-muted">Verified scholarship providers and organisations register separately. All listings are reviewed before students can apply.</div>
+                            </div>
+                        </div>
+                        <div class="accordion-item">
+                            <h3 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4" aria-expanded="false" aria-controls="faq4">
+                                    Can I apply from my phone?
+                                </button>
+                            </h3>
+                            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                                <div class="accordion-body sz-landing-muted">Yes. ScholarZim works on mobile browsers and can be installed as a progressive web app for quick access.</div>
                             </div>
                         </div>
                     </div>
@@ -417,28 +442,16 @@
         </div>
     </section>
 
-    <!-- 12. Dual CTA -->
-    <section class="sz-landing-cta-dual" id="providers">
-        <div class="sz-landing-cta-dual__bg" aria-hidden="true"></div>
-        <div class="container sz-container position-relative">
-            <div class="row g-3 g-lg-4">
-                <div class="col-lg-6">
-                    <div th:replace="~{fragments/components :: landing-audience-card(
-                        'bi-mortarboard-fill',
-                        'For students',
-                        'Create a free account, build your profile, and discover scholarships from Grade 1 through postgraduate study.',
-                        @{/register},
-                        'Create student account',
-                        'student')}"></div>
-                </div>
-                <div class="col-lg-6">
-                    <div th:replace="~{fragments/components :: landing-audience-card(
-                        'bi-building',
-                        'For providers',
-                        'Publish verified scholarships, review applications, and reach students across Zimbabwe.',
-                        @{/register/provider},
-                        'Register as provider',
-                        'provider')}"></div>
+    <!-- CTA -->
+    <section class="sz-landing-cta-banner" id="providers" aria-labelledby="cta-title">
+        <div class="sz-landing-cta-banner__bg" aria-hidden="true"></div>
+        <div class="container sz-container position-relative sz-reveal">
+            <div class="sz-landing-cta-banner__inner text-center">
+                <h2 id="cta-title" class="sz-landing-cta-banner__title">Ready to find your scholarship?</h2>
+                <p class="sz-landing-cta-banner__lead">Join thousands of Zimbabwean students discovering verified funding opportunities.</p>
+                <div class="d-flex flex-wrap justify-content-center gap-3">
+                    <a th:href="@{/register}" class="btn btn-light btn-lg fw-semibold">Create free student account</a>
+                    <a th:href="@{/register/provider}" class="btn btn-outline-light btn-lg">Register as provider</a>
                 </div>
             </div>
         </div>
@@ -447,10 +460,10 @@
 
 <footer th:replace="~{fragments/public-layout :: public-footer}"></footer>
 
-<div id="pwa-install-banner" class="sz-pwa-banner d-none">
+<div id="pwa-install-banner" class="sz-pwa-banner d-none" role="region" aria-label="Install app">
     <span>Install ScholarZim on your phone</span>
-    <button id="pwa-install-btn" class="btn btn-light btn-sm">Install</button>
-    <button id="pwa-dismiss-btn" class="btn btn-link btn-sm text-white">Dismiss</button>
+    <button id="pwa-install-btn" class="btn btn-light btn-sm" type="button">Install</button>
+    <button id="pwa-dismiss-btn" class="btn btn-link btn-sm text-white" type="button">Dismiss</button>
 </div>
 
 <th:block th:replace="~{fragments/public-layout :: scripts}"></th:block>

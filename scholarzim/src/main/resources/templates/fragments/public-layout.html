@@ -27,19 +27,15 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <th:block th:replace="~{fragments/layout :: public-styles}"></th:block>
     <style>
-        body.sz-landing { color: var(--sz-text, #0F172A); }
-        /* Override any stale cached app-shell CSS that hides landing content */
+        body.sz-landing { color: var(--sz-text, #0F172A); font-family: 'Inter', system-ui, sans-serif; }
         body.sz-landing .sz-container,
         body.sz-landing .sz-landing-main,
         body.sz-landing .sz-landing-grid,
         body.sz-landing .sz-landing-card-prod,
-        body.sz-landing .sz-landing-audience-card,
-        body.sz-landing .sz-sch-detail-panel,
-        body.sz-landing .sz-sch-detail-fact,
-        body.sz-landing .sz-sch-detail-apply {
+        body.sz-landing .sz-sch-detail-panel {
             opacity: 1 !important;
             visibility: visible !important;
         }
@@ -50,24 +46,38 @@
 
 <a th:fragment="skip-link" class="sz-skip-link" href="#main-content">Skip to main content</a>
 
+<div th:fragment="announcement-bar" class="sz-landing-announce">
+    <div class="sz-container d-flex flex-wrap align-items-center justify-content-between gap-2">
+        <span class="sz-landing-announce__text">
+            <i class="bi bi-megaphone me-1" aria-hidden="true"></i>
+            Connecting students with verified scholarships across Zimbabwe.
+        </span>
+        <span class="sz-landing-announce__links">
+            <a href="#faq">Help center</a>
+            <span class="sz-landing-announce__sep" aria-hidden="true">·</span>
+            <span><i class="bi bi-globe2 me-1" aria-hidden="true"></i>English</span>
+        </span>
+    </div>
+</div>
+
 <header th:fragment="navbar" class="sz-landing-header" id="szLandingHeader">
+    <div th:replace="~{fragments/public-layout :: announcement-bar}"></div>
     <div class="sz-container">
         <nav class="navbar navbar-expand-lg sz-landing-nav" aria-label="Primary">
             <a class="navbar-brand sz-landing-brand" th:href="@{/}">
-                <span class="sz-landing-brand__icon"><i class="bi bi-mortarboard-fill"></i></span>
+                <span class="sz-landing-brand__icon" aria-hidden="true"><i class="bi bi-mortarboard-fill"></i></span>
                 <span>ScholarZim</span>
             </a>
-            <button class="navbar-toggler sz-landing-nav__toggle d-lg-none" type="button" data-bs-toggle="collapse"
+            <button class="navbar-toggler sz-landing-nav__toggle" type="button" data-bs-toggle="collapse"
                     data-bs-target="#pubNav" aria-controls="pubNav" aria-expanded="false"
                     aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="pubNav">
-                <ul class="navbar-nav sz-landing-nav__menu">
+                <ul class="navbar-nav sz-landing-nav__menu mx-lg-auto">
                     <li class="nav-item"><a class="nav-link" th:href="@{/scholarships}">Scholarships</a></li>
                     <li class="nav-item"><a class="nav-link" th:href="@{/register/provider}">Become a provider</a></li>
                     <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#features">Features</a></li>
-                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#search">Search</a></li>
                     <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#how-it-works">How it works</a></li>
                     <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#about">About</a></li>
                     <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#contact">Contact</a></li>
@@ -75,11 +85,15 @@
                 </ul>
                 <div class="sz-landing-nav__actions">
                     <button type="button" class="btn sz-btn-nav-ghost sz-theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
-                        <i class="bi bi-moon-stars"></i>
+                        <i class="bi bi-moon-stars" aria-hidden="true"></i>
                     </button>
-                    <a class="btn sz-btn-nav-ghost" th:href="@{/login}">Log in</a>
-                    <a class="btn sz-btn-nav-ghost d-none d-xl-inline-flex" th:href="@{/login(role='provider')}">Provider sign in</a>
-                    <a class="btn btn-primary sz-btn-landing-primary" th:href="@{/register}">Get started</a>
+                    <a class="btn sz-btn-nav-outline" th:href="@{/login}">Log in</a>
+                    <a class="btn sz-btn-nav-outline d-none d-xl-inline-flex" th:href="@{/login(role='provider')}">
+                        <i class="bi bi-building me-1" aria-hidden="true"></i>Provider sign in
+                    </a>
+                    <a class="btn btn-primary sz-btn-landing-primary" th:href="@{/register}">
+                        Get started <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
+                    </a>
                 </div>
             </div>
         </nav>
@@ -91,10 +105,16 @@
         <div class="row g-4 g-lg-5">
             <div class="col-lg-4">
                 <a class="sz-landing-brand sz-landing-brand--footer mb-3" th:href="@{/}">
-                    <span class="sz-landing-brand__icon"><i class="bi bi-mortarboard-fill"></i></span>
+                    <span class="sz-landing-brand__icon" aria-hidden="true"><i class="bi bi-mortarboard-fill"></i></span>
                     <span>ScholarZim</span>
                 </a>
                 <p class="sz-landing-footer__text">Zimbabwe's scholarship platform — primary school through postgraduate funding. Connecting students with verified opportunities.</p>
+                <div class="sz-landing-social d-flex gap-2 mt-3" aria-label="Social media">
+                    <a href="#" aria-label="Facebook"><i class="bi bi-facebook" aria-hidden="true"></i></a>
+                    <a href="#" aria-label="X (Twitter)"><i class="bi bi-twitter-x" aria-hidden="true"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="bi bi-linkedin" aria-hidden="true"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="bi bi-instagram" aria-hidden="true"></i></a>
+                </div>
             </div>
             <div class="col-6 col-lg-2">
                 <h6 class="sz-landing-footer__heading">About</h6>
@@ -103,24 +123,31 @@
                     <li><a href="#how-it-works">How it works</a></li>
                     <li><a href="#features">Features</a></li>
                     <li><a href="#faq">FAQ</a></li>
-                    <li><a th:href="@{/scholarships}">Scholarships</a></li>
-                    <li><a th:href="@{/register/provider}">Providers</a></li>
                 </ul>
             </div>
             <div class="col-6 col-lg-2">
-                <h6 class="sz-landing-footer__heading">Quick Links</h6>
+                <h6 class="sz-landing-footer__heading">Scholarships</h6>
                 <ul class="sz-landing-footer__links">
+                    <li><a th:href="@{/scholarships}">Browse all</a></li>
+                    <li><a href="#search">Search</a></li>
                     <li><a th:href="@{/register}">Create account</a></li>
-                    <li><a th:href="@{/login}">Sign in</a></li>
-                    <li><a th:href="@{/register/provider}">For providers</a></li>
                 </ul>
             </div>
-            <div class="col-lg-4">
-                <h6 class="sz-landing-footer__heading">Contact</h6>
+            <div class="col-6 col-lg-2">
+                <h6 class="sz-landing-footer__heading">Providers</h6>
                 <ul class="sz-landing-footer__links">
-                    <li><a href="tel:+263778862767">+263 778 862 767</a></li>
-                    <li><a href="mailto:r231525y@students.msu.ac.zw">r231525y@students.msu.ac.zw</a></li>
-                    <li><a href="#contact">Contact section</a></li>
+                    <li><a th:href="@{/register/provider}">Register</a></li>
+                    <li><a th:href="@{/login(role='provider')}">Provider sign in</a></li>
+                    <li><a href="#providers">List opportunities</a></li>
+                </ul>
+            </div>
+            <div class="col-6 col-lg-2">
+                <h6 class="sz-landing-footer__heading">Resources</h6>
+                <ul class="sz-landing-footer__links">
+                    <li><a href="#contact">Contact</a></li>
+                    <li><a href="#faq">Help center</a></li>
+                    <li><a href="#">Privacy policy</a></li>
+                    <li><a href="#">Terms of service</a></li>
                 </ul>
             </div>
         </div>
@@ -135,7 +162,8 @@
 <th:block th:fragment="scripts">
     <div th:replace="~{fragments/layout :: confirm-dialog}"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/app.js(v=38)}"></script>
+    <script th:src="@{/js/app.js(v=39)}"></script>
+    <script th:src="@{/js/landing.js(v=1)}"></script>
     <script th:src="@{/js/pwa.js(v=29)}"></script>
 </th:block>
 
