@@ -190,16 +190,14 @@
     position: sticky;
     top: 0;
     z-index: 1030;
-    background: var(--sz-glass-bg-strong);
-    backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
-    -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
-    border-bottom: 1px solid var(--sz-glass-border-outer);
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
     transition: background 0.2s ease, box-shadow 0.2s ease;
 }
 
 .sz-landing-header.scrolled {
-    background: var(--sz-glass-bg-strong);
-    box-shadow: var(--sz-shadow-glass);
+    background: #ffffff;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
 }
 
 .sz-landing-header .sz-landing-nav {
@@ -340,7 +338,7 @@
     }
 }
 
-/* Landing — professional marketing (mesh from glass.css) */
+/* Landing — professional marketing (solid surfaces) */
 
 .sz-landing-main {
     position: relative;
@@ -2197,7 +2195,7 @@ body.sz-landing {
     font-weight: 800;
 }
 
-/* Header polish — must win over glass.css */
+/* Header polish — solid white bar */
 .sz-landing-header {
     background: #ffffff !important;
     border-bottom: 1px solid #e2e8f0 !important;

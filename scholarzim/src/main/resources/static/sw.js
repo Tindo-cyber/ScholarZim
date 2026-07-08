@@ -1,5 +1,5 @@
 /* Network-first; never cache HTML or CSS/JS */
-const CACHE = 'scholarzim-v37';
+const CACHE = 'scholarzim-v38';
 
 self.addEventListener('install', function () {
     self.skipWaiting();

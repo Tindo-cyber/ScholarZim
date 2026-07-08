@@ -1,11 +1,9 @@
 /* Sidebar — light SaaS */
 .sz-sidebar {
-    background: var(--sz-glass-bg-strong) !important;
-    backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
-    -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
-    border-right: 1px solid var(--sz-glass-border-outer);
+    background: var(--sz-sidebar) !important;
+    border-right: 1px solid var(--sz-border);
     color: var(--sz-text);
-    box-shadow: var(--sz-shadow-glass);
+    box-shadow: var(--sz-shadow);
 }
 
 @media (min-width: 768px) {
@@ -117,10 +115,8 @@
 
 /* ── App dashboard topbar ── */
 .sz-topbar {
-    background: var(--sz-glass-bg-strong) !important;
-    backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
-    -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
-    border-bottom: 1px solid var(--sz-glass-border-outer) !important;
+    background: var(--sz-topbar-bg) !important;
+    border-bottom: 1px solid var(--sz-topbar-border) !important;
     min-height: 3.75rem;
     padding: 0 !important;
     z-index: 1020;
@@ -216,11 +212,9 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.2rem 0.625rem 0.2rem 0.2rem;
-    border: 1px solid var(--sz-glass-border-outer);
+    border: 1px solid var(--sz-border);
     border-radius: 999px;
-    background: var(--sz-glass-bg);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: var(--sz-card);
     color: var(--sz-text);
     font-size: 0.8125rem;
     font-weight: 500;

@@ -6,30 +6,28 @@
 <!-- ============ STYLES ============ -->
 <!-- App shell styles only — landing.css is public pages only -->
 <th:block th:fragment="styles">
-    <link rel="stylesheet" th:href="@{/css/tokens.css(v=29)}">
-    <link rel="stylesheet" th:href="@{/css/base.css(v=29)}">
-    <link rel="stylesheet" th:href="@{/css/layout.css(v=33)}">
-    <link rel="stylesheet" th:href="@{/css/components.css(v=31)}">
-    <link rel="stylesheet" th:href="@{/css/dashboard.css(v=33)}">
-    <link rel="stylesheet" th:href="@{/css/glass.css(v=30)}">
-    <link rel="stylesheet" th:href="@{/css/dark.css(v=30)}">
-    <link rel="stylesheet" th:href="@{/css/auth.css(v=31)}">
-    <link rel="stylesheet" th:href="@{/css/accessibility.css(v=34)}">
-    <link rel="stylesheet" th:href="@{/css/mobile.css(v=35)}">
+    <link rel="stylesheet" th:href="@{/css/tokens.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/base.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/layout.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/components.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/dark.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/auth.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/accessibility.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/mobile.css(v=38)}">
     <link rel="stylesheet" th:href="@{/css/polish.css(v=38)}">
 </th:block>
 
 <!-- Public marketing pages — no app-shell polish/dashboard styles -->
 <th:block th:fragment="public-styles">
-    <link rel="stylesheet" th:href="@{/css/tokens.css(v=37)}">
-    <link rel="stylesheet" th:href="@{/css/base.css(v=37)}">
-    <link rel="stylesheet" th:href="@{/css/components.css(v=37)}">
-    <link rel="stylesheet" th:href="@{/css/glass.css(v=37)}">
-    <link rel="stylesheet" th:href="@{/css/dark.css(v=37)}">
-    <link rel="stylesheet" th:href="@{/css/accessibility.css(v=37)}">
-    <link rel="stylesheet" th:href="@{/css/mobile.css(v=37)}">
-    <link rel="stylesheet" th:href="@{/css/landing.css(v=37)}">
-    <link rel="stylesheet" th:href="@{/css/auth.css(v=37)}">
+    <link rel="stylesheet" th:href="@{/css/tokens.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/base.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/components.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/dark.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/accessibility.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/mobile.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/landing.css(v=38)}">
+    <link rel="stylesheet" th:href="@{/css/auth.css(v=38)}">
 </th:block>
 
 <!-- ============ HEAD ============ -->
@@ -63,7 +61,7 @@
     <th:block th:replace="~{fragments/layout :: styles}"></th:block>
 
     <style>
-        /* Critical shell — color only; mesh canvas comes from glass.css */
+        /* Critical shell — solid surfaces only */
         body { margin: 0; color: var(--sz-text, #0f172a); }
         .sz-shell { display: flex; min-height: 100vh; width: 100%; position: relative; z-index: 1; }
         .sz-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; background: transparent; }
@@ -502,7 +500,7 @@
     <div th:replace="~{fragments/layout :: confirm-dialog}"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/app.js(v=38)}"></script>
-    <script th:src="@{/js/pwa.js(v=37)}"></script>
+    <script th:src="@{/js/pwa.js(v=38)}"></script>
 </th:block>
 
 </body>

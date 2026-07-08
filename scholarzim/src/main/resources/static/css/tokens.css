@@ -34,18 +34,18 @@
     --sz-role-badge-bg: #ecfdf5;
     --sz-notif-unread-bg: #ecfdf5;
     --sz-analytics-track: #f1f5f9;
-    --sz-topbar-bg: rgba(255, 255, 255, 0.92);
-    --sz-topbar-border: rgba(15, 23, 42, 0.06);
-    --sz-glass-header: rgba(255, 255, 255, 0.8);
+    --sz-topbar-bg: #ffffff;
+    --sz-topbar-border: var(--sz-border);
 
-    /* Glassmorphism */
-    --sz-glass-blur: 20px;
-    --sz-glass-saturate: 180%;
-    --sz-glass-bg: rgba(255, 255, 255, 0.52);
-    --sz-glass-bg-strong: rgba(255, 255, 255, 0.68);
-    --sz-glass-border: rgba(255, 255, 255, 0.65);
-    --sz-glass-border-outer: rgba(15, 23, 42, 0.08);
-    --sz-glass-highlight: rgba(255, 255, 255, 0.9);
+    /* Surface aliases (legacy glass token names — solid only) */
+    --sz-glass-header: #ffffff;
+    --sz-glass-blur: 0;
+    --sz-glass-saturate: 100%;
+    --sz-glass-bg: var(--sz-card);
+    --sz-glass-bg-strong: #ffffff;
+    --sz-glass-border: var(--sz-border);
+    --sz-glass-border-outer: var(--sz-border);
+    --sz-glass-highlight: #ffffff;
 
     /* Legacy aliases */
     --sz-green: var(--sz-primary);
@@ -76,7 +76,7 @@
     /* Elevation */
     --sz-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 20px rgba(15, 23, 42, 0.06);
     --sz-shadow-hover: 0 4px 16px rgba(15, 23, 42, 0.08);
-    --sz-shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 8px 32px rgba(15, 23, 42, 0.08);
+    --sz-shadow-glass: var(--sz-shadow);
     --sz-shadow-card: 0 0 0 1px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
 
     /* Motion */
@@ -152,19 +152,19 @@
     --sz-role-badge-bg: #052e16;
     --sz-notif-unread-bg: rgba(22, 163, 74, 0.12);
     --sz-analytics-track: #334155;
-    --sz-topbar-bg: rgba(15, 23, 42, 0.92);
-    --sz-topbar-border: rgba(255, 255, 255, 0.08);
-    --sz-glass-header: rgba(15, 23, 42, 0.85);
+    --sz-topbar-bg: #0f172a;
+    --sz-topbar-border: #334155;
+    --sz-glass-header: #0f172a;
 
-    --sz-glass-bg: rgba(30, 41, 59, 0.65);
-    --sz-glass-bg-strong: rgba(30, 41, 59, 0.8);
-    --sz-glass-border: rgba(255, 255, 255, 0.1);
-    --sz-glass-border-outer: rgba(255, 255, 255, 0.06);
-    --sz-glass-highlight: rgba(255, 255, 255, 0.06);
+    --sz-glass-bg: var(--sz-card);
+    --sz-glass-bg-strong: #1e293b;
+    --sz-glass-border: var(--sz-border);
+    --sz-glass-border-outer: var(--sz-border);
+    --sz-glass-highlight: #334155;
 
     --sz-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 20px rgba(0, 0, 0, 0.3);
     --sz-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.4);
-    --sz-shadow-glass: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 32px rgba(0, 0, 0, 0.35);
+    --sz-shadow-glass: var(--sz-shadow);
 
     --sz-border-subtle: 1px solid #334155;
 

@@ -250,13 +250,11 @@ body.sz-auth-page--provider .sz-auth-wrap::before {
 .sz-auth-card {
     width: 100%;
     max-width: 400px;
-    background: var(--sz-landing-panel, var(--sz-glass-bg-strong)) !important;
-    backdrop-filter: blur(20px) saturate(160%);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    border: 1px solid var(--sz-glass-border-outer) !important;
+    background: #ffffff !important;
+    border: 1px solid var(--sz-border) !important;
     border-radius: var(--sz-radius-lg);
     padding: 1.5rem;
-    box-shadow: var(--sz-shadow-glass), 0 16px 32px rgba(15, 23, 42, 0.1);
+    box-shadow: var(--sz-shadow);
 }
 
 @media (min-width: 992px) {

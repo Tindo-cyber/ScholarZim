@@ -8,7 +8,7 @@
     color: var(--sz-text);
 }
 
-/* ── App shell (glass.css owns frosted backgrounds) ── */
+/* ── App shell (solid surfaces) ── */
 [data-bs-theme="dark"] .sz-main {
     background: transparent !important;
 }

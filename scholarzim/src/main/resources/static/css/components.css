@@ -617,13 +617,11 @@
     right: 0;
     display: flex;
     justify-content: space-around;
-    background: var(--sz-glass-bg-strong);
-    backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
-    -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
-    border-top: 1px solid var(--sz-glass-border-outer);
+    background: #ffffff;
+    border-top: 1px solid var(--sz-border);
     padding: .35rem 0 calc(.35rem + env(safe-area-inset-bottom));
     z-index: 1040;
-    box-shadow: var(--sz-shadow-glass);
+    box-shadow: var(--sz-shadow);
 }
 
 @media (min-width: 768px) {
