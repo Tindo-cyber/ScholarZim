@@ -30,7 +30,18 @@ SPRING_MAIL_PASSWORD=
 5. Deploy → open the Render HTTPS URL. Free Web Services sleep when idle (first hit can take ~1 minute).
 6. Optional later: buy a domain and attach it under Render → Custom Domains; update `SCHOLARZIM_APP_BASE_URL`.
 
-Do **not** deploy [`scholarzim-web/`](../scholarzim-web/DEPRECATED.md) (deprecated Next.js). Do **not** point production at local MySQL. Flyway migrates on startup; prod has `scholarzim.demo.seed=false`.
+Do **not** deploy [`scholarzim-web/`](../scholarzim-web/DEPRECATED.md) (deprecated Next.js). Do **not** point production at local MySQL. Flyway migrates on startup (V1 creates the base schema); prod has `scholarzim.demo.seed=false`.
+
+**If a deploy failed on Flyway** (e.g. `Failed to open the referenced table 'users'`), the Aiven DB may have a partial `flyway_schema_history`. In the Aiven console → your service → **Query statistics** or connect with a MySQL client and run:
+
+```sql
+DROP TABLE IF EXISTS flyway_schema_history;
+DROP TABLE IF EXISTS password_reset_tokens;
+DROP TABLE IF EXISTS saved_scholarships;
+DROP TABLE IF EXISTS tenants;
+```
+
+Then push the latest code (includes `V1__initial_schema.sql`) and redeploy on Render.
 
 ---
 

@@ -20,8 +20,8 @@ public final class FlywayMigrationAssertions {
                 String.class);
 
         Set<String> applied = new HashSet<>(versions);
-        assertTrue(applied.containsAll(Set.of("2", "3", "4", "5")),
-                () -> "Expected V2–V5 to be applied, but found: " + applied);
+        assertTrue(applied.containsAll(Set.of("1", "2", "3", "4", "5")),
+                () -> "Expected V1–V5 to be applied, but found: " + applied);
         assertEquals("5", versions.get(versions.size() - 1));
 
         Integer resultsColumn = jdbc.queryForObject(
