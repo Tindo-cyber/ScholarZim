@@ -79,7 +79,7 @@
                 </div>
                 <div class="sz-auth-brand h5 mb-1"
                      th:text="${loginRole == 'provider'} ? 'Provider sign in' : 'Student sign in'">Sign in</div>
-                <p class="text-secondary small mb-0"
+                <p class="sz-auth-muted small mb-0"
                    th:text="${loginRole == 'provider'} ? 'Use your provider work email' : 'Use your student account email'">
                     Sign in to continue
                 </p>
@@ -145,10 +145,10 @@
             </form>
 
             <div class="sz-auth-register-links text-center mt-3">
-                <span class="text-secondary small">No account?</span>
+                <span class="sz-auth-muted small">No account?</span>
                 <a th:if="${loginRole == 'student'}" th:href="@{/register}" class="fw-semibold small">Register as student</a>
                 <a th:if="${loginRole == 'provider'}" th:href="@{/register/provider}" class="fw-semibold small">Apply as provider</a>
-                <span class="text-secondary small">·</span>
+                <span class="sz-auth-muted small">·</span>
                 <a th:if="${loginRole == 'student'}" th:href="@{/login(role='provider')}" class="small">Provider sign in</a>
                 <a th:if="${loginRole == 'provider'}" th:href="@{/login(role='student')}" class="small">Student sign in</a>
             </div>

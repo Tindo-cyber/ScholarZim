@@ -30,6 +30,14 @@
         );
 
         items.forEach(function (el) { observer.observe(el); });
+
+        /* Above-the-fold blocks must show immediately (hero photo, etc.) */
+        items.forEach(function (el) {
+            var rect = el.getBoundingClientRect();
+            if (rect.top < window.innerHeight * 0.92) {
+                el.classList.add("is-visible");
+            }
+        });
     }
 
     function initSmoothAnchors() {

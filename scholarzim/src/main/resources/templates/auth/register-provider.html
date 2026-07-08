@@ -9,6 +9,14 @@
 <div class="sz-auth-wrap">
     <div class="sz-auth-hero">
         <div>
+            <nav class="nav sz-auth-audience-tabs" aria-label="Register as">
+                <a class="nav-link" th:href="@{/register}">
+                    <i class="bi bi-mortarboard me-1"></i>Student
+                </a>
+                <a class="nav-link active" th:href="@{/register/provider}" aria-current="page">
+                    <i class="bi bi-building me-1"></i>Provider
+                </a>
+            </nav>
             <h1>Register as a provider</h1>
             <p class="lead">Post opportunities, review applications, and reach students nationwide.</p>
             <p class="small sz-auth-hero__note">Upload your Zimbabwe registration certificate for admin verification.</p>
@@ -24,7 +32,7 @@
             <div class="text-center mb-3">
                 <div class="sz-auth-brand-icon mx-auto"><i class="bi bi-building"></i></div>
                 <div class="sz-auth-brand h5 mb-1">Provider application</div>
-                <p class="text-secondary small mb-0">Submit organisation details and registration proof</p>
+                <p class="sz-auth-muted small mb-0">Submit organisation details and registration proof</p>
             </div>
             <div th:object="${registerRequest}">
                 <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
@@ -95,9 +103,10 @@
                     </div>
                 </form>
             </div>
-            <p class="text-center text-secondary mt-3 mb-0 small">
+            <p class="text-center mt-3 mb-0 small sz-auth-register-links">
                 Already approved? <a th:href="@{/login(role='provider')}" class="fw-semibold">Provider sign in</a>
-                · <a th:href="@{/register}">Student register</a>
+                <span class="sz-auth-muted">·</span>
+                <a th:href="@{/register}" class="fw-semibold">Student register</a>
             </p>
         </div>
     </div>

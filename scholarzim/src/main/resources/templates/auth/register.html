@@ -12,6 +12,14 @@
 
     <div class="sz-auth-hero">
         <div>
+            <nav class="nav sz-auth-audience-tabs" aria-label="Register as">
+                <a class="nav-link active" th:href="@{/register}" aria-current="page">
+                    <i class="bi bi-mortarboard me-1"></i>Student
+                </a>
+                <a class="nav-link" th:href="@{/register/provider}">
+                    <i class="bi bi-building me-1"></i>Provider
+                </a>
+            </nav>
             <h1>Start your scholarship journey</h1>
             <p class="lead">
                 Join Zimbabwean students discovering funding from primary school
@@ -33,7 +41,7 @@
                     <i class="bi bi-person-plus"></i>
                 </div>
                 <div class="sz-auth-brand h5 mb-1">Create student account</div>
-                <p class="text-secondary small mb-0">Free for all Zimbabwean students</p>
+                <p class="sz-auth-muted small mb-0">Free for all Zimbabwean students</p>
             </div>
 
             <div th:object="${registerRequest}">
@@ -93,9 +101,11 @@
             </div>
 
             <div class="sz-auth-register-links text-center mt-3">
-                <span class="text-secondary small">Already registered?</span>
+                <span class="sz-auth-muted small">Already registered?</span>
                 <a th:href="@{/login}" class="fw-semibold small">Sign in</a>
-                <span class="text-secondary small">·</span>
+                <span class="sz-auth-muted small">·</span>
+                <a th:href="@{/register/provider}" class="fw-semibold small">Register as provider</a>
+                <span class="sz-auth-muted small">·</span>
                 <a th:href="@{/login(role='provider')}" class="small">Provider sign in</a>
             </div>
 

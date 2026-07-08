@@ -10,11 +10,15 @@ body.sz-auth-page {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1.25rem;
-    border-bottom: 1px solid var(--sz-glass-border-outer);
-    background: var(--sz-glass-bg-strong);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    padding: 0.875rem 1.25rem;
+    min-height: 3.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+[data-bs-theme="dark"] .sz-auth-topbar {
+    background: #0f172a;
+    border-bottom-color: #334155;
 }
 
 .sz-auth-topbar__brand {
@@ -316,10 +320,75 @@ body.sz-auth-page--provider .sz-auth-wrap::before {
     border-color: rgba(255, 255, 255, 0.95);
 }
 
-[data-bs-theme="dark"] .sz-auth-topbar {
-    background: var(--sz-glass-bg-strong);
+.sz-auth-audience-tabs .nav-link[aria-current="page"] {
+    color: var(--sz-primary);
+    background: #fff;
+    border-color: #fff;
 }
 
 [data-bs-theme="dark"] .sz-auth-card {
     background: var(--sz-landing-panel) !important;
+}
+
+/* Readable labels and inputs on auth forms */
+.sz-auth-muted {
+    color: #64748b !important;
+}
+
+.sz-auth-card .form-label,
+.sz-auth-card label {
+    color: #0f172a !important;
+    font-weight: 600;
+}
+
+.sz-auth-card .form-text {
+    color: #64748b !important;
+}
+
+.sz-auth-card .text-secondary,
+.sz-auth-card .small.text-secondary {
+    color: #64748b !important;
+}
+
+.sz-auth-card .form-control,
+.sz-auth-card .form-select,
+.sz-auth-card .input-group-text {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: #cbd5e1 !important;
+}
+
+.sz-auth-card .form-control::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1;
+}
+
+.sz-auth-card .form-control:focus,
+.sz-auth-card .form-select:focus {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    border-color: var(--sz-primary) !important;
+    box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.2) !important;
+}
+
+[data-bs-theme="dark"] .sz-auth-card .form-label,
+[data-bs-theme="dark"] .sz-auth-card label {
+    color: #f1f5f9 !important;
+}
+
+[data-bs-theme="dark"] .sz-auth-card .form-control,
+[data-bs-theme="dark"] .sz-auth-card .form-select,
+[data-bs-theme="dark"] .sz-auth-card .input-group-text {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+}
+
+[data-bs-theme="dark"] .sz-auth-card .form-control::placeholder {
+    color: #94a3b8 !important;
+}
+
+[data-bs-theme="dark"] .sz-auth-muted,
+[data-bs-theme="dark"] .sz-auth-card .text-secondary {
+    color: #cbd5e1 !important;
 }
