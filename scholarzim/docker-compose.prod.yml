@@ -1,0 +1,60 @@
+# Production stack for ScholarZim (VPS / Docker)
+# Usage:
+#   1. Copy .env.prod.example to .env.prod and fill secrets
+#   2. docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+#
+# Put Nginx (or Caddy) in front with TLS for www.scholarzim.com
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: scholarzim
+      MYSQL_USER: ${SCHOLARZIM_DB_USER}
+      MYSQL_PASSWORD: ${SCHOLARZIM_DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - mysql_prod_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - scholarzim
+
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SCHOLARZIM_DB_URL: jdbc:mysql://mysql:3306/scholarzim?useSSL=false&allowPublicKeyRetrieval=true
+      SCHOLARZIM_DB_USER: ${SCHOLARZIM_DB_USER}
+      SCHOLARZIM_DB_PASSWORD: ${SCHOLARZIM_DB_PASSWORD}
+      SCHOLARZIM_APP_BASE_URL: ${SCHOLARZIM_APP_BASE_URL:-https://www.scholarzim.com}
+      SCHOLARZIM_MAIL_FROM: ${SCHOLARZIM_MAIL_FROM:-noreply@scholarzim.com}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
+      SCHOLARZIM_UPLOAD_DIR: /app/uploads
+      SCHOLARZIM_SESSION_COOKIE_SECURE: "true"
+      SCHOLARZIM_DEMO_SEED: "false"
+      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx768m}
+    volumes:
+      - upload_prod_data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - scholarzim
+
+volumes:
+  mysql_prod_data:
+  upload_prod_data:
+
+networks:
+  scholarzim:

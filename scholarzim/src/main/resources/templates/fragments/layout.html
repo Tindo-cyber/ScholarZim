@@ -16,7 +16,19 @@
     <link rel="stylesheet" th:href="@{/css/auth.css(v=30)}">
     <link rel="stylesheet" th:href="@{/css/accessibility.css(v=34)}">
     <link rel="stylesheet" th:href="@{/css/mobile.css(v=35)}">
-    <link rel="stylesheet" th:href="@{/css/polish.css(v=36)}">
+    <link rel="stylesheet" th:href="@{/css/polish.css(v=38)}">
+</th:block>
+
+<!-- Public marketing pages — no app-shell polish/dashboard styles -->
+<th:block th:fragment="public-styles">
+    <link rel="stylesheet" th:href="@{/css/tokens.css(v=29)}">
+    <link rel="stylesheet" th:href="@{/css/base.css(v=29)}">
+    <link rel="stylesheet" th:href="@{/css/components.css(v=31)}">
+    <link rel="stylesheet" th:href="@{/css/glass.css(v=30)}">
+    <link rel="stylesheet" th:href="@{/css/dark.css(v=30)}">
+    <link rel="stylesheet" th:href="@{/css/accessibility.css(v=34)}">
+    <link rel="stylesheet" th:href="@{/css/mobile.css(v=35)}">
+    <link rel="stylesheet" th:href="@{/css/landing.css(v=32)}">
 </th:block>
 
 <!-- ============ HEAD ============ -->
@@ -44,6 +56,9 @@
             if (meta) meta.setAttribute('content', t === 'dark' ? '#0f172a' : '#16A34A');
         })();
     </script>
+    <style>
+        .sz-content, .sz-auth-wrap { opacity: 1 !important; visibility: visible !important; }
+    </style>
     <th:block th:replace="~{fragments/layout :: styles}"></th:block>
 
     <style>
@@ -485,8 +500,8 @@
 <th:block th:fragment="scripts">
     <div th:replace="~{fragments/layout :: confirm-dialog}"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/app.js(v=36)}"></script>
-    <script th:src="@{/js/pwa.js(v=36)}"></script>
+    <script th:src="@{/js/app.js(v=38)}"></script>
+    <script th:src="@{/js/pwa.js(v=29)}"></script>
 </th:block>
 
 </body>

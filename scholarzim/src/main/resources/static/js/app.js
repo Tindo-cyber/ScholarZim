@@ -1,6 +1,10 @@
 (function () {
     "use strict";
 
+    if (!document.body.classList.contains("sz-landing")) {
+        document.body.classList.add("sz-page-ready");
+    }
+
     const root = document.documentElement;
     const toggle = document.getElementById("themeToggle");
 

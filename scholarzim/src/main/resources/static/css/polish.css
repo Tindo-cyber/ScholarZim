@@ -1,33 +1,28 @@
 /* Phase 15 — final UX polish: transitions, confirmations, submit states */
 
-body:not(.sz-page-ready) .sz-content,
-body:not(.sz-page-ready) .sz-auth-wrap,
-body:not(.sz-page-ready) .sz-error-page .container,
-body:not(.sz-page-ready) .sz-landing .sz-container {
-    opacity: 0;
-}
-
+/* Enter animation only after JS marks the page ready — content stays visible if JS is slow or blocked */
 body.sz-page-ready .sz-content,
 body.sz-page-ready .sz-auth-wrap,
-body.sz-page-ready .sz-error-page .container,
-body.sz-page-ready .sz-landing .sz-container {
-    opacity: 1;
-    transition: opacity 0.22s ease;
+body.sz-page-ready .sz-error-page .container {
+    animation: sz-page-enter 0.22s ease;
+}
+
+@keyframes sz-page-enter {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    body:not(.sz-page-ready) .sz-content,
-    body:not(.sz-page-ready) .sz-auth-wrap,
-    body:not(.sz-page-ready) .sz-error-page .container,
-    body:not(.sz-page-ready) .sz-landing .sz-container {
-        opacity: 1;
-    }
-
     body.sz-page-ready .sz-content,
     body.sz-page-ready .sz-auth-wrap,
-    body.sz-page-ready .sz-error-page .container,
-    body.sz-page-ready .sz-landing .sz-container {
-        transition: none;
+    body.sz-page-ready .sz-error-page .container {
+        animation: none;
     }
 }
 

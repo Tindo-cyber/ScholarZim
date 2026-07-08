@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var ASSET_VERSION = 'v28';
+    var ASSET_VERSION = 'v29';
     var isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
     function purgeCaches() {

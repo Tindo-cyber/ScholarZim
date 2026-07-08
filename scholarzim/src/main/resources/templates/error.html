@@ -3,7 +3,7 @@
 
 <head th:replace="~{fragments/public-layout :: head('Error')}"></head>
 
-<body class="sz-landing">
+<body class="sz-landing sz-page-ready">
 
     <div th:replace="~{fragments/public-layout :: skip-link}"></div>
 <header th:replace="~{fragments/public-layout :: navbar}"></header>
@@ -14,16 +14,13 @@
             <div class="col-lg-6">
                 <div class="sz-error-card">
                     <div class="sz-error-card__icon"
-                         th:classappend="${status == 403} ? ' bg-warning-subtle text-warning'
-                             : (${status == 404} ? ' bg-info-subtle text-info' : ' bg-danger-subtle text-danger')">
+                         th:classappend="${status == 403 ? 'bg-warning-subtle text-warning' : (status == 404 ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger')}">
                         <i class="bi"
-                           th:classappend="${status == 403} ? 'bi-shield-lock'
-                               : (${status == 404} ? 'bi-compass' : 'bi-exclamation-triangle')}"></i>
+                           th:classappend="${status == 403 ? 'bi-shield-lock' : (status == 404 ? 'bi-compass' : 'bi-exclamation-triangle')}"></i>
                     </div>
 
                     <h1 class="h4 fw-bold mb-2"
-                        th:text="${status == 403} ? 'Access denied'
-                            : (${status == 404} ? 'Page not found' : 'Something went wrong')">
+                        th:text="${status == 403 ? 'Access denied' : (status == 404 ? 'Page not found' : 'Something went wrong')}">
                         Something went wrong
                     </h1>
 
@@ -34,7 +31,7 @@
                     <p class="text-secondary small mb-4" th:if="${status == null}">
                         Please try again, or return to the home page. If the problem persists, contact support.
                     </p>
-                    <p class="text-secondary small mb-4" th:if="${status == 500}">
+                    <p class="text-secondary small mb-4" th:if="${status != null and status == 500}">
                         Our team has been notified. Try refreshing the page or come back in a few minutes.
                     </p>
 

@@ -1,73 +1,221 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head th:replace="~{fragments/public-layout :: head(${opportunity.title})}"></head>
 <body class="sz-landing">
 
     <div th:replace="~{fragments/public-layout :: skip-link}"></div>
 <nav th:replace="~{fragments/public-layout :: navbar}"></nav>
 
-<main class="pb-5">
-    <div class="sz-opp-detail-hero py-4 py-md-5 mb-4">
-        <div class="container">
-            <a th:href="@{/scholarships}" class="text-white opacity-75 small text-decoration-none mb-3 d-inline-block">
+<main id="main-content" tabindex="-1" class="sz-sch-detail">
+
+    <!-- Hero -->
+    <header class="sz-sch-detail-hero">
+        <div class="sz-sch-detail-hero__bg" aria-hidden="true"></div>
+        <div class="container sz-container position-relative">
+            <a th:href="@{/scholarships}" class="sz-sch-detail-back">
                 <i class="bi bi-arrow-left"></i> Back to scholarships
             </a>
-            <h1 class="h2 fw-bold text-white mb-2" th:text="${opportunity.title}">Title</h1>
-            <p class="text-white opacity-85 mb-3">
-                <i class="bi bi-building me-1"></i>
-                <span th:text="${opportunity.providerName}">Provider</span>
-            </p>
-            <div class="d-flex flex-wrap gap-2">
-                <span class="sz-badge sz-badge--funding" th:if="${opportunity.fundingType}" th:text="${opportunity.fundingType}">Funding</span>
-                <span class="sz-badge sz-badge--level" th:if="${opportunity.educationLevel}" th:text="${opportunity.educationLevel}">Level</span>
-                <span class="sz-badge sz-badge--country" th:if="${opportunity.country}" th:text="${opportunity.country}">Country</span>
+            <span class="sz-sch-detail-eyebrow">Scholarship opportunity</span>
+            <h1 class="sz-sch-detail-hero__title" th:text="${opportunity.title}">Title</h1>
+            <div class="sz-sch-detail-hero__provider">
+                <span class="sz-sch-detail-hero__provider-icon"><i class="bi bi-building"></i></span>
+                <div>
+                    <span class="d-block fw-semibold" th:text="${opportunity.providerName}">Provider</span>
+                    <span class="small sz-sch-detail-hero__verified">
+                        <i class="bi bi-patch-check-fill"></i> Verified provider
+                    </span>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-2 mt-3">
+                <span class="badge sz-landing-badge" th:if="${opportunity.fundingType}"
+                      th:text="${opportunity.fundingType}">Funding</span>
+                <span class="badge sz-landing-badge" th:if="${opportunity.educationLevel}"
+                      th:text="${opportunity.educationLevel}">Level</span>
+                <span class="badge sz-landing-badge" th:if="${opportunity.country}"
+                      th:text="${opportunity.country}">Country</span>
+                <span class="badge sz-landing-badge" th:if="${opportunity.targetField}"
+                      th:text="${opportunity.targetField}">Field</span>
             </div>
         </div>
-    </div>
+    </header>
 
-    <div class="container">
-        <div class="row g-4">
-            <div class="col-lg-8">
-                <div class="card sz-section-card mb-4">
-                    <div class="card-body p-4">
-                        <h2 class="h6 fw-bold mb-3">About this scholarship</h2>
-                        <p th:text="${opportunity.description != null ? opportunity.description : 'No description provided.'}">Description</p>
+    <!-- Quick facts -->
+    <section class="sz-sch-detail-facts" aria-label="Key details">
+        <div class="container sz-container">
+            <div class="sz-sch-detail-facts__grid">
+                <div class="sz-sch-detail-fact">
+                    <span class="sz-sch-detail-fact__icon"><i class="bi bi-calendar-event"></i></span>
+                    <div>
+                        <span class="sz-sch-detail-fact__label">Deadline</span>
+                        <strong class="sz-sch-detail-fact__value sz-deadline"
+                                th:if="${opportunity.deadline != null}"
+                                th:attr="data-deadline=${opportunity.deadline}"
+                                th:text="${#temporals.format(opportunity.deadline, 'dd MMM yyyy')}">—</strong>
+                        <strong class="sz-sch-detail-fact__value" th:if="${opportunity.deadline == null}">Rolling</strong>
                     </div>
                 </div>
-                <div class="card sz-section-card">
-                    <div class="card-body p-4">
-                        <h2 class="h6 fw-bold mb-3">Eligibility</h2>
-                        <ul class="list-unstyled mb-0">
-                            <li class="mb-2"><i class="bi bi-mortarboard text-primary me-2"></i>
-                                Education level: <strong th:text="${opportunity.educationLevel ?: 'Any'}">—</strong></li>
-                            <li class="mb-2"><i class="bi bi-book text-primary me-2"></i>
-                                Field of study: <strong th:text="${opportunity.targetField ?: 'Any'}">—</strong></li>
-                            <li><i class="bi bi-geo-alt text-primary me-2"></i>
-                                Host country: <strong th:text="${opportunity.country ?: 'Zimbabwe'}">—</strong></li>
-                        </ul>
+                <div class="sz-sch-detail-fact">
+                    <span class="sz-sch-detail-fact__icon"><i class="bi bi-cash-stack"></i></span>
+                    <div>
+                        <span class="sz-sch-detail-fact__label">Funding</span>
+                        <strong class="sz-sch-detail-fact__value"
+                                th:text="${opportunity.fundingType ?: 'See details'}">—</strong>
+                    </div>
+                </div>
+                <div class="sz-sch-detail-fact">
+                    <span class="sz-sch-detail-fact__icon"><i class="bi bi-mortarboard"></i></span>
+                    <div>
+                        <span class="sz-sch-detail-fact__label">Education level</span>
+                        <strong class="sz-sch-detail-fact__value"
+                                th:text="${opportunity.educationLevel ?: 'Any'}">—</strong>
+                    </div>
+                </div>
+                <div class="sz-sch-detail-fact">
+                    <span class="sz-sch-detail-fact__icon"><i class="bi bi-book"></i></span>
+                    <div>
+                        <span class="sz-sch-detail-fact__label">Field of study</span>
+                        <strong class="sz-sch-detail-fact__value"
+                                th:text="${opportunity.targetField ?: 'Any'}">—</strong>
                     </div>
                 </div>
             </div>
-            <div class="col-lg-4">
-                <div class="card sz-section-card sz-sticky-apply">
-                    <div class="card-body p-4">
-                        <h2 class="h6 fw-bold mb-3">Apply now</h2>
-                        <p class="small text-secondary mb-3">
-                            <i class="bi bi-calendar-event me-1"></i>
-                            Deadline:
-                            <strong th:text="${opportunity.deadline != null
-                                ? #temporals.format(opportunity.deadline, 'dd MMMM yyyy') : 'Rolling'}">—</strong>
-                        </p>
-                        <p class="small text-secondary mb-3">
-                            <i class="bi bi-cash-stack me-1"></i>
-                            Funding: <strong th:text="${opportunity.fundingType ?: 'See details'}">—</strong>
-                        </p>
-                        <a th:href="@{/register}" class="btn btn-primary w-100 btn-lg mb-2">
-                            <i class="bi bi-person-plus me-1"></i>Register to apply
-                        </a>
-                        <a th:href="@{/login}" class="btn btn-outline-secondary w-100">Already have an account?</a>
+        </div>
+    </section>
+
+    <!-- Content -->
+    <div class="container sz-container sz-sch-detail-body pb-5">
+        <div class="row g-4 g-lg-5">
+            <div class="col-lg-8">
+                <section class="sz-sch-detail-panel">
+                    <div class="sz-sch-detail-panel__head">
+                        <h2><i class="bi bi-file-text text-primary me-2"></i>About this scholarship</h2>
                     </div>
-                </div>
+                    <div class="sz-sch-detail-panel__body">
+                        <p class="sz-sch-detail-lead mb-0"
+                           th:text="${opportunity.description != null ? opportunity.description : 'No description provided.'}">
+                            Description
+                        </p>
+                    </div>
+                </section>
+
+                <section class="sz-sch-detail-panel">
+                    <div class="sz-sch-detail-panel__head">
+                        <h2><i class="bi bi-check2-square text-primary me-2"></i>Eligibility</h2>
+                    </div>
+                    <div class="sz-sch-detail-panel__body">
+                        <div class="sz-sch-detail-eligibility">
+                            <div class="sz-sch-detail-eligibility__item">
+                                <span class="sz-sch-detail-eligibility__icon"><i class="bi bi-mortarboard"></i></span>
+                                <div>
+                                    <span class="sz-sch-detail-eligibility__label">Education level</span>
+                                    <strong th:text="${opportunity.educationLevel ?: 'Open to all levels'}">—</strong>
+                                </div>
+                            </div>
+                            <div class="sz-sch-detail-eligibility__item">
+                                <span class="sz-sch-detail-eligibility__icon"><i class="bi bi-book"></i></span>
+                                <div>
+                                    <span class="sz-sch-detail-eligibility__label">Field of study</span>
+                                    <strong th:text="${opportunity.targetField ?: 'Any field'}">—</strong>
+                                </div>
+                            </div>
+                            <div class="sz-sch-detail-eligibility__item">
+                                <span class="sz-sch-detail-eligibility__icon"><i class="bi bi-geo-alt"></i></span>
+                                <div>
+                                    <span class="sz-sch-detail-eligibility__label">Host country</span>
+                                    <strong th:text="${opportunity.country ?: 'Zimbabwe'}">—</strong>
+                                </div>
+                            </div>
+                            <div class="sz-sch-detail-eligibility__item" th:if="${opportunity.targetCountry != null}">
+                                <span class="sz-sch-detail-eligibility__icon"><i class="bi bi-globe2"></i></span>
+                                <div>
+                                    <span class="sz-sch-detail-eligibility__label">Target country</span>
+                                    <strong th:text="${opportunity.targetCountry}">—</strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="sz-sch-detail-panel">
+                    <div class="sz-sch-detail-panel__head">
+                        <h2><i class="bi bi-signpost-split text-primary me-2"></i>How to apply</h2>
+                    </div>
+                    <div class="sz-sch-detail-panel__body">
+                        <ol class="sz-sch-detail-steps">
+                            <li>
+                                <span class="sz-sch-detail-steps__num">1</span>
+                                <div>
+                                    <strong>Create your student profile</strong>
+                                    <p class="small sz-landing-muted mb-0">Register free and add your education level, field, and documents.</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="sz-sch-detail-steps__num">2</span>
+                                <div>
+                                    <strong>Review requirements</strong>
+                                    <p class="small sz-landing-muted mb-0">Check eligibility above and prepare your results certificate if needed.</p>
+                                </div>
+                            </li>
+                            <li>
+                                <span class="sz-sch-detail-steps__num">3</span>
+                                <div>
+                                    <strong>Submit your application</strong>
+                                    <p class="small sz-landing-muted mb-0">Use the guided wizard — track status and get notified when the provider responds.</p>
+                                </div>
+                            </li>
+                        </ol>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-4">
+                <aside class="sz-sch-detail-apply sz-sticky-apply">
+                    <div class="sz-sch-detail-apply__head">
+                        <h2>Ready to apply?</h2>
+                        <p class="small sz-landing-muted mb-0">Join thousands of Zimbabwean students on ScholarZim.</p>
+                    </div>
+                    <div class="sz-sch-detail-apply__body">
+                        <div class="sz-sch-detail-apply__deadline mb-3"
+                             th:if="${opportunity.deadline != null}">
+                            <i class="bi bi-clock-history text-warning me-1"></i>
+                            <span class="small">Closes</span>
+                            <strong class="d-block sz-deadline"
+                                    th:attr="data-deadline=${opportunity.deadline}"
+                                    th:text="${#temporals.format(opportunity.deadline, 'EEEE, d MMMM yyyy')}">—</strong>
+                        </div>
+
+                        <div sec:authorize="hasRole('APPLICANT')">
+                            <form th:action="@{/apply/{id}(id=${opportunity.opportunityId})}" method="post" class="d-grid gap-2">
+                                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-send me-1"></i>Apply now
+                                </button>
+                                <a th:href="@{/opportunities}" class="btn btn-outline-secondary">Browse more</a>
+                            </form>
+                        </div>
+
+                        <div sec:authorize="!isAuthenticated()" class="d-grid gap-2">
+                            <a th:href="@{/register}" class="btn btn-primary btn-lg">
+                                <i class="bi bi-person-plus me-1"></i>Register to apply
+                            </a>
+                            <a th:href="@{/login}" class="btn btn-outline-secondary">
+                                Already have an account? Sign in
+                            </a>
+                        </div>
+
+                        <div sec:authorize="isAuthenticated() and !hasRole('APPLICANT')" class="d-grid gap-2">
+                            <p class="small text-secondary mb-2">Student account required to apply for scholarships.</p>
+                            <a th:href="@{/register}" class="btn btn-primary btn-lg">Create student account</a>
+                        </div>
+
+                        <p class="sz-sch-detail-apply__trust small mb-0 mt-3">
+                            <i class="bi bi-shield-check text-success me-1"></i>
+                            Listed by a verified provider · Secure document upload
+                        </p>
+                    </div>
+                </aside>
             </div>
         </div>
     </div>
@@ -75,8 +223,16 @@
 
 <footer th:replace="~{fragments/public-layout :: public-footer}"></footer>
 
-<div class="sz-mobile-apply-bar d-md-none">
-    <a th:href="@{/register}" class="btn btn-primary w-100">Register to apply</a>
+<div class="sz-mobile-apply-bar d-lg-none">
+    <div sec:authorize="hasRole('APPLICANT')">
+        <form th:action="@{/apply/{id}(id=${opportunity.opportunityId})}" method="post">
+            <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+            <button type="submit" class="btn btn-primary w-100 btn-lg">Apply now</button>
+        </form>
+    </div>
+    <a sec:authorize="!isAuthenticated()" th:href="@{/register}" class="btn btn-primary w-100 btn-lg">
+        Register to apply
+    </a>
 </div>
 
 <th:block th:replace="~{fragments/public-layout :: scripts}"></th:block>

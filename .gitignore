@@ -12,6 +12,7 @@
 **/.next/
 **/.env
 **/.env.local
+**/.env.prod
 **/tsconfig.tsbuildinfo
 
 # OS

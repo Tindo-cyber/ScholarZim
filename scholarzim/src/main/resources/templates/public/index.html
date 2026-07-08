@@ -25,10 +25,14 @@
                         <a th:href="@{/register}" class="btn btn-primary btn-lg sz-hero-cta">
                             <i class="bi bi-mortarboard me-2"></i>Get started as a student
                         </a>
-                        <a th:href="@{/register/provider}" class="btn btn-outline-primary btn-lg sz-hero-cta">
-                            <i class="bi bi-building me-2"></i>List scholarships
+                        <a th:href="@{/scholarships}" class="btn sz-btn-landing-outline btn-lg sz-hero-cta">
+                            <i class="bi bi-search me-2"></i>Browse scholarships
                         </a>
                     </div>
+                    <p class="small sz-landing-muted mb-0 mt-2 text-center text-lg-start">
+                        Scholarship provider?
+                        <a th:href="@{/register/provider}" class="fw-semibold text-decoration-none">Register to publish opportunities</a>
+                    </p>
                     <div class="sz-landing-trust-row justify-content-center justify-content-lg-start">
                         <span><i class="bi bi-shield-check"></i> Verified providers</span>
                         <span><i class="bi bi-stars"></i> ScholarFit matching</span>
@@ -414,7 +418,7 @@
     </section>
 
     <!-- 12. Dual CTA -->
-    <section class="sz-landing-cta-dual">
+    <section class="sz-landing-cta-dual" id="providers">
         <div class="sz-landing-cta-dual__bg" aria-hidden="true"></div>
         <div class="container sz-container position-relative">
             <div class="row g-3 g-lg-4">

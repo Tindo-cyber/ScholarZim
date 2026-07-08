@@ -120,6 +120,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         ensurePendingProviderProfile(pendingProvider, ProviderOrgType.NGO, "NGO-PENDING-2026");
 
         if (opportunityRepository.count() > 0) {
+            refreshExpiredDemoOpportunities();
             log.info("Demo accounts ready (password: {}). Scholarships already in database.",
                     DEMO_PASSWORD);
             logDemoAccounts();
@@ -407,6 +408,41 @@ public class DemoDataSeeder implements CommandLineRunner {
         profile.setResultsCertificatePath(storedName);
         profile.setResultsCertificateFilename("demo-results.pdf");
         profile.setResultsUploadedAt(LocalDateTime.now().minusDays(60));
+    }
+
+    /**
+     * Persistent dev databases keep old rows but the seeder skips re-insertion.
+     * Roll forward deadlines so browse/search still returns active listings.
+     */
+    private void refreshExpiredDemoOpportunities() {
+
+        LocalDate today = LocalDate.now();
+        int refreshed = 0;
+
+        for (Opportunity opportunity : opportunityRepository.findAll()) {
+            boolean inactive = opportunity.getStatus() == null
+                    || !"ACTIVE".equalsIgnoreCase(opportunity.getStatus());
+            boolean expired = opportunity.getDeadline() != null
+                    && opportunity.getDeadline().isBefore(today);
+
+            if (!inactive && !expired) {
+                continue;
+            }
+
+            if (inactive) {
+                opportunity.setStatus("ACTIVE");
+            }
+            if (expired) {
+                opportunity.setDeadline(today.plusMonths(2L + (refreshed % 5))
+                        .plusDays(refreshed * 11L % 28));
+            }
+            opportunityRepository.save(opportunity);
+            refreshed++;
+        }
+
+        if (refreshed > 0) {
+            log.info("Refreshed {} demo scholarship listing(s) with future deadlines.", refreshed);
+        }
     }
 
     private Opportunity saveOpportunity(User provider, String title, String description,
