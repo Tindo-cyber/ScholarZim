@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: scholarzim
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SCHOLARZIM_SESSION_COOKIE_SECURE
+        value: "true"
+      - key: SCHOLARZIM_DB_URL
+        sync: false
+      - key: SCHOLARZIM_DB_USER
+        sync: false
+      - key: SCHOLARZIM_DB_PASSWORD
+        sync: false
+      - key: SCHOLARZIM_APP_BASE_URL
+        sync: false
+      - key: SCHOLARZIM_MAIL_FROM
+        value: noreply@scholarzim.com

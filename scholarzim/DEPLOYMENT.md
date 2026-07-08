@@ -7,8 +7,10 @@ ScholarZim is a **Spring Boot + Thymeleaf monolith** (no separate Next.js fronte
 1. Push `main` to GitHub (`Tindo-cyber/ScholarZim`).
 2. On [render.com](https://render.com): **New → MySQL** → copy host, port, database, user, password.
 3. **New → Web Service** → connect the repo:
-   - **Root Directory:** `scholarzim`
-   - **Runtime:** Docker (uses [`Dockerfile`](Dockerfile)); or Native with build `./mvnw -B -DskipTests package` and start `java $JAVA_OPTS -jar target/*.jar`
+   - Leave **Root Directory** empty (repo root), **or** set it to `scholarzim`
+   - **Runtime:** Docker
+   - Dockerfile is at repo root (`Dockerfile`) and also at `scholarzim/Dockerfile`
+   - Health check path: `/actuator/health`
 4. Set environment variables:
 
 ```bash
