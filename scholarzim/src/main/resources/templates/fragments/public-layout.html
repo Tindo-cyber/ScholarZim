@@ -39,7 +39,12 @@
         body.sz-landing .sz-hero-visual,
         body.sz-landing .sz-hero-visual__photo,
         body.sz-landing .sz-reveal,
-        body.sz-landing .sz-sch-detail-panel {
+        body.sz-landing .sz-sch-detail-panel,
+        body.sz-landing .sz-filter-card,
+        body.sz-landing .sz-empty,
+        body.sz-landing .sz-opp-grid,
+        body.sz-landing .sz-page-header,
+        body.sz-landing .sz-auth-public {
             opacity: 1 !important;
             visibility: visible !important;
         }
@@ -57,7 +62,7 @@
             Connecting students with verified scholarships across Zimbabwe.
         </span>
         <span class="sz-landing-announce__links">
-            <a href="#faq">Help center</a>
+            <a th:href="@{/#faq}">Help center</a>
             <span class="sz-landing-announce__sep" aria-hidden="true">·</span>
             <span><i class="bi bi-globe2 me-1" aria-hidden="true"></i>English</span>
         </span>
@@ -81,11 +86,11 @@
                 <ul class="navbar-nav sz-landing-nav__menu mx-lg-auto">
                     <li class="nav-item"><a class="nav-link" th:href="@{/scholarships}">Scholarships</a></li>
                     <li class="nav-item"><a class="nav-link" th:href="@{/register/provider}">Become a provider</a></li>
-                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#features">Features</a></li>
-                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#how-it-works">How it works</a></li>
-                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#about">About</a></li>
-                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#contact">Contact</a></li>
-                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" href="#faq">FAQ</a></li>
+                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" th:href="@{/#features}">Features</a></li>
+                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" th:href="@{/#how-it-works}">How it works</a></li>
+                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" th:href="@{/#about}">About</a></li>
+                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" th:href="@{/#contact}">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link sz-landing-nav__anchor" th:href="@{/#faq}">FAQ</a></li>
                 </ul>
                 <div class="sz-landing-nav__actions">
                     <button type="button" class="btn sz-btn-nav-ghost sz-theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
@@ -123,17 +128,17 @@
             <div class="col-6 col-lg-2">
                 <h6 class="sz-landing-footer__heading">About</h6>
                 <ul class="sz-landing-footer__links">
-                    <li><a href="#about">About ScholarZim</a></li>
-                    <li><a href="#how-it-works">How it works</a></li>
-                    <li><a href="#features">Features</a></li>
-                    <li><a href="#faq">FAQ</a></li>
+                    <li><a th:href="@{/#about}">About ScholarZim</a></li>
+                    <li><a th:href="@{/#how-it-works}">How it works</a></li>
+                    <li><a th:href="@{/#features}">Features</a></li>
+                    <li><a th:href="@{/#faq}">FAQ</a></li>
                 </ul>
             </div>
             <div class="col-6 col-lg-2">
                 <h6 class="sz-landing-footer__heading">Scholarships</h6>
                 <ul class="sz-landing-footer__links">
                     <li><a th:href="@{/scholarships}">Browse all</a></li>
-                    <li><a href="#search">Search</a></li>
+                    <li><a th:href="@{/#search}">Search</a></li>
                     <li><a th:href="@{/register}">Create account</a></li>
                 </ul>
             </div>
@@ -142,14 +147,14 @@
                 <ul class="sz-landing-footer__links">
                     <li><a th:href="@{/register/provider}">Register</a></li>
                     <li><a th:href="@{/login(role='provider')}">Provider sign in</a></li>
-                    <li><a href="#providers">List opportunities</a></li>
+                    <li><a th:href="@{/#providers}">List opportunities</a></li>
                 </ul>
             </div>
             <div class="col-6 col-lg-2">
                 <h6 class="sz-landing-footer__heading">Resources</h6>
                 <ul class="sz-landing-footer__links">
-                    <li><a href="#contact">Contact</a></li>
-                    <li><a href="#faq">Help center</a></li>
+                    <li><a th:href="@{/#contact}">Contact</a></li>
+                    <li><a th:href="@{/#faq}">Help center</a></li>
                     <li><a href="#">Privacy policy</a></li>
                     <li><a href="#">Terms of service</a></li>
                 </ul>
@@ -168,7 +173,7 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script th:src="@{/js/app.js(v=39)}"></script>
     <script th:src="@{/js/landing.js(v=2)}"></script>
-    <script th:src="@{/js/pwa.js(v=29)}"></script>
+    <script th:src="@{/js/pwa.js(v=36)}"></script>
 </th:block>
 
 </body>

@@ -1,18 +1,23 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
-<head th:replace="~{fragments/layout :: head('Register')}"></head>
+<head th:replace="~{fragments/public-layout :: head('Register')}"></head>
 
-<body class="sz-auth-page">
+<body class="sz-landing">
 
-    <div th:replace="~{fragments/layout :: skip-link}"></div>
-<header th:replace="~{fragments/layout :: auth-topbar}"></header>
+<div th:replace="~{fragments/public-layout :: skip-link}"></div>
+<header th:replace="~{fragments/public-layout :: navbar}"></header>
 
-<div class="sz-auth-wrap">
+<main id="main-content" tabindex="-1" class="sz-landing-main sz-auth-public">
+    <div class="container sz-container py-4 py-md-5">
+        <div class="sz-auth-public__inner">
 
-    <div class="sz-auth-hero">
-        <div>
-            <nav class="nav sz-auth-audience-tabs" aria-label="Register as">
+            <div class="sz-auth-public__headline">
+                <h1>Start your scholarship journey</h1>
+                <p>Join Zimbabwean students discovering funding from primary school through postgraduate study.</p>
+            </div>
+
+            <nav class="nav sz-auth-public-tabs" aria-label="Register as">
                 <a class="nav-link active" th:href="@{/register}" aria-current="page">
                     <i class="bi bi-mortarboard me-1"></i>Student
                 </a>
@@ -20,101 +25,92 @@
                     <i class="bi bi-building me-1"></i>Provider
                 </a>
             </nav>
-            <h1>Start your scholarship journey</h1>
-            <p class="lead">
-                Join Zimbabwean students discovering funding from primary school
-                through postgraduate study.
-            </p>
-            <ul class="sz-auth-features">
+
+            <ul class="sz-auth-public__features">
                 <li><i class="bi bi-check-circle-fill"></i><span>Build your profile in minutes</span></li>
                 <li><i class="bi bi-check-circle-fill"></i><span>Get ScholarFit matches to real opportunities</span></li>
                 <li><i class="bi bi-check-circle-fill"></i><span>Apply and track in one place</span></li>
             </ul>
-        </div>
-    </div>
 
-    <div class="sz-auth-panel">
-        <div class="sz-auth-card">
-
-            <div class="text-center mb-3">
-                <div class="sz-auth-brand-icon mx-auto">
-                    <i class="bi bi-person-plus"></i>
-                </div>
-                <div class="sz-auth-brand h5 mb-1">Create student account</div>
-                <p class="sz-auth-muted small mb-0">Free for all Zimbabwean students</p>
-            </div>
-
-            <div th:object="${registerRequest}">
-                <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
-                    <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
+            <div class="sz-auth-card">
+                <div class="text-center mb-3">
+                    <div class="sz-auth-brand-icon mx-auto">
+                        <i class="bi bi-person-plus"></i>
+                    </div>
+                    <div class="sz-auth-brand h5 mb-1">Create student account</div>
+                    <p class="sz-auth-muted small mb-0">Free for all Zimbabwean students</p>
                 </div>
 
-                <form th:action="@{/register}" method="post">
-                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Full name</label>
-                        <input type="text" class="form-control form-control-sm" th:field="*{fullName}"
-                               placeholder="e.g. Tanaka Moyo"
-                               th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
-                        <div class="invalid-feedback"
-                             th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                <div th:object="${registerRequest}">
+                    <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
+                        <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Email address</label>
-                        <input type="email" class="form-control form-control-sm" th:field="*{email}"
-                               placeholder="you@student.co.zw"
-                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
-                        <div class="invalid-feedback"
-                             th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
-                    </div>
+                    <form th:action="@{/register}" method="post">
+                        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Mobile number</label>
-                        <input type="text" class="form-control form-control-sm" th:field="*{phone}"
-                               placeholder="+263 77 000 0000">
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Full name</label>
+                            <input type="text" class="form-control form-control-sm" th:field="*{fullName}"
+                                   placeholder="e.g. Tanaka Moyo"
+                                   th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                        </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" class="form-control form-control-sm" th:field="*{password}"
-                               th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
-                        <div class="invalid-feedback"
-                             th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Email address</label>
+                            <input type="email" class="form-control form-control-sm" th:field="*{email}"
+                                   placeholder="you@student.co.zw"
+                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                        </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold small">Confirm password</label>
-                        <input type="password" class="form-control form-control-sm" th:field="*{confirmPassword}"
-                               th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'">
-                        <div class="invalid-feedback"
-                             th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
-                    </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Mobile number</label>
+                            <input type="text" class="form-control form-control-sm" th:field="*{phone}"
+                                   placeholder="+263 77 000 0000">
+                        </div>
 
-                    <div class="d-grid mt-3">
-                        <button class="btn btn-primary" type="submit">
-                            <i class="bi bi-person-plus me-1"></i>Create account
-                        </button>
-                    </div>
-                </form>
-            </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Password</label>
+                            <input type="password" class="form-control form-control-sm" th:field="*{password}"
+                                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        </div>
 
-            <div class="sz-auth-register-links text-center mt-3">
-                <span class="sz-auth-muted small">Already registered?</span>
-                <a th:href="@{/login}" class="fw-semibold small">Sign in</a>
-                <span class="sz-auth-muted small">·</span>
-                <a th:href="@{/register/provider}" class="fw-semibold small">Register as provider</a>
-                <span class="sz-auth-muted small">·</span>
-                <a th:href="@{/login(role='provider')}" class="small">Provider sign in</a>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold small">Confirm password</label>
+                            <input type="password" class="form-control form-control-sm" th:field="*{confirmPassword}"
+                                   th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'">
+                            <div class="invalid-feedback"
+                                 th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                        </div>
+
+                        <div class="d-grid mt-3">
+                            <button class="btn btn-primary sz-btn-landing-primary" type="submit">
+                                <i class="bi bi-person-plus me-1"></i>Create account
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="sz-auth-register-links text-center mt-3">
+                    <span class="sz-auth-muted small">Already registered?</span>
+                    <a th:href="@{/login}" class="fw-semibold small">Sign in</a>
+                    <span class="sz-auth-muted small">·</span>
+                    <a th:href="@{/register/provider}" class="fw-semibold small">Register as provider</a>
+                </div>
             </div>
 
         </div>
     </div>
+</main>
 
-</div>
-
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+<footer th:replace="~{fragments/public-layout :: public-footer}"></footer>
+<th:block th:replace="~{fragments/public-layout :: scripts}"></th:block>
 
 </body>
 </html>

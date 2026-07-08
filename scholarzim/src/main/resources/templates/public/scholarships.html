@@ -3,10 +3,10 @@
 <head th:replace="~{fragments/public-layout :: head('Scholarships')}"></head>
 <body class="sz-landing">
 
-    <div th:replace="~{fragments/public-layout :: skip-link}"></div>
-<nav th:replace="~{fragments/public-layout :: navbar}"></nav>
+<div th:replace="~{fragments/public-layout :: skip-link}"></div>
+<header th:replace="~{fragments/public-layout :: navbar}"></header>
 
-<main class="py-4 py-md-5">
+<main id="main-content" tabindex="-1" class="sz-landing-main py-4 py-md-5">
     <div class="container sz-container">
         <div th:replace="~{fragments/components :: page-header('Browse scholarships', 'Search and filter active opportunities. Register to apply.')}"></div>
         <p class="text-secondary mb-4">
@@ -14,7 +14,7 @@
             <a th:href="@{/register}" class="fw-semibold">Register</a> to apply
         </p>
 
-        <div class="card sz-filter-card shadow-sm mb-4">
+        <div class="card sz-filter-card sz-landing-search__card shadow-sm mb-4">
             <div class="card-body p-4">
                 <form th:action="@{/scholarships}" method="get" th:object="${searchRequest}" class="row g-3 align-items-end">
                     <div class="col-12 col-md-6 col-lg-4">
@@ -44,7 +44,7 @@
                         </select>
                     </div>
                     <div class="col-6 col-md-3 col-lg-2 d-flex gap-2">
-                        <button class="btn btn-primary flex-grow-1" type="submit">
+                        <button class="btn btn-primary flex-grow-1 sz-btn-landing-primary" type="submit">
                             <i class="bi bi-search me-1"></i>Search
                         </button>
                         <a class="btn btn-outline-secondary" th:href="@{/scholarships}" title="Reset"><i class="bi bi-arrow-counterclockwise"></i></a>
@@ -56,8 +56,13 @@
         <div th:if="${opportunities.isEmpty()}" class="sz-empty">
             <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
             <h3 class="h5 fw-bold">No scholarships found</h3>
-            <p class="text-secondary mb-3">Try widening your filters or check back later.</p>
-            <a th:href="@{/scholarships}" class="btn btn-outline-primary btn-sm">Reset filters</a>
+            <p class="text-secondary mb-3">
+                No active listings match your search yet. Verified providers publish opportunities as they are approved.
+                <a th:href="@{/register/provider}" class="fw-semibold">Register as a provider</a> to list scholarships,
+                or <a th:href="@{/register}" class="fw-semibold">create a student account</a> to get notified.
+            </p>
+            <a th:href="@{/scholarships}" class="btn btn-outline-primary btn-sm me-2">Reset filters</a>
+            <a th:href="@{/register}" class="btn btn-primary btn-sm sz-btn-landing-primary">Create student account</a>
         </div>
 
         <div class="sz-opp-grid" th:if="${!opportunities.isEmpty()}">

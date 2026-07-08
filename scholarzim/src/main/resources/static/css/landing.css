@@ -2197,20 +2197,22 @@ body.sz-landing {
     font-weight: 800;
 }
 
-/* Header polish */
+/* Header polish — must win over glass.css */
 .sz-landing-header {
-    background: #ffffff;
-    border-bottom: 1px solid #e2e8f0;
-    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04);
+    background: #ffffff !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 0 rgba(15, 23, 42, 0.04) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }
 
 .sz-landing-header.scrolled {
-    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08) !important;
 }
 
 [data-bs-theme="dark"] .sz-landing-header {
-    background: #0f172a;
-    border-bottom-color: #334155;
+    background: #0f172a !important;
+    border-bottom-color: #334155 !important;
 }
 
 .sz-landing-nav .nav-link {
@@ -2237,19 +2239,55 @@ body.sz-landing {
 }
 
 .sz-landing-search__card .form-control,
-.sz-landing-search__card .form-select {
+.sz-landing-search__card .form-select,
+.sz-filter-card .form-control,
+.sz-filter-card .form-select,
+body.sz-landing .sz-filter-card {
     background-color: #ffffff !important;
     color: #0f172a !important;
     border-color: #cbd5e1 !important;
 }
 
-.sz-landing-search__card .form-control::placeholder {
+.sz-filter-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06) !important;
+}
+
+.sz-landing-search__card .form-control::placeholder,
+.sz-filter-card .form-control::placeholder {
     color: #94a3b8 !important;
 }
 
 [data-bs-theme="dark"] .sz-landing-search__card .form-control,
-[data-bs-theme="dark"] .sz-landing-search__card .form-select {
+[data-bs-theme="dark"] .sz-landing-search__card .form-select,
+[data-bs-theme="dark"] .sz-filter-card .form-control,
+[data-bs-theme="dark"] .sz-filter-card .form-select,
+[data-bs-theme="dark"] body.sz-landing .sz-filter-card {
     background-color: #0f172a !important;
     color: #f8fafc !important;
     border-color: #475569 !important;
+}
+
+body.sz-landing .text-secondary {
+    color: #475569 !important;
+}
+
+[data-bs-theme="dark"] body.sz-landing .text-secondary {
+    color: #cbd5e1 !important;
+}
+
+body.sz-landing .sz-empty {
+    background: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    backdrop-filter: none !important;
+}
+
+body.sz-landing .sz-page-header h1 {
+    color: #0f172a;
+}
+
+[data-bs-theme="dark"] body.sz-landing .sz-page-header h1 {
+    color: #f8fafc;
 }

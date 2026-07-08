@@ -60,9 +60,7 @@ body.sz-landing {
 
 /* ── App shell ── */
 .sz-sidebar,
-.sz-topbar,
-.sz-landing-header,
-.sz-landing-header.scrolled {
+.sz-topbar {
     background: var(--sz-glass-bg-strong) !important;
     backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
     -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
@@ -76,14 +74,6 @@ body.sz-landing {
 
 .sz-topbar {
     border-bottom: 1px solid var(--sz-glass-border-outer) !important;
-}
-
-.sz-landing-header.scrolled {
-    box-shadow: var(--sz-shadow-glass), 0 8px 24px rgba(15, 23, 42, 0.06);
-}
-
-[data-bs-theme="dark"] .sz-landing-header.scrolled {
-    box-shadow: var(--sz-shadow-glass), 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .sz-mobile-bottom-nav,
@@ -222,7 +212,6 @@ body.sz-landing {
     .sz-stat-card,
     .sz-dashboard-panel,
     .sz-auth-card,
-    .sz-landing-header,
     .sz-feature-card,
     .sz-hero-preview {
         backdrop-filter: none !important;

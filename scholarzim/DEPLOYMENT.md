@@ -26,12 +26,22 @@ SPRING_MAIL_HOST=
 SPRING_MAIL_PORT=587
 SPRING_MAIL_USERNAME=
 SPRING_MAIL_PASSWORD=
+# FYP demo: populate sample scholarships and users on startup (turn off for real production)
+SCHOLARZIM_DEMO_SEED=true
 ```
+
+Demo accounts after seeding (password for all: `Password123!`):
+
+| Role | Email |
+|------|-------|
+| Student | `tanaka.moyo@student.co.zw` |
+| Provider | `scholarships@uk.gov.zw` |
+| Admin | `admin@scholarzim.co.zw` |
 
 5. Deploy → open the Render HTTPS URL. Free Web Services sleep when idle (first hit can take ~1 minute).
 6. Optional later: buy a domain and attach it under Render → Custom Domains; update `SCHOLARZIM_APP_BASE_URL`.
 
-Do **not** deploy [`scholarzim-web/`](../scholarzim-web/DEPRECATED.md) (deprecated Next.js). Do **not** point production at local MySQL. Flyway migrates on startup (V1 creates the base schema); prod has `scholarzim.demo.seed=false`.
+Do **not** deploy [`scholarzim-web/`](../scholarzim-web/DEPRECATED.md) (deprecated Next.js). Do **not** point production at local MySQL. Flyway migrates on startup (V1 creates the base schema). By default prod has `scholarzim.demo.seed=false`; for FYP demos set `SCHOLARZIM_DEMO_SEED=true` in Render (see env block above).
 
 **If a deploy failed on Flyway** (e.g. `Failed to open the referenced table 'users'`), the Aiven DB may have a partial `flyway_schema_history`. In the Aiven console → your service → **Query statistics** or connect with a MySQL client and run:
 
@@ -176,7 +186,7 @@ Certbot will enable TLS and renewals via `certbot.timer`.
 - [ ] Register / login works  
 - [ ] Password-reset email arrives (SMTP)  
 - [ ] File uploads persist after `docker compose restart`  
-- [ ] `scholarzim.demo.seed` stays **false** (prod profile)  
+- [ ] `scholarzim.demo.seed` is **false** for real production, or `SCHOLARZIM_DEMO_SEED=true` only for FYP demo  
 - [ ] Swagger disabled at `/swagger-ui.html`  
 - [ ] `/actuator/health` returns UP (do not expose other actuators)
 
@@ -231,7 +241,7 @@ Back up the uploads volume (or `scholarzim.upload.dir`) with database backups. D
 ## Launch checklist (summary)
 
 - [ ] `spring.profiles.active=prod`
-- [ ] `scholarzim.demo.seed=false`
+- [ ] `scholarzim.demo.seed=false` (or `SCHOLARZIM_DEMO_SEED=true` for FYP demo only)
 - [ ] Secrets only in `.env.prod` / host env
 - [ ] Swagger off, actuator = health only
 - [ ] Mail verified
