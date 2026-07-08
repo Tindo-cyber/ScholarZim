@@ -45,6 +45,11 @@ body.sz-landing {
     background-color: var(--sz-bg) !important;
 }
 
+body.sz-landing::before {
+    display: none !important;
+    content: none !important;
+}
+
 /* Core glass utility */
 .sz-glass {
     background: var(--sz-glass-bg) !important;
@@ -85,47 +90,39 @@ body.sz-landing {
     box-shadow: var(--sz-shadow-glass);
 }
 
-/* ── Cards & panels ── */
-.card,
-.sz-stat-card,
-.sz-section-card,
-.sz-filter-card,
-.sz-action-card,
-.sz-opp-card,
-.sz-app-card,
-.sz-hero,
-.sz-dashboard-panel,
-.sz-analytics-panel,
-.sz-settings-panel,
-.sz-dashboard-hero,
-.sz-wizard-main,
-.sz-wizard-sidebar,
-.sz-wizard-review,
-.sz-file-upload,
-.sz-auth-card,
-.sz-notif-list,
-.sz-error-card,
-.sz-messages-sidebar,
-.sz-messages-thread,
-.sz-confirm-card,
-.sz-landing-search__card,
-.sz-landing-proof__item,
-.sz-scholarfit-demo,
-.sz-hero-preview__panel,
-.sz-feature-card,
-.sz-landing-stat-card,
-.sz-landing-search__card,
-.sz-landing-step,
-.sz-landing-card-prod,
-.sz-hero-preview,
-.sz-university-pill,
-.sz-landing-empty,
-.sz-profile-banner,
-.sz-metric-chip,
-.sz-pro-table,
-.dropdown-menu,
-.offcanvas.sz-sidebar,
-.accordion-item {
+/* ── Cards & panels (app shell only — landing.css owns public marketing UI) ── */
+body:not(.sz-landing) .card,
+body:not(.sz-landing) .sz-stat-card,
+body:not(.sz-landing) .sz-section-card,
+body:not(.sz-landing) .sz-filter-card,
+body:not(.sz-landing) .sz-action-card,
+body:not(.sz-landing) .sz-opp-card,
+body:not(.sz-landing) .sz-app-card,
+body:not(.sz-landing) .sz-hero,
+body:not(.sz-landing) .sz-dashboard-panel,
+body:not(.sz-landing) .sz-analytics-panel,
+body:not(.sz-landing) .sz-settings-panel,
+body:not(.sz-landing) .sz-dashboard-hero,
+body:not(.sz-landing) .sz-wizard-main,
+body:not(.sz-landing) .sz-wizard-sidebar,
+body:not(.sz-landing) .sz-wizard-review,
+body:not(.sz-landing) .sz-file-upload,
+body:not(.sz-landing) .sz-auth-card,
+body:not(.sz-landing) .sz-notif-list,
+body:not(.sz-landing) .sz-error-card,
+body:not(.sz-landing) .sz-messages-sidebar,
+body:not(.sz-landing) .sz-messages-thread,
+body:not(.sz-landing) .sz-confirm-card,
+body:not(.sz-landing) .sz-scholarfit-demo,
+body:not(.sz-landing) .sz-hero-preview__panel,
+body:not(.sz-landing) .sz-hero-preview,
+body:not(.sz-landing) .sz-university-pill,
+body:not(.sz-landing) .sz-profile-banner,
+body:not(.sz-landing) .sz-metric-chip,
+body:not(.sz-landing) .sz-pro-table,
+body:not(.sz-landing) .dropdown-menu,
+body:not(.sz-landing) .offcanvas.sz-sidebar,
+body:not(.sz-landing) .accordion-item {
     background: var(--sz-glass-bg) !important;
     backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
     -webkit-backdrop-filter: blur(var(--sz-glass-blur)) saturate(var(--sz-glass-saturate));
@@ -193,10 +190,10 @@ body.sz-landing {
 }
 
 /* Hover lift keeps glass shadow */
-.sz-stat-card:hover,
-.sz-opp-card:hover,
-.sz-action-card:hover,
-.sz-feature-card:hover {
+body:not(.sz-landing) .sz-stat-card:hover,
+body:not(.sz-landing) .sz-opp-card:hover,
+body:not(.sz-landing) .sz-action-card:hover,
+body:not(.sz-landing) .sz-feature-card:hover {
     box-shadow: var(--sz-shadow-glass), var(--sz-shadow-hover);
 }
 
