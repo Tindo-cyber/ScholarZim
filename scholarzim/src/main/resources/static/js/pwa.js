@@ -1,8 +1,7 @@
 (function () {
     'use strict';
 
-    var ASSET_VERSION = 'v38';
-    var isLocalDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    var ASSET_VERSION = 'v39';
 
     function purgeCaches() {
         if (!('caches' in window)) return Promise.resolve();
@@ -18,25 +17,10 @@
         });
     }
 
-    function registerSw() {
-        if (!('serviceWorker' in navigator) || isLocalDev) return;
-        window.addEventListener('load', function () {
-            navigator.serviceWorker.register('/sw.js?v=' + ASSET_VERSION).catch(function () {});
-        });
-    }
-
-    var versionKey = 'sz-asset-version';
-    var lastVersion = localStorage.getItem(versionKey);
-
-    /* Always purge on localhost; purge when version changes in production */
-    if (isLocalDev || lastVersion !== ASSET_VERSION) {
-        Promise.all([unregisterAll(), purgeCaches()]).then(function () {
-            localStorage.setItem(versionKey, ASSET_VERSION);
-            registerSw();
-        }).catch(registerSw);
-    } else {
-        registerSw();
-    }
+    /* Always purge legacy PWA caches — prevents old CSS from returning after navigation */
+    Promise.all([unregisterAll(), purgeCaches()]).then(function () {
+        localStorage.setItem('sz-asset-version', ASSET_VERSION);
+    }).catch(function () {});
 
     var banner = document.getElementById('pwa-install-banner');
     var dismissed = localStorage.getItem('sz-pwa-dismissed');
