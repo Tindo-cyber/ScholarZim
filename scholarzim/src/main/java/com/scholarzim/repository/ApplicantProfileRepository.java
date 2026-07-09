@@ -20,4 +20,7 @@ public interface ApplicantProfileRepository
             WHERE p.institutionName IS NOT NULL AND TRIM(p.institutionName) <> ''
             """)
     long countDistinctInstitutions();
+
+    @Query("SELECT p FROM ApplicantProfile p JOIN FETCH p.user")
+    java.util.List<ApplicantProfile> findAllWithUser();
 }

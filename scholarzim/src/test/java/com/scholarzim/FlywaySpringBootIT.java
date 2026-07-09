@@ -20,7 +20,7 @@ class FlywaySpringBootIT {
     private JdbcTemplate jdbcTemplate;
 
     @Test
-    void springContextStartsWithFlywayMigrationsThroughV5() {
-        FlywayMigrationAssertions.assertMigrationsAppliedThroughV5(jdbcTemplate);
+    void springContextStartsWithFlywayMigrationsThroughV7() {
+        FlywayMigrationAssertions.assertMigrationsAppliedThroughV7(jdbcTemplate);
     }
 }

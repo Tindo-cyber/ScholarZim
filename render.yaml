@@ -10,6 +10,9 @@ services:
         value: prod
       - key: SCHOLARZIM_SESSION_COOKIE_SECURE
         value: "true"
+      # FYP demo: set to "true" in the Render dashboard to seed sample users/scholarships
+      - key: SCHOLARZIM_DEMO_SEED
+        value: "true"
       - key: SCHOLARZIM_DB_URL
         sync: false
       - key: SCHOLARZIM_DB_USER

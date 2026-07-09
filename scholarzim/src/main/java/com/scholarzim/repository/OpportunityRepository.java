@@ -47,6 +47,9 @@ public interface OpportunityRepository
 
     long countByStatus(String status);
 
+    List<Opportunity> findByStatusAndDeadlineBetween(
+            String status, LocalDate fromInclusive, LocalDate toInclusive);
+
     @Query("""
             SELECT o FROM Opportunity o
             WHERE o.status = 'ACTIVE'

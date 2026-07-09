@@ -44,13 +44,14 @@
                 </form>
             </div>
 
-            <div th:if="${messages.isEmpty()}"
-                 th:replace="~{fragments/components :: empty-state(
+            <th:block th:if="${messages.isEmpty()}">
+                <div th:replace="~{fragments/components :: empty-state(
                     'bi-chat-dots',
                     'No messages yet',
                     'When providers update your applications or ScholarZim sends alerts, they will appear here.',
                     @{/opportunities},
                     'Browse scholarships')}"></div>
+            </th:block>
 
             <div th:if="${!messages.isEmpty()}" class="sz-messages-layout">
                 <aside class="sz-messages-sidebar">
@@ -93,8 +94,12 @@
     </div>
 </div>
 
-<nav th:replace="~{fragments/layout :: mobile-nav('messages')}" sec:authorize="hasRole('APPLICANT')"></nav>
-<nav th:replace="~{fragments/layout :: provider-mobile-nav('messages')}" sec:authorize="hasRole('PROVIDER')"></nav>
+<th:block sec:authorize="hasRole('APPLICANT')">
+    <nav th:replace="~{fragments/layout :: mobile-nav('messages')}"></nav>
+</th:block>
+<th:block sec:authorize="hasRole('PROVIDER')">
+    <nav th:replace="~{fragments/layout :: provider-mobile-nav('messages')}"></nav>
+</th:block>
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 

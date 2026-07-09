@@ -22,8 +22,9 @@
 
             <div th:replace="~{fragments/components :: page-header('Applications review', 'Review and decide on student applications for your opportunities.')}"></div>
 
-            <div th:if="${applications.isEmpty()}"
-                 th:replace="~{fragments/components :: empty-state('bi-inbox', 'No applications yet', 'Applications will appear here once students apply to your opportunities.', null, null)}"></div>
+            <th:block th:if="${applications.isEmpty()}">
+                <div th:replace="~{fragments/components :: empty-state('bi-inbox', 'No applications yet', 'Applications will appear here once students apply to your opportunities.', null, null)}"></div>
+            </th:block>
 
             <div th:if="${!applications.isEmpty()}" class="card sz-section-card shadow-sm">
                 <div class="table-responsive">

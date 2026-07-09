@@ -59,27 +59,17 @@ public class DeadlineReminderScheduler {
         LocalDate windowEnd = today.plusDays(REMINDER_WINDOW_DAYS);
         int remindersSent = 0;
 
-        for (Opportunity opportunity : opportunityRepository.findAll()) {
+        List<Opportunity> closingSoon = opportunityRepository.findByStatusAndDeadlineBetween(
+                OpportunityStatus.ACTIVE, today, windowEnd);
 
+        for (Opportunity opportunity : closingSoon) {
             LocalDate deadline = opportunity.getDeadline();
-
-            if (!isClosingSoon(deadline, today, windowEnd, opportunity.getStatus())) {
-                continue;
-            }
-
             Long opportunityId = opportunity.getOpportunityId();
             remindersSent += remindPendingApplicants(opportunity, deadline, opportunityId);
             remindersSent += remindSavedNotApplied(opportunity, deadline, opportunityId);
         }
 
         log.info("Deadline reminder job finished — {} reminders sent", remindersSent);
-    }
-
-    private boolean isClosingSoon(LocalDate deadline, LocalDate today, LocalDate windowEnd, String status) {
-        return deadline != null
-                && OpportunityStatus.ACTIVE.equalsIgnoreCase(status)
-                && !deadline.isBefore(today)
-                && !deadline.isAfter(windowEnd);
     }
 
     private int remindPendingApplicants(Opportunity opportunity, LocalDate deadline, Long opportunityId) {

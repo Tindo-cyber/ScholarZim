@@ -12,7 +12,7 @@ class FlywayMigrationIT {
 
     @Test
     @EnabledIfEnvironmentVariable(named = "MYSQL_URL", matches = ".+")
-    void migrationsApplyThroughV5() throws Exception {
+    void migrationsApplyThroughV7() throws Exception {
         HikariDataSource dataSource = FlywayItSupport.createDataSource();
         try {
             FlywayItSupport.runBaseline(dataSource);
@@ -24,7 +24,7 @@ class FlywayMigrationIT {
                     .load()
                     .migrate();
 
-            FlywayMigrationAssertions.assertMigrationsAppliedThroughV5(new JdbcTemplate(dataSource));
+            FlywayMigrationAssertions.assertMigrationsAppliedThroughV7(new JdbcTemplate(dataSource));
         } finally {
             dataSource.close();
         }

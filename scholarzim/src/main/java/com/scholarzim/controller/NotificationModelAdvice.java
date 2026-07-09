@@ -31,8 +31,9 @@ public class NotificationModelAdvice {
 
         try {
             String email = authentication.getName();
-            model.addAttribute("notifUnreadCount", notificationService.unreadCount(email));
-            model.addAttribute("notifRecent", notificationService.recentForUser(email));
+            var nav = notificationService.navDataForUser(email);
+            model.addAttribute("notifUnreadCount", nav.unreadCount());
+            model.addAttribute("notifRecent", nav.recent());
         } catch (Exception ex) {
             log.warn("Failed to load notifications for session: {}", ex.getMessage());
         }

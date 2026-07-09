@@ -123,6 +123,17 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    public NotificationNavData navDataForUser(String email) {
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return NotificationNavData.empty();
+        }
+        return new NotificationNavData(
+                notificationRepository.countByUserAndReadFalse(user),
+                notificationRepository.findTop10ByUserOrderByCreatedAtDesc(user));
+    }
+
+    @Override
     @Transactional
     public void markAllRead(String email) {
         User user = userRepository.findByEmail(email).orElse(null);

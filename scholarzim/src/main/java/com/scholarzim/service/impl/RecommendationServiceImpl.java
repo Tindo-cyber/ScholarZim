@@ -72,7 +72,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     @Override
     public List<User> findMatchingApplicants(Opportunity opportunity) {
 
-        return profileRepository.findAll().stream()
+        return profileRepository.findAllWithUser().stream()
                 .filter(profile -> score(profile, opportunity).getMatchScore() > 0)
                 .map(ApplicantProfile::getUser)
                 .filter(user -> user != null)

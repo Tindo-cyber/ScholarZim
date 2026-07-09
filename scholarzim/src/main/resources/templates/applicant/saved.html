@@ -12,8 +12,9 @@
 
             <div th:replace="~{fragments/components :: page-header('Saved scholarships', 'Bookmarks you can return to when you are ready to apply.')}"></div>
 
-            <div th:if="${saved.isEmpty()}"
-                 th:replace="~{fragments/components :: empty-state('bi-bookmark', 'Nothing saved yet', 'Browse opportunities and bookmark scholarships to review later.', @{/opportunities}, 'Browse opportunities')}"></div>
+            <th:block th:if="${saved.isEmpty()}">
+                <div th:replace="~{fragments/components :: empty-state('bi-bookmark', 'Nothing saved yet', 'Browse opportunities and bookmark scholarships to review later.', @{/opportunities}, 'Browse opportunities')}"></div>
+            </th:block>
 
             <div class="sz-opp-grid" th:if="${!saved.isEmpty()}">
                 <th:block th:each="opp : ${saved}">

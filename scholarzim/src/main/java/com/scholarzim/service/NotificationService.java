@@ -23,7 +23,16 @@ public interface NotificationService {
 
     long unreadCount(String email);
 
+    /** Unread count + recent list with a single user lookup (nav badge / dropdown). */
+    NotificationNavData navDataForUser(String email);
+
     void markAllRead(String email);
 
     String open(@NonNull Long notificationId, String email);
+
+    record NotificationNavData(long unreadCount, List<Notification> recent) {
+        public static NotificationNavData empty() {
+            return new NotificationNavData(0, List.of());
+        }
+    }
 }

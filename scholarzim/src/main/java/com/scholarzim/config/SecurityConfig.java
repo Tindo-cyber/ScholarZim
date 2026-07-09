@@ -73,7 +73,8 @@ public class SecurityConfig {
                         .requestMatchers("/dashboard").authenticated()
                         .anyRequest().authenticated()
                 )
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/**"))
+                // Public JSON is GET-only; session-authenticated applicant APIs keep CSRF.
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/public/**"))
                 .formLogin(form -> form
                         .loginPage("/login")
                         .successHandler(successHandler)

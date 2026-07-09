@@ -44,13 +44,14 @@
                 <span>Type at least 2 characters to search.</span>
             </div>
 
-            <div th:if="${!query.isBlank() and query.length() >= 2 and results.empty}"
-                 th:replace="~{fragments/components :: empty-state(
+            <th:block th:if="${!query.isBlank() and query.length() >= 2 and results.empty}">
+                <div th:replace="~{fragments/components :: empty-state(
                     'bi-search',
                     'No results',
                     'Nothing matched your query. Try a different name, email, or scholarship title.',
                     @{/admin/search},
                     'Clear search')}"></div>
+            </th:block>
 
             <div th:if="${!query.isBlank() and query.length() >= 2 and !results.empty}">
                 <p class="text-secondary small mb-4">

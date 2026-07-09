@@ -79,11 +79,12 @@
                             <div class="sz-chart-wrap" th:if="${!statusBreakdown.labels.isEmpty()}">
                                 <canvas id="statusChart"></canvas>
                             </div>
-                            <div th:if="${statusBreakdown.labels.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
+                            <th:block th:if="${statusBreakdown.labels.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state(
                                     'bi-pie-chart', 'No applications yet',
                                     'Status distribution will appear after the first submissions.',
                                     null, null)}"></div>
+                            </th:block>
                         </div>
                     </section>
                 </div>
@@ -130,9 +131,10 @@
                             <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!topProviders.labels.isEmpty()}">
                                 <canvas id="providersChart"></canvas>
                             </div>
-                            <div th:if="${topProviders.labels.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
+                            <th:block th:if="${topProviders.labels.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state(
                                     'bi-building', 'No provider data', 'Rankings appear once students apply.', null, null)}"></div>
+                            </th:block>
                         </div>
                     </section>
                 </div>
@@ -145,9 +147,10 @@
                             <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!mostAppliedOpportunities.labels.isEmpty()}">
                                 <canvas id="opportunitiesChart"></canvas>
                             </div>
-                            <div th:if="${mostAppliedOpportunities.labels.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
+                            <th:block th:if="${mostAppliedOpportunities.labels.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state(
                                     'bi-mortarboard', 'No scholarship data', 'Popularity rankings appear after applications.', null, null)}"></div>
+                            </th:block>
                         </div>
                     </section>
                 </div>
