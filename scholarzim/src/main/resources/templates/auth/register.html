@@ -41,61 +41,59 @@
                     <p class="sz-auth-muted small mb-0">Free for all Zimbabwean students</p>
                 </div>
 
-                <div th:object="${registerRequest}">
+                <form th:object="${registerRequest}" th:action="@{/register}" method="post">
                     <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
                         <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
                     </div>
 
-                    <form th:action="@{/register}" method="post">
-                        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Full name</label>
-                            <input type="text" class="form-control form-control-sm" th:field="*{fullName}"
-                                   placeholder="e.g. Tanaka Moyo"
-                                   th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
-                            <div class="invalid-feedback"
-                                 th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Full name</label>
+                        <input type="text" class="form-control form-control-sm" th:field="*{fullName}"
+                               placeholder="e.g. Tanaka Moyo"
+                               th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
+                        <div class="invalid-feedback"
+                             th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Email address</label>
-                            <input type="email" class="form-control form-control-sm" th:field="*{email}"
-                                   placeholder="you@student.co.zw"
-                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
-                            <div class="invalid-feedback"
-                                 th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Email address</label>
+                        <input type="email" class="form-control form-control-sm" th:field="*{email}"
+                               placeholder="you@student.co.zw"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+                        <div class="invalid-feedback"
+                             th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Mobile number</label>
-                            <input type="text" class="form-control form-control-sm" th:field="*{phone}"
-                                   placeholder="+263 77 000 0000">
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Mobile number</label>
+                        <input type="text" class="form-control form-control-sm" th:field="*{phone}"
+                               placeholder="+263 77 000 0000">
+                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Password</label>
-                            <input type="password" class="form-control form-control-sm" th:field="*{password}"
-                                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
-                            <div class="invalid-feedback"
-                                 th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Password</label>
+                        <input type="password" class="form-control form-control-sm" th:field="*{password}"
+                               th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
+                        <div class="invalid-feedback"
+                             th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Confirm password</label>
-                            <input type="password" class="form-control form-control-sm" th:field="*{confirmPassword}"
-                                   th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'">
-                            <div class="invalid-feedback"
-                                 th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
-                        </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Confirm password</label>
+                        <input type="password" class="form-control form-control-sm" th:field="*{confirmPassword}"
+                               th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'">
+                        <div class="invalid-feedback"
+                             th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                    </div>
 
-                        <div class="d-grid mt-3">
-                            <button class="btn btn-primary sz-btn-landing-primary" type="submit">
-                                <i class="bi bi-person-plus me-1"></i>Create account
-                            </button>
-                        </div>
-                    </form>
-                </div>
+                    <div class="d-grid mt-3">
+                        <button class="btn btn-primary sz-btn-landing-primary" type="submit">
+                            <i class="bi bi-person-plus me-1"></i>Create account
+                        </button>
+                    </div>
+                </form>
 
                 <div class="sz-auth-register-links text-center mt-3">
                     <span class="sz-auth-muted small">Already registered?</span>

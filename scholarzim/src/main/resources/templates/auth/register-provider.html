@@ -37,75 +37,74 @@
                     <p class="sz-auth-muted small mb-0">Submit organisation details and registration proof</p>
                 </div>
 
-                <div th:object="${registerRequest}">
+                <form th:object="${registerRequest}" th:action="@{/register/provider}" method="post"
+                      enctype="multipart/form-data">
                     <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
                         <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
                     </div>
-                    <form th:action="@{/register/provider}" method="post" enctype="multipart/form-data">
-                        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Organisation name</label>
-                            <input type="text" class="form-control form-control-sm" th:field="*{fullName}"
-                                   placeholder="e.g. CBZ Foundation"
-                                   th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
-                            <div class="invalid-feedback" th:errors="*{fullName}"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Organisation type</label>
-                            <select class="form-select form-select-sm" th:field="*{organisationType}"
-                                    th:classappend="${#fields.hasErrors('organisationType')} ? 'is-invalid'">
-                                <option value="">Select type…</option>
-                                <option th:each="t : ${organisationTypes}" th:value="${t}"
-                                        th:text="${T(com.scholarzim.util.ProviderOrgType).label(t)}">Type</option>
-                            </select>
-                            <div class="invalid-feedback" th:errors="*{organisationType}"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Zimbabwe registration number</label>
-                            <input type="text" class="form-control form-control-sm" th:field="*{registrationNumber}"
-                                   placeholder="e.g. 12345/2020"
-                                   th:classappend="${#fields.hasErrors('registrationNumber')} ? 'is-invalid'">
-                            <div class="form-text">As shown on your certificate of incorporation or registration.</div>
-                            <div class="invalid-feedback" th:errors="*{registrationNumber}"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Registration certificate (PDF)</label>
-                            <div th:replace="~{fragments/components :: file-upload-zone(
-                                'providerCertInput',
-                                'certificate',
-                                'pdf',
-                                'application/pdf,.pdf',
-                                'No file selected',
-                                'PDF only — max 5 MB',
-                                true)}"></div>
-                            <div class="form-text mt-2">Must prove the organisation is registered in Zimbabwe.</div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Work email</label>
-                            <input type="email" class="form-control form-control-sm" th:field="*{email}"
-                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
-                            <div class="invalid-feedback" th:errors="*{email}"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Phone</label>
-                            <input type="text" class="form-control form-control-sm" th:field="*{phone}"
-                                   placeholder="+263 77 000 0000">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Password</label>
-                            <input type="password" class="form-control form-control-sm" th:field="*{password}"
-                                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
-                            <div class="invalid-feedback" th:errors="*{password}"></div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold small">Confirm password</label>
-                            <input type="password" class="form-control form-control-sm" th:field="*{confirmPassword}">
-                        </div>
-                        <div class="d-grid mt-3">
-                            <button class="btn btn-primary sz-btn-landing-primary" type="submit">Submit for approval</button>
-                        </div>
-                    </form>
-                </div>
+                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Organisation name</label>
+                        <input type="text" class="form-control form-control-sm" th:field="*{fullName}"
+                               placeholder="e.g. CBZ Foundation"
+                               th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:errors="*{fullName}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Organisation type</label>
+                        <select class="form-select form-select-sm" th:field="*{organisationType}"
+                                th:classappend="${#fields.hasErrors('organisationType')} ? 'is-invalid'">
+                            <option value="">Select type…</option>
+                            <option th:each="t : ${organisationTypes}" th:value="${t}"
+                                    th:text="${T(com.scholarzim.util.ProviderOrgType).label(t)}">Type</option>
+                        </select>
+                        <div class="invalid-feedback" th:errors="*{organisationType}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Zimbabwe registration number</label>
+                        <input type="text" class="form-control form-control-sm" th:field="*{registrationNumber}"
+                               placeholder="e.g. 12345/2020"
+                               th:classappend="${#fields.hasErrors('registrationNumber')} ? 'is-invalid'">
+                        <div class="form-text">As shown on your certificate of incorporation or registration.</div>
+                        <div class="invalid-feedback" th:errors="*{registrationNumber}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Registration certificate (PDF)</label>
+                        <div th:replace="~{fragments/components :: file-upload-zone(
+                            'providerCertInput',
+                            'certificate',
+                            'pdf',
+                            'application/pdf,.pdf',
+                            'No file selected',
+                            'PDF only — max 5 MB',
+                            true)}"></div>
+                        <div class="form-text mt-2">Must prove the organisation is registered in Zimbabwe.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Work email</label>
+                        <input type="email" class="form-control form-control-sm" th:field="*{email}"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Phone</label>
+                        <input type="text" class="form-control form-control-sm" th:field="*{phone}"
+                               placeholder="+263 77 000 0000">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Password</label>
+                        <input type="password" class="form-control form-control-sm" th:field="*{password}"
+                               th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:errors="*{password}"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Confirm password</label>
+                        <input type="password" class="form-control form-control-sm" th:field="*{confirmPassword}">
+                    </div>
+                    <div class="d-grid mt-3">
+                        <button class="btn btn-primary sz-btn-landing-primary" type="submit">Submit for approval</button>
+                    </div>
+                </form>
 
                 <p class="text-center mt-3 mb-0 small sz-auth-register-links">
                     Already approved? <a th:href="@{/login(role='provider')}" class="fw-semibold">Provider sign in</a>

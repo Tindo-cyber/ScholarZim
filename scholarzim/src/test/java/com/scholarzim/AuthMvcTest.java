@@ -33,7 +33,11 @@ class AuthMvcTest {
     @Test
     void registerPageLoads() throws Exception {
         mockMvc.perform(get("/register"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/register"))
+                .andExpect(content().string(containsString("Create account")))
+                .andExpect(content().string(containsString("name=\"fullName\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Something went wrong"))));
     }
 
     @Test
@@ -78,7 +82,11 @@ class AuthMvcTest {
     @Test
     void providerRegisterPageLoads() throws Exception {
         mockMvc.perform(get("/register/provider"))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/register-provider"))
+                .andExpect(content().string(containsString("Submit for approval")))
+                .andExpect(content().string(containsString("name=\"fullName\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Something went wrong"))));
     }
 
     @Test

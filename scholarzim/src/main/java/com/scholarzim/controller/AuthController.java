@@ -47,8 +47,10 @@ public class AuthController {
     @GetMapping("/register")
     public String showRegisterPage(
             @ModelAttribute("registerRequest") RegisterRequest registerRequest,
+            BindingResult bindingResult,
             Model model) {
 
+        // BindingResult must be present so Thymeleaf #fields works on first GET.
         model.addAttribute("stats", platformStatsService.getPublicStats());
         return "auth/register";
     }
@@ -75,8 +77,10 @@ public class AuthController {
     @GetMapping("/register/provider")
     public String showProviderRegister(
             @ModelAttribute("registerRequest") ProviderRegisterRequest registerRequest,
+            BindingResult bindingResult,
             Model model) {
 
+        // BindingResult must be present so Thymeleaf #fields works on first GET.
         model.addAttribute("organisationTypes", ProviderOrgType.ALL);
         return "auth/register-provider";
     }
@@ -128,7 +132,8 @@ public class AuthController {
 
     @GetMapping("/forgot-password")
     public String forgotPasswordPage(
-            @ModelAttribute("forgotRequest") ForgotPasswordRequest forgotRequest) {
+            @ModelAttribute("forgotRequest") ForgotPasswordRequest forgotRequest,
+            BindingResult bindingResult) {
 
         return "auth/forgot-password";
     }
@@ -152,7 +157,8 @@ public class AuthController {
     @GetMapping("/reset-password/{token}")
     public String resetPasswordPage(
             @PathVariable String token,
-            @ModelAttribute("resetRequest") ResetPasswordRequest resetRequest) {
+            @ModelAttribute("resetRequest") ResetPasswordRequest resetRequest,
+            BindingResult bindingResult) {
 
         resetRequest.setToken(token);
         return "auth/reset-password";
