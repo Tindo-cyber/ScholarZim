@@ -1,6 +1,7 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.dto.AdminDashboardDTO;
+import com.scholarzim.dto.StoredFileResource;
 import com.scholarzim.exception.AdminOperationException;
 import com.scholarzim.exception.ResourceNotFoundException;
 import com.scholarzim.service.AdminSearchService;
@@ -102,7 +103,9 @@ public class AdminController {
                 : (int) Math.round(100.0 * stats.getCompleteProfiles() / stats.getTotalApplicants());
         model.addAttribute("profileCoverageRate", profileRate);
 
-        long monthlyTotal = monthlyCounts.stream().mapToLong(Long::longValue).sum();
+        long monthlyTotal = monthlyCounts.stream()
+                .mapToLong(count -> count == null ? 0L : count.longValue())
+                .sum();
         model.addAttribute("monthlyAverage", range == 0 ? 0 : Math.round((double) monthlyTotal / range));
 
         return "admin/analytics";
@@ -207,15 +210,18 @@ public class AdminController {
             @NonNull Authentication authentication) {
 
         try {
-            var file = adminUserService.loadProviderCertificate(userId, authentication.getName());
-            String filename = file.displayName() != null ? file.displayName() : "registration-certificate.pdf";
+            StoredFileResource storedFile = adminUserService.loadProviderCertificate(
+                    userId, authentication.getName());
+            String filename = storedFile.displayName() != null
+                    ? storedFile.displayName()
+                    : "registration-certificate.pdf";
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                    .contentType(MediaType.parseMediaType(file.contentType()))
-                    .body(file.resource());
-        } catch (ResourceNotFoundException ex) {
+                    .contentType(MediaType.parseMediaType(storedFile.contentType()))
+                    .body(storedFile.resource());
+        } catch (ResourceNotFoundException notFound) {
             return ResponseEntity.notFound().build();
-        } catch (AdminOperationException ex) {
+        } catch (AdminOperationException badRequest) {
             return ResponseEntity.badRequest().build();
         }
     }
@@ -225,9 +231,9 @@ public class AdminController {
         try {
             action.run();
             redirect.addFlashAttribute("successMessage", success);
-        } catch (AdminOperationException ex) {
-            redirect.addFlashAttribute("errorMessage", ex.getMessage());
-        } catch (ResourceNotFoundException ex) {
+        } catch (AdminOperationException operationError) {
+            redirect.addFlashAttribute("errorMessage", operationError.getMessage());
+        } catch (ResourceNotFoundException notFound) {
             redirect.addFlashAttribute("errorMessage", "User not found.");
         }
 

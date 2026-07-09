@@ -500,8 +500,9 @@
 
 <!-- ============ SCRIPTS ============ -->
 <!-- ============ CSRF (include in POST forms) ============ -->
-<input th:fragment="csrf" type="hidden" th:if="${_csrf != null}"
-       th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+<input th:fragment="csrf" type="hidden"
+       th:name="${_csrf != null ? _csrf.parameterName : '_csrf'}"
+       th:value="${_csrf != null ? _csrf.token : ''}"/>
 
 <header th:fragment="auth-topbar" class="sz-auth-topbar">
     <a class="sz-auth-topbar__back" th:href="@{/}">
