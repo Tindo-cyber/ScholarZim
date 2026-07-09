@@ -2,7 +2,6 @@ package com.scholarzim.config;
 
 import com.scholarzim.security.RoleBasedAuthenticationSuccessHandler;
 import com.scholarzim.security.ScholarzimAuthenticationFailureHandler;
-import com.scholarzim.security.TwoFactorAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,7 +9,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 
 @Configuration
@@ -18,16 +16,13 @@ public class SecurityConfig {
 
     private final RoleBasedAuthenticationSuccessHandler successHandler;
     private final ScholarzimAuthenticationFailureHandler failureHandler;
-    private final TwoFactorAuthenticationFilter twoFactorAuthenticationFilter;
 
     public SecurityConfig(
             RoleBasedAuthenticationSuccessHandler successHandler,
-            ScholarzimAuthenticationFailureHandler failureHandler,
-            TwoFactorAuthenticationFilter twoFactorAuthenticationFilter) {
+            ScholarzimAuthenticationFailureHandler failureHandler) {
 
         this.successHandler = successHandler;
         this.failureHandler = failureHandler;
-        this.twoFactorAuthenticationFilter = twoFactorAuthenticationFilter;
     }
 
     @Bean
@@ -43,7 +38,6 @@ public class SecurityConfig {
                                 "/register",
                                 "/register/provider",
                                 "/login",
-                                "/login/2fa-challenge",
                                 "/forgot-password",
                                 "/reset-password/**",
                                 "/403",
@@ -96,8 +90,7 @@ public class SecurityConfig {
                         .frameOptions(frame -> frame.sameOrigin())
                         .contentSecurityPolicy(csp -> csp
                                 .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'"))
-                )
-                .addFilterAfter(twoFactorAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                );
 
         return http.build();
     }

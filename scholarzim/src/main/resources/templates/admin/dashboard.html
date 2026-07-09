@@ -127,13 +127,14 @@
                             <a th:href="@{/admin/audit-log}" class="small text-decoration-none fw-medium">Audit log</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div th:if="${recentActivity.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
+                            <th:block th:if="${recentActivity.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state(
                                     'bi-activity',
                                     'No activity yet',
                                     'Platform events will appear here as users register, apply, and admins take action.',
                                     @{/admin/audit-log},
                                     'View audit log')}"></div>
+                            </th:block>
                             <div th:each="entry : ${recentActivity}" class="sz-list-row align-items-start">
                                 <span class="sz-dot bg-primary"></span>
                                 <div class="flex-grow-1 min-w-0">

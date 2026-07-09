@@ -34,10 +34,4 @@ public class User {
 
     @Column(name = "account_status")
     private String accountStatus;
-
-    @Column(name = "totp_secret")
-    private String totpSecret;
-
-    @Column(name = "totp_enabled")
-    private boolean totpEnabled;
 }

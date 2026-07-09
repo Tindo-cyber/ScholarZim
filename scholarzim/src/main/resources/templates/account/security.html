@@ -19,29 +19,12 @@
                             <h2><i class="bi bi-shield-lock text-primary me-1"></i> Security</h2>
                         </div>
                         <div class="sz-settings-panel__body">
-                            <div th:if="${twoFaEnabled}">
-                                <p class="text-secondary small mb-3">Add an authenticator app for extra account protection.</p>
-                                <p class="small mb-1"><strong>Secret:</strong> <code th:text="${secret}">secret</code></p>
-                                <p class="small text-break mb-0"><strong>Setup URI:</strong> <code th:text="${qrUri}">uri</code></p>
-                                <form th:action="@{/account/security/enable-2fa}" method="post" class="row g-2 mt-4">
-                                    <input type="hidden" name="secret" th:value="${secret}">
-                                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                    <div class="col-md-7">
-                                        <input class="form-control" name="code" placeholder="6-digit code" required>
-                                    </div>
-                                    <div class="col-md-5">
-                                        <button class="btn btn-primary w-100" type="submit">Enable 2FA</button>
-                                    </div>
-                                </form>
-                                <form th:action="@{/account/security/disable-2fa}" method="post" class="mt-3">
-                                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                    <button class="btn btn-outline-danger btn-sm" type="submit">Disable 2FA</button>
-                                </form>
-                            </div>
-                            <div class="alert alert-info mb-0" th:if="${!twoFaEnabled}">
-                                <i class="bi bi-info-circle me-1"></i>
-                                Two-factor authentication is coming soon. Password sign-in is required for all accounts.
-                            </div>
+                            <p class="text-secondary small mb-0">
+                                Password sign-in protects your account. Use a strong unique password and keep your email up to date for recovery.
+                            </p>
+                            <a class="btn btn-outline-primary btn-sm mt-3" th:href="@{/forgot-password}">
+                                <i class="bi bi-key me-1"></i>Reset password
+                            </a>
                         </div>
                     </section>
                 </div>

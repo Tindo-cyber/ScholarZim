@@ -173,13 +173,14 @@
                             <a th:href="@{/notifications}" class="small text-decoration-none fw-medium">View all</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div th:if="${notifRecent == null or notifRecent.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
+                            <th:block th:if="${notifRecent == null or notifRecent.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state(
                                     'bi-bell',
                                     'No notifications',
                                     'Alerts about new applications will appear here.',
                                     null,
                                     null)}"></div>
+                            </th:block>
                             <th:block th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                                 <a th:each="n : ${notifRecent}"
                                    th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
@@ -201,13 +202,14 @@
                             <a th:href="@{/provider/applications}" class="small text-decoration-none fw-medium">Review all</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div th:if="${recentApplications == null or recentApplications.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
+                            <th:block th:if="${recentApplications == null or recentApplications.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state(
                                     'bi-inbox',
                                     'No applications yet',
                                     'Students will appear here when they apply to your scholarships.',
                                     @{/opportunities/create},
                                     'Create opportunity')}"></div>
+                            </th:block>
                             <div class="sz-list-row" th:each="app : ${recentApplications}">
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="small fw-semibold text-truncate"

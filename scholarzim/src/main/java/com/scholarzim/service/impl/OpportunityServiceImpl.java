@@ -22,7 +22,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 
 @Slf4j
@@ -105,13 +104,8 @@ public class OpportunityServiceImpl implements OpportunityService {
 
     @Override
     public List<Opportunity> getActiveOpportunities() {
-
-        LocalDate today = LocalDate.now();
-
-        return opportunityRepository.findAll().stream()
-                .filter(opp -> "ACTIVE".equalsIgnoreCase(opp.getStatus()))
-                .filter(opp -> opp.getDeadline() == null || !opp.getDeadline().isBefore(today))
-                .collect(Collectors.toList());
+        return opportunityRepository.search(
+                LocalDate.now(), null, null, null, null, null, null);
     }
 
     @Override

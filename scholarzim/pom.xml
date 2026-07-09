@@ -113,11 +113,6 @@
 			<version>8.10.1</version>
 		</dependency>
 		<dependency>
-			<groupId>dev.samstevens.totp</groupId>
-			<artifactId>totp</artifactId>
-			<version>1.7.1</version>
-		</dependency>
-		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>test</scope>

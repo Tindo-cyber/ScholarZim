@@ -3,6 +3,7 @@
 - **V1** — core schema (`roles`, `users`, `opportunities`, `applications`, etc.)
 - **V2** — platform extensions (password reset, saved scholarships, tenants)
 - **V3** — security and compliance columns (`users.totp_*`)
+- **V6** — drop unused TOTP columns after 2FA removal
 - **V4** — provider verification (`provider_profiles` table)
 - **V5** — applicant results certificate columns on `applicant_profiles`
 

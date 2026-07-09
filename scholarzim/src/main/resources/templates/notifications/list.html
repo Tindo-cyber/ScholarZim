@@ -65,16 +65,18 @@
                    th:text="${T(com.scholarzim.util.NotificationPresentation).label(t)}">Type</a>
             </div>
 
-            <div th:if="${notifications.isEmpty() and typeFilter == ''}"
-                 th:replace="~{fragments/components :: empty-state(
+            <th:block th:if="${notifications.isEmpty() and typeFilter == ''}">
+                <div th:replace="~{fragments/components :: empty-state(
                     'bi-bell', 'No notifications',
                     'You are all caught up. New alerts will appear here.',
                     null, null)}"></div>
-            <div th:if="${notifications.isEmpty() and typeFilter != ''}"
-                 th:replace="~{fragments/components :: empty-state(
+            </th:block>
+            <th:block th:if="${notifications.isEmpty() and typeFilter != ''}">
+                <div th:replace="~{fragments/components :: empty-state(
                     'bi-bell', 'No matching notifications',
                     'Try another filter or check back later.',
                     @{/notifications}, 'Clear filter')}"></div>
+            </th:block>
 
             <div th:if="${!notifications.isEmpty()}" class="sz-notif-list">
                 <a th:each="n : ${notifications}"

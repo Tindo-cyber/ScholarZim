@@ -64,8 +64,9 @@
                             <i class="bi bi-check-lg"></i>
                         </div>
                     </div>
-                    <div th:if="${stats.profileCompletion < 100}"
-                         th:replace="~{fragments/components :: profile-ring(${stats.profileCompletion})}"></div>
+                    <div th:if="${stats.profileCompletion < 100}">
+                        <div th:replace="~{fragments/components :: profile-ring(${stats.profileCompletion})}"></div>
+                    </div>
                     <div class="sz-dashboard-hero__copy">
                         <h2 th:if="${stats.profileCompletion >= 100}">Profile complete</h2>
                         <h2 th:if="${stats.profileCompletion < 100}">Complete your profile</h2>
@@ -159,8 +160,9 @@
                                 to unlock personalised matches.
                             </div>
 
-                            <div th:if="${stats.hasProfile and recommendations.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state('bi-inbox', 'No matches yet', 'Update your profile or check back when new opportunities are posted.', @{/opportunities}, 'Browse opportunities')}"></div>
+                            <th:block th:if="${stats.hasProfile and recommendations.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state('bi-inbox', 'No matches yet', 'Update your profile or check back when new opportunities are posted.', @{/opportunities}, 'Browse opportunities')}"></div>
+                            </th:block>
 
                             <th:block th:if="${stats.hasProfile and !recommendations.isEmpty()}">
                                 <div class="sz-list-row" th:each="scored : ${recommendations}">
@@ -217,13 +219,14 @@
                             <a th:href="@{/notifications}" class="small text-decoration-none fw-medium">View all</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div th:if="${notifRecent == null or notifRecent.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
+                            <th:block th:if="${notifRecent == null or notifRecent.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state(
                                     'bi-bell',
                                     'All caught up',
                                     'Notifications about applications and deadlines will appear here.',
                                     null,
                                     null)}"></div>
+                            </th:block>
                             <th:block th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                                 <a th:each="n : ${notifRecent}"
                                    th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
@@ -248,13 +251,14 @@
                             <a th:href="@{/my-applications}" class="small text-decoration-none fw-medium">View all</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div th:if="${recentApplications.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
+                            <th:block th:if="${recentApplications.isEmpty()}">
+                                <div th:replace="~{fragments/components :: empty-state(
                                     'bi-file-earmark-text',
                                     'No applications yet',
                                     'Browse scholarships and submit your first application.',
                                     @{/opportunities},
                                     'Browse opportunities')}"></div>
+                            </th:block>
                             <div class="sz-list-row" th:each="app : ${recentApplications}">
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="small fw-semibold text-truncate"

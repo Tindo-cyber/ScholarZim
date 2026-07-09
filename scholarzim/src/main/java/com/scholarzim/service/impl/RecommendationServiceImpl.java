@@ -60,8 +60,9 @@ public class RecommendationServiceImpl implements RecommendationService {
             return List.of();
         }
 
-        return opportunityRepository.findAll().stream()
-                .filter(opp -> "ACTIVE".equals(opp.getStatus()))
+        return opportunityRepository.search(
+                        LocalDate.now(), null, null, null, null, null, null)
+                .stream()
                 .map(opp -> score(profile, opp))
                 .filter(scored -> scored.getMatchScore() > 0)
                 .sorted(Comparator.comparingInt(ScoredOpportunityDTO::getMatchScore).reversed())
