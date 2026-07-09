@@ -27,7 +27,9 @@ class AuthMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/login"))
                 .andExpect(content().string(containsString("Skip to main content")))
-                .andExpect(content().string(containsString("accessibility.css")));
+                .andExpect(content().string(containsString("name=\"username\"")))
+                .andExpect(content().string(containsString("Sign in")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Something went wrong"))));
     }
 
     @Test

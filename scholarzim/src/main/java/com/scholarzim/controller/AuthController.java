@@ -15,6 +15,7 @@ import org.springframework.lang.NonNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,12 +46,11 @@ public class AuthController {
     }
 
     @GetMapping("/register")
-    public String showRegisterPage(
-            @ModelAttribute("registerRequest") RegisterRequest registerRequest,
-            BindingResult bindingResult,
-            Model model) {
-
-        // BindingResult must be present so Thymeleaf #fields works on first GET.
+    public String showRegisterPage(Model model) {
+        RegisterRequest registerRequest = new RegisterRequest();
+        model.addAttribute("registerRequest", registerRequest);
+        model.addAttribute(BindingResult.MODEL_KEY_PREFIX + "registerRequest",
+                new BeanPropertyBindingResult(registerRequest, "registerRequest"));
         model.addAttribute("stats", platformStatsService.getPublicStats());
         return "auth/register";
     }
@@ -75,12 +75,11 @@ public class AuthController {
     }
 
     @GetMapping("/register/provider")
-    public String showProviderRegister(
-            @ModelAttribute("registerRequest") ProviderRegisterRequest registerRequest,
-            BindingResult bindingResult,
-            Model model) {
-
-        // BindingResult must be present so Thymeleaf #fields works on first GET.
+    public String showProviderRegister(Model model) {
+        ProviderRegisterRequest registerRequest = new ProviderRegisterRequest();
+        model.addAttribute("registerRequest", registerRequest);
+        model.addAttribute(BindingResult.MODEL_KEY_PREFIX + "registerRequest",
+                new BeanPropertyBindingResult(registerRequest, "registerRequest"));
         model.addAttribute("organisationTypes", ProviderOrgType.ALL);
         return "auth/register-provider";
     }
@@ -120,21 +119,31 @@ public class AuthController {
             @RequestParam(name = "role", required = false, defaultValue = "student") String role,
             @RequestParam(name = "pending", required = false) Boolean pending,
             @RequestParam(name = "error", required = false) String error,
+            @RequestParam(name = "logout", required = false) String logout,
+            @RequestParam(name = "registered", required = false) String registered,
             Model model) {
+
+        String loginRole = "provider".equalsIgnoreCase(role) ? "provider" : "student";
+        boolean credentialsError = error != null
+                && (error.isBlank() || "credentials".equalsIgnoreCase(error) || "disabled".equalsIgnoreCase(error));
 
         model.addAttribute("stats", platformStatsService.getPublicStats());
         model.addAttribute("demoLoginEnabled", demoLoginEnabled);
-        model.addAttribute("loginRole", "provider".equalsIgnoreCase(role) ? "provider" : "student");
+        model.addAttribute("loginRole", loginRole);
         model.addAttribute("pendingRegistration", Boolean.TRUE.equals(pending));
         model.addAttribute("loginError", error);
+        model.addAttribute("showCredentialsError", credentialsError);
+        model.addAttribute("showLogoutMessage", logout != null);
+        model.addAttribute("showRegisteredMessage", registered != null);
         return "auth/login";
     }
 
     @GetMapping("/forgot-password")
-    public String forgotPasswordPage(
-            @ModelAttribute("forgotRequest") ForgotPasswordRequest forgotRequest,
-            BindingResult bindingResult) {
-
+    public String forgotPasswordPage(Model model) {
+        ForgotPasswordRequest forgotRequest = new ForgotPasswordRequest();
+        model.addAttribute("forgotRequest", forgotRequest);
+        model.addAttribute(BindingResult.MODEL_KEY_PREFIX + "forgotRequest",
+                new BeanPropertyBindingResult(forgotRequest, "forgotRequest"));
         return "auth/forgot-password";
     }
 
@@ -155,12 +164,12 @@ public class AuthController {
     }
 
     @GetMapping("/reset-password/{token}")
-    public String resetPasswordPage(
-            @PathVariable String token,
-            @ModelAttribute("resetRequest") ResetPasswordRequest resetRequest,
-            BindingResult bindingResult) {
-
+    public String resetPasswordPage(@PathVariable String token, Model model) {
+        ResetPasswordRequest resetRequest = new ResetPasswordRequest();
         resetRequest.setToken(token);
+        model.addAttribute("resetRequest", resetRequest);
+        model.addAttribute(BindingResult.MODEL_KEY_PREFIX + "resetRequest",
+                new BeanPropertyBindingResult(resetRequest, "resetRequest"));
         return "auth/reset-password";
     }
 
