@@ -8,6 +8,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.thymeleaf.exceptions.TemplateInputException;
+import org.thymeleaf.exceptions.TemplateProcessingException;
 
 import java.util.NoSuchElementException;
 
@@ -88,9 +90,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     public String handleGeneral(Exception ex, Model model) {
 
+        if (isTemplateRenderingFailure(ex)) {
+            log.error("Template rendering failed", ex);
+            throw new IllegalStateException("Template rendering failed", ex);
+        }
+
         log.error("Unhandled exception", ex);
         model.addAttribute("status", 500);
         model.addAttribute("error", "An unexpected error occurred. Please try again.");
         return "error";
+    }
+
+    private static boolean isTemplateRenderingFailure(Throwable ex) {
+        for (Throwable current = ex; current != null; current = current.getCause()) {
+            if (current instanceof TemplateProcessingException
+                    || current instanceof TemplateInputException) {
+                return true;
+            }
+        }
+        return false;
     }
 }

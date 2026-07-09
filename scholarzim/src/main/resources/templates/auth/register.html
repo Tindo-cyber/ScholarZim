@@ -41,7 +41,8 @@
                     <p class="sz-auth-muted small mb-0">Free for all Zimbabwean students</p>
                 </div>
 
-                <form th:object="${registerRequest}" th:action="@{/register}" method="post">
+                <form th:object="${registerRequest}" action="/register" method="post">
+                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                     <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
                         <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
                     </div>

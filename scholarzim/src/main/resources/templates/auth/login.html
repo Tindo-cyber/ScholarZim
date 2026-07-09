@@ -85,8 +85,8 @@
                     <i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span>
                 </div>
 
-                <!-- th:action auto-injects the CSRF hidden field; do not add a manual _csrf input -->
-                <form th:action="@{/login}" method="post">
+                <form action="/login" method="post">
+                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                     <div class="mb-3">
                         <label for="username" class="form-label fw-semibold small">Email address</label>
                         <div class="input-group input-group-sm">
