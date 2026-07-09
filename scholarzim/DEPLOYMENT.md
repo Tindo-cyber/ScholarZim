@@ -22,6 +22,8 @@ SCHOLARZIM_DB_PASSWORD=...
 SCHOLARZIM_APP_BASE_URL=https://YOUR-SERVICE.onrender.com
 SCHOLARZIM_MAIL_FROM=noreply@scholarzim.com
 SCHOLARZIM_SESSION_COOKIE_SECURE=true
+# Persist uploads across deploys (see "Render uploads disk" below)
+SCHOLARZIM_UPLOAD_DIR=/var/data/uploads
 SPRING_MAIL_HOST=
 SPRING_MAIL_PORT=587
 SPRING_MAIL_USERNAME=
@@ -29,6 +31,16 @@ SPRING_MAIL_PASSWORD=
 # FYP demo: populate sample scholarships and users on startup (set SCHOLARZIM_DEMO_SEED=false for real production)
 SCHOLARZIM_DEMO_SEED=true
 ```
+
+### Render uploads disk (required for certificates)
+
+Render’s free filesystem is **ephemeral**: without a disk, provider/applicant PDFs under `uploads/` disappear on every redeploy.
+
+1. In the Render dashboard → your Web Service → **Disks** → add a disk (e.g. 1 GB).
+2. Mount path: `/var/data/uploads`
+3. Ensure `SCHOLARZIM_UPLOAD_DIR=/var/data/uploads` (already in `render.yaml` and the env block above).
+
+On the free plan, persistent disks may require a paid instance — if you cannot attach a disk, treat uploads as demo-only and re-upload after redeploys, or move files to object storage later.
 
 Demo accounts after seeding (password for all: `Password123!`):
 
@@ -246,5 +258,5 @@ Back up the uploads volume (or `scholarzim.upload.dir`) with database backups. D
 - [ ] Swagger off, actuator = health only
 - [ ] Mail verified
 - [ ] HTTPS on www.scholarzim.com
-- [ ] Persistent uploads + DB backups
+- [ ] Persistent uploads (`SCHOLARZIM_UPLOAD_DIR` + Render disk or Docker volume) + DB backups
 - [ ] CI green on `main`

@@ -27,7 +27,7 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ### Account
 
-- **Settings** → `/account/security` — appearance, data export, optional 2FA (when enabled by administrator).
+- **Settings** → `/account/security` — appearance and data export.
 - **Messages** → notification inbox for application updates and deadline reminders.
 
 ---

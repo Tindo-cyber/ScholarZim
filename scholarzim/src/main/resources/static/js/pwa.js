@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var ASSET_VERSION = 'v39';
+    var ASSET_VERSION = 'v40';
 
     function purgeCaches() {
         if (!('caches' in window)) return Promise.resolve();

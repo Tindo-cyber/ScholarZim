@@ -206,12 +206,18 @@ public class AdminController {
             @PathVariable Long userId,
             @NonNull Authentication authentication) {
 
-        var file = adminUserService.loadProviderCertificate(userId, authentication.getName());
-        String filename = file.displayName() != null ? file.displayName() : "registration-certificate.pdf";
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
-                .contentType(MediaType.parseMediaType(file.contentType()))
-                .body(file.resource());
+        try {
+            var file = adminUserService.loadProviderCertificate(userId, authentication.getName());
+            String filename = file.displayName() != null ? file.displayName() : "registration-certificate.pdf";
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .contentType(MediaType.parseMediaType(file.contentType()))
+                    .body(file.resource());
+        } catch (ResourceNotFoundException ex) {
+            return ResponseEntity.notFound().build();
+        } catch (AdminOperationException ex) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     private String handleUserAction(Runnable action, RedirectAttributes redirect, String success) {

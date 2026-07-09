@@ -13,6 +13,9 @@ services:
       # FYP demo: set to "true" in the Render dashboard to seed sample users/scholarships
       - key: SCHOLARZIM_DEMO_SEED
         value: "true"
+      # Mount a Render persistent disk at /var/data/uploads and set this to that path
+      - key: SCHOLARZIM_UPLOAD_DIR
+        value: /var/data/uploads
       - key: SCHOLARZIM_DB_URL
         sync: false
       - key: SCHOLARZIM_DB_USER

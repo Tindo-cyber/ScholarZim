@@ -110,7 +110,7 @@ Cover briefly (see [security.md](security.md)):
 - BCrypt passwords, role-based URL access
 - Secured file downloads (not public `/uploads/**`)
 - Rate limiting on login and provider registration
-- Optional TOTP 2FA when enabled (`scholarzim.security.2fa.enabled=true`)
+- CSRF on forms and applicant APIs; secure session cookies in production
 
 ---
 

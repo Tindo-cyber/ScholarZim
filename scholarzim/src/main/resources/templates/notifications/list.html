@@ -20,21 +20,24 @@
 
             <div th:replace="~{fragments/layout :: alerts}"></div>
 
-            <nav sec:authorize="hasRole('ADMIN')"
-                 th:replace="~{fragments/components :: breadcrumbs(
-                @{/admin/dashboard}, 'Dashboard',
-                null, null,
-                'Notifications')}"></nav>
-            <nav sec:authorize="hasRole('PROVIDER')"
-                 th:replace="~{fragments/components :: breadcrumbs(
-                @{/provider/dashboard}, 'Dashboard',
-                null, null,
-                'Notifications')}"></nav>
-            <nav sec:authorize="hasRole('APPLICANT')"
-                 th:replace="~{fragments/components :: breadcrumbs(
-                @{/applicant/dashboard}, 'Dashboard',
-                null, null,
-                'Notifications')}"></nav>
+            <th:block sec:authorize="hasRole('ADMIN')">
+                <nav th:replace="~{fragments/components :: breadcrumbs(
+                    @{/admin/dashboard}, 'Dashboard',
+                    null, null,
+                    'Notifications')}"></nav>
+            </th:block>
+            <th:block sec:authorize="hasRole('PROVIDER')">
+                <nav th:replace="~{fragments/components :: breadcrumbs(
+                    @{/provider/dashboard}, 'Dashboard',
+                    null, null,
+                    'Notifications')}"></nav>
+            </th:block>
+            <th:block sec:authorize="hasRole('APPLICANT')">
+                <nav th:replace="~{fragments/components :: breadcrumbs(
+                    @{/applicant/dashboard}, 'Dashboard',
+                    null, null,
+                    'Notifications')}"></nav>
+            </th:block>
 
             <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
                 <div>
@@ -104,9 +107,15 @@
     </div>
 </div>
 
-<nav th:replace="~{fragments/layout :: mobile-nav('notifications')}" sec:authorize="hasRole('APPLICANT')"></nav>
-<nav th:replace="~{fragments/layout :: provider-mobile-nav('messages')}" sec:authorize="hasRole('PROVIDER')"></nav>
-<nav th:replace="~{fragments/layout :: admin-mobile-nav('dashboard')}" sec:authorize="hasRole('ADMIN')"></nav>
+<th:block sec:authorize="hasRole('APPLICANT')">
+    <nav th:replace="~{fragments/layout :: mobile-nav('notifications')}"></nav>
+</th:block>
+<th:block sec:authorize="hasRole('PROVIDER')">
+    <nav th:replace="~{fragments/layout :: provider-mobile-nav('messages')}"></nav>
+</th:block>
+<th:block sec:authorize="hasRole('ADMIN')">
+    <nav th:replace="~{fragments/layout :: admin-mobile-nav('dashboard')}"></nav>
+</th:block>
 
 <th:block th:replace="~{fragments/layout :: scripts}"></th:block>
 

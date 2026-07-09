@@ -23,5 +23,13 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addResourceHandler("/sw.js")
                 .addResourceLocations("classpath:/static/")
                 .setCacheControl(noStore);
+
+        registry.addResourceHandler("/manifest.json")
+                .addResourceLocations("classpath:/static/")
+                .setCacheControl(noStore);
+
+        registry.addResourceHandler("/icons/**")
+                .addResourceLocations("classpath:/static/icons/")
+                .setCacheControl(noStore);
     }
 }
