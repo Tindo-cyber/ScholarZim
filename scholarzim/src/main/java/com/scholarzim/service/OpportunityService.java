@@ -16,6 +16,12 @@ public interface OpportunityService {
 
     List<Opportunity> getActiveOpportunities();
 
+    List<Opportunity> getFeaturedOpportunities(int limit);
+
+    long countActiveOpportunities();
+
+    long countUpcomingDeadlines();
+
     List<Opportunity> searchOpportunities(OpportunitySearchRequest searchRequest);
 
     List<String> getProviderNames();

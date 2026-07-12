@@ -1,0 +1,33 @@
+/* Performance — reduce CLS and reserve space for media */
+
+img {
+    max-width: 100%;
+    height: auto;
+}
+
+img[width][height] {
+    height: auto;
+}
+
+.sz-home-hero__photo {
+    aspect-ratio: 520 / 600;
+    object-fit: cover;
+}
+
+.sz-home-hero__illustration {
+    min-height: 280px;
+}
+
+@media (min-width: 992px) {
+    .sz-home-hero__illustration {
+        min-height: 420px;
+    }
+}
+
+.sz-home-float-card {
+    contain: layout style;
+}
+
+.sz-reveal:not(.is-visible) {
+    min-height: 0.01px;
+}

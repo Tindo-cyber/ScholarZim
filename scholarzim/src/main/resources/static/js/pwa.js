@@ -1,7 +1,9 @@
 (function () {
     'use strict';
 
-    var ASSET_VERSION = 'v40';
+    var ASSET_VERSION = 'v47';
+
+    var shouldPurge = document.documentElement.getAttribute('data-sz-purge-cache') === 'true';
 
     function purgeCaches() {
         if (!('caches' in window)) return Promise.resolve();
@@ -17,10 +19,14 @@
         });
     }
 
-    /* Always purge legacy PWA caches — prevents old CSS from returning after navigation */
-    Promise.all([unregisterAll(), purgeCaches()]).then(function () {
+    /* Purge legacy PWA caches only in development */
+    if (shouldPurge) {
+        Promise.all([unregisterAll(), purgeCaches()]).then(function () {
+            localStorage.setItem('sz-asset-version', ASSET_VERSION);
+        }).catch(function () {});
+    } else {
         localStorage.setItem('sz-asset-version', ASSET_VERSION);
-    }).catch(function () {});
+    }
 
     var banner = document.getElementById('pwa-install-banner');
     var dismissed = localStorage.getItem('sz-pwa-dismissed');

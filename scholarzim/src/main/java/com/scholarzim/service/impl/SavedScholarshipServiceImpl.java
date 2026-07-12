@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 
 @Service
@@ -84,5 +86,25 @@ public class SavedScholarshipServiceImpl implements SavedScholarshipService {
         return savedRepository.findByUserWithOpportunityOrderBySavedAtDesc(user).stream()
                 .map(SavedScholarship::getOpportunity)
                 .toList();
+    }
+
+    @Override
+    public Set<Long> listSavedOpportunityIds(String email) {
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return Set.of();
+        }
+        return new HashSet<>(savedRepository.findOpportunityIdsByUser(user));
+    }
+
+    @Override
+    public long countSaved(String email) {
+
+        User user = userRepository.findByEmail(email).orElse(null);
+        if (user == null) {
+            return 0L;
+        }
+        return savedRepository.countByUser(user);
     }
 }

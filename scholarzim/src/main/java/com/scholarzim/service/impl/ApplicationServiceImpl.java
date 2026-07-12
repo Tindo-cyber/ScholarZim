@@ -79,7 +79,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Override
     public List<Application> getApplicationsByUser(String email) {
         return userRepository.findByEmail(email)
-                .map(applicationRepository::findByUser)
+                .map(applicationRepository::findByUserWithOpportunity)
                 .orElse(List.of());
     }
 

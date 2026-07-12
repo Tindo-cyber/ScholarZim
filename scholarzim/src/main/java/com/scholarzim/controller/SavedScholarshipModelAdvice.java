@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 import java.util.Collections;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 @ControllerAdvice
@@ -42,9 +41,7 @@ public class SavedScholarshipModelAdvice {
             return;
         }
 
-        Set<Long> savedIds = savedScholarshipService.listSaved(authentication.getName()).stream()
-                .map(opp -> opp.getOpportunityId())
-                .collect(Collectors.toSet());
+        Set<Long> savedIds = savedScholarshipService.listSavedOpportunityIds(authentication.getName());
         model.addAttribute("savedOpportunityIds", savedIds);
     }
 }

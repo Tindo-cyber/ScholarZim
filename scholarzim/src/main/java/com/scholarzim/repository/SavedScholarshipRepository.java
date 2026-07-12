@@ -30,6 +30,14 @@ public interface SavedScholarshipRepository extends JpaRepository<SavedScholarsh
 
     List<SavedScholarship> findByOpportunityOpportunityId(Long opportunityId);
 
+    long countByUser(User user);
+
+    @Query("""
+            SELECT s.opportunity.opportunityId FROM SavedScholarship s
+            WHERE s.user = :user
+            """)
+    List<Long> findOpportunityIdsByUser(@Param("user") User user);
+
     @Query("""
             SELECT s.opportunity.title, COUNT(s)
             FROM SavedScholarship s

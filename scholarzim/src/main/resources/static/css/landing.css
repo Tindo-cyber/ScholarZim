@@ -392,8 +392,6 @@ body.sz-landing .sz-landing-preview-label {
     inset: 0;
     background:
         linear-gradient(180deg, rgba(238, 242, 246, 0.72) 0%, rgba(248, 250, 252, 0.55) 45%, transparent 70%),
-        url('/images/hero-education.webp') center / cover no-repeat,
-        url('/images/auth-login-bg.svg') center / cover no-repeat,
         url('/images/landing-hero-pattern.svg') center top / cover no-repeat;
     opacity: 1;
     pointer-events: none;

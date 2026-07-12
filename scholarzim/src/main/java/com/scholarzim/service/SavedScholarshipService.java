@@ -4,6 +4,7 @@ import com.scholarzim.entity.Opportunity;
 import org.springframework.lang.NonNull;
 
 import java.util.List;
+import java.util.Set;
 
 
 public interface SavedScholarshipService {
@@ -15,4 +16,8 @@ public interface SavedScholarshipService {
     boolean isSaved(String email, @NonNull Long opportunityId);
 
     List<Opportunity> listSaved(String email);
+
+    Set<Long> listSavedOpportunityIds(String email);
+
+    long countSaved(String email);
 }

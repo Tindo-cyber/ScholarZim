@@ -57,7 +57,7 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
         dto.setPendingApplications(countPending(applications));
         dto.setApprovedApplications(countByStatus(applications, "APPROVED"));
         dto.setRejectedApplications(countByStatus(applications, "REJECTED"));
-        dto.setSavedCount(savedScholarshipService.listSaved(email).size());
+        dto.setSavedCount(savedScholarshipService.countSaved(email));
 
         if (hasProfile) {
             var matches = recommendationService.recommendForApplicant(email);
@@ -68,10 +68,8 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
                     .filter(o -> !o.getDeadline().isBefore(LocalDate.now()))
                     .count());
         } else {
-            dto.setEligibleScholarships(opportunityService.getActiveOpportunities().size());
-            dto.setUpcomingDeadlinesCount(opportunityService.getActiveOpportunities().stream()
-                    .filter(o -> o.getDeadline() != null && !o.getDeadline().isBefore(LocalDate.now()))
-                    .count());
+            dto.setEligibleScholarships(opportunityService.countActiveOpportunities());
+            dto.setUpcomingDeadlinesCount(opportunityService.countUpcomingDeadlines());
         }
 
         return dto;

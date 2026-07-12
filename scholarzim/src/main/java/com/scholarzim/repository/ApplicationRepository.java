@@ -8,8 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import org.springframework.data.repository.query.Param;
-
 import java.util.Collection;
 import java.util.List;
 
@@ -18,6 +16,23 @@ public interface ApplicationRepository
         extends JpaRepository<Application, Long> {
 
     List<Application> findByUser(User user);
+
+    @Query("""
+            SELECT a FROM Application a
+            JOIN FETCH a.opportunity
+            WHERE a.user = :user
+            ORDER BY a.submittedAt DESC
+            """)
+    List<Application> findByUserWithOpportunity(@Param("user") User user);
+
+    @Query("""
+            SELECT a FROM Application a
+            JOIN FETCH a.user
+            JOIN FETCH a.opportunity
+            WHERE a.opportunity IN :opportunities
+            ORDER BY a.submittedAt DESC
+            """)
+    List<Application> findByOpportunityInWithDetails(@Param("opportunities") Collection<Opportunity> opportunities);
 
     @Query("""
             SELECT a.user.userId, COUNT(a)

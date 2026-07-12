@@ -31,7 +31,8 @@ public class PublicController {
             Model model) {
 
         model.addAttribute("stats", platformStatsService.getPublicStats());
-        model.addAttribute("featured", opportunityService.getActiveOpportunities().stream().limit(6).toList());
+        model.addAttribute("featured", opportunityService.getFeaturedOpportunities(6));
+        model.addAttribute("lcpPreloadImage", "/images/auth-education.webp");
         return "public/index";
     }
 

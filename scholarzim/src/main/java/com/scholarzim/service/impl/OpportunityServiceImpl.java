@@ -15,6 +15,8 @@ import com.scholarzim.util.AuditAction;
 import com.scholarzim.util.FormOptions;
 import com.scholarzim.util.NotificationType;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -109,6 +111,22 @@ public class OpportunityServiceImpl implements OpportunityService {
     }
 
     @Override
+    public List<Opportunity> getFeaturedOpportunities(int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 24));
+        return opportunityRepository.findActiveFeatured(LocalDate.now(), Pageable.ofSize(safeLimit));
+    }
+
+    @Override
+    public long countActiveOpportunities() {
+        return opportunityRepository.countActive(LocalDate.now());
+    }
+
+    @Override
+    public long countUpcomingDeadlines() {
+        return opportunityRepository.countUpcomingDeadlines(LocalDate.now());
+    }
+
+    @Override
     public List<Opportunity> searchOpportunities(OpportunitySearchRequest searchRequest) {
 
         OpportunitySearchRequest criteria =
@@ -126,6 +144,7 @@ public class OpportunityServiceImpl implements OpportunityService {
     }
 
     @Override
+    @Cacheable("providerNames")
     public List<String> getProviderNames() {
         return opportunityRepository.findDistinctProviderNames();
     }

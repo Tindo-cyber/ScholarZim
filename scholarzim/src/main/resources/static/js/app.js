@@ -858,7 +858,7 @@
         var shells = document.querySelectorAll(".sz-page-shell");
         if (!shells.length) return;
 
-        var delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 260;
+        var delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 80;
 
         window.setTimeout(function () {
             shells.forEach(function (shell) {

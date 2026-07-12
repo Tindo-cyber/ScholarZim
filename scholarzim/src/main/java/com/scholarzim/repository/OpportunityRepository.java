@@ -2,11 +2,10 @@ package com.scholarzim.repository;
 
 import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.util.Collection;
@@ -84,6 +83,29 @@ public interface OpportunityRepository
             @Param("fundingType") String fundingType,
             @Param("deadlineBefore") LocalDate deadlineBefore,
             @Param("keyword") String keyword);
+
+    @Query("""
+            SELECT o FROM Opportunity o
+            WHERE o.status = 'ACTIVE'
+              AND (o.deadline IS NULL OR o.deadline >= :today)
+            ORDER BY o.createdAt DESC
+            """)
+    List<Opportunity> findActiveFeatured(@Param("today") LocalDate today, Pageable pageable);
+
+    @Query("""
+            SELECT COUNT(o) FROM Opportunity o
+            WHERE o.status = 'ACTIVE'
+              AND (o.deadline IS NULL OR o.deadline >= :today)
+            """)
+    long countActive(@Param("today") LocalDate today);
+
+    @Query("""
+            SELECT COUNT(o) FROM Opportunity o
+            WHERE o.status = 'ACTIVE'
+              AND o.deadline IS NOT NULL
+              AND o.deadline >= :today
+            """)
+    long countUpcomingDeadlines(@Param("today") LocalDate today);
 
     @Query("""
             SELECT o FROM Opportunity o

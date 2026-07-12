@@ -50,7 +50,7 @@ public class ProviderServiceImpl implements ProviderService {
         }
 
         List<Application> applications =
-                applicationRepository.findByOpportunityIn(opportunities);
+                applicationRepository.findByOpportunityInWithDetails(opportunities);
 
         dto.setApplicationsReceived(applications.size());
         dto.setApprovedApplications(countByStatus(applications, "APPROVED"));
@@ -74,12 +74,7 @@ public class ProviderServiceImpl implements ProviderService {
         if (opportunities.isEmpty()) {
             return List.of();
         }
-        return applicationRepository.findByOpportunityIn(opportunities).stream()
-                .sorted((a, b) -> {
-                    if (a.getSubmittedAt() == null) return 1;
-                    if (b.getSubmittedAt() == null) return -1;
-                    return b.getSubmittedAt().compareTo(a.getSubmittedAt());
-                })
+        return applicationRepository.findByOpportunityInWithDetails(opportunities).stream()
                 .limit(limit)
                 .toList();
     }
