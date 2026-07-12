@@ -5,6 +5,7 @@ import com.scholarzim.entity.User;
 import com.scholarzim.support.MvcIntegrationTestBase;
 import com.scholarzim.support.MvcTestSupport;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import java.util.UUID;
@@ -25,7 +26,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ApplicantProfileMvcTest extends MvcIntegrationTestBase {
 
     @Test
-    @WithMockUser(roles = "APPLICANT")
     void profilePageShowsResultsRequiredWarning() throws Exception {
         String email = "warn-" + UUID.randomUUID() + "@student.co.zw";
         data.saveApplicant(email);
@@ -35,7 +35,47 @@ class ApplicantProfileMvcTest extends MvcIntegrationTestBase {
                         .with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("applicant/profile"))
-                .andExpect(content().string(containsString("results certificate")));
+                .andExpect(content().string(containsString("results certificate")))
+                .andExpect(content().string(containsString("sz-profile-completion")))
+                .andExpect(content().string(containsString("Profile completion")));
+    }
+
+    @Test
+    @WithMockUser(roles = "APPLICANT")
+    void profilePageShowsCompletionModuleAndMissingDocuments() throws Exception {
+        String email = "completion-" + UUID.randomUUID() + "@student.co.zw";
+        data.saveApplicant(email);
+
+        mockMvc.perform(get("/applicant/profile").with(MvcTestSupport.asApplicant(email)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("sz-profile-completion")))
+                .andExpect(content().string(containsString("CV")))
+                .andExpect(content().string(containsString("Transcript")))
+                .andExpect(content().string(containsString("Passport")))
+                .andExpect(content().string(containsString("Recommendation Letter")))
+                .andExpect(content().string(containsString("Getting Started")))
+                .andExpect(content().string(containsString("Profile Champion")));
+    }
+
+    @Test
+    @WithMockUser(roles = "APPLICANT")
+    void documentUploadUpdatesProfileCompletion() throws Exception {
+        String email = "upload-" + UUID.randomUUID() + "@student.co.zw";
+        data.saveApplicant(email);
+
+        mockMvc.perform(multipart("/applicant/profile/documents/cv")
+                        .file(new MockMultipartFile(
+                                "file", "cv.pdf", "application/pdf", "%PDF-1.4 cv".getBytes()))
+                        .with(csrf())
+                        .with(MvcTestSupport.asApplicant(email)))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/applicant/profile"))
+                .andExpect(flash().attribute("successMessage", "CV uploaded successfully."));
+
+        ApplicantProfile profile = applicantProfileRepository.findByUser(
+                userRepository.findByEmail(email).orElseThrow()).orElseThrow();
+        assertNotNull(profile.getCvPath());
+        assertNotNull(profile.getCvFilename());
     }
 
     @Test

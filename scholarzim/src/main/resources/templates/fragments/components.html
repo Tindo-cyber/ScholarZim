@@ -576,6 +576,120 @@
     </div>
 </div>
 
+<section th:fragment="profile-completion-module(completion)"
+         class="sz-profile-completion"
+         aria-labelledby="profile-completion-title">
+    <div class="sz-profile-completion__summary">
+        <div class="sz-profile-completion__ring-wrap">
+            <div class="sz-profile-ring sz-profile-ring--lg"
+                 th:classappend="${completion.percent >= 100} ? 'sz-profile-ring--complete'"
+                 th:style="'--sz-ring-pct:' + ${completion.percent}">
+                <div class="sz-profile-ring__inner">
+                    <span class="sz-profile-ring__value" th:text="${completion.percent} + '%'">0%</span>
+                </div>
+            </div>
+            <div>
+                <span class="sz-profile-completion__eyebrow">Profile strength</span>
+                <h2 id="profile-completion-title" class="sz-profile-completion__title">Profile completion</h2>
+                <p class="sz-profile-completion__lead mb-0">
+                    Complete your profile and upload supporting documents to unlock stronger scholarship matches.
+                </p>
+            </div>
+        </div>
+
+        <div class="sz-profile-completion__badges" aria-label="Completion badges">
+            <div th:each="badge : ${completion.badges}"
+                 class="sz-profile-badge"
+                 th:classappend="${badge.earned} ? 'sz-profile-badge--earned' : 'sz-profile-badge--locked'">
+                <span class="sz-profile-badge__icon" aria-hidden="true">
+                    <i class="bi" th:classappend="${badge.icon}"></i>
+                </span>
+                <span class="sz-profile-badge__label" th:text="${badge.label}">Badge</span>
+                <span class="sz-profile-badge__threshold" th:text="${badge.threshold} + '%'">25%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="sz-profile-completion__grid">
+        <div class="sz-profile-completion__panel">
+            <h3 class="sz-profile-completion__panel-title">
+                <i class="bi bi-list-check" aria-hidden="true"></i>
+                Profile checklist
+            </h3>
+            <ul class="sz-profile-checklist">
+                <li th:each="item : ${completion.checklist}"
+                    class="sz-profile-checklist__item"
+                    th:classappend="${item.complete} ? 'sz-profile-checklist__item--done'">
+                    <span class="sz-profile-checklist__icon" aria-hidden="true">
+                        <i class="bi"
+                           th:classappend="${item.complete} ? 'bi-check-circle-fill' : 'bi-circle'"></i>
+                    </span>
+                    <span class="sz-profile-checklist__body">
+                        <strong th:text="${item.label}">Item</strong>
+                        <small th:text="${item.hint}">Hint</small>
+                    </span>
+                </li>
+            </ul>
+        </div>
+
+        <div class="sz-profile-completion__panel">
+            <h3 class="sz-profile-completion__panel-title">
+                <i class="bi bi-folder2-open" aria-hidden="true"></i>
+                Missing documents
+            </h3>
+
+            <p class="sz-profile-completion__empty small text-secondary mb-0"
+               th:if="${completion.missingDocuments.isEmpty()}">
+                All required documents are uploaded. Great work.
+            </p>
+
+            <div class="sz-profile-documents" th:if="${!completion.missingDocuments.isEmpty()}">
+                <article th:each="doc : ${completion.missingDocuments}"
+                         class="sz-profile-document sz-profile-document--missing">
+                    <span class="sz-profile-document__icon" aria-hidden="true">
+                        <i class="bi" th:classappend="${doc.icon}"></i>
+                    </span>
+                    <div class="sz-profile-document__body">
+                        <strong th:text="${doc.label}">Document</strong>
+                        <small>Upload a PDF or image up to 5 MB</small>
+                    </div>
+                    <form th:action="@{${doc.uploadPath}}" method="post" enctype="multipart/form-data"
+                          class="sz-profile-document__upload">
+                        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                        <input type="file" class="sz-profile-document__input"
+                               th:id="${'upload-' + doc.key}"
+                               name="file" accept="application/pdf,image/*,.pdf"
+                               onchange="this.form.submit()">
+                        <label th:for="${'upload-' + doc.key}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-cloud-arrow-up me-1" aria-hidden="true"></i>Upload
+                        </label>
+                    </form>
+                </article>
+            </div>
+
+            <div class="sz-profile-documents sz-profile-documents--uploaded"
+                 th:with="uploadedDocs=${completion.documents.?[uploaded]}">
+                <th:block th:if="${!uploadedDocs.isEmpty()}">
+                    <p class="small text-secondary mb-2">Uploaded documents</p>
+                    <article th:each="doc : ${uploadedDocs}"
+                             class="sz-profile-document sz-profile-document--uploaded">
+                    <span class="sz-profile-document__icon" aria-hidden="true">
+                        <i class="bi" th:classappend="${doc.icon}"></i>
+                    </span>
+                    <div class="sz-profile-document__body">
+                        <strong th:text="${doc.label}">Document</strong>
+                        <small th:text="${doc.filename}">file.pdf</small>
+                    </div>
+                    <span class="sz-profile-document__status">
+                        <i class="bi bi-check-circle-fill" aria-hidden="true"></i> Uploaded
+                    </span>
+                </article>
+                </th:block>
+            </div>
+        </div>
+    </div>
+</section>
+
 <span th:fragment="status-badge(status)"
       class="badge rounded-pill"
       th:classappend="${status == 'ACTIVE' or status == 'APPROVED'} ? 'text-bg-success'

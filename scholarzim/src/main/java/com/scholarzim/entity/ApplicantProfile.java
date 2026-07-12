@@ -47,4 +47,31 @@ public class ApplicantProfile {
 
     @Column(name = "results_uploaded_at")
     private java.time.LocalDateTime resultsUploadedAt;
+
+    @Column(name = "cv_path")
+    private String cvPath;
+
+    @Column(name = "cv_filename")
+    private String cvFilename;
+
+    @Column(name = "cv_uploaded_at")
+    private java.time.LocalDateTime cvUploadedAt;
+
+    @Column(name = "passport_path")
+    private String passportPath;
+
+    @Column(name = "passport_filename")
+    private String passportFilename;
+
+    @Column(name = "passport_uploaded_at")
+    private java.time.LocalDateTime passportUploadedAt;
+
+    @Column(name = "recommendation_letter_path")
+    private String recommendationLetterPath;
+
+    @Column(name = "recommendation_letter_filename")
+    private String recommendationLetterFilename;
+
+    @Column(name = "recommendation_letter_uploaded_at")
+    private java.time.LocalDateTime recommendationLetterUploadedAt;
 }

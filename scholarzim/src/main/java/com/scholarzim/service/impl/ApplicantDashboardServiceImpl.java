@@ -9,12 +9,12 @@ import com.scholarzim.service.ApplicationService;
 import com.scholarzim.service.OpportunityService;
 import com.scholarzim.service.RecommendationService;
 import com.scholarzim.service.SavedScholarshipService;
+import com.scholarzim.util.ProfileCompletionSupport;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.function.Function;
 
 
 @Service
@@ -50,7 +50,7 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
         ApplicantProfile profile = hasProfile ? profileService.getProfileByEmail(email) : null;
         dto.setHasResultsCertificate(profile != null
                 && StringUtils.hasText(profile.getResultsCertificatePath()));
-        dto.setProfileCompletion(hasProfile ? computeCompletion(profile) : 0);
+        dto.setProfileCompletion(profileService.getProfileCompletion(email).percent());
 
         List<Application> applications = applicationService.getApplicationsByUser(email);
         dto.setApplicationsSubmitted(applications.size());
@@ -75,33 +75,6 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
         }
 
         return dto;
-    }
-
-    private int computeCompletion(ApplicantProfile profile) {
-        if (profile == null) {
-            return 0;
-        }
-
-        List<Function<ApplicantProfile, String>> fields = List.of(
-                ApplicantProfile::getEducationLevel,
-                ApplicantProfile::getInstitutionName,
-                ApplicantProfile::getFieldOfStudy,
-                ApplicantProfile::getCountry,
-                ApplicantProfile::getProvince,
-                ApplicantProfile::getAcademicResults,
-                ApplicantProfile::getBiography);
-
-        long filled = fields.stream()
-                .map(getter -> getter.apply(profile))
-                .filter(StringUtils::hasText)
-                .count();
-
-        if (StringUtils.hasText(profile.getResultsCertificatePath())) {
-            filled++;
-        }
-
-        int total = fields.size() + 1;
-        return (int) Math.round((filled * 100.0) / total);
     }
 
     private long countPending(List<Application> applications) {

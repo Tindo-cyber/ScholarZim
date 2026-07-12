@@ -13,6 +13,8 @@
 
             <div th:replace="~{fragments/components :: page-header('Academic profile', 'A complete profile helps ScholarZim match you with the right scholarships.')}"></div>
 
+            <div th:replace="~{fragments/components :: profile-completion-module(${profileCompletion})}"></div>
+
             <div class="alert alert-warning rounded-3 py-2 small mb-3" th:if="${resultsRequired}">
                 <i class="bi bi-exclamation-triangle me-2"></i>
                 Upload your official results certificate (PDF) before you can apply for scholarships.

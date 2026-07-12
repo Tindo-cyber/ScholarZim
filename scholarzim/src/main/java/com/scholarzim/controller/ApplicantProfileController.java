@@ -3,6 +3,7 @@ package com.scholarzim.controller;
 import com.scholarzim.dto.ApplicantProfileRequest;
 import com.scholarzim.entity.ApplicantProfile;
 import com.scholarzim.service.ApplicantProfileService;
+import com.scholarzim.util.ProfileCompletionSupport;
 import jakarta.validation.Valid;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
@@ -36,6 +37,8 @@ public class ApplicantProfileController {
         model.addAttribute("hasResultsCertificate",
                 profileService.hasResultsCertificate(authentication.getName()));
         model.addAttribute("resultsRequired", Boolean.TRUE.equals(resultsRequired));
+        model.addAttribute("profileCompletion",
+                profileService.getProfileCompletion(authentication.getName()));
 
         return "applicant/profile";
     }
@@ -54,6 +57,8 @@ public class ApplicantProfileController {
                     profileService.getProfileByEmail(authentication.getName()));
             model.addAttribute("hasResultsCertificate",
                     profileService.hasResultsCertificate(authentication.getName()));
+            model.addAttribute("profileCompletion",
+                    profileService.getProfileCompletion(authentication.getName()));
             return "applicant/profile";
         }
 
@@ -65,10 +70,31 @@ public class ApplicantProfileController {
                     profileService.getProfileByEmail(authentication.getName()));
             model.addAttribute("hasResultsCertificate",
                     profileService.hasResultsCertificate(authentication.getName()));
+            model.addAttribute("profileCompletion",
+                    profileService.getProfileCompletion(authentication.getName()));
             return "applicant/profile";
         }
 
         redirect.addFlashAttribute("successMessage", "Academic profile and results certificate saved.");
         return "redirect:/applicant/dashboard";
+    }
+
+    @PostMapping("/applicant/profile/documents/{documentType}")
+    public String uploadDocument(
+            @PathVariable String documentType,
+            @RequestParam("file") MultipartFile file,
+            @NonNull Authentication authentication,
+            RedirectAttributes redirect) {
+
+        try {
+            profileService.uploadProfileDocument(documentType, file, authentication.getName());
+            redirect.addFlashAttribute(
+                    "successMessage",
+                    ProfileCompletionSupport.documentLabel(documentType) + " uploaded successfully.");
+        } catch (IllegalArgumentException ex) {
+            redirect.addFlashAttribute("errorMessage", ex.getMessage());
+        }
+
+        return "redirect:/applicant/profile";
     }
 }

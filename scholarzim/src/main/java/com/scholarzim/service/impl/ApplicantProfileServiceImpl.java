@@ -12,6 +12,7 @@ import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.AuditService;
 import com.scholarzim.service.FileStorageService;
+import com.scholarzim.util.ProfileCompletionSupport;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.lang.NonNull;
@@ -201,6 +202,103 @@ public class ApplicantProfileServiceImpl implements ApplicantProfileService {
         } catch (MalformedURLException ex) {
             throw new IllegalStateException("Invalid stored certificate path.", ex);
         }
+    }
+
+    @Override
+    public ProfileCompletionSupport.Snapshot getProfileCompletion(String email) {
+        ApplicantProfile profile = getProfileByEmail(email);
+        return ProfileCompletionSupport.build(profile, this::storedFileExists);
+    }
+
+    @Override
+    @Transactional
+    public void uploadProfileDocument(String documentType, MultipartFile file, String email) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException(
+                    ProfileCompletionSupport.documentLabel(documentType) + " file is required.");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        ApplicantProfile profile = profileRepository.findByUser(user)
+                .orElseGet(() -> {
+                    ApplicantProfile created = new ApplicantProfile();
+                    created.setUser(user);
+                    return created;
+                });
+
+        String normalizedType = ProfileCompletionSupport.normalizeDocumentType(documentType);
+        String previousPath = switch (normalizedType) {
+            case "CV" -> profile.getCvPath();
+            case "TRANSCRIPT" -> profile.getResultsCertificatePath();
+            case "PASSPORT" -> profile.getPassportPath();
+            case "RECOMMENDATION_LETTER" -> profile.getRecommendationLetterPath();
+            default -> throw new IllegalArgumentException("Unsupported document type.");
+        };
+
+        try {
+            String storedPath = storeDocument(file, normalizedType, user.getUserId());
+            fileStorageService.deleteIfExists(previousPath);
+            applyUploadedDocument(profile, normalizedType, storedPath, file.getOriginalFilename());
+            profileRepository.save(profile);
+        } catch (IllegalArgumentException ex) {
+            throw ex;
+        } catch (IOException ex) {
+            throw new IllegalArgumentException(
+                    "Could not save " + ProfileCompletionSupport.documentLabel(documentType)
+                            + ". Please try again.");
+        }
+    }
+
+    private String storeDocument(MultipartFile file, String documentType, Long userId) throws IOException {
+        String prefix = ProfileCompletionSupport.storagePrefix(documentType, userId);
+        if ("TRANSCRIPT".equals(documentType)) {
+            return fileStorageService.storePdf(file, prefix);
+        }
+        return fileStorageService.store(file, prefix);
+    }
+
+    private void applyUploadedDocument(
+            ApplicantProfile profile,
+            String documentType,
+            String storedPath,
+            String originalFilename) {
+
+        String filename = originalFilename != null && !originalFilename.isBlank()
+                ? originalFilename
+                : ProfileCompletionSupport.documentLabel(documentType).toLowerCase() + ".pdf";
+        LocalDateTime uploadedAt = LocalDateTime.now();
+
+        switch (documentType) {
+            case "CV" -> {
+                profile.setCvPath(storedPath);
+                profile.setCvFilename(filename);
+                profile.setCvUploadedAt(uploadedAt);
+            }
+            case "TRANSCRIPT" -> {
+                profile.setResultsCertificatePath(storedPath);
+                profile.setResultsCertificateFilename(filename);
+                profile.setResultsUploadedAt(uploadedAt);
+            }
+            case "PASSPORT" -> {
+                profile.setPassportPath(storedPath);
+                profile.setPassportFilename(filename);
+                profile.setPassportUploadedAt(uploadedAt);
+            }
+            case "RECOMMENDATION_LETTER" -> {
+                profile.setRecommendationLetterPath(storedPath);
+                profile.setRecommendationLetterFilename(filename);
+                profile.setRecommendationLetterUploadedAt(uploadedAt);
+            }
+            default -> throw new IllegalArgumentException("Unsupported document type.");
+        }
+    }
+
+    private boolean storedFileExists(String path) {
+        return path != null
+                && !path.isBlank()
+                && Files.exists(fileStorageService.resolve(path));
     }
 
     @Override
