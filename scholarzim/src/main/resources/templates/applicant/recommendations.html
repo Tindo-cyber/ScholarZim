@@ -11,6 +11,10 @@
 <body>
 <th:block id="recommendations-content">
 
+    <div class="sz-page-shell" id="szRecommendationsPage" data-page="scholarships">
+        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-scholarship-grid}"></div>
+        <div class="sz-page-shell__content">
+
     <section class="sz-scholarfit-hero">
         <div class="sz-scholarfit-hero__copy">
             <span class="sz-scholarfit-hero__badge"><i class="bi bi-stars"></i> ScholarFit AI</span>
@@ -54,6 +58,9 @@
         <th:block th:each="scored : ${opportunities}">
             <div th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}"></div>
         </th:block>
+    </div>
+
+        </div>
     </div>
 
 </th:block>

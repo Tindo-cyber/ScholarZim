@@ -11,6 +11,10 @@
 <body>
 <th:block id="saved-content">
 
+    <div class="sz-page-shell" id="szSavedPage" data-page="scholarships">
+        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-scholarship-grid}"></div>
+        <div class="sz-page-shell__content">
+
             <div th:replace="~{fragments/components :: page-header('Saved scholarships', 'Bookmarks you can return to when you are ready to apply.')}"></div>
 
             <th:block th:if="${saved.isEmpty()}">
@@ -22,6 +26,9 @@
                     <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=true, removeId=${opp.opportunityId}, matchScore=null, eligibilityText=null)}"></div>
                 </th:block>
             </div>
+
+        </div>
+    </div>
 
 </th:block>
 </body>

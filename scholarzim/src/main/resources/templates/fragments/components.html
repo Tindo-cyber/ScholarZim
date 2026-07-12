@@ -369,21 +369,139 @@
     </ol>
 </nav>
 
-<!-- Skeleton placeholders (hide with .sz-skeleton-wrap.is-loaded) -->
-<div th:fragment="skeleton-stat-row" class="row g-3 sz-skeleton-wrap" aria-hidden="true">
+<!-- Skeleton loaders — fade out when parent .sz-page-shell gains .is-loaded -->
+<article th:fragment="scholarship-card-skeleton" class="sz-skeleton-scholarship-card" aria-hidden="true">
+    <div class="sz-skeleton-scholarship-card__head">
+        <div class="sz-skeleton sz-skeleton-avatar"></div>
+        <div class="sz-skeleton-scholarship-card__identity">
+            <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+            <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
+        </div>
+    </div>
+    <div class="sz-skeleton-scholarship-card__chips">
+        <span class="sz-skeleton sz-skeleton-chip"></span>
+        <span class="sz-skeleton sz-skeleton-chip"></span>
+        <span class="sz-skeleton sz-skeleton-chip"></span>
+    </div>
+    <div class="sz-skeleton sz-skeleton-line"></div>
+    <div class="sz-skeleton-scholarship-card__footer">
+        <span class="sz-skeleton sz-skeleton-btn"></span>
+        <span class="sz-skeleton sz-skeleton-btn sz-skeleton-btn--primary"></span>
+    </div>
+</article>
+
+<div th:fragment="skeleton-scholarship-grid" class="sz-skeleton-scholarship-grid" aria-hidden="true">
+    <article th:each="i : ${#numbers.sequence(1, 6)}"
+             th:replace="~{fragments/components :: scholarship-card-skeleton}"></article>
+</div>
+
+<div th:fragment="skeleton-stat-row" class="row g-3" aria-hidden="true">
     <div class="col-6 col-md-3" th:each="i : ${#numbers.sequence(1, 4)}">
         <div class="sz-skeleton sz-skeleton-stat"></div>
     </div>
 </div>
 
-<div th:fragment="skeleton-opp-grid" class="row g-3 sz-skeleton-wrap" aria-hidden="true">
-    <div class="col-md-6 col-lg-4" th:each="i : ${#numbers.sequence(1, 6)}">
-        <div class="sz-skeleton sz-skeleton-card">
+<div th:fragment="skeleton-opp-grid" class="sz-skeleton-scholarship-grid" aria-hidden="true">
+    <article th:each="i : ${#numbers.sequence(1, 6)}"
+             th:replace="~{fragments/components :: scholarship-card-skeleton}"></article>
+</div>
+
+<div th:fragment="skeleton-dashboard" class="sz-skeleton-dashboard" aria-hidden="true">
+    <div class="sz-skeleton-dashboard__hero">
+        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
+        <div class="sz-skeleton-dashboard__highlights">
+            <div class="sz-skeleton sz-skeleton-highlight" th:each="i : ${#numbers.sequence(1, 3)}"></div>
+        </div>
+    </div>
+    <div class="sz-skeleton-dashboard__metrics">
+        <div class="sz-skeleton sz-skeleton-metric" th:each="i : ${#numbers.sequence(1, 4)}"></div>
+    </div>
+    <div class="sz-skeleton sz-skeleton-panel">
+        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+        <div class="sz-skeleton-scholarship-grid sz-skeleton-scholarship-grid--compact">
+            <article th:each="i : ${#numbers.sequence(1, 3)}"
+                     th:replace="~{fragments/components :: scholarship-card-skeleton}"></article>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="dash-skeleton" th:replace="~{fragments/components :: skeleton-dashboard}"></div>
+
+<div th:fragment="skeleton-profile" class="sz-skeleton-profile" aria-hidden="true">
+    <div class="sz-skeleton-profile__summary">
+        <div class="sz-skeleton sz-skeleton-ring"></div>
+        <div class="sz-skeleton-profile__copy">
             <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
             <div class="sz-skeleton sz-skeleton-line"></div>
             <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
         </div>
+        <div class="sz-skeleton-profile__badges">
+            <div class="sz-skeleton sz-skeleton-badge" th:each="i : ${#numbers.sequence(1, 4)}"></div>
+        </div>
     </div>
+    <div class="sz-skeleton-profile__grid">
+        <div class="sz-skeleton sz-skeleton-panel">
+            <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+            <div class="sz-skeleton sz-skeleton-check" th:each="i : ${#numbers.sequence(1, 4)}"></div>
+        </div>
+        <div class="sz-skeleton sz-skeleton-panel">
+            <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+            <div class="sz-skeleton sz-skeleton-document" th:each="i : ${#numbers.sequence(1, 3)}"></div>
+        </div>
+    </div>
+    <div class="sz-skeleton sz-skeleton-panel sz-skeleton-profile__form">
+        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+        <div class="sz-skeleton sz-skeleton-field" th:each="i : ${#numbers.sequence(1, 4)}"></div>
+    </div>
+</div>
+
+<div th:fragment="skeleton-notifications" class="sz-skeleton-notifications" aria-hidden="true">
+    <div class="sz-skeleton sz-skeleton-notification-hero"></div>
+    <div class="sz-skeleton-notifications__layout">
+        <div class="sz-skeleton sz-skeleton-panel">
+            <div class="sz-skeleton sz-skeleton-category" th:each="i : ${#numbers.sequence(1, 5)}"></div>
+        </div>
+        <div class="sz-skeleton-notifications__stream">
+            <div class="sz-skeleton sz-skeleton-toolbar"></div>
+            <div class="sz-skeleton sz-skeleton-notification-card" th:each="i : ${#numbers.sequence(1, 4)}"></div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="skeleton-applications" class="sz-skeleton-applications" aria-hidden="true">
+    <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+    <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
+    <div class="sz-skeleton-applications__stats">
+        <div class="sz-skeleton sz-skeleton-stat" th:each="i : ${#numbers.sequence(1, 4)}"></div>
+    </div>
+    <div class="sz-skeleton sz-skeleton-toolbar"></div>
+    <div class="sz-skeleton sz-skeleton-app-tracker" th:each="i : ${#numbers.sequence(1, 2)}">
+        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+        <div class="sz-skeleton sz-skeleton-progress"></div>
+        <div class="sz-skeleton-applications__timeline">
+            <span class="sz-skeleton sz-skeleton-step" th:each="j : ${#numbers.sequence(1, 5)}"></span>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="skeleton-messages" class="sz-skeleton-messages" aria-hidden="true">
+    <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+    <div class="sz-skeleton-messages__layout">
+        <div class="sz-skeleton sz-skeleton-panel">
+            <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
+            <div class="sz-skeleton sz-skeleton-stat-row" th:each="i : ${#numbers.sequence(1, 3)}"></div>
+        </div>
+        <div class="sz-skeleton sz-skeleton-panel">
+            <div class="sz-skeleton sz-skeleton-message" th:each="i : ${#numbers.sequence(1, 5)}"></div>
+        </div>
+    </div>
+</div>
+
+<div th:fragment="skeleton-nav-overlay" class="sz-skeleton-nav-overlay" aria-hidden="true">
+    <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+    <div class="sz-skeleton sz-skeleton-line"></div>
+    <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
 </div>
 
 <!-- Premium SaaS dashboard cards -->
@@ -430,24 +548,6 @@
         <th:block th:insert="${body}"></th:block>
     </div>
 </section>
-
-<div th:fragment="dash-skeleton" class="sz-dash-skeleton" aria-hidden="true">
-    <div class="sz-dash-skeleton__hero">
-        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
-        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
-    </div>
-    <div class="sz-dash-skeleton__grid">
-        <div class="sz-skeleton sz-skeleton-stat" th:each="i : ${#numbers.sequence(1, 3)}"></div>
-    </div>
-    <div class="sz-dash-skeleton__grid sz-dash-skeleton__grid--4">
-        <div class="sz-skeleton sz-skeleton-stat" th:each="i : ${#numbers.sequence(1, 4)}"></div>
-    </div>
-    <div class="sz-skeleton sz-skeleton-card sz-dash-skeleton__panel">
-        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
-        <div class="sz-skeleton sz-skeleton-line"></div>
-        <div class="sz-skeleton sz-skeleton-line"></div>
-    </div>
-</div>
 
 <div th:fragment="empty-state(icon, title, message, actionUrl, actionLabel)" class="sz-empty">
     <div class="sz-empty-icon"><i class="bi" th:classappend="${icon}"></i></div>

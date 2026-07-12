@@ -610,6 +610,7 @@ body:has(.sz-shell)::after {
     transition: opacity 0.35s ease, visibility 0.35s ease;
 }
 
+.sz-page-shell.is-loaded .sz-dash-skeleton,
 .sz-applicant-dashboard.is-loaded .sz-dash-skeleton {
     display: none;
 }

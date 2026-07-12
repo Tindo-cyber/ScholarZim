@@ -11,6 +11,10 @@
 <body>
 <th:block id="profile-content">
 
+    <div class="sz-page-shell" id="szProfilePage" data-page="profile">
+        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-profile}"></div>
+        <div class="sz-page-shell__content">
+
             <div th:replace="~{fragments/components :: page-header('Academic profile', 'A complete profile helps ScholarZim match you with the right scholarships.')}"></div>
 
             <div th:replace="~{fragments/components :: profile-completion-module(${profileCompletion})}"></div>
@@ -184,6 +188,9 @@
 
                 </div>
             </div>
+
+        </div>
+    </div>
 
 </th:block>
 </body>

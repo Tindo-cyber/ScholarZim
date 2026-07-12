@@ -651,8 +651,8 @@
                 btn.disabled = true;
                 btn.classList.add("is-loading");
                 var label = btn.textContent.trim();
-                btn.innerHTML = '<span class="sz-btn-spinner spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>'
-                    + label;
+                btn.innerHTML = '<span class="sz-btn-skeleton" aria-hidden="true"></span>'
+                    + '<span class="sz-btn-label">' + label + '</span>';
             });
         });
     })();
@@ -676,8 +676,12 @@
             loader.setAttribute("aria-hidden", "true");
             loader.innerHTML =
                 '<div class="sz-page-loader__panel">' +
-                '<div class="sz-page-loader__ring" role="status" aria-live="polite"></div>' +
-                '<p class="sz-page-loader__text small text-secondary mb-0 mt-3 d-none" id="sz-page-loader-text"></p>' +
+                '<div class="sz-page-loader__skeleton sz-skeleton-nav-overlay" role="status" aria-live="polite">' +
+                '<div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>' +
+                '<div class="sz-skeleton sz-skeleton-line"></div>' +
+                '<div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>' +
+                '</div>' +
+                '<p class="sz-page-loader__text small text-secondary mb-0 mt-2 d-none" id="sz-page-loader-text"></p>' +
                 '<div class="sz-upload-progress d-none" id="sz-page-loader-progress">' +
                 '<div class="sz-upload-progress__bar"></div></div></div>';
             document.body.appendChild(loader);
@@ -733,16 +737,24 @@
         });
     })();
 
-    /* Applicant dashboard — skeleton reveal + deadline calendar */
+    /* Page skeleton reveal — dashboard, profile, notifications, applications, messages, scholarships */
+    (function initPageShells() {
+        var shells = document.querySelectorAll(".sz-page-shell");
+        if (!shells.length) return;
+
+        var delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 260;
+
+        window.setTimeout(function () {
+            shells.forEach(function (shell) {
+                shell.classList.add("is-loaded");
+            });
+        }, delay);
+    })();
+
+    /* Applicant dashboard — deadline calendar */
     (function initApplicantDashboard() {
         var root = document.getElementById("szApplicantDashboard");
         if (!root) return;
-
-        window.setTimeout(function () {
-            root.classList.add("is-loaded");
-            var content = root.querySelector(".sz-dash-content");
-            if (content) content.classList.add("is-loaded");
-        }, 280);
 
         var calendarEl = document.getElementById("szDashCalendar");
         var eventsEl = document.getElementById("szDashCalendarEvents");

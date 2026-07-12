@@ -12,6 +12,10 @@
 <body>
 <th:block id="notifications-content">
 
+    <div class="sz-page-shell" id="szNotificationsPage" data-page="notifications">
+        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-notifications}"></div>
+        <div class="sz-page-shell__content">
+
     <th:block sec:authorize="hasRole('ADMIN')">
         <nav th:replace="~{fragments/components :: breadcrumbs(
             @{/admin/dashboard}, 'Dashboard', null, null, 'Notifications')}"></nav>
@@ -191,6 +195,9 @@
             </div>
         </div>
     </section>
+
+        </div>
+    </div>
 
 </th:block>
 </body>

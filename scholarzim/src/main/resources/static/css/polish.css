@@ -67,14 +67,14 @@ body.sz-page-ready .sz-error-page .container {
     color: var(--bs-warning-text-emphasis, #997404);
 }
 
-/* Submit button loading */
+/* Submit button loading — skeleton shimmer instead of spinner */
 .btn.is-loading {
     pointer-events: none;
-    opacity: 0.85;
+    opacity: 0.9;
 }
 
-.btn .sz-btn-spinner {
-    vertical-align: -0.125em;
+.btn .sz-btn-skeleton {
+    vertical-align: middle;
 }
 
 /* Chart panels — subtle ready transition */

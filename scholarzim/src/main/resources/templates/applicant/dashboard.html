@@ -11,11 +11,9 @@
 <body>
 <th:block id="dashboard-content">
 
-    <div class="sz-applicant-dashboard" id="szApplicantDashboard">
-
-        <div th:replace="~{fragments/components :: dash-skeleton}"></div>
-
-        <div class="sz-dash-content sz-skeleton-wrap">
+    <div class="sz-page-shell sz-applicant-dashboard" id="szApplicantDashboard" data-page="dashboard">
+        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-dashboard}"></div>
+        <div class="sz-page-shell__content sz-dash-content">
 
             <!-- Top: greeting + highlight cards -->
             <header class="sz-dash-hero">

@@ -11,6 +11,10 @@
 <body>
 <th:block id="opportunities-list-content">
 
+    <div class="sz-page-shell" id="szScholarshipsPage" data-page="scholarships">
+        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-scholarship-grid}"></div>
+        <div class="sz-page-shell__content">
+
             <div th:replace="~{fragments/components :: page-header('Browse opportunities', 'Discover scholarships and funding from Zimbabwean and international providers.')}"></div>
 
             <div class="sz-filter-card card shadow-sm mb-4">
@@ -99,6 +103,9 @@
                     <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=true, removeId=null, matchScore=null, eligibilityText=null)}"></div>
                 </th:block>
             </div>
+
+        </div>
+    </div>
 
 </th:block>
 </body>
