@@ -1392,3 +1392,302 @@ body:has(.sz-shell)::after {
         grid-template-columns: 1fr;
     }
 }
+
+/* ── Application tracker timeline ── */
+.sz-app-tracker {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.sz-app-tracker__card {
+    background: var(--sz-card);
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius-lg);
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--sz-shadow-sm);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.sz-app-tracker__card:hover {
+    box-shadow: var(--sz-shadow-md);
+    border-color: rgba(22, 163, 74, 0.2);
+}
+
+.sz-app-tracker__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.sz-app-tracker__title {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    margin: 0 0 0.25rem;
+    color: var(--sz-text);
+}
+
+.sz-app-tracker__provider {
+    font-size: 0.8125rem;
+    color: var(--sz-muted);
+}
+
+.sz-app-tracker__provider .bi {
+    margin-right: 4px;
+}
+
+.sz-app-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+}
+
+.sz-app-badge--submitted {
+    background: rgba(59, 130, 246, 0.12);
+    color: #2563eb;
+}
+
+.sz-app-badge--review {
+    background: rgba(245, 158, 11, 0.14);
+    color: #d97706;
+}
+
+.sz-app-badge--shortlisted {
+    background: rgba(139, 92, 246, 0.12);
+    color: #7c3aed;
+}
+
+.sz-app-badge--interview {
+    background: rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+}
+
+.sz-app-badge--awarded {
+    background: rgba(22, 163, 74, 0.14);
+    color: #15803d;
+}
+
+.sz-app-badge--rejected {
+    background: rgba(239, 68, 68, 0.12);
+    color: #dc2626;
+}
+
+.sz-app-badge--default {
+    background: var(--sz-surface-muted);
+    color: var(--sz-muted);
+}
+
+.sz-app-tracker__progress-wrap {
+    margin-bottom: 1.5rem;
+}
+
+.sz-app-tracker__progress-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.75rem;
+    color: var(--sz-muted);
+    margin-bottom: 0.5rem;
+}
+
+.sz-app-tracker__progress-label strong {
+    color: var(--sz-text);
+    font-weight: 700;
+}
+
+.sz-app-tracker__progress {
+    height: 8px;
+    background: var(--sz-surface-muted);
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.sz-app-tracker__progress-bar {
+    height: 100%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #16a34a, #22c55e);
+    transition: width 0.6s ease;
+}
+
+.sz-app-tracker__progress--rejected .sz-app-tracker__progress-bar {
+    background: linear-gradient(90deg, #ef4444, #f87171);
+}
+
+.sz-app-timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    position: relative;
+}
+
+.sz-app-timeline__step {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0 0.35rem;
+}
+
+.sz-app-timeline__marker {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.875rem;
+    background: var(--sz-surface-muted);
+    color: var(--sz-muted);
+    border: 2px solid var(--sz-border);
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.sz-app-timeline__step--complete .sz-app-timeline__marker {
+    background: rgba(22, 163, 74, 0.12);
+    border-color: #16a34a;
+    color: #16a34a;
+}
+
+.sz-app-timeline__step--current .sz-app-timeline__marker {
+    background: #16a34a;
+    border-color: #16a34a;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.2);
+    transform: scale(1.08);
+}
+
+.sz-app-timeline__step--rejected .sz-app-timeline__marker {
+    background: #ef4444;
+    border-color: #ef4444;
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+}
+
+.sz-app-timeline__step--upcoming .sz-app-timeline__marker {
+    opacity: 0.65;
+}
+
+.sz-app-timeline__content {
+    margin-top: 0.625rem;
+    min-width: 0;
+}
+
+.sz-app-timeline__label {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sz-text);
+    line-height: 1.3;
+}
+
+.sz-app-timeline__step--current .sz-app-timeline__label {
+    color: #16a34a;
+}
+
+.sz-app-timeline__step--rejected .sz-app-timeline__label {
+    color: #dc2626;
+}
+
+.sz-app-timeline__step--upcoming .sz-app-timeline__label {
+    color: var(--sz-muted);
+}
+
+.sz-app-timeline__date {
+    display: block;
+    font-size: 0.6875rem;
+    color: var(--sz-muted);
+    margin-top: 2px;
+}
+
+.sz-app-timeline__connector {
+    position: absolute;
+    top: 16px;
+    left: calc(50% + 16px);
+    width: calc(100% - 32px);
+    height: 2px;
+    background: var(--sz-border);
+    z-index: 0;
+}
+
+.sz-app-timeline__step--complete .sz-app-timeline__connector {
+    background: #16a34a;
+}
+
+.sz-app-timeline__step--current .sz-app-timeline__connector {
+    background: linear-gradient(90deg, #16a34a 0%, var(--sz-border) 100%);
+}
+
+.sz-app-tracker__rejection {
+    margin-top: 1rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--sz-radius);
+    background: rgba(239, 68, 68, 0.08);
+    color: #b91c1c;
+}
+
+@media (max-width: 991.98px) {
+    .sz-app-timeline {
+        grid-template-columns: 1fr;
+        gap: 0;
+        padding-left: 0.5rem;
+    }
+
+    .sz-app-timeline__step {
+        flex-direction: row;
+        align-items: flex-start;
+        text-align: left;
+        gap: 0.875rem;
+        padding: 0 0 1.25rem 0;
+    }
+
+    .sz-app-timeline__step:last-child {
+        padding-bottom: 0;
+    }
+
+    .sz-app-timeline__content {
+        margin-top: 0;
+        padding-top: 4px;
+        flex: 1;
+    }
+
+    .sz-app-timeline__connector {
+        top: 32px;
+        left: 15px;
+        width: 2px;
+        height: calc(100% - 8px);
+    }
+
+    .sz-app-timeline__step--complete .sz-app-timeline__connector {
+        background: #16a34a;
+    }
+
+    .sz-app-timeline__step--current .sz-app-timeline__connector {
+        background: linear-gradient(180deg, #16a34a 0%, var(--sz-border) 100%);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .sz-app-tracker__card {
+        padding: 1rem;
+    }
+
+    .sz-app-tracker__filters .col-md-2 {
+        margin-top: 0.25rem;
+    }
+}

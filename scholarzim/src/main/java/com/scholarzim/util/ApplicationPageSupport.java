@@ -13,7 +13,8 @@ public final class ApplicationPageSupport {
     public static final int PAGE_SIZE = 10;
 
     private static final Set<String> PENDING_STATUSES = Set.of(
-            "PENDING", "SUBMITTED", "UNDER_REVIEW", "DOCUMENTS_REQUESTED", "WAITLISTED");
+            "PENDING", "SUBMITTED", "UNDER_REVIEW", "DOCUMENTS_REQUESTED",
+            "WAITLISTED", "SHORTLISTED", "INTERVIEW");
 
     private ApplicationPageSupport() {
     }
@@ -104,6 +105,15 @@ public final class ApplicationPageSupport {
         String status = normalizeStatus(app.getApplicationStatus());
         if ("PENDING".equalsIgnoreCase(statusFilter)) {
             return PENDING_STATUSES.contains(status);
+        }
+        if ("AWARDED".equalsIgnoreCase(statusFilter)) {
+            return "APPROVED".equals(status) || "AWARDED".equals(status);
+        }
+        if ("SHORTLISTED".equalsIgnoreCase(statusFilter)) {
+            return "SHORTLISTED".equals(status) || "WAITLISTED".equals(status);
+        }
+        if ("SUBMITTED".equalsIgnoreCase(statusFilter)) {
+            return "SUBMITTED".equals(status) || "PENDING".equals(status);
         }
         return statusFilter.equalsIgnoreCase(status);
     }

@@ -12,7 +12,10 @@ public final class ApplicationStatus {
     public static final String SUBMITTED = "SUBMITTED";
     public static final String UNDER_REVIEW = "UNDER_REVIEW";
     public static final String DOCUMENTS_REQUESTED = "DOCUMENTS_REQUESTED";
+    public static final String SHORTLISTED = "SHORTLISTED";
+    public static final String INTERVIEW = "INTERVIEW";
     public static final String APPROVED = "APPROVED";
+    public static final String AWARDED = "AWARDED";
     public static final String REJECTED = "REJECTED";
     public static final String WAITLISTED = "WAITLISTED";
     public static final String PENDING = "PENDING"; // legacy
@@ -23,7 +26,10 @@ public final class ApplicationStatus {
         LABELS.put(SUBMITTED, "Submitted");
         LABELS.put(UNDER_REVIEW, "Under review");
         LABELS.put(DOCUMENTS_REQUESTED, "Documents requested");
+        LABELS.put(SHORTLISTED, "Shortlisted");
+        LABELS.put(INTERVIEW, "Interview");
         LABELS.put(APPROVED, "Approved");
+        LABELS.put(AWARDED, "Awarded");
         LABELS.put(REJECTED, "Rejected");
         LABELS.put(WAITLISTED, "Waitlisted");
         LABELS.put(PENDING, "Pending");

@@ -584,6 +584,63 @@
           : 'text-bg-secondary'))"
       th:text="${status}">STATUS</span>
 
+<!-- Application tracker timeline card -->
+<article th:fragment="application-tracker-card(app)" class="sz-app-tracker__card"
+         th:with="status=${app.applicationStatus},
+                  progress=${T(com.scholarzim.util.ApplicationTimeline).progressPercent(status)},
+                  rejected=${T(com.scholarzim.util.ApplicationTimeline).isRejected(status)}">
+    <header class="sz-app-tracker__head">
+        <div class="sz-app-tracker__meta">
+            <h3 class="sz-app-tracker__title"
+                th:text="${app.opportunity != null ? app.opportunity.title : 'Scholarship'}">Scholarship</h3>
+            <p class="sz-app-tracker__provider mb-0"
+               th:if="${app.opportunity != null and app.opportunity.providerName != null}">
+                <i class="bi bi-building" aria-hidden="true"></i>
+                <span th:text="${app.opportunity.providerName}">Provider</span>
+            </p>
+        </div>
+        <span class="sz-app-badge"
+              th:classappend="${T(com.scholarzim.util.ApplicationTimeline).trackerBadgeClass(status)}"
+              th:text="${T(com.scholarzim.util.ApplicationTimeline).trackerLabel(status)}">Submitted</span>
+    </header>
+
+    <div class="sz-app-tracker__progress-wrap" th:attr="aria-label=${'Application progress: ' + progress + '%'}">
+        <div class="sz-app-tracker__progress-label">
+            <span>Progress</span>
+            <strong th:text="${progress} + '%'">0%</strong>
+        </div>
+        <div class="sz-app-tracker__progress" th:classappend="${rejected} ? 'sz-app-tracker__progress--rejected'">
+            <div class="sz-app-tracker__progress-bar"
+                 th:style="'width:' + ${progress} + '%'"></div>
+        </div>
+    </div>
+
+    <ol class="sz-app-timeline" aria-label="Application status timeline">
+        <li th:each="step : ${#numbers.sequence(0, 4)}"
+            class="sz-app-timeline__step"
+            th:classappend="${T(com.scholarzim.util.ApplicationTimeline).stepClass(status, step)}">
+            <div class="sz-app-timeline__marker" aria-hidden="true">
+                <i class="bi"
+                   th:classappend="${T(com.scholarzim.util.ApplicationTimeline).stepIconClass(status, step)}"></i>
+            </div>
+            <div class="sz-app-timeline__content">
+                <span class="sz-app-timeline__label"
+                      th:text="${T(com.scholarzim.util.ApplicationTimeline).STAGE_LABELS.get(step)}">Submitted</span>
+                <time class="sz-app-timeline__date"
+                      th:text="${T(com.scholarzim.util.ApplicationTimeline).stageDateLabel(app, step)}">—</time>
+            </div>
+            <span class="sz-app-timeline__connector" aria-hidden="true"
+                  th:if="${step < 4}"></span>
+        </li>
+    </ol>
+
+    <p th:if="${rejected and app.rejectionReason != null and !app.rejectionReason.isBlank()}"
+       class="sz-app-tracker__rejection small mb-0">
+        <i class="bi bi-info-circle me-1" aria-hidden="true"></i>
+        <span th:text="${app.rejectionReason}">Reason</span>
+    </p>
+</article>
+
 <!-- Landing proof stat -->
 <div th:fragment="landing-stat(value, label)" class="sz-landing-proof__item">
     <div class="sz-landing-proof__value" th:text="${value}">0</div>

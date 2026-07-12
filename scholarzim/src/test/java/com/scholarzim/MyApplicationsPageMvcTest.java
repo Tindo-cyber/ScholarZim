@@ -40,7 +40,11 @@ class MyApplicationsPageMvcTest extends MvcIntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(view().name("applications/my-applications"))
                 .andExpect(content().string(containsString("Test Scholarship")))
-                .andExpect(content().string(containsString("sz-pro-table")))
+                .andExpect(content().string(containsString("sz-app-tracker")))
+                .andExpect(content().string(containsString("sz-app-timeline")))
+                .andExpect(content().string(containsString("Submitted")))
+                .andExpect(content().string(containsString("Under Review")))
+                .andExpect(content().string(containsString("Awarded")))
                 .andExpect(content().string(not(containsString("Something went wrong"))))
                 .andExpect(content().string(not(containsString("sz-landing-header"))))
                 .andExpect(content().string(containsString("sz-sidebar")));
