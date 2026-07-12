@@ -543,12 +543,108 @@
         const sidebar = document.getElementById("sidebar");
         if (!sidebar || !window.bootstrap) return;
 
+        sidebar.addEventListener("shown.bs.offcanvas", function () {
+            document.body.classList.add("sz-drawer-open");
+        });
+        sidebar.addEventListener("hidden.bs.offcanvas", function () {
+            document.body.classList.remove("sz-drawer-open");
+        });
+
         sidebar.querySelectorAll(".nav-link").forEach(function (link) {
             link.addEventListener("click", function () {
                 if (window.innerWidth >= 768) return;
                 const instance = bootstrap.Offcanvas.getInstance(sidebar);
                 if (instance) instance.hide();
             });
+        });
+    })();
+
+    /* Collapsible sidebar, search focus, keyboard shortcuts */
+    (function initNavigation() {
+        var shell = document.getElementById("szShell");
+        var collapseBtns = document.querySelectorAll("[data-sidebar-collapse]");
+        var searchInput = document.getElementById("szGlobalSearch");
+        var shortcutsModal = document.getElementById("szShortcutsModal");
+        var shortcutsInstance = shortcutsModal && window.bootstrap
+            ? bootstrap.Modal.getOrCreateInstance(shortcutsModal)
+            : null;
+
+        function setCollapsed(collapsed) {
+            if (!shell) return;
+            shell.classList.toggle("sz-shell--sidebar-collapsed", collapsed);
+            localStorage.setItem("sz-sidebar-collapsed", collapsed ? "1" : "0");
+            collapseBtns.forEach(function (btn) {
+                btn.setAttribute("aria-pressed", collapsed ? "true" : "false");
+                btn.setAttribute("aria-label", collapsed ? "Expand sidebar" : "Collapse sidebar");
+                var icon = btn.querySelector("i");
+                if (icon) {
+                    icon.className = collapsed
+                        ? "bi bi-layout-sidebar"
+                        : "bi bi-layout-sidebar-inset";
+                }
+            });
+        }
+
+        if (shell && window.innerWidth >= 768 && localStorage.getItem("sz-sidebar-collapsed") === "1") {
+            setCollapsed(true);
+        }
+
+        collapseBtns.forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                if (!shell) return;
+                setCollapsed(!shell.classList.contains("sz-shell--sidebar-collapsed"));
+            });
+        });
+
+        function focusSearch() {
+            if (!searchInput || window.innerWidth < 992) return false;
+            searchInput.focus();
+            searchInput.select();
+            return true;
+        }
+
+        function isTypingContext(target) {
+            if (!target) return false;
+            var tag = target.tagName ? target.tagName.toLowerCase() : "";
+            return tag === "input" || tag === "textarea" || tag === "select" || target.isContentEditable;
+        }
+
+        document.addEventListener("keydown", function (e) {
+            if (isTypingContext(e.target)) {
+                if (e.key === "Escape") {
+                    e.target.blur();
+                }
+                return;
+            }
+
+            if (e.key === "/" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                if (focusSearch()) e.preventDefault();
+                return;
+            }
+
+            if (e.key === "?" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                if (shortcutsInstance) {
+                    shortcutsInstance.show();
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            if ((e.key === "b" || e.key === "B") && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                if (shell && window.innerWidth >= 768) {
+                    setCollapsed(!shell.classList.contains("sz-shell--sidebar-collapsed"));
+                    e.preventDefault();
+                }
+                return;
+            }
+
+            if ((e.key === "t" || e.key === "T") && !e.metaKey && !e.ctrlKey && !e.altKey) {
+                var themeBtn = document.getElementById("themeToggle");
+                if (themeBtn) {
+                    themeBtn.click();
+                    e.preventDefault();
+                }
+            }
         });
     })();
 
