@@ -2,7 +2,7 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{fragments/dashboard-layout :: page(
-          'Notifications',
+          'Notification Center',
           'notifications',
           'notifications',
           'messages',
@@ -12,88 +12,185 @@
 <body>
 <th:block id="notifications-content">
 
-            <th:block sec:authorize="hasRole('ADMIN')">
-                <nav th:replace="~{fragments/components :: breadcrumbs(
-                    @{/admin/dashboard}, 'Dashboard',
-                    null, null,
-                    'Notifications')}"></nav>
-            </th:block>
-            <th:block sec:authorize="hasRole('PROVIDER')">
-                <nav th:replace="~{fragments/components :: breadcrumbs(
-                    @{/provider/dashboard}, 'Dashboard',
-                    null, null,
-                    'Notifications')}"></nav>
-            </th:block>
-            <th:block sec:authorize="hasRole('APPLICANT')">
-                <nav th:replace="~{fragments/components :: breadcrumbs(
-                    @{/applicant/dashboard}, 'Dashboard',
-                    null, null,
-                    'Notifications')}"></nav>
-            </th:block>
+    <th:block sec:authorize="hasRole('ADMIN')">
+        <nav th:replace="~{fragments/components :: breadcrumbs(
+            @{/admin/dashboard}, 'Dashboard', null, null, 'Notifications')}"></nav>
+    </th:block>
+    <th:block sec:authorize="hasRole('PROVIDER')">
+        <nav th:replace="~{fragments/components :: breadcrumbs(
+            @{/provider/dashboard}, 'Dashboard', null, null, 'Notifications')}"></nav>
+    </th:block>
+    <th:block sec:authorize="hasRole('APPLICANT')">
+        <nav th:replace="~{fragments/components :: breadcrumbs(
+            @{/applicant/dashboard}, 'Dashboard', null, null, 'Notifications')}"></nav>
+    </th:block>
 
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-                <div>
-                    <div th:replace="~{fragments/components :: page-header('Notifications', 'Application updates, deadline reminders, and profile alerts.')}"></div>
-                    <p class="small text-secondary mb-0" th:if="${unreadCount > 0}">
-                        <span class="fw-semibold text-primary" th:text="${unreadCount}">0</span> unread
-                    </p>
-                </div>
+    <section class="sz-notification-center" aria-labelledby="notification-center-title">
+        <header class="sz-notification-center__hero">
+            <div>
+                <span class="sz-notification-center__eyebrow">
+                    <i class="bi bi-bell-fill" aria-hidden="true"></i>
+                    Stay informed
+                </span>
+                <h1 id="notification-center-title">Notification Center</h1>
+                <p>Track important application, scholarship, message, and account updates.</p>
+            </div>
+            <div class="sz-notification-center__hero-actions">
+                <span class="sz-notification-center__unread"
+                      th:classappend="${unreadCount == 0} ? 'sz-notification-center__unread--clear'">
+                    <span class="sz-notification-center__unread-dot" aria-hidden="true"></span>
+                    <strong th:text="${unreadCount}">0</strong>
+                    <span th:text="${unreadCount == 1 ? 'unread update' : 'unread updates'}">unread updates</span>
+                </span>
                 <form th:if="${unreadCount > 0}"
                       th:action="@{/notifications/read-all}" method="post" class="m-0">
                     <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                    <button class="btn btn-sm btn-outline-primary" type="submit">
-                        <i class="bi bi-check2-all me-1"></i>Mark all read
+                    <button class="btn btn-primary sz-notification-center__read-all" type="submit">
+                        <i class="bi bi-check2-all me-1" aria-hidden="true"></i>Mark all read
                     </button>
                 </form>
             </div>
+        </header>
 
-            <div class="sz-filter-scroll" th:if="${!notificationTypes.isEmpty()}">
-                <a th:href="@{/notifications}"
-                   class="btn btn-sm"
-                   th:classappend="${typeFilter == ''} ? 'btn-primary' : 'btn-outline-secondary'">
-                    All
+        <div class="sz-notification-center__layout">
+            <aside class="sz-notification-categories" aria-label="Notification categories">
+                <a th:href="@{/notifications(q=${q},read=${readFilter})}"
+                   class="sz-notification-category"
+                   th:classappend="${categoryFilter == ''} ? 'sz-notification-category--active'">
+                    <span class="sz-notification-category__icon sz-notification-category__icon--all">
+                        <i class="bi bi-grid" aria-hidden="true"></i>
+                    </span>
+                    <span class="sz-notification-category__text">
+                        <strong>All updates</strong>
+                        <small>Everything in one place</small>
+                    </span>
+                    <span class="sz-notification-category__count" th:text="${totalAll}">0</span>
                 </a>
-                <a th:each="t : ${notificationTypes}"
-                   th:href="@{/notifications(type=${t})}"
-                   class="btn btn-sm"
-                   th:classappend="${t == typeFilter} ? 'btn-primary' : 'btn-outline-secondary'"
-                   th:text="${T(com.scholarzim.util.NotificationPresentation).label(t)}">Type</a>
-            </div>
+                <a th:each="cat : ${categories}"
+                   th:href="@{/notifications(category=${cat},q=${q},read=${readFilter})}"
+                   class="sz-notification-category"
+                   th:classappend="${cat == categoryFilter} ? 'sz-notification-category--active'">
+                    <span class="sz-notification-category__icon"
+                          th:classappend="'sz-notification-category__icon--' + ${T(com.scholarzim.util.NotificationCenterSupport).categoryTone(cat)}">
+                        <i class="bi"
+                           th:classappend="${T(com.scholarzim.util.NotificationCenterSupport).categoryIcon(cat)}"
+                           aria-hidden="true"></i>
+                    </span>
+                    <span class="sz-notification-category__text">
+                        <strong th:text="${T(com.scholarzim.util.NotificationCenterSupport).categoryLabel(cat)}">Category</strong>
+                        <small th:switch="${cat}">
+                            <span th:case="'APPLICATIONS'">Status and document updates</span>
+                            <span th:case="'SCHOLARSHIPS'">Matches and deadlines</span>
+                            <span th:case="'MESSAGES'">Conversations and replies</span>
+                            <span th:case="*">Account and platform alerts</span>
+                        </small>
+                    </span>
+                    <span class="sz-notification-category__count" th:text="${categoryCounts.get(cat)}">0</span>
+                </a>
+            </aside>
 
-            <th:block th:if="${notifications.isEmpty() and typeFilter == ''}">
-                <div th:replace="~{fragments/components :: empty-state(
-                    'bi-bell', 'No notifications',
-                    'You are all caught up. New alerts will appear here.',
-                    null, null)}"></div>
-            </th:block>
-            <th:block th:if="${notifications.isEmpty() and typeFilter != ''}">
-                <div th:replace="~{fragments/components :: empty-state(
-                    'bi-bell', 'No matching notifications',
-                    'Try another filter or check back later.',
-                    @{/notifications}, 'Clear filter')}"></div>
-            </th:block>
-
-            <div th:if="${!notifications.isEmpty()}" class="sz-notif-list">
-                <a th:each="n : ${notifications}"
-                   th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
-                   class="sz-notif-list__item"
-                   th:classappend="${n.unread} ? 'sz-notif-item--unread'">
-                    <span th:replace="~{fragments/components :: notification-icon(${n.type})}"></span>
-                    <div class="flex-grow-1 min-w-0">
-                        <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
-                            <span class="badge rounded-pill sz-notif-type-badge"
-                                  th:text="${T(com.scholarzim.util.NotificationPresentation).label(n.type)}">Type</span>
-                            <span th:if="${n.unread}" class="badge text-bg-primary">New</span>
-                        </div>
-                        <div th:text="${n.message}"
-                             th:classappend="${n.unread} ? 'fw-semibold'">message</div>
-                        <div class="small text-secondary mt-1"
-                             th:text="${n.createdAt != null
-                                ? #temporals.format(n.createdAt, 'dd MMM yyyy · HH:mm') : ''}"></div>
+            <div class="sz-notification-stream">
+                <form class="sz-notification-toolbar" method="get" th:action="@{/notifications}">
+                    <input type="hidden" name="category" th:value="${categoryFilter}">
+                    <div class="sz-notification-toolbar__search">
+                        <i class="bi bi-search" aria-hidden="true"></i>
+                        <input type="search" name="q" th:value="${q}"
+                               placeholder="Search notifications"
+                               aria-label="Search notifications">
                     </div>
-                    <i class="bi bi-chevron-right text-secondary flex-shrink-0 align-self-center"></i>
-                </a>
+                    <label class="visually-hidden" for="notification-read-filter">Read status</label>
+                    <select id="notification-read-filter" class="form-select" name="read"
+                            aria-label="Filter by read status">
+                        <option value="ALL" th:selected="${readFilter == 'ALL'}">All updates</option>
+                        <option value="UNREAD" th:selected="${readFilter == 'UNREAD'}">Unread only</option>
+                        <option value="READ" th:selected="${readFilter == 'READ'}">Read only</option>
+                    </select>
+                    <button class="btn btn-outline-primary" type="submit">Filter</button>
+                    <a th:if="${!q.isEmpty() or !categoryFilter.isEmpty() or readFilter != 'ALL'}"
+                       class="btn btn-link text-decoration-none" th:href="@{/notifications}">Reset</a>
+                </form>
+
+                <div class="sz-notification-stream__summary" th:if="${filteredTotal > 0}">
+                    <div>
+                        <strong th:text="${filteredTotal}">0</strong>
+                        <span th:text="${filteredTotal == 1 ? 'notification' : 'notifications'}">notifications</span>
+                    </div>
+                    <span th:if="${filteredUnread > 0}" class="sz-notification-stream__new-count">
+                        <span th:text="${filteredUnread}">0</span> new
+                    </span>
+                </div>
+
+                <th:block th:if="${notifications.isEmpty() and totalAll == 0}">
+                    <div th:replace="~{fragments/components :: empty-state(
+                        'bi-bell', 'You are all caught up',
+                        'Important updates will appear here as your ScholarZim journey progresses.',
+                        null, null)}"></div>
+                </th:block>
+                <th:block th:if="${notifications.isEmpty() and totalAll > 0}">
+                    <div th:replace="~{fragments/components :: empty-state(
+                        'bi-search', 'No matching notifications',
+                        'Try a different category, search term, or read-status filter.',
+                        @{/notifications}, 'Clear filters')}"></div>
+                </th:block>
+
+                <div th:if="${!notifications.isEmpty()}" class="sz-notification-cards">
+                    <a th:each="n, iter : ${notifications}"
+                       th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
+                       class="sz-notification-card"
+                       th:classappend="${n.unread} ? 'sz-notification-card--unread'"
+                       th:style="'--sz-notification-index:' + ${iter.index}">
+                        <span class="sz-notification-card__icon"
+                              th:classappend="'sz-notification-card__icon--' + ${T(com.scholarzim.util.NotificationCenterSupport).categoryTone(T(com.scholarzim.util.NotificationCenterSupport).category(n.type))}">
+                            <i class="bi"
+                               th:classappend="${T(com.scholarzim.util.NotificationPresentation).icon(n.type)}"
+                               aria-hidden="true"></i>
+                        </span>
+                        <span class="sz-notification-card__body">
+                            <span class="sz-notification-card__topline">
+                                <span class="sz-notification-card__category"
+                                      th:text="${T(com.scholarzim.util.NotificationCenterSupport).categoryLabel(T(com.scholarzim.util.NotificationCenterSupport).category(n.type))}">Category</span>
+                                <span class="sz-notification-card__type"
+                                      th:text="${T(com.scholarzim.util.NotificationPresentation).label(n.type)}">Type</span>
+                                <span th:if="${n.unread}" class="sz-notification-card__new-badge">
+                                    <span aria-hidden="true"></span>New
+                                </span>
+                            </span>
+                            <span class="sz-notification-card__message"
+                                  th:classappend="${n.unread} ? 'sz-notification-card__message--unread'"
+                                  th:text="${n.message}">Notification message</span>
+                            <span class="sz-notification-card__time">
+                                <i class="bi bi-clock" aria-hidden="true"></i>
+                                <time th:datetime="${n.createdAt}"
+                                      th:title="${n.createdAt != null ? #temporals.format(n.createdAt, 'dd MMM yyyy · HH:mm') : ''}"
+                                      th:text="${T(com.scholarzim.util.NotificationPresentation).relativeTime(n.createdAt)}">Just now</time>
+                                <span aria-hidden="true">·</span>
+                                <time th:if="${n.createdAt != null}"
+                                      th:text="${#temporals.format(n.createdAt, 'dd MMM yyyy · HH:mm')}">Date</time>
+                            </span>
+                        </span>
+                        <span class="sz-notification-card__open" aria-hidden="true">
+                            <i class="bi bi-arrow-up-right"></i>
+                        </span>
+                    </a>
+                </div>
+
+                <nav th:if="${totalPages > 1}" class="sz-notification-pagination" aria-label="Notification pages">
+                    <a class="btn btn-outline-secondary btn-sm"
+                       th:classappend="${currentPage <= 0} ? 'disabled'"
+                       th:href="@{/notifications(q=${q},category=${categoryFilter},read=${readFilter},page=${currentPage - 1})}">
+                        <i class="bi bi-chevron-left" aria-hidden="true"></i> Previous
+                    </a>
+                    <span>Page <strong th:text="${currentPage + 1}">1</strong> of
+                        <strong th:text="${totalPages}">1</strong></span>
+                    <a class="btn btn-outline-secondary btn-sm"
+                       th:classappend="${currentPage >= totalPages - 1} ? 'disabled'"
+                       th:href="@{/notifications(q=${q},category=${categoryFilter},read=${readFilter},page=${currentPage + 1})}">
+                        Next <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                    </a>
+                </nav>
             </div>
+        </div>
+    </section>
 
 </th:block>
 </body>

@@ -1,6 +1,7 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.service.NotificationService;
+import com.scholarzim.util.NotificationCenterSupport;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -23,14 +24,28 @@ public class NotificationController {
 
     @GetMapping("/notifications")
     public String list(
-            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false, defaultValue = "ALL") String read,
+            @RequestParam(defaultValue = "0") int page,
             @NonNull Authentication authentication,
             Model model) {
 
         String email = authentication.getName();
-        model.addAttribute("notifications", notificationService.allForUser(email, type));
-        model.addAttribute("typeFilter", type != null ? type : "");
-        model.addAttribute("notificationTypes", notificationService.listTypesForUser(email));
+        var result = NotificationCenterSupport.buildPage(
+                notificationService.allForUser(email), q, category, read, page);
+
+        model.addAttribute("notifications", result.notifications());
+        model.addAttribute("q", q != null ? q : "");
+        model.addAttribute("categoryFilter", category != null ? category : "");
+        model.addAttribute("readFilter", read != null ? read : "ALL");
+        model.addAttribute("categories", NotificationCenterSupport.CATEGORIES);
+        model.addAttribute("categoryCounts", result.categoryCounts());
+        model.addAttribute("filteredTotal", result.filteredTotal());
+        model.addAttribute("totalAll", result.totalAll());
+        model.addAttribute("filteredUnread", result.filteredUnread());
+        model.addAttribute("totalPages", result.totalPages());
+        model.addAttribute("currentPage", result.currentPage());
         model.addAttribute("unreadCount", notificationService.unreadCount(email));
 
         return "notifications/list";
