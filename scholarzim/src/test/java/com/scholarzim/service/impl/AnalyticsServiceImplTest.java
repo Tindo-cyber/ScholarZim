@@ -5,6 +5,7 @@ import com.scholarzim.repository.ApplicantProfileRepository;
 import com.scholarzim.repository.ApplicationRepository;
 import com.scholarzim.repository.AuditLogRepository;
 import com.scholarzim.repository.OpportunityRepository;
+import com.scholarzim.repository.SavedScholarshipRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.util.ApplicationStatus;
 import com.scholarzim.util.RoleNames;
@@ -34,7 +35,8 @@ class AnalyticsServiceImplTest {
                 opportunityRepository,
                 applicationRepository,
                 mock(ApplicantProfileRepository.class),
-                mock(AuditLogRepository.class));
+                mock(AuditLogRepository.class),
+                mock(SavedScholarshipRepository.class));
     }
 
     @Test

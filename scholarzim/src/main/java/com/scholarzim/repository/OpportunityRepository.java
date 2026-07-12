@@ -86,4 +86,12 @@ public interface OpportunityRepository
             ORDER BY o.createdAt DESC
             """)
     List<Opportunity> adminSearchByKeyword(@Param("q") String query, Pageable pageable);
+
+    @Query("""
+            SELECT EXTRACT(YEAR FROM o.createdAt), EXTRACT(MONTH FROM o.createdAt), COUNT(o)
+            FROM Opportunity o
+            WHERE o.createdAt IS NOT NULL
+            GROUP BY EXTRACT(YEAR FROM o.createdAt), EXTRACT(MONTH FROM o.createdAt)
+            """)
+    List<Object[]> countOpportunitiesGroupedByYearMonth();
 }

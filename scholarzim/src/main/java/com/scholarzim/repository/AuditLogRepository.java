@@ -39,4 +39,18 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
 
     @Query("SELECT DISTINCT a.action FROM AuditLog a ORDER BY a.action")
     List<String> findDistinctActions();
+
+    @Query("""
+            SELECT EXTRACT(YEAR FROM a.createdAt), EXTRACT(MONTH FROM a.createdAt), COUNT(a)
+            FROM AuditLog a
+            WHERE a.action = :action
+              AND a.createdAt IS NOT NULL
+              AND LOWER(a.details) LIKE LOWER(CONCAT('%', :detailKeyword, '%'))
+            GROUP BY EXTRACT(YEAR FROM a.createdAt), EXTRACT(MONTH FROM a.createdAt)
+            """)
+    List<Object[]> countByActionGroupedByYearMonth(
+            @Param("action") String action,
+            @Param("detailKeyword") String detailKeyword);
+
+    List<AuditLog> findTop20ByActionOrderByCreatedAtDesc(String action);
 }

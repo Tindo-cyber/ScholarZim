@@ -98,6 +98,13 @@ public class AdminController {
         model.addAttribute("scholarshipAvailability", analyticsService.getScholarshipAvailabilityBreakdown());
         model.addAttribute("topProviders", analyticsService.getTopProviders(10));
         model.addAttribute("mostAppliedOpportunities", analyticsService.getMostAppliedOpportunities(10));
+        model.addAttribute("mostViewedOpportunities", analyticsService.getMostViewedOpportunities(8));
+        model.addAttribute("monthlyStudents", analyticsService.getMonthlyStudentRegistrations(range));
+        model.addAttribute("monthlyProviders", analyticsService.getMonthlyProviderRegistrations(range));
+        model.addAttribute("monthlyScholarships", analyticsService.getMonthlyScholarshipCounts(range));
+        model.addAttribute("recentActivity", analyticsService.getRecentActivity(10));
+        model.addAttribute("recentUsers", analyticsService.getRecentUsers(8));
+        model.addAttribute("pendingProviders", adminUserService.listPendingProviders());
 
         long profileRate = stats.getTotalApplicants() == 0 ? 0
                 : (int) Math.round(100.0 * stats.getCompleteProfiles() / stats.getTotalApplicants());

@@ -1994,3 +1994,227 @@ body:has(.sz-shell)::after {
         grid-column: 1 / -1;
     }
 }
+
+/* ── Analytics hub ── */
+.sz-analytics-hub__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.sz-analytics-kpi {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+    padding: 1.125rem 1.25rem;
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius-lg);
+    background: var(--sz-card);
+    box-shadow: var(--sz-shadow-card);
+    height: 100%;
+    transition: box-shadow var(--sz-duration) var(--sz-ease), transform var(--sz-duration) var(--sz-ease);
+}
+
+.sz-analytics-kpi:hover {
+    box-shadow: var(--sz-shadow);
+    transform: translateY(-1px);
+}
+
+.sz-analytics-kpi__icon {
+    flex-shrink: 0;
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--sz-radius-ui);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+}
+
+.sz-analytics-kpi--students .sz-analytics-kpi__icon {
+    background: rgba(59, 130, 246, 0.12);
+    color: var(--sz-chart-accent);
+}
+
+.sz-analytics-kpi--providers .sz-analytics-kpi__icon {
+    background: rgba(245, 158, 11, 0.12);
+    color: var(--sz-chart-warning);
+}
+
+.sz-analytics-kpi--scholarships .sz-analytics-kpi__icon {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--sz-chart-success);
+}
+
+.sz-analytics-kpi--applications .sz-analytics-kpi__icon {
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--sz-primary);
+}
+
+.sz-analytics-kpi--revenue .sz-analytics-kpi__icon {
+    background: var(--sz-surface-muted);
+    color: var(--sz-muted);
+}
+
+.sz-analytics-kpi--muted {
+    opacity: 0.92;
+}
+
+.sz-analytics-kpi__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--sz-muted);
+    margin-bottom: 0.25rem;
+}
+
+.sz-analytics-kpi__value {
+    font-family: var(--sz-font-display);
+    font-size: 1.625rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--sz-text);
+}
+
+.sz-analytics-kpi__meta {
+    font-size: 0.75rem;
+    color: var(--sz-muted);
+    margin-top: 0.25rem;
+}
+
+.sz-analytics-widget {
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius-lg);
+    background: var(--sz-card);
+    box-shadow: var(--sz-shadow-card);
+    overflow: hidden;
+}
+
+.sz-analytics-widget__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--sz-border);
+    background: linear-gradient(180deg, var(--sz-surface-muted) 0%, var(--sz-card) 100%);
+}
+
+.sz-analytics-widget__head h2 {
+    font-size: 0.9375rem;
+    font-weight: 700;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--sz-text);
+}
+
+.sz-analytics-widget__body {
+    padding: 1rem 1.25rem 1.25rem;
+}
+
+.sz-analytics-widget__chip {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.25rem 0.625rem;
+    border-radius: 999px;
+    background: var(--sz-surface-muted);
+    color: var(--sz-muted);
+}
+
+.sz-analytics-widget__chip--warn {
+    background: rgba(245, 158, 11, 0.14);
+    color: var(--sz-chart-warning);
+}
+
+.sz-chart-wrap--tall {
+    height: 320px;
+}
+
+.sz-analytics-feed__item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.75rem 1rem;
+    align-items: start;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--sz-border);
+}
+
+.sz-analytics-feed__item:last-child {
+    border-bottom: none;
+}
+
+.sz-analytics-feed__dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--sz-primary);
+    margin-top: 0.45rem;
+}
+
+.sz-analytics-feed__title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--sz-text);
+}
+
+.sz-analytics-feed__time {
+    white-space: nowrap;
+}
+
+.sz-analytics-approvals__item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--sz-border);
+}
+
+.sz-analytics-approvals__item:last-child {
+    border-bottom: none;
+}
+
+.sz-analytics-users__item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.875rem 1.25rem;
+    border-bottom: 1px solid var(--sz-border);
+}
+
+.sz-analytics-users__item:last-child {
+    border-bottom: none;
+}
+
+.sz-analytics-users__avatar {
+    flex-shrink: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 50%;
+    background: var(--sz-surface-muted);
+    border: 1px solid var(--sz-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--sz-primary);
+}
+
+@media (max-width: 575.98px) {
+    .sz-analytics-kpi__value {
+        font-size: 1.375rem;
+    }
+
+    .sz-chart-wrap--tall {
+        height: 260px;
+    }
+}

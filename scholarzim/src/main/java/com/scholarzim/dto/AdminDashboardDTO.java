@@ -22,4 +22,5 @@ public class AdminDashboardDTO {
     private long distinctInstitutions;
     private int approvalRate;
     private long completeProfiles;
+    private long pendingProviderApprovals;
 }
