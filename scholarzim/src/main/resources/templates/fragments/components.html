@@ -295,63 +295,116 @@
     <p class="text-secondary mb-0" th:if="${subtitle}" th:text="${subtitle}">Subtitle</p>
 </div>
 
-<!-- Shared error panel -->
-<div th:fragment="error-panel(authenticated)">
-    <div class="sz-error-card"
-         th:classappend="${authenticated} ? ' sz-error-card--dashboard' : ''">
-        <div class="sz-error-card__icon"
-             th:classappend="${status != null and status == 403 ? 'bg-warning-subtle text-warning' : (status != null and status == 404 ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger')}">
-            <i class="bi"
-               th:classappend="${status != null and status == 403 ? 'bi-shield-lock' : (status != null and status == 404 ? 'bi-compass' : 'bi-exclamation-triangle')}"></i>
-        </div>
+<!-- Error state components — never surface raw exception text -->
+<svg th:fragment="error-illustration(type)" class="sz-error-state__art" viewBox="0 0 200 160" role="img" aria-hidden="true"
+     th:classappend="' sz-error-state__art--' + ${type}">
+    <defs>
+        <linearGradient id="szErrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#16A34A" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#22C55E" stop-opacity="0.05"/>
+        </linearGradient>
+    </defs>
+    <rect x="20" y="24" width="160" height="112" rx="20" fill="url(#szErrGrad)"/>
+    <!-- 404 -->
+    <g th:if="${type == 'not-found'}">
+        <circle cx="100" cy="72" r="34" fill="#fff" stroke="#16A34A" stroke-width="3" opacity="0.95"/>
+        <text x="100" y="82" text-anchor="middle" font-size="28" font-weight="700" fill="#16A34A" font-family="Manrope, Inter, sans-serif">404</text>
+        <path d="M58 118 L78 98 M142 118 L122 98" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <!-- 500 -->
+    <g th:if="${type == 'server-error'}">
+        <rect x="62" y="48" width="76" height="64" rx="14" fill="#fff" stroke="#EF4444" stroke-width="2.5"/>
+        <circle cx="100" cy="72" r="14" fill="#FEE2E2"/>
+        <path d="M100 64 v10 M100 88 h.01" stroke="#EF4444" stroke-width="3" stroke-linecap="round"/>
+        <rect x="74" y="104" width="52" height="8" rx="4" fill="#E2E8F0"/>
+    </g>
+    <!-- network -->
+    <g th:if="${type == 'network'}">
+        <path d="M44 108 Q100 44 156 108" fill="none" stroke="#16A34A" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="100" cy="108" r="10" fill="#16A34A"/>
+        <path d="M88 92 L76 76 M112 92 L124 76" stroke="#94A3B8" stroke-width="3" stroke-linecap="round"/>
+        <line x1="70" y1="118" x2="130" y2="70" stroke="#EF4444" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <!-- permission -->
+    <g th:if="${type == 'permission-denied'}">
+        <rect x="78" y="52" width="44" height="52" rx="10" fill="#fff" stroke="#F59E0B" stroke-width="2.5"/>
+        <path d="M88 52 v-8 a12 12 0 0 1 24 0 v8" fill="none" stroke="#F59E0B" stroke-width="2.5"/>
+        <circle cx="100" cy="78" r="6" fill="#F59E0B"/>
+        <rect x="96" y="84" width="8" height="12" rx="2" fill="#F59E0B"/>
+    </g>
+    <!-- no data -->
+    <g th:if="${type == 'no-data'}">
+        <rect x="54" y="56" width="92" height="56" rx="12" fill="#fff" stroke="#16A34A" stroke-width="2"/>
+        <line x1="70" y1="76" x2="130" y2="76" stroke="#E2E8F0" stroke-width="6" stroke-linecap="round"/>
+        <line x1="70" y1="92" x2="110" y2="92" stroke="#E2E8F0" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="138" cy="108" r="16" fill="#DCFCE7" stroke="#16A34A" stroke-width="2"/>
+        <path d="M132 108 h12 M138 102 v12" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round"/>
+    </g>
+</svg>
 
-        <h1 class="h4 fw-bold mb-2"
-            th:text="${status != null and status == 403 ? 'Access denied' : (status != null and status == 404 ? 'Page not found' : 'Something went wrong')}">
-            Something went wrong
+<div th:fragment="error-state(type, homeUrl, retryUrl, title, message, primaryUrl, primaryLabel, compact)"
+     class="sz-error-state"
+     th:classappend="${compact} ? ' sz-error-state--compact' : ''"
+     th:with="resolvedType=${type != null ? type : 'server-error'},
+              resolvedHome=${homeUrl != null ? homeUrl : userHomeUrl},
+              resolvedRetry=${retryUrl != null and !#strings.isEmpty(retryUrl) ? retryUrl : null}">
+    <div class="sz-error-state__card">
+        <div class="sz-error-state__visual">
+            <th:block th:replace="~{fragments/components :: error-illustration(${resolvedType})}"></th:block>
+        </div>
+        <h1 class="sz-error-state__title">
+            <th:block th:if="${title != null and !#strings.isEmpty(title)}" th:text="${title}">Title</th:block>
+            <th:block th:if="${title == null or #strings.isEmpty(title)}" th:switch="${resolvedType}">
+                <span th:case="'not-found'">Page not found</span>
+                <span th:case="'permission-denied'">Permission denied</span>
+                <span th:case="'network'">Connection problem</span>
+                <span th:case="'no-data'">Nothing here yet</span>
+                <span th:case="*">Something went wrong</span>
+            </th:block>
         </h1>
-
-        <p class="text-secondary mb-1"
-           th:if="${status != null and status != 200}">
-            Error <span th:text="${status}">500</span>
+        <p class="sz-error-state__message">
+            <th:block th:if="${message != null and !#strings.isEmpty(message)}" th:text="${message}">Message</th:block>
+            <th:block th:if="${message == null or #strings.isEmpty(message)}" th:switch="${resolvedType}">
+                <span th:case="'not-found'">We couldn't find the page you're looking for. It may have moved, expired, or the link might be incorrect.</span>
+                <span th:case="'permission-denied'">You don't have access to this area. Sign in with the right account or return to your dashboard.</span>
+                <span th:case="'network'">ScholarZim can't reach the server. Check your internet connection and try again.</span>
+                <span th:case="'no-data'">There's nothing to show here yet. Check back later or explore scholarships to get started.</span>
+                <span th:case="*">We're having trouble completing your request right now. Please try again in a moment.</span>
+            </th:block>
         </p>
-        <p class="text-secondary small mb-4"
-           th:if="${error != null and error != 'OK'}"
-           th:text="${error}">An unexpected error occurred.</p>
-        <p class="text-secondary small mb-4"
-           th:if="${status == null or status == 200 or error == null or error == 'OK'}">
-            Please try again. If the problem persists, contact support.
-        </p>
-        <p class="text-secondary small mb-4"
-           th:if="${status != null and status == 500}">
-            Our team has been notified. Try refreshing the page or come back in a few minutes.
-        </p>
-
-        <div class="d-flex justify-content-center gap-2 flex-wrap" th:if="${authenticated}">
-            <a class="btn btn-primary" th:href="@{/dashboard}">
-                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+        <div class="sz-error-state__actions">
+            <a th:if="${primaryUrl != null and primaryLabel != null}"
+               class="btn btn-primary"
+               th:href="@{${primaryUrl}}"
+               th:text="${primaryLabel}">Continue</a>
+            <button type="button"
+                    class="btn btn-outline-primary sz-error-state__retry"
+                    th:attr="data-retry-url=${resolvedRetry}">
+                <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Retry
+            </button>
+            <a class="btn btn-outline-secondary"
+               th:href="@{${resolvedHome}}">
+                <i class="bi bi-house me-1" aria-hidden="true"></i>Return home
             </a>
-            <a class="btn btn-outline-secondary" th:href="@{/opportunities}" sec:authorize="hasRole('APPLICANT')">
-                <i class="bi bi-search me-1"></i>Browse scholarships
-            </a>
-            <a class="btn btn-outline-secondary" th:href="@{/provider/dashboard}" sec:authorize="hasRole('PROVIDER')">
-                <i class="bi bi-building me-1"></i>Provider dashboard
-            </a>
-            <a class="btn btn-outline-secondary" th:href="@{/admin/dashboard}" sec:authorize="hasRole('ADMIN')">
-                <i class="bi bi-shield me-1"></i>Admin dashboard
-            </a>
-        </div>
-        <div class="d-flex justify-content-center gap-2 flex-wrap" th:unless="${authenticated}">
-            <a class="btn btn-primary" th:href="@{/}">
-                <i class="bi bi-house me-1"></i>Home
-            </a>
-            <a class="btn btn-outline-secondary" th:href="@{/scholarships}">
-                <i class="bi bi-search me-1"></i>Browse scholarships
-            </a>
-            <a class="btn btn-outline-secondary" th:href="@{/login}">
-                <i class="bi bi-box-arrow-in-right me-1"></i>Sign in
+            <a class="btn btn-link sz-error-state__support"
+               th:href="${supportUrl != null ? supportUrl : 'mailto:support@scholarzim.co.zw?subject=ScholarZim%20Support'}">
+                <i class="bi bi-life-preserver me-1" aria-hidden="true"></i>
+                <span>Contact support</span>
             </a>
         </div>
     </div>
+</div>
+
+<div th:fragment="error-panel(authenticated)"
+     th:replace="~{fragments/components :: error-state(
+         ${errorType != null ? errorType : (status == 403 ? 'permission-denied' : (status == 404 ? 'not-found' : 'server-error'))},
+         ${homeUrl != null ? homeUrl : userHomeUrl},
+         ${retryUrl != null ? retryUrl : null},
+         null,
+         null,
+         null,
+         null,
+         false)}">
 </div>
 
 <nav th:fragment="breadcrumbs(homeUrl, homeLabel, midUrl, midLabel, current)"
@@ -549,23 +602,28 @@
     </div>
 </section>
 
-<div th:fragment="empty-state(icon, title, message, actionUrl, actionLabel)" class="sz-empty">
-    <div class="sz-empty-icon"><i class="bi" th:classappend="${icon}"></i></div>
-    <h3 class="h5 fw-bold mb-2" th:text="${title}">Title</h3>
-    <p class="text-secondary mb-3 mx-auto" style="max-width:36ch" th:text="${message}">Message</p>
-    <a th:if="${actionUrl}" th:href="@{${actionUrl}}" class="btn btn-primary" th:text="${actionLabel}">Action</a>
+<div th:fragment="empty-state(icon, title, message, actionUrl, actionLabel)"
+     th:replace="~{fragments/components :: error-state(
+         'no-data',
+         ${userHomeUrl},
+         null,
+         ${title},
+         ${message},
+         ${actionUrl},
+         ${actionLabel},
+         true)}">
 </div>
 
-<div th:fragment="dashboard-load-error(title, reason, retryUrl)" class="card sz-section-card shadow-sm border-danger-subtle mb-4">
-    <div class="card-body text-center py-5">
-        <div class="sz-empty-icon text-danger mb-3"><i class="bi bi-exclamation-triangle"></i></div>
-        <h2 class="h5 fw-bold mb-3" th:text="${title}">Unable to load your applications.</h2>
-        <p class="text-secondary mb-1">Reason:</p>
-        <p class="text-danger mb-4" th:text="${reason}">Error message</p>
-        <a class="btn btn-primary" th:href="@{${retryUrl}}">
-            <i class="bi bi-arrow-clockwise me-1"></i>Retry
-        </a>
-    </div>
+<div th:fragment="dashboard-load-error(title, reason, retryUrl)"
+     th:replace="~{fragments/components :: error-state(
+         'server-error',
+         ${userHomeUrl},
+         ${retryUrl},
+         ${title},
+         null,
+         null,
+         null,
+         false)}">
 </div>
 
 <nav th:fragment="list-pagination(currentPage, totalPages, q, status)"

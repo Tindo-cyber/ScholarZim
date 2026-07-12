@@ -895,4 +895,37 @@
             });
         });
     })();
+
+    /* Error state actions */
+    (function initErrorStates() {
+        document.querySelectorAll(".sz-error-state__retry").forEach(function (btn) {
+            if (btn.dataset.bound === "1") return;
+            btn.dataset.bound = "1";
+            btn.addEventListener("click", function () {
+                var url = btn.getAttribute("data-retry-url");
+                if (url) {
+                    window.location.assign(url);
+                } else {
+                    window.location.reload();
+                }
+            });
+        });
+    })();
+
+    /* Network connectivity overlay */
+    (function initNetworkError() {
+        var overlay = document.getElementById("sz-network-error");
+        if (!overlay) return;
+
+        function sync() {
+            var offline = !navigator.onLine;
+            overlay.classList.toggle("d-none", !offline);
+            overlay.setAttribute("aria-hidden", offline ? "false" : "true");
+            document.body.classList.toggle("sz-offline", offline);
+        }
+
+        window.addEventListener("online", sync);
+        window.addEventListener("offline", sync);
+        sync();
+    })();
 })();

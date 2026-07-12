@@ -1918,13 +1918,106 @@
     }
 }
 
-/* Error page */
+/* Error states */
 .sz-error-page {
     min-height: 60vh;
     display: flex;
     align-items: center;
+    justify-content: center;
+    padding: 1.5rem 0;
 }
 
+.sz-error-state {
+    width: 100%;
+    max-width: 40rem;
+    margin-inline: auto;
+}
+
+.sz-error-state--compact {
+    max-width: 34rem;
+}
+
+.sz-error-state__card {
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius-xl);
+    background: var(--sz-card);
+    box-shadow: var(--sz-shadow);
+    padding: 2.25rem 1.75rem 2rem;
+    text-align: center;
+}
+
+.sz-error-state--compact .sz-error-state__card {
+    padding: 1.75rem 1.25rem 1.5rem;
+    box-shadow: none;
+    border-style: dashed;
+    background: var(--sz-surface-muted);
+}
+
+.sz-error-state__visual {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 1rem;
+}
+
+.sz-error-state__art {
+    width: min(220px, 72vw);
+    height: auto;
+}
+
+.sz-error-state__title {
+    font-family: 'Manrope', var(--sz-font, system-ui, sans-serif);
+    font-size: clamp(1.35rem, 2.5vw, 1.65rem);
+    font-weight: 700;
+    margin-bottom: 0.65rem;
+    color: var(--sz-text);
+}
+
+.sz-error-state--compact .sz-error-state__title {
+    font-size: 1.15rem;
+}
+
+.sz-error-state__message {
+    color: var(--sz-muted);
+    font-size: 0.95rem;
+    line-height: 1.55;
+    max-width: 42ch;
+    margin: 0 auto 1.35rem;
+}
+
+.sz-error-state__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+}
+
+.sz-error-state__support {
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.sz-network-error {
+    position: fixed;
+    inset: 0;
+    z-index: 1080;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(4px);
+}
+
+.sz-network-error:not(.d-none) {
+    display: flex !important;
+}
+
+.sz-network-error .sz-error-state {
+    max-width: 34rem;
+}
+
+/* Legacy aliases */
 .sz-error-card {
     border: 1px solid var(--sz-border);
     border-radius: var(--sz-radius-xl);

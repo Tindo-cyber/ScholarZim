@@ -170,8 +170,19 @@
 
 <th:block th:fragment="scripts">
     <div th:replace="~{fragments/layout :: confirm-dialog}"></div>
+    <div id="sz-network-error" class="sz-network-error d-none" aria-live="polite" aria-hidden="true">
+        <div th:replace="~{fragments/components :: error-state(
+            'network',
+            '/',
+            null,
+            null,
+            null,
+            null,
+            null,
+            false)}"></div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/app.js(v=41)}"></script>
+    <script th:src="@{/js/app.js(v=44)}"></script>
     <script th:src="@{/js/landing.js(v=3)}"></script>
     <script th:src="@{/js/pwa.js(v=41)}"></script>
 </th:block>

@@ -7,6 +7,7 @@ import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.OpportunityService;
 import com.scholarzim.util.ApplicationPageSupport;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -21,6 +22,7 @@ import java.util.List;
 
 
 @Controller
+@Slf4j
 public class ApplicationController {
 
     private final ApplicationService applicationService;
@@ -62,8 +64,8 @@ public class ApplicationController {
             model.addAttribute("totalPages", result.totalPages());
             model.addAttribute("currentPage", result.currentPage());
         } catch (RuntimeException ex) {
-            model.addAttribute("loadError",
-                    ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred.");
+            log.warn("Failed to load applications for {}", authentication.getName(), ex);
+            model.addAttribute("loadFailed", true);
             model.addAttribute("applications", Collections.emptyList());
             model.addAttribute("filteredTotal", 0);
             model.addAttribute("totalAll", 0);

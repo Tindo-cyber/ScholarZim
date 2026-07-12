@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
-      th:replace="~{fragments/public-page-layout :: page('Error', ~{:: #error-content})}">
+      th:replace="~{fragments/public-page-layout :: page(${pageTitle != null ? pageTitle : 'Error'}, ~{:: #error-content})}">
 <body>
 <th:block id="error-content">
     <div class="container sz-container py-5">
         <div class="row justify-content-center">
-            <div class="col-12 col-md-8 col-lg-6">
+            <div class="col-12 col-lg-8">
                 <div th:replace="~{fragments/components :: error-panel(false)}"></div>
             </div>
         </div>

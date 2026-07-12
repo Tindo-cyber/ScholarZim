@@ -14,9 +14,11 @@ body.sz-dashboard {
 }
 
 .sz-error-page--dashboard,
-.sz-error-card--dashboard {
-    max-width: 36rem;
+.sz-error-card--dashboard,
+.sz-error-page--dashboard .sz-error-state {
+    max-width: 40rem;
     margin: 2rem auto;
+    width: 100%;
 }
 
 /* Dashboard background — fixed layer on body */

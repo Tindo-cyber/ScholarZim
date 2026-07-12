@@ -1,13 +1,17 @@
 package com.scholarzim.exception;
 
 import com.scholarzim.service.RegistrationException;
+import com.scholarzim.util.ErrorPageSupport;
 import com.scholarzim.util.LayoutViewUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.Model;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.thymeleaf.exceptions.TemplateInputException;
 import org.thymeleaf.exceptions.TemplateProcessingException;
@@ -42,29 +46,29 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public String handleNotFound(ResourceNotFoundException ex, Model model) {
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleNotFound(ResourceNotFoundException ex, Model model, HttpServletRequest request) {
 
         log.warn("Resource not found: {}", ex.getMessage());
-        model.addAttribute("status", 404);
-        model.addAttribute("error", ex.getMessage());
+        populateErrorModel(model, request, 404);
         return LayoutViewUtil.errorView();
     }
 
     @ExceptionHandler(NoSuchElementException.class)
-    public String handleNoSuchElement(NoSuchElementException ex, Model model) {
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleNoSuchElement(NoSuchElementException ex, Model model, HttpServletRequest request) {
 
         log.warn("No such element: {}", ex.getMessage());
-        model.addAttribute("status", 404);
-        model.addAttribute("error", "The requested resource was not found.");
+        populateErrorModel(model, request, 404);
         return LayoutViewUtil.errorView();
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public String handleAccessDenied(AccessDeniedException ex, Model model) {
+    @ResponseStatus(HttpStatus.FORBIDDEN)
+    public String handleAccessDenied(AccessDeniedException ex, Model model, HttpServletRequest request) {
 
         log.warn("Access denied: {}", ex.getMessage());
-        model.addAttribute("status", 403);
-        model.addAttribute("error", ex.getMessage());
+        populateErrorModel(model, request, 403);
         return LayoutViewUtil.errorView();
     }
 
@@ -89,7 +93,8 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public String handleGeneral(Exception ex, Model model) {
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    public String handleGeneral(Exception ex, Model model, HttpServletRequest request) {
 
         if (isTemplateRenderingFailure(ex)) {
             log.error("Template rendering failed", ex);
@@ -97,9 +102,19 @@ public class GlobalExceptionHandler {
         }
 
         log.error("Unhandled exception", ex);
-        model.addAttribute("status", 500);
-        model.addAttribute("error", "An unexpected error occurred. Please try again.");
+        populateErrorModel(model, request, 500);
         return LayoutViewUtil.errorView();
+    }
+
+    private static void populateErrorModel(Model model, HttpServletRequest request, int status) {
+        model.addAttribute("status", status);
+        String errorType = ErrorPageSupport.resolveType(status);
+        model.addAttribute("errorType", errorType);
+        model.addAttribute("pageTitle", ErrorPageSupport.title(errorType));
+        model.addAttribute("homeUrl", ErrorPageSupport.homeUrl());
+        String requestUri = request.getRequestURI();
+        model.addAttribute("retryUrl",
+                requestUri != null && !requestUri.isBlank() ? requestUri : null);
     }
 
     private static boolean isTemplateRenderingFailure(Throwable ex) {

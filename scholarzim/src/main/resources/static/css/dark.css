@@ -162,7 +162,8 @@
     color: #fbbf24;
 }
 [data-bs-theme="dark"] .sz-hero,
-[data-bs-theme="dark"] .sz-error-card {
+[data-bs-theme="dark"] .sz-error-card,
+[data-bs-theme="dark"] .sz-error-state__card {
     border-color: var(--sz-glass-border-outer);
 }
 

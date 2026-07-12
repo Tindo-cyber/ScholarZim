@@ -22,10 +22,18 @@
 
     <div th:replace="~{fragments/components :: page-header('Application tracker', 'Follow every scholarship application through each stage — from submission to award.')}"></div>
 
-    <div th:if="${loadError != null}"
-         th:replace="~{fragments/components :: dashboard-load-error('Unable to load your applications.', ${loadError}, '/my-applications')}"></div>
+    <div th:if="${loadFailed}"
+         th:replace="~{fragments/components :: error-state(
+             'server-error',
+             ${userHomeUrl},
+             '/my-applications',
+             'Unable to load your applications',
+             null,
+             null,
+             null,
+             false)}"></div>
 
-    <th:block th:unless="${loadError != null}">
+    <th:block th:unless="${loadFailed}">
 
         <div class="row g-3 mb-4" th:if="${totalAll > 0}">
             <div class="col-6 col-md-3">
