@@ -1,24 +1,16 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
-<head th:replace="~{fragments/layout :: head('Notifications')}"></head>
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/dashboard-layout :: page(
+          'Notifications',
+          'notifications',
+          'notifications',
+          'messages',
+          'dashboard',
+          ~{:: #notifications-content}
+      )}">
 <body>
-
-    <div th:replace="~{fragments/layout :: skip-link}"></div>
-<div class="d-flex sz-shell">
-
-    <div th:replace="~{fragments/layout :: sidebar('notifications')}"></div>
-
-    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
-
-        <nav th:replace="~{fragments/layout :: topbar('Notifications')}"></nav>
-
-        <main class="sz-content has-mobile-nav p-3 p-md-4">
-
-            <div th:replace="~{fragments/layout :: alerts}"></div>
+<th:block id="notifications-content">
 
             <th:block sec:authorize="hasRole('ADMIN')">
                 <nav th:replace="~{fragments/components :: breadcrumbs(
@@ -103,21 +95,6 @@
                 </a>
             </div>
 
-        </main>
-    </div>
-</div>
-
-<th:block sec:authorize="hasRole('APPLICANT')">
-    <nav th:replace="~{fragments/layout :: mobile-nav('notifications')}"></nav>
 </th:block>
-<th:block sec:authorize="hasRole('PROVIDER')">
-    <nav th:replace="~{fragments/layout :: provider-mobile-nav('messages')}"></nav>
-</th:block>
-<th:block sec:authorize="hasRole('ADMIN')">
-    <nav th:replace="~{fragments/layout :: admin-mobile-nav('dashboard')}"></nav>
-</th:block>
-
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-
 </body>
 </html>

@@ -1,5 +1,6 @@
 package com.scholarzim.controller;
 
+import com.scholarzim.util.LayoutViewUtil;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,6 +13,6 @@ public class ErrorPageController {
     public String forbidden(Model model) {
         model.addAttribute("status", 403);
         model.addAttribute("error", "You do not have permission to access this page.");
-        return "error";
+        return LayoutViewUtil.errorView();
     }
 }

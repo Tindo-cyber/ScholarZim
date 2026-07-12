@@ -1,5 +1,24 @@
 /* App shell — authenticated pages */
 
+/* Dashboard layout: never show public marketing chrome */
+body.sz-dashboard .sz-landing-header,
+body.sz-dashboard .sz-landing-announce,
+body.sz-dashboard .sz-landing-hero,
+body.sz-dashboard .sz-landing-footer,
+body.sz-dashboard .sz-landing-nav {
+    display: none !important;
+}
+
+body.sz-dashboard {
+    font-family: 'Inter', var(--sz-font, system-ui, sans-serif);
+}
+
+.sz-error-page--dashboard,
+.sz-error-card--dashboard {
+    max-width: 36rem;
+    margin: 2rem auto;
+}
+
 /* Dashboard background — fixed layer on body */
 body:has(.sz-shell)::after {
     content: "";

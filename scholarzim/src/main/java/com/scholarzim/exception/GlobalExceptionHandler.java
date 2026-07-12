@@ -1,6 +1,7 @@
 package com.scholarzim.exception;
 
 import com.scholarzim.service.RegistrationException;
+import com.scholarzim.util.LayoutViewUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.AccessDeniedException;
@@ -46,7 +47,7 @@ public class GlobalExceptionHandler {
         log.warn("Resource not found: {}", ex.getMessage());
         model.addAttribute("status", 404);
         model.addAttribute("error", ex.getMessage());
-        return "error";
+        return LayoutViewUtil.errorView();
     }
 
     @ExceptionHandler(NoSuchElementException.class)
@@ -55,7 +56,7 @@ public class GlobalExceptionHandler {
         log.warn("No such element: {}", ex.getMessage());
         model.addAttribute("status", 404);
         model.addAttribute("error", "The requested resource was not found.");
-        return "error";
+        return LayoutViewUtil.errorView();
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -64,7 +65,7 @@ public class GlobalExceptionHandler {
         log.warn("Access denied: {}", ex.getMessage());
         model.addAttribute("status", 403);
         model.addAttribute("error", ex.getMessage());
-        return "error";
+        return LayoutViewUtil.errorView();
     }
 
     @ExceptionHandler(InvalidStatusException.class)
@@ -98,7 +99,7 @@ public class GlobalExceptionHandler {
         log.error("Unhandled exception", ex);
         model.addAttribute("status", 500);
         model.addAttribute("error", "An unexpected error occurred. Please try again.");
-        return "error";
+        return LayoutViewUtil.errorView();
     }
 
     private static boolean isTemplateRenderingFailure(Throwable ex) {

@@ -1,65 +1,15 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-
-<head th:replace="~{fragments/public-layout :: head('Error')}"></head>
-
-<body class="sz-landing sz-page-ready">
-
-<div th:replace="~{fragments/public-layout :: skip-link}"></div>
-<header th:replace="~{fragments/public-layout :: navbar}"></header>
-
-<main class="sz-error-page">
-    <div class="container sz-container">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/public-page-layout :: page('Error', ~{:: #error-content})}">
+<body>
+<th:block id="error-content">
+    <div class="container sz-container py-5">
         <div class="row justify-content-center">
             <div class="col-12 col-md-8 col-lg-6">
-                <div class="sz-error-card">
-                    <div class="sz-error-card__icon"
-                         th:classappend="${status != null and status == 403 ? 'bg-warning-subtle text-warning' : (status != null and status == 404 ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger')}">
-                        <i class="bi"
-                           th:classappend="${status != null and status == 403 ? 'bi-shield-lock' : (status != null and status == 404 ? 'bi-compass' : 'bi-exclamation-triangle')}"></i>
-                    </div>
-
-                    <h1 class="h4 fw-bold mb-2"
-                        th:text="${status != null and status == 403 ? 'Access denied' : (status != null and status == 404 ? 'Page not found' : 'Something went wrong')}">
-                        Something went wrong
-                    </h1>
-
-                    <!-- Avoid misleading "Error 200 / OK" when a template failed after a successful status was already set -->
-                    <p class="text-secondary mb-1"
-                       th:if="${status != null and status != 200}">
-                        Error <span th:text="${status}">500</span>
-                    </p>
-                    <p class="text-secondary small mb-4"
-                       th:if="${error != null and error != 'OK'}"
-                       th:text="${error}">An unexpected error occurred.</p>
-                    <p class="text-secondary small mb-4"
-                       th:if="${status == null or status == 200 or error == null or error == 'OK'}">
-                        Please try again, or return to the home page. If the problem persists, contact support.
-                    </p>
-                    <p class="text-secondary small mb-4"
-                       th:if="${status != null and status == 500}">
-                        Our team has been notified. Try refreshing the page or come back in a few minutes.
-                    </p>
-
-                    <div class="d-flex justify-content-center gap-2 flex-wrap">
-                        <a class="btn btn-primary" th:href="@{/}">
-                            <i class="bi bi-house me-1"></i>Home
-                        </a>
-                        <a class="btn btn-outline-secondary" th:href="@{/scholarships}">
-                            <i class="bi bi-search me-1"></i>Browse scholarships
-                        </a>
-                        <a class="btn btn-outline-secondary" th:href="@{/login}">
-                            <i class="bi bi-box-arrow-in-right me-1"></i>Sign in
-                        </a>
-                    </div>
-                </div>
+                <div th:replace="~{fragments/components :: error-panel(false)}"></div>
             </div>
         </div>
     </div>
-</main>
-
-<footer th:replace="~{fragments/public-layout :: public-footer}"></footer>
-<th:block th:replace="~{fragments/public-layout :: scripts}"></th:block>
-
+</th:block>
 </body>
 </html>

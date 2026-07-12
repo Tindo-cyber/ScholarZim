@@ -1,24 +1,15 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
-<head th:replace="~{fragments/layout :: head('Admin Dashboard')}"></head>
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/dashboard-layout :: page(
+          'Platform Administration',
+          'dashboard',
+          '',
+          '',
+          'dashboard',
+          ~{:: #admin-dashboard-content}
+      )}">
 <body>
-
-    <div th:replace="~{fragments/layout :: skip-link}"></div>
-<div class="d-flex sz-shell">
-
-    <div th:replace="~{fragments/layout :: sidebar('dashboard')}"></div>
-
-    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
-
-        <nav th:replace="~{fragments/layout :: topbar('Platform Administration')}"></nav>
-
-        <main id="main-content" tabindex="-1" class="sz-content has-mobile-nav p-3 p-md-4">
-
-            <div th:replace="~{fragments/layout :: alerts}"></div>
+<th:block id="admin-dashboard-content">
 
             <div class="sz-dashboard-header">
                 <div>
@@ -541,117 +532,110 @@
                 </div>
             </div>
 
-        </main>
-    </div>
-</div>
+            <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+            <script th:inline="javascript">
+                /*<![CDATA[*/
+                const approved = [[${stats.approvedApplications}]];
+                const rejected = [[${stats.rejectedApplications}]];
+                const pending = [[${stats.pendingApplications}]];
+                const monthlyCounts = [[${monthlyCounts}]];
+                const monthLabels = [[${monthLabels}]];
+                const rootStyles = getComputedStyle(document.documentElement);
+                const chartSuccess = rootStyles.getPropertyValue('--sz-chart-success').trim() || '#22C55E';
+                const chartWarning = rootStyles.getPropertyValue('--sz-chart-warning').trim() || '#F59E0B';
+                const chartDanger = rootStyles.getPropertyValue('--sz-chart-danger').trim() || '#EF4444';
+                const chartPrimary = rootStyles.getPropertyValue('--sz-chart-primary').trim() || 'rgba(22, 163, 74, 0.75)';
+                const chartAccent = rootStyles.getPropertyValue('--sz-chart-accent').trim() || 'rgba(59, 130, 246, 0.7)';
 
-<nav th:replace="~{fragments/layout :: admin-mobile-nav('dashboard')}"></nav>
+                new Chart(document.getElementById('statusChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Approved', 'Pending', 'Rejected'],
+                        datasets: [{
+                            data: [approved, pending, rejected],
+                            backgroundColor: [chartSuccess, chartWarning, chartDanger],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '65%',
+                        plugins: { legend: { position: 'bottom' } }
+                    }
+                });
 
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+                new Chart(document.getElementById('monthlyChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: monthLabels,
+                        datasets: [{
+                            label: 'Applications',
+                            data: monthlyCounts,
+                            backgroundColor: chartPrimary,
+                            borderRadius: 6
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                    }
+                });
 
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    const approved = [[${stats.approvedApplications}]];
-    const rejected = [[${stats.rejectedApplications}]];
-    const pending = [[${stats.pendingApplications}]];
-    const monthlyCounts = [[${monthlyCounts}]];
-    const monthLabels = [[${monthLabels}]];
-    const rootStyles = getComputedStyle(document.documentElement);
-    const chartSuccess = rootStyles.getPropertyValue('--sz-chart-success').trim() || '#22C55E';
-    const chartWarning = rootStyles.getPropertyValue('--sz-chart-warning').trim() || '#F59E0B';
-    const chartDanger = rootStyles.getPropertyValue('--sz-chart-danger').trim() || '#EF4444';
-    const chartPrimary = rootStyles.getPropertyValue('--sz-chart-primary').trim() || 'rgba(22, 163, 74, 0.75)';
-    const chartAccent = rootStyles.getPropertyValue('--sz-chart-accent').trim() || 'rgba(59, 130, 246, 0.7)';
+                const providerLabels = [[${topProviders.labels}]];
+                const providerData = [[${topProviders.data}]];
 
-    new Chart(document.getElementById('statusChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Approved', 'Pending', 'Rejected'],
-            datasets: [{
-                data: [approved, pending, rejected],
-                backgroundColor: [chartSuccess, chartWarning, chartDanger],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '65%',
-            plugins: { legend: { position: 'bottom' } }
-        }
-    });
+                if (providerLabels.length) {
+                    new Chart(document.getElementById('providersChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: providerLabels,
+                            datasets: [{
+                                label: 'Applications',
+                                data: providerData,
+                                backgroundColor: chartAccent,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            indexAxis: 'y',
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+                        }
+                    });
+                }
 
-    new Chart(document.getElementById('monthlyChart'), {
-        type: 'bar',
-        data: {
-            labels: monthLabels,
-            datasets: [{
-                label: 'Applications',
-                data: monthlyCounts,
-                backgroundColor: chartPrimary,
-                borderRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-        }
-    });
+                const mostAppliedLabels = [[${mostAppliedOpportunities.labels}]];
+                const mostAppliedData = [[${mostAppliedOpportunities.data}]];
 
-    const providerLabels = [[${topProviders.labels}]];
-    const providerData = [[${topProviders.data}]];
+                if (mostAppliedLabels.length) {
+                    new Chart(document.getElementById('mostAppliedChart'), {
+                        type: 'bar',
+                        data: {
+                            labels: mostAppliedLabels,
+                            datasets: [{
+                                label: 'Applications',
+                                data: mostAppliedData,
+                                backgroundColor: chartPrimary,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                        }
+                    });
+                }
+                if (window.szMarkChartsReady) szMarkChartsReady();
+                /*]]>*/
+            </script>
 
-    if (providerLabels.length) {
-        new Chart(document.getElementById('providersChart'), {
-            type: 'bar',
-            data: {
-                labels: providerLabels,
-                datasets: [{
-                    label: 'Applications',
-                    data: providerData,
-                    backgroundColor: chartAccent,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                indexAxis: 'y',
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
-            }
-        });
-    }
-
-    const mostAppliedLabels = [[${mostAppliedOpportunities.labels}]];
-    const mostAppliedData = [[${mostAppliedOpportunities.data}]];
-
-    if (mostAppliedLabels.length) {
-        new Chart(document.getElementById('mostAppliedChart'), {
-            type: 'bar',
-            data: {
-                labels: mostAppliedLabels,
-                datasets: [{
-                    label: 'Applications',
-                    data: mostAppliedData,
-                    backgroundColor: chartPrimary,
-                    borderRadius: 6
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-            }
-        });
-    }
-    if (window.szMarkChartsReady) szMarkChartsReady();
-    /*]]>*/
-</script>
-
+</th:block>
 </body>
 </html>

@@ -1,14 +1,16 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Audit Log')}"></head>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/dashboard-layout :: page(
+          'Audit Log',
+          'audit',
+          '',
+          '',
+          'audit',
+          ~{:: #audit-log-content}
+      )}">
 <body>
-    <div th:replace="~{fragments/layout :: skip-link}"></div>
-<div class="d-flex sz-shell">
-    <div th:replace="~{fragments/layout :: sidebar('audit')}"></div>
-    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
-        <nav th:replace="~{fragments/layout :: topbar('Audit Log')}"></nav>
-        <main id="main-content" tabindex="-1" class="sz-content has-mobile-nav p-3 p-md-4">
-            <div th:replace="~{fragments/layout :: alerts}"></div>
+<th:block id="audit-log-content">
+
             <div th:replace="~{fragments/components :: page-header('Audit log', 'Searchable record of platform actions')}"></div>
             <form class="row g-2 mb-4" method="get" th:action="@{/admin/audit-log}">
                 <div class="col-md-5">
@@ -61,10 +63,7 @@
                     </li>
                 </ul>
             </nav>
-        </main>
-    </div>
-</div>
-<nav th:replace="~{fragments/layout :: admin-mobile-nav('audit')}"></nav>
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</th:block>
 </body>
 </html>

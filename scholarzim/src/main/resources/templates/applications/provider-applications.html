@@ -1,24 +1,15 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
-<head th:replace="~{fragments/layout :: head('Applications Review')}"></head>
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/dashboard-layout :: page(
+          'Applications Review',
+          'applications',
+          '',
+          'applications',
+          '',
+          ~{:: #provider-applications-content}
+      )}">
 <body>
-
-    <div th:replace="~{fragments/layout :: skip-link}"></div>
-<div class="d-flex sz-shell">
-
-    <div th:replace="~{fragments/layout :: sidebar('applications')}"></div>
-
-    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
-
-        <nav th:replace="~{fragments/layout :: topbar('Applications Review')}"></nav>
-
-        <main class="sz-content has-mobile-nav p-3 p-md-4">
-
-            <div th:replace="~{fragments/layout :: alerts}"></div>
+<th:block id="provider-applications-content">
 
             <div th:replace="~{fragments/components :: page-header('Applications review', 'Review and decide on student applications for your opportunities.')}"></div>
 
@@ -38,17 +29,17 @@
                         </tr>
                         </thead>
                         <tbody>
-                        <tr th:each="application : ${applications}">
-                            <td class="fw-semibold" th:text="${application.user.fullName}"></td>
-                            <td th:text="${application.opportunity.title}"></td>
+                        <tr th:each="app : ${applications}">
+                            <td class="fw-semibold" th:text="${app.user.fullName}"></td>
+                            <td th:text="${app.opportunity.title}"></td>
                             <td>
                                 <span class="badge"
-                                      th:classappend="${application.applicationStatus == 'APPROVED' ? 'text-bg-success'
-                                          : (application.applicationStatus == 'REJECTED' ? 'text-bg-danger' : 'text-bg-warning')}"
-                                      th:text="${application.applicationStatus}"></span>
+                                      th:classappend="${app.applicationStatus == 'APPROVED' ? 'text-bg-success'
+                                          : (app.applicationStatus == 'REJECTED' ? 'text-bg-danger' : 'text-bg-warning')}"
+                                      th:text="${app.applicationStatus}"></span>
                             </td>
                             <td class="text-end">
-                                <a th:href="@{/provider/applications/{id}(id=${application.applicationId})}"
+                                <a th:href="@{/provider/applications/{id}(id=${app.applicationId})}"
                                    class="btn btn-sm btn-outline-primary me-1">
                                     <i class="bi bi-eye me-1"></i>Review
                                 </a>
@@ -59,13 +50,6 @@
                 </div>
             </div>
 
-        </main>
-    </div>
-</div>
-
-<div th:replace="~{fragments/layout :: provider-mobile-nav('applications')}"></div>
-
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-
+</th:block>
 </body>
 </html>

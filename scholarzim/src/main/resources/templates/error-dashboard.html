@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/dashboard-layout :: page(
+          'Error',
+          'dashboard',
+          'dashboard',
+          'dashboard',
+          'dashboard',
+          ~{:: #error-content}
+      )}">
+<body>
+<th:block id="error-content">
+    <div class="sz-error-page sz-error-page--dashboard">
+        <div th:replace="~{fragments/components :: error-panel(true)}"></div>
+    </div>
+</th:block>
+</body>
+</html>

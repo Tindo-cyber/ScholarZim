@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
 <div th:fragment="scholarship-card(opportunity, showApply, withApplyBtn, removeId)"
@@ -88,6 +89,65 @@
 <div th:fragment="page-header(title, subtitle)" class="sz-page-header">
     <h1 th:text="${title}">Title</h1>
     <p class="text-secondary mb-0" th:if="${subtitle}" th:text="${subtitle}">Subtitle</p>
+</div>
+
+<!-- Shared error panel -->
+<div th:fragment="error-panel(authenticated)">
+    <div class="sz-error-card"
+         th:classappend="${authenticated} ? ' sz-error-card--dashboard' : ''">
+        <div class="sz-error-card__icon"
+             th:classappend="${status != null and status == 403 ? 'bg-warning-subtle text-warning' : (status != null and status == 404 ? 'bg-info-subtle text-info' : 'bg-danger-subtle text-danger')}">
+            <i class="bi"
+               th:classappend="${status != null and status == 403 ? 'bi-shield-lock' : (status != null and status == 404 ? 'bi-compass' : 'bi-exclamation-triangle')}"></i>
+        </div>
+
+        <h1 class="h4 fw-bold mb-2"
+            th:text="${status != null and status == 403 ? 'Access denied' : (status != null and status == 404 ? 'Page not found' : 'Something went wrong')}">
+            Something went wrong
+        </h1>
+
+        <p class="text-secondary mb-1"
+           th:if="${status != null and status != 200}">
+            Error <span th:text="${status}">500</span>
+        </p>
+        <p class="text-secondary small mb-4"
+           th:if="${error != null and error != 'OK'}"
+           th:text="${error}">An unexpected error occurred.</p>
+        <p class="text-secondary small mb-4"
+           th:if="${status == null or status == 200 or error == null or error == 'OK'}">
+            Please try again. If the problem persists, contact support.
+        </p>
+        <p class="text-secondary small mb-4"
+           th:if="${status != null and status == 500}">
+            Our team has been notified. Try refreshing the page or come back in a few minutes.
+        </p>
+
+        <div class="d-flex justify-content-center gap-2 flex-wrap" th:if="${authenticated}">
+            <a class="btn btn-primary" th:href="@{/dashboard}">
+                <i class="bi bi-speedometer2 me-1"></i>Dashboard
+            </a>
+            <a class="btn btn-outline-secondary" th:href="@{/opportunities}" sec:authorize="hasRole('APPLICANT')">
+                <i class="bi bi-search me-1"></i>Browse scholarships
+            </a>
+            <a class="btn btn-outline-secondary" th:href="@{/provider/dashboard}" sec:authorize="hasRole('PROVIDER')">
+                <i class="bi bi-building me-1"></i>Provider dashboard
+            </a>
+            <a class="btn btn-outline-secondary" th:href="@{/admin/dashboard}" sec:authorize="hasRole('ADMIN')">
+                <i class="bi bi-shield me-1"></i>Admin dashboard
+            </a>
+        </div>
+        <div class="d-flex justify-content-center gap-2 flex-wrap" th:unless="${authenticated}">
+            <a class="btn btn-primary" th:href="@{/}">
+                <i class="bi bi-house me-1"></i>Home
+            </a>
+            <a class="btn btn-outline-secondary" th:href="@{/scholarships}">
+                <i class="bi bi-search me-1"></i>Browse scholarships
+            </a>
+            <a class="btn btn-outline-secondary" th:href="@{/login}">
+                <i class="bi bi-box-arrow-in-right me-1"></i>Sign in
+            </a>
+        </div>
+    </div>
 </div>
 
 <nav th:fragment="breadcrumbs(homeUrl, homeLabel, midUrl, midLabel, current)"

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
+<!--
+  DashboardLayout — authenticated shell only (sidebar + topbar + content).
+  Never includes public marketing navbar, announcement bar, hero, or public footer.
+-->
+<th:block th:fragment="page(title, sidebarActive, applicantMobile, providerMobile, adminMobile, body)">
+<head th:replace="~{fragments/layout :: head(${title})}"></head>
+<body class="sz-dashboard">
+
+<div th:replace="~{fragments/layout :: skip-link}"></div>
+
+<div class="d-flex sz-shell">
+    <div th:replace="~{fragments/layout :: sidebar(${sidebarActive})}"></div>
+
+    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
+        <nav th:replace="~{fragments/layout :: topbar(${title})}"></nav>
+
+        <main id="main-content" tabindex="-1" class="sz-content has-mobile-nav p-3 p-md-4">
+            <div th:replace="~{fragments/layout :: alerts}"></div>
+            <th:block th:insert="${body}"></th:block>
+        </main>
+    </div>
+</div>
+
+<th:block sec:authorize="hasRole('APPLICANT')"
+          th:if="${applicantMobile != null and !#strings.isEmpty(applicantMobile)}">
+    <nav th:replace="~{fragments/layout :: mobile-nav(${applicantMobile})}"></nav>
+</th:block>
+<th:block sec:authorize="hasRole('PROVIDER')"
+          th:if="${providerMobile != null and !#strings.isEmpty(providerMobile)}">
+    <nav th:replace="~{fragments/layout :: provider-mobile-nav(${providerMobile})}"></nav>
+</th:block>
+<th:block sec:authorize="hasRole('ADMIN')"
+          th:if="${adminMobile != null and !#strings.isEmpty(adminMobile)}">
+    <nav th:replace="~{fragments/layout :: admin-mobile-nav(${adminMobile})}"></nav>
+</th:block>
+
+<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+
+</body>
+</th:block>
+
+</html>

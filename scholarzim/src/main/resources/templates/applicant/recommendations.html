@@ -1,24 +1,15 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
-<head th:replace="~{fragments/layout :: head('Recommended Scholarships')}"></head>
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/dashboard-layout :: page(
+          'Your Matches',
+          'recommendations',
+          'recommendations',
+          'applications',
+          'dashboard',
+          ~{:: #recommendations-content}
+      )}">
 <body>
-
-    <div th:replace="~{fragments/layout :: skip-link}"></div>
-<div class="d-flex sz-shell">
-
-    <div th:replace="~{fragments/layout :: sidebar('recommendations')}"></div>
-
-    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
-
-        <nav th:replace="~{fragments/layout :: topbar('Your Matches')}"></nav>
-
-        <div th:replace="~{fragments/layout :: alerts}"></div>
-
-        <main class="sz-content has-mobile-nav p-3 p-md-4">
+<th:block id="recommendations-content">
 
             <div th:replace="~{fragments/components :: page-header('Recommended for you', 'Scholarships matched to your education level, field of study, and location.')}"></div>
 
@@ -45,13 +36,6 @@
                 </th:block>
             </div>
 
-        </main>
-    </div>
-</div>
-
-<nav th:replace="~{fragments/layout :: mobile-nav('recommendations')}"></nav>
-
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-
+</th:block>
 </body>
 </html>

@@ -1,23 +1,15 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
-<head th:replace="~{fragments/layout :: head('Apply')}"></head>
-
+      th:replace="~{fragments/dashboard-layout :: page(
+          'Apply for scholarship',
+          'opportunities',
+          'opportunities',
+          'applications',
+          'dashboard',
+          ~{:: #wizard-content}
+      )}">
 <body>
-
-    <div th:replace="~{fragments/layout :: skip-link}"></div>
-<div class="d-flex sz-shell">
-
-    <div th:replace="~{fragments/layout :: sidebar('opportunities')}"></div>
-
-    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
-
-        <nav th:replace="~{fragments/layout :: topbar('Apply for scholarship')}"></nav>
-
-        <div th:replace="~{fragments/layout :: alerts}"></div>
-
-        <main class="sz-content p-3 p-md-4 has-mobile-nav">
+<th:block id="wizard-content">
 
             <nav th:replace="~{fragments/components :: breadcrumbs(
                 @{/applicant/dashboard}, 'Dashboard',
@@ -148,11 +140,6 @@
                 </div>
             </div>
 
-        </main>
-    </div>
-</div>
-
-<div th:replace="~{fragments/layout :: mobile-nav('opportunities')}"></div>
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
+</th:block>
 </body>
 </html>

@@ -1,24 +1,15 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
-
-<head th:replace="~{fragments/layout :: head('Create Opportunity')}"></head>
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/dashboard-layout :: page(
+          'Create Opportunity',
+          'create',
+          '',
+          'create',
+          '',
+          ~{:: #create-opportunity-content}
+      )}">
 <body>
-
-    <div th:replace="~{fragments/layout :: skip-link}"></div>
-<div class="d-flex sz-shell">
-
-    <div th:replace="~{fragments/layout :: sidebar('create')}"></div>
-
-    <div class="flex-grow-1 min-w-0 d-flex flex-column sz-main">
-
-        <nav th:replace="~{fragments/layout :: topbar('Create Opportunity')}"></nav>
-
-        <div th:replace="~{fragments/layout :: alerts}"></div>
-
-        <main class="sz-content has-mobile-nav p-3 p-md-4">
+<th:block id="create-opportunity-content">
 
             <div th:replace="~{fragments/components :: page-header('Create opportunity', 'Publish a new scholarship for students to discover and apply.')}"></div>
 
@@ -131,13 +122,6 @@
                 </div>
             </div>
 
-        </main>
-    </div>
-</div>
-
-<div th:replace="~{fragments/layout :: provider-mobile-nav('create')}"></div>
-
-<th:block th:replace="~{fragments/layout :: scripts}"></th:block>
-
+</th:block>
 </body>
 </html>

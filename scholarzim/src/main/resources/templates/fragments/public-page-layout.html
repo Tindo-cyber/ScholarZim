@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<!--
+  PublicLayout page wrapper — marketing site shell only.
+  Kept separate from public-layout.html to avoid fragment recursion.
+-->
+<th:block th:fragment="page(title, body)">
+<head th:replace="~{fragments/public-layout :: head(${title})}"></head>
+<body class="sz-landing">
+
+<div th:replace="~{fragments/public-layout :: skip-link}"></div>
+<header th:replace="~{fragments/public-layout :: navbar}"></header>
+
+<main id="main-content" tabindex="-1" class="sz-landing-main">
+    <th:block th:insert="${body}"></th:block>
+</main>
+
+<footer th:replace="~{fragments/public-layout :: public-footer}"></footer>
+<th:block th:replace="~{fragments/public-layout :: scripts}"></th:block>
+
+</body>
+</th:block>
+
+</html>
