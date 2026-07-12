@@ -154,6 +154,13 @@
 [data-bs-theme="dark"] .sz-filter-card,
 [data-bs-theme="dark"] .sz-stat-card,
 [data-bs-theme="dark"] .sz-opp-card,
+[data-bs-theme="dark"] .sz-scholarship-card {
+    background: var(--sz-card);
+}
+
+[data-bs-theme="dark"] .sz-scholarship-card__chip--funding {
+    color: #fbbf24;
+}
 [data-bs-theme="dark"] .sz-hero,
 [data-bs-theme="dark"] .sz-error-card {
     border-color: var(--sz-glass-border-outer);

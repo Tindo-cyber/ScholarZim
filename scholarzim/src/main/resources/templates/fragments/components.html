@@ -3,35 +3,144 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <body>
 
-<div th:fragment="scholarship-card(opportunity, showApply, withApplyBtn, removeId)"
-     class="sz-opp-card">
-    <div class="sz-opp-card__header">
-        <div class="sz-opp-title" th:text="${opportunity.title}">Title</div>
-        <div class="sz-opp-provider">
-            <i class="bi bi-building"></i>
-            <span th:text="${opportunity.providerName}">Provider</span>
+<div th:fragment="scholarship-card(opportunity, showApply, withApplyBtn, removeId, matchScore, eligibilityText)"
+     class="sz-scholarship-card sz-opp-card"
+     th:classappend="${matchScore != null} ? 'sz-scholarship-card--matched' : ''"
+     th:attr="data-opportunity-id=${opportunity.opportunityId},
+              data-share-title=${opportunity.title},
+              data-share-url=@{/scholarships/{id}(id=${opportunity.opportunityId})}">
+
+    <div class="sz-scholarship-card__glow" aria-hidden="true"></div>
+
+    <header class="sz-scholarship-card__header">
+        <div class="sz-scholarship-card__logo"
+             th:attr="aria-label=${opportunity.providerName}"
+             th:text="${T(com.scholarzim.util.OpportunityCardUtil).logoInitials(opportunity.providerName)}">UZ</div>
+        <div class="sz-scholarship-card__identity">
+            <h3 class="sz-scholarship-card__title">
+                <a th:href="@{/scholarships/{id}(id=${opportunity.opportunityId})}"
+                   th:text="${opportunity.title}">Scholarship title</a>
+            </h3>
+            <p class="sz-scholarship-card__org" th:text="${opportunity.providerName}">University</p>
+        </div>
+        <div class="sz-scholarship-card__toolbar">
+            <button type="button"
+                    class="sz-scholarship-card__icon-btn sz-scholarship-card__share"
+                    th:attr="data-share-url=@{/scholarships/{id}(id=${opportunity.opportunityId})},
+                             data-share-title=${opportunity.title}"
+                    aria-label="Share scholarship">
+                <i class="bi bi-share"></i>
+            </button>
+            <th:block sec:authorize="hasRole('APPLICANT')">
+                <form th:action="@{/applicant/saved/{id}(id=${opportunity.opportunityId})}"
+                      method="post"
+                      class="sz-scholarship-card__save-form"
+                      data-scholarship-save>
+                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                    <button type="submit"
+                            class="sz-scholarship-card__icon-btn sz-scholarship-card__bookmark"
+                            th:classappend="${savedOpportunityIds != null and savedOpportunityIds.contains(opportunity.opportunityId)} ? 'is-favorited' : ''"
+                            aria-label="Save scholarship">
+                        <i class="bi bi-bookmark"></i>
+                        <i class="bi bi-bookmark-fill sz-scholarship-card__bookmark-filled" aria-hidden="true"></i>
+                    </button>
+                </form>
+            </th:block>
+            <a sec:authorize="!hasRole('APPLICANT')"
+               th:href="@{/login}"
+               class="sz-scholarship-card__icon-btn sz-scholarship-card__bookmark"
+               aria-label="Sign in to save">
+                <i class="bi bi-bookmark"></i>
+            </a>
+        </div>
+    </header>
+
+    <div class="sz-scholarship-card__meta-row">
+        <span class="sz-scholarship-card__chip" th:if="${opportunity.country != null}">
+            <i class="bi bi-geo-alt"></i>
+            <span th:text="${opportunity.country}">Country</span>
+        </span>
+        <span class="sz-scholarship-card__chip sz-scholarship-card__chip--funding">
+            <i class="bi bi-cash-stack"></i>
+            <span th:text="${T(com.scholarzim.util.OpportunityCardUtil).fundingAmount(opportunity)}">Funding</span>
+        </span>
+        <span class="sz-scholarship-card__chip" th:if="${opportunity.educationLevel != null}">
+            <i class="bi bi-mortarboard"></i>
+            <span th:text="${opportunity.educationLevel}">Degree</span>
+        </span>
+        <span class="sz-scholarship-card__chip">
+            <i class="bi bi-journal-bookmark"></i>
+            <span th:text="${T(com.scholarzim.util.OpportunityCardUtil).fieldOfStudy(opportunity)}">Field</span>
+        </span>
+    </div>
+
+    <div class="sz-scholarship-card__match" th:if="${matchScore != null}">
+        <div class="sz-scholarship-card__match-label">
+            <i class="bi bi-stars"></i>
+            <span>AI Match</span>
+        </div>
+        <div class="sz-scholarship-card__match-value" th:text="${matchScore} + '%'">0%</div>
+        <div class="sz-match-bar sz-scholarship-card__match-bar">
+            <div class="sz-match-bar__fill" th:style="'width:' + ${matchScore} + '%'"></div>
         </div>
     </div>
-    <div class="sz-opp-card__body">
-        <p class="sz-opp-desc" th:if="${opportunity.description}" th:text="${opportunity.description}">Desc</p>
-        <div class="sz-opp-meta">
-            <span class="sz-badge sz-badge--funding" th:if="${opportunity.fundingType}" th:text="${opportunity.fundingType}">Full</span>
-            <span class="sz-badge sz-badge--level" th:if="${opportunity.educationLevel}" th:text="${opportunity.educationLevel}">Level</span>
-            <span class="sz-badge sz-badge--country" th:if="${opportunity.country}" th:text="${opportunity.country}">Country</span>
+
+    <p class="sz-scholarship-card__eligibility"
+       th:text="${eligibilityText != null ? eligibilityText : T(com.scholarzim.util.OpportunityCardUtil).eligibilitySummary(opportunity)}">
+        Eligibility summary
+    </p>
+
+    <div class="sz-scholarship-card__deadline-row">
+        <div class="sz-scholarship-card__deadline">
+            <span class="sz-scholarship-card__deadline-label">
+                <i class="bi bi-calendar-event"></i>
+                <span th:if="${opportunity.deadline != null}"
+                      th:text="${#temporals.format(opportunity.deadline, 'dd MMM yyyy')}">Deadline</span>
+                <span th:if="${opportunity.deadline == null}">Rolling deadline</span>
+            </span>
+            <span class="sz-scholarship-card__countdown sz-deadline"
+                  th:if="${opportunity.deadline != null}"
+                  th:attr="data-deadline=${opportunity.deadline}">Countdown</span>
+            <span class="sz-scholarship-card__countdown sz-scholarship-card__countdown--rolling"
+                  th:if="${opportunity.deadline == null}">Open until filled</span>
         </div>
     </div>
-    <div class="sz-opp-card__footer">
-        <span class="sz-deadline" th:if="${opportunity.deadline != null}"
-              th:attr="data-deadline=${opportunity.deadline}">Deadline</span>
-        <span th:if="${opportunity.deadline == null}" class="small text-secondary">Rolling deadline</span>
-        <div class="d-flex gap-2">
+
+    <footer class="sz-scholarship-card__footer">
+        <div class="sz-scholarship-card__actions">
             <a th:if="${showApply == null or showApply}"
                th:href="@{/scholarships/{id}(id=${opportunity.opportunityId})}"
-               class="btn btn-outline-primary btn-sm">Details</a>
-            <a th:if="${withApplyBtn}"
-               th:href="@{/apply/{id}(id=${opportunity.opportunityId})}"
-               class="btn btn-primary btn-sm">
-                <i class="bi bi-send me-1"></i>Apply
+               class="btn btn-outline-secondary btn-sm sz-scholarship-card__btn">
+                <i class="bi bi-eye me-1"></i>Details
+            </a>
+            <th:block sec:authorize="hasRole('APPLICANT')">
+                <form th:if="${withApplyBtn}"
+                      th:action="@{/apply/{id}/quick(id=${opportunity.opportunityId})}"
+                      method="post"
+                      class="d-inline">
+                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                    <button type="submit" class="btn btn-primary btn-sm sz-scholarship-card__btn sz-scholarship-card__btn--apply">
+                        <i class="bi bi-lightning-charge me-1"></i>Quick Apply
+                    </button>
+                </form>
+                <form th:action="@{/applicant/saved/{id}(id=${opportunity.opportunityId})}"
+                      method="post"
+                      class="d-inline"
+                      data-scholarship-save>
+                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                    <button type="submit"
+                            class="btn btn-outline-primary btn-sm sz-scholarship-card__btn"
+                            th:classappend="${savedOpportunityIds != null and savedOpportunityIds.contains(opportunity.opportunityId)} ? 'is-favorited' : ''">
+                        <i class="bi me-1"
+                           th:classappend="${savedOpportunityIds != null and savedOpportunityIds.contains(opportunity.opportunityId)} ? 'bi-bookmark-fill' : 'bi-bookmark'"></i>
+                        <span th:text="${savedOpportunityIds != null and savedOpportunityIds.contains(opportunity.opportunityId)} ? 'Saved' : 'Save'">Save</span>
+                    </button>
+                </form>
+            </th:block>
+            <a sec:authorize="!hasRole('APPLICANT')"
+               th:href="@{/login}"
+               class="btn btn-primary btn-sm sz-scholarship-card__btn sz-scholarship-card__btn--apply">
+                <i class="bi bi-lightning-charge me-1"></i>Quick Apply
             </a>
             <form th:if="${removeId != null}"
                   th:action="@{/applicant/saved/{id}/remove(id=${removeId})}"
@@ -41,49 +150,23 @@
                   data-confirm-title="Remove saved scholarship"
                   data-confirm-variant="warning">
                 <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                <button class="btn btn-outline-secondary btn-sm" type="submit">Remove</button>
+                <button class="btn btn-outline-danger btn-sm sz-scholarship-card__btn" type="submit">
+                    <i class="bi bi-trash me-1"></i>Remove
+                </button>
             </form>
         </div>
-    </div>
+    </footer>
 </div>
 
 <!-- Scored recommendation card -->
-<div th:fragment="scored-card(scored)" class="sz-opp-card">
-    <div class="sz-opp-card__header">
-        <div class="d-flex justify-content-between align-items-start gap-2">
-            <div class="sz-opp-title" th:text="${scored.opportunity.title}">Title</div>
-            <span class="badge text-bg-success flex-shrink-0"
-                  th:text="${scored.matchScore} + '%'">80%</span>
-        </div>
-        <div class="sz-opp-provider">
-            <i class="bi bi-building"></i>
-            <span th:text="${scored.opportunity.providerName}">Provider</span>
-        </div>
-    </div>
-    <div class="sz-opp-card__body">
-        <div class="mb-2">
-            <div class="d-flex justify-content-between small mb-1">
-                <span class="text-secondary">ScholarFit score</span>
-                <span class="fw-bold text-success" th:text="${scored.matchScore} + '%'">0%</span>
-            </div>
-            <div class="sz-match-bar">
-                <div class="sz-match-bar__fill" th:style="'width:' + ${scored.matchScore} + '%'"></div>
-            </div>
-            <p class="small text-secondary mt-2 mb-0" th:if="${scored.breakdown != null}"
-               th:text="${scored.breakdown.explanation}">Breakdown</p>
-        </div>
-        <div class="sz-opp-meta">
-            <span class="sz-badge sz-badge--level" th:text="${scored.opportunity.educationLevel}">Level</span>
-            <span class="sz-badge sz-badge--country" th:text="${scored.opportunity.country}">Country</span>
-        </div>
-    </div>
-    <div class="sz-opp-card__footer">
-        <span class="sz-deadline" th:if="${scored.opportunity.deadline != null}"
-              th:attr="data-deadline=${scored.opportunity.deadline}">Deadline</span>
-        <a th:href="@{/apply/{id}(id=${scored.opportunity.opportunityId})}" class="btn btn-primary btn-sm">
-            <i class="bi bi-send me-1"></i>Apply
-        </a>
-    </div>
+<div th:fragment="scored-card(scored)"
+     th:replace="~{fragments/components :: scholarship-card(
+         opportunity=${scored.opportunity},
+         showApply=true,
+         withApplyBtn=true,
+         removeId=null,
+         matchScore=${scored.matchScore},
+         eligibilityText=${scored.breakdown != null ? scored.breakdown.explanation : null})}">
 </div>
 
 <div th:fragment="page-header(title, subtitle)" class="sz-page-header">
@@ -399,40 +482,15 @@
        th:text="${ctaLabel}">CTA</a>
 </div>
 
-<!-- Landing featured card -->
-<article th:fragment="featured-scholarship-card(opportunity)" class="sz-featured-card sz-reveal">
-    <div class="sz-featured-card__header">
-        <div class="sz-featured-card__logo" aria-hidden="true">
-            <i class="bi bi-building"></i>
-        </div>
-        <div class="min-w-0">
-            <p class="sz-featured-card__org mb-0" th:text="${opportunity.providerName}">Provider</p>
-            <h3 class="sz-featured-card__title" th:text="${opportunity.title}">Title</h3>
-        </div>
-    </div>
-    <p class="sz-featured-card__desc" th:if="${opportunity.description}"
-       th:text="${#strings.abbreviate(opportunity.description, 110)}">Description</p>
-    <div class="sz-featured-card__meta">
-        <span th:if="${opportunity.country}">
-            <i class="bi bi-geo-alt" aria-hidden="true"></i>
-            <span th:text="${opportunity.country}">Country</span>
-        </span>
-        <span class="sz-deadline" th:if="${opportunity.deadline != null}"
-              th:attr="data-deadline=${opportunity.deadline}">
-            <i class="bi bi-calendar-event" aria-hidden="true"></i> Deadline
-        </span>
-        <span th:if="${opportunity.deadline == null}" class="sz-landing-muted">
-            <i class="bi bi-calendar-event" aria-hidden="true"></i> Rolling
-        </span>
-    </div>
-    <div class="sz-featured-card__tags">
-        <span class="sz-landing-badge" th:if="${opportunity.fundingType}" th:text="${opportunity.fundingType}">Funding</span>
-        <span class="sz-landing-badge" th:if="${opportunity.educationLevel}" th:text="${opportunity.educationLevel}">Level</span>
-    </div>
-    <a th:href="@{/scholarships/{id}(id=${opportunity.opportunityId})}"
-       class="btn btn-primary w-100 sz-btn-landing-primary mt-auto">
-        View &amp; apply <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
-    </a>
+<!-- Landing featured card (delegates to premium scholarship card) -->
+<article th:fragment="featured-scholarship-card(opportunity)"
+         th:replace="~{fragments/components :: scholarship-card(
+             opportunity=${opportunity},
+             showApply=true,
+             withApplyBtn=false,
+             removeId=null,
+             matchScore=null,
+             eligibilityText=null)}">
 </article>
 
 <!-- Admin report exports -->

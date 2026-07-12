@@ -825,4 +825,62 @@
 
         renderCalendar();
     })();
+
+    /* Scholarship cards — share + favorite animation */
+    (function initScholarshipCards() {
+        document.querySelectorAll(".sz-scholarship-card__share").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+                var url = btn.getAttribute("data-share-url");
+                var title = btn.getAttribute("data-share-title") || "Scholarship on ScholarZim";
+                if (!url) return;
+                var fullUrl = url.startsWith("http") ? url : (window.location.origin + url);
+
+                if (navigator.share) {
+                    navigator.share({ title: title, url: fullUrl }).catch(function () {});
+                    return;
+                }
+
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(fullUrl).then(function () {
+                        btn.classList.add("is-shared");
+                        var icon = btn.querySelector(".bi");
+                        if (icon) {
+                            icon.classList.remove("bi-share");
+                            icon.classList.add("bi-check2");
+                        }
+                        window.setTimeout(function () {
+                            btn.classList.remove("is-shared");
+                            if (icon) {
+                                icon.classList.add("bi-share");
+                                icon.classList.remove("bi-check2");
+                            }
+                        }, 2000);
+                    });
+                }
+            });
+        });
+
+        document.querySelectorAll("[data-scholarship-save]").forEach(function (form) {
+            form.addEventListener("submit", function () {
+                var bookmark = form.querySelector(".sz-scholarship-card__bookmark");
+                var saveBtn = form.querySelector(".sz-scholarship-card__btn");
+                if (bookmark) {
+                    bookmark.classList.add("is-animating", "is-favorited");
+                    window.setTimeout(function () {
+                        bookmark.classList.remove("is-animating");
+                    }, 450);
+                }
+                if (saveBtn) {
+                    saveBtn.classList.add("is-favorited");
+                    var icon = saveBtn.querySelector(".bi");
+                    if (icon) {
+                        icon.classList.remove("bi-bookmark");
+                        icon.classList.add("bi-bookmark-fill");
+                    }
+                    var label = saveBtn.querySelector("span");
+                    if (label) label.textContent = "Saved";
+                }
+            });
+        });
+    })();
 })();

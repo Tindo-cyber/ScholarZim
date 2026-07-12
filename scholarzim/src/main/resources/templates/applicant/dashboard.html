@@ -125,41 +125,10 @@
                                 'Browse scholarships')}"></div>
                         </th:block>
 
-                        <div class="sz-dash-rec-grid" th:if="${stats.hasProfile and !recommendations.isEmpty()}">
-                            <article class="sz-dash-rec-card" th:each="scored : ${recommendations}">
-                                <div class="sz-dash-rec-card__head">
-                                    <div class="sz-dash-rec-card__icon">
-                                        <i class="bi bi-mortarboard"></i>
-                                    </div>
-                                    <div class="sz-dash-rec-card__score">
-                                        <span th:text="${scored.matchScore}">0</span>%
-                                        <small>match</small>
-                                    </div>
-                                </div>
-                                <h3 class="sz-dash-rec-card__title" th:text="${scored.opportunity.title}">Title</h3>
-                                <p class="sz-dash-rec-card__meta">
-                                    <span th:text="${scored.opportunity.providerName}">Provider</span>
-                                    <span th:if="${scored.opportunity.country}">
-                                        · <span th:text="${scored.opportunity.country}">Country</span>
-                                    </span>
-                                </p>
-                                <div class="sz-match-bar sz-dash-rec-card__bar">
-                                    <div class="sz-match-bar__fill"
-                                         th:style="'width:' + ${scored.matchScore} + '%'"></div>
-                                </div>
-                                <div class="sz-dash-rec-card__footer">
-                                    <span class="sz-deadline small"
-                                          th:if="${scored.opportunity.deadline != null}"
-                                          th:attr="data-deadline=${scored.opportunity.deadline}">Deadline</span>
-                                    <form th:action="@{/apply/{id}(id=${scored.opportunity.opportunityId})}"
-                                          method="post" class="m-0">
-                                        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                        <button type="submit" class="btn btn-sm btn-primary">
-                                            Apply <i class="bi bi-arrow-right ms-1"></i>
-                                        </button>
-                                    </form>
-                                </div>
-                            </article>
+                        <div class="sz-opp-grid" th:if="${stats.hasProfile and !recommendations.isEmpty()}">
+                            <th:block th:each="scored : ${recommendations}">
+                                <div th:replace="~{fragments/components :: scored-card(scored=${scored})}"></div>
+                            </th:block>
                         </div>
                     </th:block>
                 </div>

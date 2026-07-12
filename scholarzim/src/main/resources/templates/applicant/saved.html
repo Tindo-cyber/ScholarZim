@@ -19,7 +19,7 @@
 
             <div class="sz-opp-grid" th:if="${!saved.isEmpty()}">
                 <th:block th:each="opp : ${saved}">
-                    <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=false, removeId=${opp.opportunityId})}"></div>
+                    <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=true, removeId=${opp.opportunityId}, matchScore=null, eligibilityText=null)}"></div>
                 </th:block>
             </div>
 
