@@ -51,7 +51,13 @@ class AuthMvcTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Skip to main content")))
                 .andExpect(content().string(containsString("id=\"main-content\"")))
-                .andExpect(content().string(containsString("mobile.css")));
+                .andExpect(content().string(containsString("sz-home-v4")))
+                .andExpect(content().string(containsString("id=\"categories\"")))
+                .andExpect(content().string(containsString("id=\"how-it-works\"")))
+                .andExpect(content().string(containsString("id=\"success-stories\"")))
+                .andExpect(content().string(containsString("id=\"newsletter\"")))
+                .andExpect(content().string(containsString("sz-count-up")))
+                .andExpect(content().string(containsString("landing.css")));
     }
 
     @Test
