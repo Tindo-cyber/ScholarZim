@@ -732,4 +732,97 @@
             showLoader(uploadMsg);
         });
     })();
+
+    /* Applicant dashboard — skeleton reveal + deadline calendar */
+    (function initApplicantDashboard() {
+        var root = document.getElementById("szApplicantDashboard");
+        if (!root) return;
+
+        window.setTimeout(function () {
+            root.classList.add("is-loaded");
+            var content = root.querySelector(".sz-dash-content");
+            if (content) content.classList.add("is-loaded");
+        }, 280);
+
+        var calendarEl = document.getElementById("szDashCalendar");
+        var eventsEl = document.getElementById("szDashCalendarEvents");
+        if (!calendarEl || !eventsEl) return;
+
+        var events = [];
+        eventsEl.querySelectorAll(".sz-dash-calendar__event").forEach(function (node) {
+            var date = node.getAttribute("data-date");
+            var title = node.getAttribute("data-title");
+            if (date) events.push({ date: date, title: title || "" });
+        });
+
+        var viewDate = new Date();
+        var monthNames = [
+            "January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"
+        ];
+        var weekdayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+        function dateKey(y, m, d) {
+            return y + "-" + String(m + 1).padStart(2, "0") + "-" + String(d).padStart(2, "0");
+        }
+
+        function hasDeadline(y, m, d) {
+            return events.some(function (e) { return e.date === dateKey(y, m, d); });
+        }
+
+        function renderCalendar() {
+            var year = viewDate.getFullYear();
+            var month = viewDate.getMonth();
+            var today = new Date();
+            var firstDay = new Date(year, month, 1).getDay();
+            var daysInMonth = new Date(year, month + 1, 0).getDate();
+            var daysInPrev = new Date(year, month, 0).getDate();
+
+            var html = '<div class="sz-dash-calendar__header">';
+            html += '<span class="sz-dash-calendar__month">' + monthNames[month] + " " + year + "</span>";
+            html += '<div class="sz-dash-calendar__nav">';
+            html += '<button type="button" class="sz-dash-calendar__nav-btn" data-cal-nav="-1" aria-label="Previous month"><i class="bi bi-chevron-left"></i></button>';
+            html += '<button type="button" class="sz-dash-calendar__nav-btn" data-cal-nav="1" aria-label="Next month"><i class="bi bi-chevron-right"></i></button>';
+            html += "</div></div>";
+
+            html += '<div class="sz-dash-calendar__weekdays">';
+            weekdayNames.forEach(function (w) {
+                html += '<span class="sz-dash-calendar__weekday">' + w + "</span>";
+            });
+            html += "</div><div class=\"sz-dash-calendar__days\">";
+
+            for (var i = firstDay - 1; i >= 0; i--) {
+                html += '<span class="sz-dash-calendar__day sz-dash-calendar__day--muted">' + (daysInPrev - i) + "</span>";
+            }
+
+            for (var d = 1; d <= daysInMonth; d++) {
+                var cls = "sz-dash-calendar__day";
+                if (year === today.getFullYear() && month === today.getMonth() && d === today.getDate()) {
+                    cls += " sz-dash-calendar__day--today";
+                }
+                if (hasDeadline(year, month, d)) {
+                    cls += " sz-dash-calendar__day--deadline";
+                }
+                html += '<span class="' + cls + '" title="' + (hasDeadline(year, month, d) ? "Deadline" : "") + '">' + d + "</span>";
+            }
+
+            var totalCells = firstDay + daysInMonth;
+            var trailing = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+            for (var t = 1; t <= trailing; t++) {
+                html += '<span class="sz-dash-calendar__day sz-dash-calendar__day--muted">' + t + "</span>";
+            }
+
+            html += "</div>";
+            calendarEl.innerHTML = html;
+
+            calendarEl.querySelectorAll("[data-cal-nav]").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    viewDate.setMonth(viewDate.getMonth() + parseInt(btn.getAttribute("data-cal-nav"), 10));
+                    renderCalendar();
+                });
+            });
+        }
+
+        renderCalendar();
+    })();
 })();

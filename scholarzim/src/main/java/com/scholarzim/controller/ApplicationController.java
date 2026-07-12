@@ -5,6 +5,7 @@ import com.scholarzim.exception.DuplicateApplicationException;
 import com.scholarzim.service.ApplicationService;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.OpportunityService;
+import com.scholarzim.util.ApplicationPageSupport;
 import jakarta.validation.Valid;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
@@ -14,6 +15,9 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Collections;
+import java.util.List;
 
 
 @Controller
@@ -34,9 +38,41 @@ public class ApplicationController {
     }
 
     @GetMapping("/my-applications")
-    public String myApplications(@NonNull Authentication authentication, Model model) {
-        model.addAttribute("applications",
-                applicationService.getApplicationsByUser(authentication.getName()));
+    public String myApplications(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false, defaultValue = "") String status,
+            @RequestParam(defaultValue = "0") int page,
+            @NonNull Authentication authentication,
+            Model model) {
+
+        model.addAttribute("q", q != null ? q : "");
+        model.addAttribute("statusFilter", status != null ? status : "");
+        model.addAttribute("currentPage", Math.max(0, page));
+
+        try {
+            List<com.scholarzim.entity.Application> all =
+                    applicationService.getApplicationsByUser(authentication.getName());
+            var result = ApplicationPageSupport.buildPage(all, q, status, page);
+            model.addAttribute("applications", result.applications());
+            model.addAttribute("filteredTotal", result.filteredTotal());
+            model.addAttribute("totalAll", result.totalAll());
+            model.addAttribute("approvedCount", result.approvedCount());
+            model.addAttribute("pendingCount", result.pendingCount());
+            model.addAttribute("rejectedCount", result.rejectedCount());
+            model.addAttribute("totalPages", result.totalPages());
+            model.addAttribute("currentPage", result.currentPage());
+        } catch (RuntimeException ex) {
+            model.addAttribute("loadError",
+                    ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred.");
+            model.addAttribute("applications", Collections.emptyList());
+            model.addAttribute("filteredTotal", 0);
+            model.addAttribute("totalAll", 0);
+            model.addAttribute("approvedCount", 0);
+            model.addAttribute("pendingCount", 0);
+            model.addAttribute("rejectedCount", 0);
+            model.addAttribute("totalPages", 0);
+        }
+
         return "applications/my-applications";
     }
 

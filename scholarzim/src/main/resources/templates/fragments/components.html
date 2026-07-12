@@ -182,12 +182,111 @@
     </div>
 </div>
 
+<!-- Premium SaaS dashboard cards -->
+<a th:fragment="premium-metric-card(href, icon, tone, title, value, description)"
+   class="sz-premium-card sz-premium-card--metric"
+   th:href="@{${href}}">
+    <div class="sz-premium-card__icon" th:classappend="${tone}">
+        <i class="bi" th:classappend="${icon}"></i>
+    </div>
+    <div class="sz-premium-card__content">
+        <span class="sz-premium-card__label" th:text="${title}">Title</span>
+        <span class="sz-premium-card__value" th:text="${value}">0</span>
+        <span class="sz-premium-card__desc" th:text="${description}">Description</span>
+    </div>
+    <i class="bi bi-arrow-up-right sz-premium-card__arrow" aria-hidden="true"></i>
+</a>
+
+<div th:fragment="premium-highlight-card(icon, tone, title, value, description, href, linkLabel)"
+     class="sz-premium-card sz-premium-card--highlight">
+    <div class="sz-premium-card__icon" th:classappend="${tone}">
+        <i class="bi" th:classappend="${icon}"></i>
+    </div>
+    <div class="sz-premium-card__content">
+        <span class="sz-premium-card__label" th:text="${title}">Title</span>
+        <span class="sz-premium-card__value" th:text="${value}">0</span>
+        <span class="sz-premium-card__desc" th:text="${description}">Description</span>
+    </div>
+    <a th:if="${href != null}" class="sz-premium-card__link" th:href="@{${href}}" th:text="${linkLabel}">View</a>
+</div>
+
+<section th:fragment="premium-panel(icon, title, actionUrl, actionLabel, body)"
+         class="sz-premium-panel">
+    <header class="sz-premium-panel__head">
+        <h2 class="sz-premium-panel__title">
+            <i class="bi" th:classappend="${icon}"></i>
+            <span th:text="${title}">Panel</span>
+        </h2>
+        <a th:if="${actionUrl != null}" class="sz-premium-panel__action" th:href="@{${actionUrl}}">
+            <span th:text="${actionLabel}">View all</span>
+            <i class="bi bi-arrow-right-short"></i>
+        </a>
+    </header>
+    <div class="sz-premium-panel__body">
+        <th:block th:insert="${body}"></th:block>
+    </div>
+</section>
+
+<div th:fragment="dash-skeleton" class="sz-dash-skeleton" aria-hidden="true">
+    <div class="sz-dash-skeleton__hero">
+        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>
+    </div>
+    <div class="sz-dash-skeleton__grid">
+        <div class="sz-skeleton sz-skeleton-stat" th:each="i : ${#numbers.sequence(1, 3)}"></div>
+    </div>
+    <div class="sz-dash-skeleton__grid sz-dash-skeleton__grid--4">
+        <div class="sz-skeleton sz-skeleton-stat" th:each="i : ${#numbers.sequence(1, 4)}"></div>
+    </div>
+    <div class="sz-skeleton sz-skeleton-card sz-dash-skeleton__panel">
+        <div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>
+        <div class="sz-skeleton sz-skeleton-line"></div>
+        <div class="sz-skeleton sz-skeleton-line"></div>
+    </div>
+</div>
+
 <div th:fragment="empty-state(icon, title, message, actionUrl, actionLabel)" class="sz-empty">
     <div class="sz-empty-icon"><i class="bi" th:classappend="${icon}"></i></div>
     <h3 class="h5 fw-bold mb-2" th:text="${title}">Title</h3>
     <p class="text-secondary mb-3 mx-auto" style="max-width:36ch" th:text="${message}">Message</p>
-    <a th:if="${actionUrl}" th:href="${actionUrl}" class="btn btn-primary" th:text="${actionLabel}">Action</a>
+    <a th:if="${actionUrl}" th:href="@{${actionUrl}}" class="btn btn-primary" th:text="${actionLabel}">Action</a>
 </div>
+
+<div th:fragment="dashboard-load-error(title, reason, retryUrl)" class="card sz-section-card shadow-sm border-danger-subtle mb-4">
+    <div class="card-body text-center py-5">
+        <div class="sz-empty-icon text-danger mb-3"><i class="bi bi-exclamation-triangle"></i></div>
+        <h2 class="h5 fw-bold mb-3" th:text="${title}">Unable to load your applications.</h2>
+        <p class="text-secondary mb-1">Reason:</p>
+        <p class="text-danger mb-4" th:text="${reason}">Error message</p>
+        <a class="btn btn-primary" th:href="@{${retryUrl}}">
+            <i class="bi bi-arrow-clockwise me-1"></i>Retry
+        </a>
+    </div>
+</div>
+
+<nav th:fragment="list-pagination(currentPage, totalPages, q, status)"
+     class="d-flex justify-content-center mt-4"
+     aria-label="Pagination">
+    <ul class="pagination mb-0">
+        <li class="page-item" th:classappend="${currentPage <= 0} ? 'disabled'">
+            <a class="page-link"
+               th:href="@{/my-applications(q=${q}, status=${status}, page=${currentPage - 1})}"
+               aria-label="Previous page">Previous</a>
+        </li>
+        <li class="page-item"
+            th:each="pageNum : ${#numbers.sequence(0, totalPages - 1)}"
+            th:classappend="${pageNum == currentPage} ? 'active'">
+            <a class="page-link"
+               th:href="@{/my-applications(q=${q}, status=${status}, page=${pageNum})}"
+               th:text="${pageNum + 1}">1</a>
+        </li>
+        <li class="page-item" th:classappend="${currentPage >= totalPages - 1} ? 'disabled'">
+            <a class="page-link"
+               th:href="@{/my-applications(q=${q}, status=${status}, page=${currentPage + 1})}"
+               aria-label="Next page">Next</a>
+        </li>
+    </ul>
+</nav>
 
 <div th:fragment="document-checklist(hasProfile, hasResultsCert, profileCompletion)" class="sz-checklist">
     <div class="sz-checklist__item" th:classappend="${hasProfile} ? 'sz-checklist__item--done' : ''">

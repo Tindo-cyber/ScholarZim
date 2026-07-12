@@ -26,9 +26,8 @@
     <link rel="stylesheet" th:href="@{/css/base.css(v=41)}">
     <link rel="stylesheet" th:href="@{/css/layout.css(v=41)}">
     <link rel="stylesheet" th:href="@{/css/components.css(v=41)}">
-    <link rel="stylesheet" th:href="@{/css/dashboard.css(v=41)}">
+    <link rel="stylesheet" th:href="@{/css/dashboard.css(v=42)}">
     <link rel="stylesheet" th:href="@{/css/dark.css(v=41)}">
-    <link rel="stylesheet" th:href="@{/css/auth.css(v=41)}">
     <link rel="stylesheet" th:href="@{/css/accessibility.css(v=41)}">
     <link rel="stylesheet" th:href="@{/css/mobile.css(v=41)}">
     <link rel="stylesheet" th:href="@{/css/polish.css(v=41)}">
@@ -504,20 +503,10 @@
        th:name="${_csrf != null ? _csrf.parameterName : '_csrf'}"
        th:value="${_csrf != null ? _csrf.token : ''}"/>
 
-<header th:fragment="auth-topbar" class="sz-auth-topbar">
-    <a class="sz-auth-topbar__back" th:href="@{/}">
-        <i class="bi bi-arrow-left"></i> Back to home
-    </a>
-    <a class="sz-auth-topbar__brand" th:href="@{/}">
-        <span class="sz-auth-topbar__brand-icon"><i class="bi bi-mortarboard-fill"></i></span>
-        <span>ScholarZim</span>
-    </a>
-</header>
-
 <th:block th:fragment="scripts">
     <div th:replace="~{fragments/layout :: confirm-dialog}"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script th:src="@{/js/app.js(v=41)}"></script>
+    <script th:src="@{/js/app.js(v=42)}"></script>
     <script th:src="@{/js/pwa.js(v=41)}"></script>
 </th:block>
 

@@ -19,6 +19,8 @@ class MyApplicationsPageMvcTest extends MvcIntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(view().name("applications/my-applications"))
                 .andExpect(content().string(containsString("Application tracker")))
+                .andExpect(content().string(containsString("No applications found.")))
+                .andExpect(content().string(containsString("You have not submitted any scholarship applications yet.")))
                 .andExpect(content().string(not(containsString("Funding for every stage"))))
                 .andExpect(content().string(not(containsString("Something went wrong"))))
                 .andExpect(content().string(not(containsString("sz-landing-announce"))))
@@ -38,6 +40,7 @@ class MyApplicationsPageMvcTest extends MvcIntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(view().name("applications/my-applications"))
                 .andExpect(content().string(containsString("Test Scholarship")))
+                .andExpect(content().string(containsString("sz-pro-table")))
                 .andExpect(content().string(not(containsString("Something went wrong"))))
                 .andExpect(content().string(not(containsString("sz-landing-header"))))
                 .andExpect(content().string(containsString("sz-sidebar")));

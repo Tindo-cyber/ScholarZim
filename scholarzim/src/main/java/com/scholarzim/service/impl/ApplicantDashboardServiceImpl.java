@@ -6,10 +6,13 @@ import com.scholarzim.entity.Application;
 import com.scholarzim.service.ApplicantDashboardService;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.ApplicationService;
+import com.scholarzim.service.OpportunityService;
+import com.scholarzim.service.RecommendationService;
 import com.scholarzim.service.SavedScholarshipService;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Function;
 
@@ -20,15 +23,21 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
     private final ApplicantProfileService profileService;
     private final ApplicationService applicationService;
     private final SavedScholarshipService savedScholarshipService;
+    private final RecommendationService recommendationService;
+    private final OpportunityService opportunityService;
 
     public ApplicantDashboardServiceImpl(
             ApplicantProfileService profileService,
             ApplicationService applicationService,
-            SavedScholarshipService savedScholarshipService) {
+            SavedScholarshipService savedScholarshipService,
+            RecommendationService recommendationService,
+            OpportunityService opportunityService) {
 
         this.profileService = profileService;
         this.applicationService = applicationService;
         this.savedScholarshipService = savedScholarshipService;
+        this.recommendationService = recommendationService;
+        this.opportunityService = opportunityService;
     }
 
     @Override
@@ -49,6 +58,21 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
         dto.setApprovedApplications(countByStatus(applications, "APPROVED"));
         dto.setRejectedApplications(countByStatus(applications, "REJECTED"));
         dto.setSavedCount(savedScholarshipService.listSaved(email).size());
+
+        if (hasProfile) {
+            var matches = recommendationService.recommendForApplicant(email);
+            dto.setEligibleScholarships(matches.size());
+            dto.setUpcomingDeadlinesCount(matches.stream()
+                    .map(m -> m.getOpportunity())
+                    .filter(o -> o != null && o.getDeadline() != null)
+                    .filter(o -> !o.getDeadline().isBefore(LocalDate.now()))
+                    .count());
+        } else {
+            dto.setEligibleScholarships(opportunityService.getActiveOpportunities().size());
+            dto.setUpcomingDeadlinesCount(opportunityService.getActiveOpportunities().stream()
+                    .filter(o -> o.getDeadline() != null && !o.getDeadline().isBefore(LocalDate.now()))
+                    .count());
+        }
 
         return dto;
     }

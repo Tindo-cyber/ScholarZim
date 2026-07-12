@@ -18,57 +18,121 @@
 
     <div th:replace="~{fragments/components :: page-header('Application tracker', 'Monitor the status of every scholarship you have applied for.')}"></div>
 
-    <div th:if="${applications.isEmpty()}" class="sz-empty">
-        <div class="sz-empty-icon"><i class="bi bi-file-earmark-text"></i></div>
-        <h3 class="h5 fw-bold">No applications yet</h3>
-        <p class="text-secondary mb-3">
-            Browse available scholarships and submit your first application.
-        </p>
-        <a th:href="@{/opportunities}" class="btn btn-primary">
-            <i class="bi bi-search me-1"></i>Browse scholarships
-        </a>
-    </div>
+    <div th:if="${loadError != null}"
+         th:replace="~{fragments/components :: dashboard-load-error('Unable to load your applications.', ${loadError}, '/my-applications')}"></div>
 
-    <div th:if="${!applications.isEmpty()}">
+    <th:block th:unless="${loadError != null}">
+
+        <div class="row g-3 mb-4" th:if="${totalAll > 0}">
+            <div class="col-6 col-md-3">
+                <div th:replace="~{fragments/components :: stat-card('bi-file-earmark-text', ${totalAll}, 'Total applications', 'bg-primary-subtle text-primary')}"></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div th:replace="~{fragments/components :: stat-card('bi-hourglass-split', ${pendingCount}, 'In progress', 'bg-warning-subtle text-warning')}"></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div th:replace="~{fragments/components :: stat-card('bi-check-circle', ${approvedCount}, 'Approved', 'bg-success-subtle text-success')}"></div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div th:replace="~{fragments/components :: stat-card('bi-x-circle', ${rejectedCount}, 'Rejected', 'bg-danger-subtle text-danger')}"></div>
+            </div>
+        </div>
+
         <div class="sz-analytics-panel mb-4"
-             th:with="total=${applications.size()},
-                      approved=${#lists.size(applications.?[applicationStatus == 'APPROVED'])},
-                      pending=${#lists.size(applications.?[applicationStatus == 'PENDING' or applicationStatus == 'SUBMITTED' or applicationStatus == 'UNDER_REVIEW' or applicationStatus == 'DOCUMENTS_REQUESTED' or applicationStatus == 'WAITLISTED'])},
-                      rejected=${#lists.size(applications.?[applicationStatus == 'REJECTED'])},
-                      pendPct=${total > 0 ? (pending * 100) / total : 0},
-                      apprPct=${total > 0 ? (approved * 100) / total : 0},
-                      rejPct=${total > 0 ? (rejected * 100) / total : 0}">
+             th:if="${totalAll > 0}"
+             th:with="pendPct=${totalAll > 0 ? (pendingCount * 100) / totalAll : 0},
+                      apprPct=${totalAll > 0 ? (approvedCount * 100) / totalAll : 0},
+                      rejPct=${totalAll > 0 ? (rejectedCount * 100) / totalAll : 0}">
             <div class="sz-analytics-panel__title">
                 <i class="bi bi-bar-chart-line text-primary me-1"></i>
-                <span th:text="${total}">0</span> application<span th:if="${total != 1}">s</span> tracked
+                Application progress
             </div>
             <div th:replace="~{fragments/components :: analytics-bar(${pendPct}, ${apprPct}, ${rejPct})}"></div>
         </div>
 
-        <div class="sz-app-card" th:each="app : ${applications}">
-            <div class="sz-app-status-icon"
-                 th:classappend="${app.applicationStatus == 'APPROVED' ? ' bg-success-subtle text-success'
-                     : (app.applicationStatus == 'REJECTED' ? ' bg-danger-subtle text-danger' : ' bg-warning-subtle text-warning')}">
-                <i th:classappend="${app.applicationStatus == 'APPROVED' ? ' bi-check-lg'
-                     : (app.applicationStatus == 'REJECTED' ? ' bi-x-lg' : ' bi-hourglass-split')}"></i>
-            </div>
-            <div class="flex-grow-1 min-w-0">
-                <div class="fw-bold text-truncate"
-                     th:text="${app.opportunity.title}">Opportunity</div>
-                <div class="small text-secondary"
-                     th:text="${app.opportunity.providerName}">Provider</div>
-                <div class="small text-secondary mt-1">
-                    <i class="bi bi-calendar3 me-1"></i>
-                    Applied <span th:text="${app.submittedAt != null
-                        ? #temporals.format(app.submittedAt, 'dd MMM yyyy') : '—'}"></span>
+        <form class="card sz-section-card shadow-sm mb-4" method="get" th:action="@{/my-applications}" th:if="${totalAll > 0}">
+            <div class="card-body">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold" for="applications-search">Search</label>
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="bi bi-search"></i></span>
+                            <input id="applications-search"
+                                   class="form-control"
+                                   type="search"
+                                   name="q"
+                                   placeholder="Search by scholarship or provider"
+                                   th:value="${q}">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold" for="applications-status">Status</label>
+                        <select id="applications-status" class="form-select" name="status">
+                            <option value="" th:selected="${statusFilter == null or statusFilter.isEmpty()}">All statuses</option>
+                            <option value="PENDING" th:selected="${statusFilter == 'PENDING'}">In progress</option>
+                            <option value="APPROVED" th:selected="${statusFilter == 'APPROVED'}">Approved</option>
+                            <option value="REJECTED" th:selected="${statusFilter == 'REJECTED'}">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2 d-grid">
+                        <button type="submit" class="btn btn-primary">Filter</button>
+                    </div>
                 </div>
             </div>
-            <span class="badge rounded-pill fs-6"
-                  th:classappend="${app.applicationStatus == 'APPROVED' ? 'text-bg-success'
-                      : (app.applicationStatus == 'REJECTED' ? 'text-bg-danger' : 'text-bg-warning')}"
-                  th:text="${app.applicationStatus}">PENDING</span>
+        </form>
+
+        <div th:if="${totalAll == 0}"
+             th:replace="~{fragments/components :: empty-state(
+                 'bi-file-earmark-text',
+                 'No applications found.',
+                 'You have not submitted any scholarship applications yet.',
+                 '/opportunities',
+                 'Browse Scholarships')}"></div>
+
+        <div th:if="${totalAll > 0 and filteredTotal == 0}"
+             th:replace="~{fragments/components :: empty-state(
+                 'bi-funnel',
+                 'No applications found.',
+                 'No applications match your current filters. Try adjusting your search or status filter.',
+                 '/my-applications',
+                 'Clear filters')}"></div>
+
+        <div th:if="${filteredTotal > 0}" class="card sz-section-card shadow-sm sz-pro-table">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                    <tr>
+                        <th>Scholarship</th>
+                        <th>Provider</th>
+                        <th>Submitted</th>
+                        <th>Status</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="app : ${applications}">
+                        <td class="fw-semibold" th:text="${app.opportunity.title}">Scholarship</td>
+                        <td th:text="${app.opportunity.providerName}">Provider</td>
+                        <td th:text="${app.submittedAt != null ? #temporals.format(app.submittedAt, 'dd MMM yyyy') : '—'}">—</td>
+                        <td>
+                            <span class="badge rounded-pill"
+                                  th:classappend="${app.applicationStatus == 'APPROVED' ? 'text-bg-success'
+                                      : (app.applicationStatus == 'REJECTED' ? 'text-bg-danger' : 'text-bg-warning')}"
+                                  th:text="${app.applicationStatus}">PENDING</span>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+
+        <nav th:if="${totalPages > 1}"
+             th:replace="~{fragments/components :: list-pagination(
+                 ${currentPage},
+                 ${totalPages},
+                 ${q},
+                 ${statusFilter})}"></nav>
+
+    </th:block>
 
 </th:block>
 </body>
