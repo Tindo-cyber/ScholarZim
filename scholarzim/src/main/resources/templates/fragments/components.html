@@ -158,15 +158,136 @@
     </footer>
 </div>
 
+<!-- ScholarFit AI recommendation card -->
+<article th:fragment="scholarfit-recommendation-card(scored)"
+         class="sz-scholarfit-card"
+         th:with="breakdown=${scored.breakdown},
+                  opp=${scored.opportunity},
+                  match=${scored.matchScore}"
+         th:attr="data-opportunity-id=${opp.opportunityId},
+                  data-share-title=${opp.title},
+                  data-share-url=@{/scholarships/{id}(id=${opp.opportunityId})}">
+
+    <div class="sz-scholarfit-card__glow" aria-hidden="true"></div>
+
+    <header class="sz-scholarfit-card__top">
+        <div class="sz-scholarfit-card__brand">
+            <span class="sz-scholarfit-card__ai-badge">
+                <i class="bi bi-stars"></i> ScholarFit AI
+            </span>
+            <span th:if="${breakdown != null and breakdown.confidenceLevel != null}"
+                  class="sz-scholarfit-confidence"
+                  th:classappend="${T(com.scholarzim.util.ScholarFitPresentation).confidenceBadgeClass(breakdown.confidenceLevel)}"
+                  th:text="${breakdown.confidenceLabel}">High confidence</span>
+        </div>
+        <div class="sz-scholarfit-card__match-ring"
+             th:classappend="${T(com.scholarzim.util.ScholarFitPresentation).matchRingClass(match)}">
+            <span class="sz-scholarfit-card__match-value" th:text="${match}">95</span>
+            <span class="sz-scholarfit-card__match-label">% Match</span>
+        </div>
+    </header>
+
+    <div class="sz-scholarfit-card__scholarship">
+        <div class="sz-scholarfit-card__logo"
+             th:text="${T(com.scholarzim.util.OpportunityCardUtil).logoInitials(opp.providerName)}">UZ</div>
+        <div class="min-w-0">
+            <h3 class="sz-scholarfit-card__title">
+                <a th:href="@{/scholarships/{id}(id=${opp.opportunityId})}" th:text="${opp.title}">Title</a>
+            </h3>
+            <p class="sz-scholarfit-card__org" th:text="${opp.providerName}">Provider</p>
+        </div>
+    </div>
+
+    <div class="sz-scholarfit-card__chips">
+        <span class="sz-scholarfit-chip" th:if="${opp.country != null}">
+            <i class="bi bi-geo-alt"></i><span th:text="${opp.country}">Country</span>
+        </span>
+        <span class="sz-scholarfit-chip">
+            <i class="bi bi-cash-stack"></i>
+            <span th:text="${T(com.scholarzim.util.OpportunityCardUtil).fundingAmount(opp)}">Funding</span>
+        </span>
+        <span class="sz-scholarfit-chip" th:if="${opp.educationLevel != null}">
+            <i class="bi bi-mortarboard"></i><span th:text="${opp.educationLevel}">Level</span>
+        </span>
+        <span class="sz-scholarfit-chip">
+            <i class="bi bi-journal-bookmark"></i>
+            <span th:text="${T(com.scholarzim.util.OpportunityCardUtil).fieldOfStudy(opp)}">Field</span>
+        </span>
+    </div>
+
+    <div class="sz-match-bar sz-scholarfit-card__bar">
+        <div class="sz-match-bar__fill" th:style="'width:' + ${match} + '%'"></div>
+    </div>
+
+    <div class="sz-scholarfit-card__reasons" th:if="${breakdown != null and !breakdown.reasons.isEmpty()}">
+        <p class="sz-scholarfit-card__reasons-title">Why this matches you</p>
+        <ul class="sz-scholarfit-reasons">
+            <li th:each="reason : ${breakdown.reasons}"
+                class="sz-scholarfit-reason"
+                th:classappend="${reason.satisfied} ? 'sz-scholarfit-reason--ok' : 'sz-scholarfit-reason--miss'">
+                <i class="bi"
+                   th:classappend="${reason.satisfied} ? 'bi-check-circle-fill' : 'bi-x-circle'"></i>
+                <span th:text="${reason.label}">Requirement</span>
+            </li>
+        </ul>
+    </div>
+
+    <div class="sz-scholarfit-card__missing"
+         th:if="${breakdown != null and !breakdown.missingRequirements.isEmpty()}">
+        <p class="sz-scholarfit-card__missing-title">
+            <i class="bi bi-exclamation-triangle"></i> Missing requirements
+        </p>
+        <ul class="sz-scholarfit-missing">
+            <li th:each="item : ${breakdown.missingRequirements}" th:text="${item}">Missing item</li>
+        </ul>
+    </div>
+
+    <div class="sz-scholarfit-card__deadline">
+        <span>
+            <i class="bi bi-calendar-event"></i>
+            <span th:if="${opp.deadline != null}"
+                  th:text="${#temporals.format(opp.deadline, 'dd MMM yyyy')}">Deadline</span>
+            <span th:if="${opp.deadline == null}">Rolling deadline</span>
+        </span>
+        <span class="sz-deadline"
+              th:if="${opp.deadline != null}"
+              th:attr="data-deadline=${opp.deadline}">Countdown</span>
+    </div>
+
+    <footer class="sz-scholarfit-card__footer">
+        <a th:href="@{/scholarships/{id}(id=${opp.opportunityId})}"
+           class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-eye me-1"></i>Details
+        </a>
+        <form th:action="@{/apply/{id}/quick(id=${opp.opportunityId})}" method="post" class="d-inline">
+            <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+            <button type="submit" class="btn btn-primary btn-sm">
+                <i class="bi bi-lightning-charge me-1"></i>Quick Apply
+            </button>
+        </form>
+        <form th:action="@{/applicant/saved/{id}(id=${opp.opportunityId})}"
+              method="post" class="d-inline" data-scholarship-save>
+            <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+            <button type="submit"
+                    class="btn btn-outline-primary btn-sm"
+                    th:classappend="${savedOpportunityIds != null and savedOpportunityIds.contains(opp.opportunityId)} ? 'is-favorited' : ''">
+                <i class="bi me-1"
+                   th:classappend="${savedOpportunityIds != null and savedOpportunityIds.contains(opp.opportunityId)} ? 'bi-bookmark-fill' : 'bi-bookmark'"></i>
+                Save
+            </button>
+        </form>
+        <button type="button"
+                class="btn btn-outline-secondary btn-sm sz-scholarship-card__share"
+                th:attr="data-share-url=@{/scholarships/{id}(id=${opp.opportunityId})},
+                         data-share-title=${opp.title}">
+            <i class="bi bi-share me-1"></i>Share
+        </button>
+    </footer>
+</article>
+
 <!-- Scored recommendation card -->
 <div th:fragment="scored-card(scored)"
-     th:replace="~{fragments/components :: scholarship-card(
-         opportunity=${scored.opportunity},
-         showApply=true,
-         withApplyBtn=true,
-         removeId=null,
-         matchScore=${scored.matchScore},
-         eligibilityText=${scored.breakdown != null ? scored.breakdown.explanation : null})}">
+     th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}">
 </div>
 
 <div th:fragment="page-header(title, subtitle)" class="sz-page-header">

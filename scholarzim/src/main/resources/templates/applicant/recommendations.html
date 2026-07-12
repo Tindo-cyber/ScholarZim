@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/dashboard-layout :: page(
-          'Your Matches',
+          'ScholarFit AI',
           'recommendations',
           'recommendations',
           'applications',
@@ -11,30 +11,50 @@
 <body>
 <th:block id="recommendations-content">
 
-            <div th:replace="~{fragments/components :: page-header('Recommended for you', 'Scholarships matched to your education level, field of study, and location.')}"></div>
-
-            <div th:if="${!hasProfile}" class="alert alert-warning rounded-4">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                Complete your
-                <a th:href="@{/applicant/profile}" class="alert-link fw-semibold">academic profile</a>
-                to unlock personalised recommendations.
+    <section class="sz-scholarfit-hero">
+        <div class="sz-scholarfit-hero__copy">
+            <span class="sz-scholarfit-hero__badge"><i class="bi bi-stars"></i> ScholarFit AI</span>
+            <h1 class="sz-scholarfit-hero__title">Your personalised scholarship matches</h1>
+            <p class="sz-scholarfit-hero__subtitle">
+                Every recommendation includes a match score, confidence rating, and clear reasons
+                why you qualify — or what to fix to improve your fit.
+            </p>
+        </div>
+        <div class="sz-scholarfit-hero__stats" th:if="${hasProfile and !opportunities.isEmpty()}">
+            <div class="sz-scholarfit-hero__stat">
+                <span class="sz-scholarfit-hero__stat-value" th:text="${opportunities.size()}">0</span>
+                <span class="sz-scholarfit-hero__stat-label">Matches found</span>
             </div>
-
-            <div th:if="${hasProfile and opportunities.isEmpty()}" class="sz-empty">
-                <div class="sz-empty-icon"><i class="bi bi-stars"></i></div>
-                <h3 class="h5 fw-bold">No matches yet</h3>
-                <p class="text-secondary mb-3">
-                    Update your profile or check back when new opportunities are posted.
-                </p>
-                <a th:href="@{/applicant/profile}" class="btn btn-outline-primary btn-sm me-2">Edit profile</a>
-                <a th:href="@{/opportunities}" class="btn btn-primary btn-sm">Browse all</a>
+            <div class="sz-scholarfit-hero__stat" th:if="${!opportunities.isEmpty()}">
+                <span class="sz-scholarfit-hero__stat-value"
+                      th:text="${opportunities[0].matchScore} + '%'">0%</span>
+                <span class="sz-scholarfit-hero__stat-label">Top match</span>
             </div>
+        </div>
+    </section>
 
-            <div th:if="${hasProfile and !opportunities.isEmpty()}" class="sz-opp-grid">
-                <th:block th:each="scored : ${opportunities}">
-                    <div th:replace="~{fragments/components :: scored-card(scored=${scored})}"></div>
-                </th:block>
-            </div>
+    <div th:if="${!hasProfile}" class="alert alert-warning rounded-4">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        Complete your
+        <a th:href="@{/applicant/profile}" class="alert-link fw-semibold">academic profile</a>
+        to unlock ScholarFit AI recommendations.
+    </div>
+
+    <div th:if="${hasProfile and opportunities.isEmpty()}" class="sz-empty">
+        <div class="sz-empty-icon"><i class="bi bi-stars"></i></div>
+        <h3 class="h5 fw-bold">No matches yet</h3>
+        <p class="text-secondary mb-3">
+            ScholarFit AI could not find eligible scholarships yet. Update your profile or check back when new opportunities are posted.
+        </p>
+        <a th:href="@{/applicant/profile}" class="btn btn-outline-primary btn-sm me-2">Edit profile</a>
+        <a th:href="@{/opportunities}" class="btn btn-primary btn-sm">Browse all</a>
+    </div>
+
+    <div th:if="${hasProfile and !opportunities.isEmpty()}" class="sz-scholarfit-grid">
+        <th:block th:each="scored : ${opportunities}">
+            <div th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}"></div>
+        </th:block>
+    </div>
 
 </th:block>
 </body>

@@ -105,7 +105,7 @@
             <section class="sz-dash-section" aria-label="AI recommended scholarships">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-robot',
-                    'AI Recommended Scholarships',
+                    'ScholarFit AI Matches',
                     '/applicant/recommendations',
                     'See all matches',
                     ~{:: #rec-body}
@@ -125,9 +125,9 @@
                                 'Browse scholarships')}"></div>
                         </th:block>
 
-                        <div class="sz-opp-grid" th:if="${stats.hasProfile and !recommendations.isEmpty()}">
+                        <div class="sz-scholarfit-grid sz-scholarfit-grid--compact" th:if="${stats.hasProfile and !recommendations.isEmpty()}">
                             <th:block th:each="scored : ${recommendations}">
-                                <div th:replace="~{fragments/components :: scored-card(scored=${scored})}"></div>
+                                <div th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}"></div>
                             </th:block>
                         </div>
                     </th:block>
