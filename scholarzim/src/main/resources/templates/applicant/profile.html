@@ -15,7 +15,11 @@
         <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-profile}"></div>
         <div class="sz-page-shell__content">
 
-            <div th:replace="~{fragments/components :: page-header('Academic profile', 'A complete profile helps ScholarZim match you with the right scholarships.')}"></div>
+            <div th:replace="~{fragments/components :: dashboard-chrome(
+                @{/applicant/dashboard}, 'Dashboard',
+                null, null,
+                'Academic profile',
+                'A complete profile helps ScholarZim match you with the right scholarships.')}"></div>
 
             <div th:replace="~{fragments/components :: profile-completion-module(${profileCompletion})}"></div>
 

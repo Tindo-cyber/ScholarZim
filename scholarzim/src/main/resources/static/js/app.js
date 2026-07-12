@@ -33,12 +33,8 @@
         });
     }
 
-    /* Flash alerts → Bootstrap toasts */
+    /* Flash alerts → Bootstrap toasts + programmatic API */
     (function initToasts() {
-        var alertSelectors = ".alert-success, .alert-danger, .alert-warning, .alert-info";
-        var alerts = document.querySelectorAll(alertSelectors);
-        if (!alerts.length) return;
-
         var toneMap = {
             "alert-success": "success",
             "alert-danger": "danger",
@@ -46,28 +42,29 @@
             "alert-info": "info"
         };
 
-        var container = document.getElementById("sz-toast-container");
-        if (!container) {
-            container = document.createElement("div");
-            container.id = "sz-toast-container";
-            container.className = "toast-container position-fixed top-0 end-0 p-3";
-            container.style.zIndex = "1090";
-            document.body.appendChild(container);
+        function getContainer() {
+            var container = document.getElementById("sz-toast-container");
+            if (!container) {
+                container = document.createElement("div");
+                container.id = "sz-toast-container";
+                container.className = "toast-container position-fixed top-0 end-0 p-3";
+                container.style.zIndex = "1090";
+                container.setAttribute("aria-live", "polite");
+                container.setAttribute("aria-atomic", "true");
+                document.body.appendChild(container);
+            }
+            return container;
         }
 
-        alerts.forEach(function (alert) {
-            var tone = "primary";
-            Object.keys(toneMap).some(function (cls) {
-                if (alert.classList.contains(cls)) {
-                    tone = toneMap[cls];
-                    return true;
-                }
-                return false;
-            });
+        function announce(message) {
+            var live = document.getElementById("sz-live-region");
+            if (live) live.textContent = message;
+        }
 
-            var message = alert.querySelector("span")?.textContent?.trim() || alert.textContent.trim();
+        function showToast(message, tone) {
             if (!message) return;
-
+            tone = tone || "success";
+            var container = getContainer();
             var toastEl = document.createElement("div");
             toastEl.className = "toast align-items-center text-bg-" + tone + " border-0";
             toastEl.setAttribute("role", "alert");
@@ -77,12 +74,31 @@
                 '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Dismiss notification"></button>' +
                 '</div>';
             container.appendChild(toastEl);
-
+            announce(message);
             if (window.bootstrap && bootstrap.Toast) {
                 var toast = new bootstrap.Toast(toastEl, { delay: 4500 });
                 toast.show();
+                toastEl.addEventListener("hidden.bs.toast", function () {
+                    toastEl.remove();
+                });
             }
+        }
 
+        window.szShowToast = showToast;
+
+        var alertSelectors = ".alert-success, .alert-danger, .alert-warning, .alert-info";
+        document.querySelectorAll(alertSelectors).forEach(function (alert) {
+            var tone = "primary";
+            Object.keys(toneMap).some(function (cls) {
+                if (alert.classList.contains(cls)) {
+                    tone = toneMap[cls];
+                    return true;
+                }
+                return false;
+            });
+            var message = alert.querySelector("span")?.textContent?.trim() || alert.textContent.trim();
+            if (!message) return;
+            showToast(message, tone);
             alert.classList.add("d-none");
         });
     })();
@@ -694,6 +710,10 @@
             }
 
             modal.show();
+            modalEl.addEventListener("shown.bs.modal", function focusConfirm() {
+                if (confirmBtn) confirmBtn.focus();
+                modalEl.removeEventListener("shown.bs.modal", focusConfirm);
+            });
         }
 
         if (confirmBtn) {
@@ -1007,6 +1027,32 @@
             });
         });
     })();
+
+    /* Bootstrap tooltips — icon buttons and explicit triggers */
+    (function initTooltips() {
+        if (!window.bootstrap || !bootstrap.Tooltip) return;
+
+        var tooltipSelector = '[data-bs-toggle="tooltip"], .btn[title]:not([data-bs-toggle]), .sz-icon-btn[title]';
+        document.querySelectorAll(tooltipSelector).forEach(function (el) {
+            if (el.getAttribute("data-bs-toggle") !== "tooltip" && el.getAttribute("title")) {
+                el.setAttribute("data-bs-toggle", "tooltip");
+                el.setAttribute("data-bs-placement", el.getAttribute("data-bs-placement") || "top");
+            }
+            bootstrap.Tooltip.getOrCreateInstance(el, {
+                trigger: "hover focus",
+                delay: { show: 280, hide: 80 }
+            });
+        });
+    })();
+
+    /* Keyboard — Escape closes open tooltips */
+    document.addEventListener("keydown", function (e) {
+        if (e.key !== "Escape" || !window.bootstrap) return;
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            var tip = bootstrap.Tooltip.getInstance(el);
+            if (tip) tip.hide();
+        });
+    });
 
     /* Network connectivity overlay */
     (function initNetworkError() {

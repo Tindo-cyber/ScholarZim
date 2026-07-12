@@ -11,6 +11,11 @@
 <body>
 <th:block id="provider-dashboard-content">
 
+            <nav th:replace="~{fragments/components :: breadcrumbs(
+                @{/provider/dashboard}, 'Dashboard',
+                null, null,
+                'Overview')}"></nav>
+
             <div class="sz-dashboard-header">
                 <div>
                     <p class="sz-dashboard-header__meta"

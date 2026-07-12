@@ -231,10 +231,11 @@
                     <div class="tab-content">
                         <!-- Applicants tab -->
                         <div class="tab-pane fade show active" id="tab-applicants">
-                            <div th:if="${applicants.content.isEmpty()}" class="sz-empty py-4">
-                                <div class="sz-empty-icon"><i class="bi bi-person"></i></div>
-                                <p class="text-secondary mb-0">No applicants registered yet.</p>
-                            </div>
+                            <div th:if="${applicants.content.isEmpty()}"
+                                 th:replace="~{fragments/components :: empty-state(
+                                     'bi-person', 'No applicants yet',
+                                     'Registered students will appear here.',
+                                     null, null)}"></div>
                             <div th:if="${!applicants.content.isEmpty()}" class="table-responsive">
                                 <table class="table table-hover align-middle mb-0 sz-admin-table">
                                     <thead>
@@ -273,15 +274,18 @@
                                                   data-confirm-title="Suspend applicant"
                                                   data-confirm-variant="warning">
                                                 <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                                <button type="submit" class="btn btn-sm btn-outline-warning" title="Suspend">
+                                                <button type="submit" class="btn btn-sm btn-outline-warning sz-icon-btn" title="Suspend applicant" aria-label="Suspend applicant">
                                                     <i class="bi bi-pause-circle"></i>
                                                 </button>
                                             </form>
                                             <form th:if="${u.accountStatus == 'SUSPENDED'}"
                                                   th:action="@{/admin/users/{id}/reactivate(id=${u.userId})}"
-                                                  method="post" class="d-inline">
+                                                  method="post" class="d-inline"
+                                                  data-confirm="Reactivate this applicant? They will be able to sign in again."
+                                                  data-confirm-title="Reactivate applicant"
+                                                  data-confirm-variant="warning">
                                                 <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                                <button type="submit" class="btn btn-sm btn-outline-success" title="Reactivate">
+                                                <button type="submit" class="btn btn-sm btn-outline-success sz-icon-btn" title="Reactivate applicant" aria-label="Reactivate applicant">
                                                     <i class="bi bi-play-circle"></i>
                                                 </button>
                                             </form>
@@ -290,8 +294,8 @@
                                                   data-confirm="Delete this applicant and all their applications? This cannot be undone."
                                                   data-confirm-title="Delete applicant">
                                                 <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        title="Delete applicant">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger sz-icon-btn"
+                                                        title="Delete applicant" aria-label="Delete applicant">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -315,10 +319,11 @@
 
                         <!-- Providers tab -->
                         <div class="tab-pane fade" id="tab-providers">
-                            <div th:if="${providers.content.isEmpty()}" class="sz-empty py-4">
-                                <div class="sz-empty-icon"><i class="bi bi-building"></i></div>
-                                <p class="text-secondary mb-0">No providers registered yet.</p>
-                            </div>
+                            <div th:if="${providers.content.isEmpty()}"
+                                 th:replace="~{fragments/components :: empty-state(
+                                     'bi-building', 'No providers yet',
+                                     'Registered organisations will appear here.',
+                                     null, null)}"></div>
                             <div th:if="${!providers.content.isEmpty()}" class="table-responsive">
                                 <table class="table table-hover align-middle mb-0 sz-admin-table">
                                     <thead>
@@ -354,9 +359,12 @@
                                         <td class="text-end">
                                             <form th:if="${u.accountStatus == 'PENDING_APPROVAL'}"
                                                   th:action="@{/admin/users/providers/{id}/approve(id=${u.userId})}"
-                                                  method="post" class="d-inline">
+                                                  method="post" class="d-inline"
+                                                  data-confirm="Approve this provider? They will be able to publish scholarships immediately."
+                                                  data-confirm-title="Approve provider"
+                                                  data-confirm-variant="warning">
                                                 <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                                <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                                <button type="submit" class="btn btn-sm btn-success sz-icon-btn" title="Approve provider" aria-label="Approve provider">
                                                     <i class="bi bi-check-lg"></i>
                                                 </button>
                                             </form>
@@ -365,8 +373,8 @@
                                                   data-confirm="Delete this provider, their scholarships, and all related applications? This cannot be undone."
                                                   data-confirm-title="Delete provider">
                                                 <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        title="Delete provider">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger sz-icon-btn"
+                                                        title="Delete provider" aria-label="Delete provider">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
@@ -418,7 +426,10 @@
                                                 <i class="bi bi-file-earmark-pdf"></i> Certificate
                                             </a>
                                             <form th:action="@{/admin/users/providers/{id}/approve(id=${u.userId})}"
-                                                  method="post" class="d-inline">
+                                                  method="post" class="d-inline"
+                                                  data-confirm="Approve this provider registration?"
+                                                  data-confirm-title="Approve provider"
+                                                  data-confirm-variant="warning">
                                                 <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                                                 <button class="btn btn-sm btn-success me-1" type="submit">Approve</button>
                                             </form>

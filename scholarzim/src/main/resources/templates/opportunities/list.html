@@ -15,7 +15,11 @@
         <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-scholarship-grid}"></div>
         <div class="sz-page-shell__content">
 
-            <div th:replace="~{fragments/components :: page-header('Browse opportunities', 'Discover scholarships and funding from Zimbabwean and international providers.')}"></div>
+            <div th:replace="~{fragments/components :: dashboard-chrome(
+                @{/applicant/dashboard}, 'Dashboard',
+                null, null,
+                'Browse opportunities',
+                'Discover scholarships and funding from Zimbabwean and international providers.')}"></div>
 
             <div class="sz-filter-card card shadow-sm mb-4">
                 <div class="card-body p-4">
@@ -87,16 +91,11 @@
                 opportunit<span th:text="${opportunities.size() == 1} ? 'y' : 'ies'">ies</span> found
             </p>
 
-            <div th:if="${opportunities.isEmpty()}" class="sz-empty">
-                <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
-                <h3 class="h5 fw-bold">No opportunities found</h3>
-                <p class="text-secondary mb-3">
-                    Try widening your filters or check back later for new listings.
-                </p>
-                <a th:href="@{/opportunities}" class="btn btn-outline-primary btn-sm">
-                    Reset filters
-                </a>
-            </div>
+            <div th:if="${opportunities.isEmpty()}"
+                 th:replace="~{fragments/components :: empty-state(
+                     'bi-search', 'No opportunities found',
+                     'Try widening your filters or check back later for new listings.',
+                     @{/opportunities}, 'Reset filters')}"></div>
 
             <div th:if="${!opportunities.isEmpty()}" class="sz-opp-grid">
                 <th:block th:each="opp : ${opportunities}">

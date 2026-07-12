@@ -88,7 +88,16 @@ button:focus-visible,
     font-weight: 700;
 }
 
-/* Live region for toast / status announcements */
+/* Keyboard focus — visible on all interactive widgets */
+[role="button"]:focus-visible,
+.sz-breadcrumbs a:focus-visible,
+.sz-analytics-feed__item:focus-visible,
+.sz-scholarship-card:focus-visible {
+    outline: none;
+    box-shadow: var(--sz-focus-ring);
+}
+
+/* Toast announcements use live region */
 #sz-live-region {
     position: absolute;
     width: 1px;

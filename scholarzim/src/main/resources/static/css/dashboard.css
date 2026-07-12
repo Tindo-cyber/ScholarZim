@@ -2000,7 +2000,7 @@ body:has(.sz-shell)::after {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 1rem 1.5rem;
     margin-bottom: 1.5rem;
 }

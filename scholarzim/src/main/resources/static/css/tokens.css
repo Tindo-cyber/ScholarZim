@@ -14,6 +14,7 @@
     --sz-card: #F8FAFC;
     --sz-text: #0F172A;
     --sz-muted: #64748B;
+    --sz-text-muted: #64748B;
     --sz-text-secondary: #475569;
     --sz-border: #E2E8F0;
 
@@ -75,12 +76,17 @@
 
     /* Elevation */
     --sz-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 20px rgba(15, 23, 42, 0.06);
-    --sz-shadow-hover: 0 4px 16px rgba(15, 23, 42, 0.08);
+    --sz-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+    --sz-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+    --sz-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12), 0 4px 8px rgba(15, 23, 42, 0.04);
+    --sz-shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.1);
     --sz-shadow-glass: var(--sz-shadow);
     --sz-shadow-card: 0 0 0 1px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
 
     /* Motion */
     --sz-ease: cubic-bezier(0.4, 0, 0.2, 1);
+    --sz-ease-out: cubic-bezier(0, 0, 0.2, 1);
+    --sz-duration-fast: 0.12s;
     --sz-duration: 0.18s;
     --sz-duration-slow: 0.28s;
 
@@ -97,6 +103,14 @@
     /* Typography */
     --sz-font: 'Inter', system-ui, -apple-system, sans-serif;
     --sz-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
+    --sz-text-xs: 0.75rem;
+    --sz-text-sm: 0.8125rem;
+    --sz-text-base: 0.9375rem;
+    --sz-text-lg: 1.0625rem;
+    --sz-text-xl: 1.25rem;
+    --sz-text-2xl: 1.5rem;
+    --sz-leading-tight: 1.25;
+    --sz-leading-normal: 1.6;
 
     /* Bootstrap bridge */
     --bs-primary: #16A34A;
@@ -163,6 +177,9 @@
     --sz-glass-highlight: #334155;
 
     --sz-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 20px rgba(0, 0, 0, 0.3);
+    --sz-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --sz-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+    --sz-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
     --sz-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.4);
     --sz-shadow-glass: var(--sz-shadow);
 

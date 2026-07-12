@@ -11,7 +11,9 @@
 <body>
 <th:block id="admin-search-content">
 
-            <div th:replace="~{fragments/components :: page-header(
+            <div th:replace="~{fragments/components :: dashboard-chrome(
+                @{/admin/dashboard}, 'Dashboard',
+                null, null,
                 'Global search',
                 'Find students, providers, scholarships, and applications across the platform')}"></div>
 
@@ -34,11 +36,10 @@
             </form>
 
             <div th:if="${query.isBlank()}"
-                 class="sz-empty py-5">
-                <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
-                <h3 class="h5 mb-2">Search the platform</h3>
-                <p class="text-secondary mb-0">Look up users, scholarships, and applications from one place.</p>
-            </div>
+                 th:replace="~{fragments/components :: empty-state(
+                     'bi-search', 'Search the platform',
+                     'Look up users, scholarships, and applications from one place.',
+                     null, null)}"></div>
 
             <div th:if="${!query.isBlank() and query.length() < 2}"
                  class="alert alert-warning d-flex align-items-center gap-2">

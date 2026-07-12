@@ -68,6 +68,15 @@ th,
     flex-shrink: 0;
 }
 
+/* Touch-friendly tap targets (WCAG 2.5.5 advisory) */
+.btn-sm,
+.sz-icon-btn,
+.sz-mobile-bottom-nav a,
+.sz-topbar-btn {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+}
+
 /* Topbar — compact on phones */
 @media (max-width: 767.98px) {
     .sz-topbar__inner {
@@ -78,6 +87,24 @@ th,
     .sz-topbar__title {
         font-size: 0.9375rem;
         max-width: 11rem;
+    }
+
+    .sz-content {
+        padding: var(--sz-space-4) !important;
+    }
+
+    .sz-breadcrumbs {
+        font-size: var(--sz-text-xs);
+    }
+
+    .toast-container {
+        left: 0.75rem !important;
+        right: 0.75rem !important;
+        width: auto;
+    }
+
+    #sz-toast-container .toast {
+        width: 100%;
     }
 
     .sz-topbar__start {

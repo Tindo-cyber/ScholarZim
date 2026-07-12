@@ -1,13 +1,33 @@
 /* Phase 15 — final UX polish: transitions, confirmations, submit states */
 
-/* Enter animation only after JS marks the page ready — content stays visible if JS is slow or blocked */
+/* ── Page transitions ── */
 body.sz-page-ready .sz-content,
 body.sz-page-ready .sz-auth-wrap,
 body.sz-page-ready .sz-error-page .container {
-    animation: sz-page-enter 0.22s ease;
+    animation: sz-page-enter var(--sz-duration-slow) var(--sz-ease-out);
 }
 
+body.sz-page-ready .sz-page-shell__content > * {
+    animation: sz-stagger-in var(--sz-duration-slow) var(--sz-ease-out) both;
+}
+
+body.sz-page-ready .sz-page-shell__content > *:nth-child(1) { animation-delay: 0ms; }
+body.sz-page-ready .sz-page-shell__content > *:nth-child(2) { animation-delay: 40ms; }
+body.sz-page-ready .sz-page-shell__content > *:nth-child(3) { animation-delay: 80ms; }
+body.sz-page-ready .sz-page-shell__content > *:nth-child(4) { animation-delay: 120ms; }
+
 @keyframes sz-page-enter {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+@keyframes sz-stagger-in {
     from {
         opacity: 0;
         transform: translateY(6px);
@@ -21,16 +41,136 @@ body.sz-page-ready .sz-error-page .container {
 @media (prefers-reduced-motion: reduce) {
     body.sz-page-ready .sz-content,
     body.sz-page-ready .sz-auth-wrap,
-    body.sz-page-ready .sz-error-page .container {
+    body.sz-page-ready .sz-error-page .container,
+    body.sz-page-ready .sz-page-shell__content > * {
         animation: none;
     }
+}
+
+/* ── Interactive hover lifts ── */
+.sz-card-hover,
+.sz-dashboard-panel,
+.sz-analytics-widget,
+.sz-analytics-kpi,
+.sz-pro-table,
+.sz-filter-card,
+.sz-scholarship-card,
+.sz-scholarfit-card,
+.sz-stat-card,
+.sz-dash-highlight,
+.sz-metric-chip,
+.sz-profile-completion,
+.sz-notif-card {
+    transition:
+        transform var(--sz-duration) var(--sz-ease),
+        box-shadow var(--sz-duration) var(--sz-ease),
+        border-color var(--sz-duration) var(--sz-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .sz-card-hover:hover,
+    .sz-dashboard-panel:hover,
+    .sz-analytics-widget:hover,
+    .sz-analytics-kpi:hover,
+    .sz-scholarship-card:hover,
+    .sz-scholarfit-card:hover,
+    .sz-stat-card:hover,
+    .sz-dash-highlight:hover,
+    .sz-filter-card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--sz-shadow-hover);
+    }
+
+    .sz-list-row:hover,
+    .sz-analytics-feed__item:hover,
+    .sz-analytics-users__item:hover,
+    .sz-analytics-approvals__item:hover,
+    .sz-notif-list__item:hover {
+        background: var(--sz-surface-hover);
+    }
+
+    .btn:not(:disabled):not(.is-loading):hover {
+        transform: translateY(-1px);
+        box-shadow: var(--sz-shadow-sm);
+    }
+
+    .btn-outline-secondary:hover,
+    .btn-outline-primary:hover {
+        box-shadow: var(--sz-shadow-sm);
+    }
+
+    a:not(.btn):not(.nav-link):not(.dropdown-item):hover {
+        transition: color var(--sz-duration-fast) var(--sz-ease);
+    }
+}
+
+/* ── Toast polish ── */
+#sz-toast-container {
+    pointer-events: none;
+}
+
+#sz-toast-container .toast {
+    pointer-events: auto;
+    border-radius: var(--sz-radius-ui);
+    box-shadow: var(--sz-shadow-lg);
+    font-size: var(--sz-text-sm);
+    font-weight: 600;
+    animation: sz-toast-in var(--sz-duration-slow) var(--sz-ease-out);
+}
+
+@keyframes sz-toast-in {
+    from {
+        opacity: 0;
+        transform: translateX(12px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+/* ── Tooltips ── */
+.tooltip {
+    --bs-tooltip-font-size: var(--sz-text-xs);
+    --bs-tooltip-padding-x: 0.625rem;
+    --bs-tooltip-padding-y: 0.375rem;
+    --bs-tooltip-border-radius: 8px;
+}
+
+.tooltip .tooltip-inner {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    box-shadow: var(--sz-shadow-md);
+}
+
+/* ── Breadcrumbs spacing ── */
+.sz-breadcrumbs {
+    margin-bottom: var(--sz-space-4);
+}
+
+.sz-page-header {
+    margin-bottom: var(--sz-space-5);
+}
+
+.sz-page-header h1 {
+    font-family: var(--sz-font-display);
+    font-size: var(--sz-text-2xl);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: var(--sz-leading-tight);
+    margin-bottom: var(--sz-space-2);
+}
+
+/* ── Empty states ── */
+.sz-error-state--compact {
+    padding: var(--sz-space-6) var(--sz-space-4);
 }
 
 /* Accessible confirmation dialog */
 .sz-confirm-modal .modal-content {
     border: none;
-    border-radius: var(--sz-radius-lg, 1.25rem);
-    box-shadow: var(--sz-shadow-lg, 0 24px 48px rgba(15, 23, 42, 0.18));
+    border-radius: var(--sz-radius-lg);
+    box-shadow: var(--sz-shadow-lg);
 }
 
 .sz-confirm-modal .modal-header {
@@ -88,4 +228,22 @@ body.sz-page-ready .sz-error-page .container {
 
 .sz-chart-wrap.is-ready canvas {
     opacity: 1;
+}
+
+/* Icon-only action buttons */
+.sz-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    padding: 0;
+    border-radius: 8px;
+    transition: transform var(--sz-duration-fast) var(--sz-ease), background var(--sz-duration-fast) var(--sz-ease);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .sz-icon-btn:hover {
+        transform: scale(1.06);
+    }
 }

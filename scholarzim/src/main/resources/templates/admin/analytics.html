@@ -12,11 +12,13 @@
 <th:block id="admin-analytics-content">
 
     <div class="sz-analytics-hub">
+        <div th:replace="~{fragments/components :: dashboard-chrome(
+            @{/admin/dashboard}, 'Dashboard',
+            null, null,
+            'Analytics dashboard',
+            'Platform health, growth trends, and operational insights for ScholarZim administrators.')}"></div>
         <div class="sz-analytics-hub__header">
-            <div th:replace="~{fragments/components :: page-header(
-                'Analytics dashboard',
-                'Platform health, growth trends, and operational insights for ScholarZim administrators.')}"></div>
-            <div class="d-flex flex-wrap gap-2 align-items-center">
+            <div class="d-flex flex-wrap gap-2 align-items-center ms-auto">
                 <div class="btn-group btn-group-sm" role="group" aria-label="Time range">
                     <a th:href="@{/admin/analytics(months=6)}"
                        class="btn"

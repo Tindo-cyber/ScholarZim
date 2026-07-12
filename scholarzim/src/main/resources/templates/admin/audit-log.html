@@ -11,7 +11,11 @@
 <body>
 <th:block id="audit-log-content">
 
-            <div th:replace="~{fragments/components :: page-header('Audit log', 'Searchable record of platform actions')}"></div>
+            <div th:replace="~{fragments/components :: dashboard-chrome(
+                @{/admin/dashboard}, 'Dashboard',
+                null, null,
+                'Audit log',
+                'Searchable record of platform actions')}"></div>
             <form class="row g-2 mb-4" method="get" th:action="@{/admin/audit-log}">
                 <div class="col-md-5">
                     <input class="form-control" name="q" th:value="${query}" placeholder="Search actor, action, details…">

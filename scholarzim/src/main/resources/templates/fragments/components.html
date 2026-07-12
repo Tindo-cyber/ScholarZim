@@ -295,6 +295,12 @@
     <p class="text-secondary mb-0" th:if="${subtitle}" th:text="${subtitle}">Subtitle</p>
 </div>
 
+<!-- Dashboard page chrome: optional mid breadcrumb + header -->
+<th:block th:fragment="dashboard-chrome(homeUrl, homeLabel, midUrl, midLabel, title, subtitle)">
+    <nav th:replace="~{fragments/components :: breadcrumbs(${homeUrl}, ${homeLabel}, ${midUrl}, ${midLabel}, ${title})}"></nav>
+    <div th:replace="~{fragments/components :: page-header(${title}, ${subtitle})}"></div>
+</th:block>
+
 <!-- Error state components — never surface raw exception text -->
 <svg th:fragment="error-illustration(type)" class="sz-error-state__art" viewBox="0 0 200 160" role="img" aria-hidden="true"
      th:classappend="' sz-error-state__art--' + ${type}">

@@ -15,7 +15,11 @@
         <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-scholarship-grid}"></div>
         <div class="sz-page-shell__content">
 
-            <div th:replace="~{fragments/components :: page-header('Saved scholarships', 'Bookmarks you can return to when you are ready to apply.')}"></div>
+            <div th:replace="~{fragments/components :: dashboard-chrome(
+                @{/applicant/dashboard}, 'Dashboard',
+                null, null,
+                'Saved scholarships',
+                'Bookmarks you can return to when you are ready to apply.')}"></div>
 
             <th:block th:if="${saved.isEmpty()}">
                 <div th:replace="~{fragments/components :: empty-state('bi-bookmark', 'Nothing saved yet', 'Browse opportunities and bookmark scholarships to review later.', @{/opportunities}, 'Browse opportunities')}"></div>
