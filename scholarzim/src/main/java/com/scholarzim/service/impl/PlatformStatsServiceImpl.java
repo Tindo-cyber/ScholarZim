@@ -5,6 +5,7 @@ import com.scholarzim.repository.ApplicationRepository;
 import com.scholarzim.repository.OpportunityRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.PlatformStatsService;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
 
@@ -26,6 +27,7 @@ public class PlatformStatsServiceImpl implements PlatformStatsService {
     }
 
     @Override
+    @Cacheable("platformStats")
     public PlatformStatsDTO getPublicStats() {
 
         PlatformStatsDTO stats = new PlatformStatsDTO();

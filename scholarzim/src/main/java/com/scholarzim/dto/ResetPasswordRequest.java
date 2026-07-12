@@ -1,5 +1,6 @@
 package com.scholarzim.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
@@ -21,4 +22,9 @@ public class ResetPasswordRequest {
 
     @NotBlank
     private String confirmPassword;
+
+    @AssertTrue(message = "Passwords do not match")
+    public boolean isPasswordConfirmed() {
+        return password != null && password.equals(confirmPassword);
+    }
 }

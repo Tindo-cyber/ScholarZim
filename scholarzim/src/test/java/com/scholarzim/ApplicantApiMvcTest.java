@@ -29,7 +29,7 @@ class ApplicantApiMvcTest extends MvcIntegrationTestBase {
                         .accept(MediaType.APPLICATION_JSON)
                         .with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.content").isArray());
     }
 
     @Test
@@ -44,7 +44,7 @@ class ApplicantApiMvcTest extends MvcIntegrationTestBase {
                         .accept(MediaType.APPLICATION_JSON)
                         .with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.content").isArray());
 
         mockMvc.perform(post("/api/applicant/saved/{id}", opportunity.getOpportunityId())
                         .with(csrf())
@@ -56,7 +56,7 @@ class ApplicantApiMvcTest extends MvcIntegrationTestBase {
                         .accept(MediaType.APPLICATION_JSON)
                         .with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.content.length()").value(1));
 
         mockMvc.perform(delete("/api/applicant/saved/{id}", opportunity.getOpportunityId())
                         .with(csrf())

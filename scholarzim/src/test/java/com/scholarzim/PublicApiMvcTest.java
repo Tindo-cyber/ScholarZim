@@ -22,7 +22,8 @@ class PublicApiMvcTest extends MvcIntegrationTestBase {
     void publicScholarshipsListReturnsJsonArray() throws Exception {
         mockMvc.perform(get("/api/public/scholarships").accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
+                .andExpect(jsonPath("$.content").isArray())
+                .andExpect(jsonPath("$.totalElements").isNumber());
     }
 
     @Test

@@ -4,6 +4,7 @@ import com.scholarzim.entity.SavedScholarship;
 import com.scholarzim.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,6 +13,14 @@ import java.util.Optional;
 public interface SavedScholarshipRepository extends JpaRepository<SavedScholarship, Long> {
 
     List<SavedScholarship> findByUserOrderBySavedAtDesc(User user);
+
+    @Query("""
+            SELECT s FROM SavedScholarship s
+            JOIN FETCH s.opportunity
+            WHERE s.user = :user
+            ORDER BY s.savedAt DESC
+            """)
+    List<SavedScholarship> findByUserWithOpportunityOrderBySavedAtDesc(@Param("user") User user);
 
     Optional<SavedScholarship> findByUserAndOpportunityOpportunityId(User user, Long opportunityId);
 

@@ -88,6 +88,27 @@ public class EmailServiceImpl implements EmailService {
         sendWithRetry(message);
     }
 
+    @Override
+    @Async
+    public void sendEmailVerification(String to, String name, String verifyLink) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(to);
+        message.setSubject("Verify your ScholarZim email");
+        message.setText("""
+                Hi %s,
+
+                Please verify your email address to activate your ScholarZim account:
+
+                %s
+
+                This link expires in 24 hours.
+
+                — The ScholarZim Team
+                """.formatted(name, verifyLink));
+        sendWithRetry(message);
+    }
+
     private void sendWithRetry(SimpleMailMessage message) {
         String recipient = message.getTo() != null && message.getTo().length > 0
                 ? message.getTo()[0]

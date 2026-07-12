@@ -6,6 +6,7 @@ import com.scholarzim.dto.RegisterRequest;
 import com.scholarzim.dto.ResetPasswordRequest;
 import com.scholarzim.util.ProviderOrgType;
 import com.scholarzim.service.AuthService;
+import com.scholarzim.service.EmailVerificationService;
 import com.scholarzim.service.PasswordResetService;
 import com.scholarzim.service.PlatformStatsService;
 import com.scholarzim.service.ProviderRegistrationService;
@@ -27,22 +28,28 @@ public class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final EmailVerificationService emailVerificationService;
     private final ProviderRegistrationService providerRegistrationService;
     private final PlatformStatsService platformStatsService;
     private final boolean demoLoginEnabled;
+    private final boolean emailVerificationRequired;
 
     public AuthController(
             AuthService authService,
             PasswordResetService passwordResetService,
+            EmailVerificationService emailVerificationService,
             ProviderRegistrationService providerRegistrationService,
             PlatformStatsService platformStatsService,
-            @Value("${scholarzim.demo.seed:true}") boolean demoLoginEnabled) {
+            @Value("${scholarzim.demo.seed:true}") boolean demoLoginEnabled,
+            @Value("${scholarzim.auth.email-verification-required:true}") boolean emailVerificationRequired) {
 
         this.authService = authService;
         this.passwordResetService = passwordResetService;
+        this.emailVerificationService = emailVerificationService;
         this.providerRegistrationService = providerRegistrationService;
         this.platformStatsService = platformStatsService;
         this.demoLoginEnabled = demoLoginEnabled;
+        this.emailVerificationRequired = emailVerificationRequired;
     }
 
     @GetMapping("/register")
@@ -71,6 +78,9 @@ public class AuthController {
             return "auth/register";
         }
 
+        if (emailVerificationRequired) {
+            return "redirect:/login?registered&verify=1";
+        }
         return "redirect:/login?registered";
     }
 
@@ -121,6 +131,7 @@ public class AuthController {
             @RequestParam(name = "error", required = false) String error,
             @RequestParam(name = "logout", required = false) String logout,
             @RequestParam(name = "registered", required = false) String registered,
+            @RequestParam(name = "verify", required = false) String verify,
             Model model) {
 
         String loginRole = "provider".equalsIgnoreCase(role) ? "provider" : "student";
@@ -135,7 +146,30 @@ public class AuthController {
         model.addAttribute("showCredentialsError", credentialsError);
         model.addAttribute("showLogoutMessage", logout != null);
         model.addAttribute("showRegisteredMessage", registered != null);
+        model.addAttribute("showVerifyMessage", verify != null);
         return "auth/login";
+    }
+
+    @GetMapping("/verify-email/{token}")
+    public String verifyEmail(@PathVariable String token, RedirectAttributes redirect) {
+        try {
+            emailVerificationService.verify(token);
+            redirect.addFlashAttribute("successMessage", "Email verified. You can sign in now.");
+        } catch (IllegalArgumentException ex) {
+            redirect.addFlashAttribute("errorMessage", passwordResetErrorMessage(ex));
+        }
+        return "redirect:/login";
+    }
+
+    @PostMapping("/resend-verification")
+    public String resendVerification(
+            @RequestParam String email,
+            RedirectAttributes redirect) {
+
+        emailVerificationService.resend(email);
+        redirect.addFlashAttribute("infoMessage",
+                "If that email is registered and unverified, we sent a new verification link.");
+        return "redirect:/login";
     }
 
     @GetMapping("/forgot-password")

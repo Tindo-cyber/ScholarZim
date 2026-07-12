@@ -3,6 +3,7 @@ package com.scholarzim.service.impl;
 import com.scholarzim.dto.AdminUserViewDTO;
 import com.scholarzim.dto.PageResult;
 import com.scholarzim.dto.StoredFileResource;
+import com.scholarzim.entity.ApplicantProfile;
 import com.scholarzim.entity.Application;
 import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.ProviderProfile;
@@ -18,12 +19,14 @@ import com.scholarzim.service.NotificationService;
 import com.scholarzim.util.AuditAction;
 import com.scholarzim.util.NotificationType;
 import com.scholarzim.util.ProviderOrgType;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,11 +35,16 @@ import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 
+@Slf4j
 @Service
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserServiceImpl implements AdminUserService {
 
     private final UserRepository userRepository;
@@ -81,8 +89,13 @@ public class AdminUserServiceImpl implements AdminUserService {
                 PageRequest.of(Math.max(page, 0), Math.max(size, 1),
                         Sort.by("fullName").ascending()));
 
+        List<Long> userIds = users.getContent().stream().map(User::getUserId).toList();
+        Map<Long, Long> applicationCounts = toCountMap(applicationRepository.countGroupedByUserIds(userIds));
+        Map<Long, ApplicantProfile> profiles = profileRepository.findByUserUserIdIn(userIds).stream()
+                .collect(Collectors.toMap(p -> p.getUser().getUserId(), p -> p, (a, b) -> a));
+
         List<AdminUserViewDTO> content = users.getContent().stream()
-                .map(this::toApplicantView)
+                .map(user -> toApplicantView(user, applicationCounts, profiles))
                 .toList();
 
         return new PageResult<>(content, users.getNumber(), users.getSize(), users.getTotalElements());
@@ -95,8 +108,15 @@ public class AdminUserServiceImpl implements AdminUserService {
                 PageRequest.of(Math.max(page, 0), Math.max(size, 1),
                         Sort.by("fullName").ascending()));
 
+        List<Long> userIds = users.getContent().stream().map(User::getUserId).toList();
+        Map<Long, Long> opportunityCounts = toCountMap(opportunityRepository.countGroupedByProviderIds(userIds));
+        Map<Long, Long> applicationCounts = toCountMap(
+                applicationRepository.countApplicationsGroupedByProviderIds(userIds));
+        Map<Long, ProviderProfile> profiles = providerProfileRepository.findByUserUserIdIn(userIds).stream()
+                .collect(Collectors.toMap(p -> p.getUser().getUserId(), p -> p, (a, b) -> a));
+
         List<AdminUserViewDTO> content = users.getContent().stream()
-                .map(this::toProviderView)
+                .map(user -> toProviderView(user, opportunityCounts, applicationCounts, profiles))
                 .toList();
 
         return new PageResult<>(content, users.getNumber(), users.getSize(), users.getTotalElements());
@@ -215,8 +235,10 @@ public class AdminUserServiceImpl implements AdminUserService {
         profile.setRejectionReason(null);
         providerProfileRepository.save(profile);
 
-        auditService.log(adminEmail, AuditAction.UPDATE_USER, "USER", userId,
+        auditService.log(adminEmail, AuditAction.APPROVE_PROVIDER, "USER", userId,
                 "Approved provider: " + user.getFullName());
+
+        log.info("Provider approved: id={} by={}", userId, adminEmail);
 
         notificationService.notifyUser(
                 user,
@@ -338,12 +360,16 @@ public class AdminUserServiceImpl implements AdminUserService {
         return user;
     }
 
-    private AdminUserViewDTO toApplicantView(User user) {
+    private AdminUserViewDTO toApplicantView(
+            User user,
+            Map<Long, Long> applicationCounts,
+            Map<Long, ApplicantProfile> profiles) {
 
         AdminUserViewDTO dto = baseView(user, "Applicant");
-        dto.setApplicationCount(applicationRepository.findByUser(user).size());
+        dto.setApplicationCount(applicationCounts.getOrDefault(user.getUserId(), 0L));
 
-        profileRepository.findByUser(user).ifPresent(profile -> {
+        ApplicantProfile profile = profiles.get(user.getUserId());
+        if (profile != null) {
             String institution = profile.getInstitutionName();
             String field = profile.getFieldOfStudy();
             if (institution != null && field != null) {
@@ -353,7 +379,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             } else if (profile.getProvince() != null) {
                 dto.setDetail(profile.getProvince() + ", " + profile.getCountry());
             }
-        });
+        }
 
         if (dto.getDetail() == null) {
             dto.setDetail("Profile incomplete");
@@ -362,17 +388,20 @@ public class AdminUserServiceImpl implements AdminUserService {
         return dto;
     }
 
-    private AdminUserViewDTO toProviderView(User user) {
+    private AdminUserViewDTO toProviderView(
+            User user,
+            Map<Long, Long> opportunityCounts,
+            Map<Long, Long> applicationCounts,
+            Map<Long, ProviderProfile> profiles) {
 
         AdminUserViewDTO dto = baseView(user, "Provider");
-        List<Opportunity> opps = opportunityRepository.findByProvider(user);
-        dto.setOpportunityCount(opps.size());
-
-        long appsReceived = opps.isEmpty() ? 0
-                : applicationRepository.findByOpportunityIn(opps).size();
+        long oppCount = opportunityCounts.getOrDefault(user.getUserId(), 0L);
+        long appsReceived = applicationCounts.getOrDefault(user.getUserId(), 0L);
+        dto.setOpportunityCount(oppCount);
         dto.setApplicationCount(appsReceived);
 
-        providerProfileRepository.findByUser(user).ifPresent(profile -> {
+        ProviderProfile profile = profiles.get(user.getUserId());
+        if (profile != null) {
             dto.setOrganisationType(ProviderOrgType.label(profile.getOrganisationType()));
             dto.setRegistrationNumber(profile.getRegistrationNumber());
             dto.setSubmittedAt(profile.getSubmittedAt());
@@ -381,16 +410,32 @@ public class AdminUserServiceImpl implements AdminUserService {
                 dto.setDetail(ProviderOrgType.label(profile.getOrganisationType())
                         + " · Reg# " + profile.getRegistrationNumber());
             }
-        });
+        }
 
         if (dto.getDetail() == null) {
-            dto.setDetail(opps.size() + " opportunit"
-                    + (opps.size() == 1 ? "y" : "ies")
+            dto.setDetail(oppCount + " opportunit"
+                    + (oppCount == 1 ? "y" : "ies")
                     + " · " + appsReceived + " application"
                     + (appsReceived == 1 ? "" : "s"));
         }
 
         return dto;
+    }
+
+    private Map<Long, Long> toCountMap(List<Object[]> rows) {
+        Map<Long, Long> counts = new HashMap<>();
+        for (Object[] row : rows) {
+            counts.put(((Number) row[0]).longValue(), ((Number) row[1]).longValue());
+        }
+        return counts;
+    }
+
+    private AdminUserViewDTO toApplicantView(User user) {
+        return toApplicantView(user, Map.of(), Map.of());
+    }
+
+    private AdminUserViewDTO toProviderView(User user) {
+        return toProviderView(user, Map.of(), Map.of(), Map.of());
     }
 
     private AdminUserViewDTO baseView(User user, String roleLabel) {

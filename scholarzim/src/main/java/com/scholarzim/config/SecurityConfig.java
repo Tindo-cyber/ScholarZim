@@ -40,6 +40,8 @@ public class SecurityConfig {
                                 "/login",
                                 "/forgot-password",
                                 "/reset-password/**",
+                                "/verify-email/**",
+                                "/resend-verification",
                                 "/403",
                                 "/error",
                                 "/css/**",

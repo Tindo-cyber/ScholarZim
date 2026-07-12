@@ -81,7 +81,7 @@ public class SavedScholarshipServiceImpl implements SavedScholarshipService {
         if (user == null) {
             return List.of();
         }
-        return savedRepository.findByUserOrderBySavedAtDesc(user).stream()
+        return savedRepository.findByUserWithOpportunityOrderBySavedAtDesc(user).stream()
                 .map(SavedScholarship::getOpportunity)
                 .toList();
     }

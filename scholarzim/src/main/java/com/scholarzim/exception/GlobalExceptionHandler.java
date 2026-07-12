@@ -92,6 +92,16 @@ public class GlobalExceptionHandler {
         return "redirect:/register";
     }
 
+    @ExceptionHandler(AdminOperationException.class)
+    public String handleAdminOperation(
+            AdminOperationException ex,
+            RedirectAttributes redirect) {
+
+        log.warn("Admin operation rejected: {}", ex.getMessage());
+        redirect.addFlashAttribute("errorMessage", ex.getMessage());
+        return "redirect:/admin/dashboard";
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public String handleGeneral(Exception ex, Model model, HttpServletRequest request) {

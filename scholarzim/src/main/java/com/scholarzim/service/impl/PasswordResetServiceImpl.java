@@ -8,6 +8,7 @@ import com.scholarzim.service.AuditService;
 import com.scholarzim.service.EmailService;
 import com.scholarzim.service.PasswordResetService;
 import com.scholarzim.util.AuditAction;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 
+@Slf4j
 @Service
 public class PasswordResetServiceImpl implements PasswordResetService {
 
@@ -48,6 +50,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     public void requestReset(String email) {
 
         userRepository.findByEmail(email).ifPresent(user -> {
+            tokenRepository.invalidateActiveTokensForUser(user);
+
             PasswordResetToken token = new PasswordResetToken();
             token.setUser(user);
             token.setToken(UUID.randomUUID().toString());
@@ -57,6 +61,7 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             emailService.sendPasswordResetEmail(email, baseUrl + "/reset-password/" + token.getToken());
             auditService.log(email, AuditAction.PASSWORD_RESET_REQUEST, "USER", user.getUserId(),
                     "Password reset requested");
+            log.info("Password reset requested for {}", email);
         });
     }
 
@@ -66,10 +71,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         if (!newPassword.equals(confirmPassword)) {
             throw new IllegalArgumentException("Passwords do not match.");
-        }
-
-        if (newPassword.length() < 8) {
-            throw new IllegalArgumentException("Password must be at least 8 characters.");
         }
 
         PasswordResetToken token = tokenRepository.findByTokenAndUsedFalse(tokenValue)
@@ -88,5 +89,6 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         auditService.log(user.getEmail(), AuditAction.PASSWORD_RESET_COMPLETE, "USER", user.getUserId(),
                 "Password reset completed");
+        log.info("Password reset completed for {}", user.getEmail());
     }
 }

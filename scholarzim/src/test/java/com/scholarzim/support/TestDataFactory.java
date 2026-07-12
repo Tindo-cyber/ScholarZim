@@ -77,6 +77,7 @@ public class TestDataFactory {
         user.setEmail(email);
         user.setPasswordHash("hash");
         user.setAccountStatus("ACTIVE");
+        user.setEmailVerified(true);
         user.setRole(applicantRole());
         return userRepository.save(user);
     }
@@ -87,6 +88,7 @@ public class TestDataFactory {
         user.setEmail(email);
         user.setPasswordHash("hash");
         user.setAccountStatus("ACTIVE");
+        user.setEmailVerified(true);
         user.setRole(providerRole());
         return userRepository.save(user);
     }
@@ -97,6 +99,7 @@ public class TestDataFactory {
         user.setEmail(email);
         user.setPasswordHash("hash");
         user.setAccountStatus("PENDING_APPROVAL");
+        user.setEmailVerified(true);
         user.setRole(providerRole());
         return userRepository.save(user);
     }
@@ -107,6 +110,7 @@ public class TestDataFactory {
         user.setEmail(email);
         user.setPasswordHash("hash");
         user.setAccountStatus("ACTIVE");
+        user.setEmailVerified(true);
         user.setRole(adminRole());
         return userRepository.save(user);
     }

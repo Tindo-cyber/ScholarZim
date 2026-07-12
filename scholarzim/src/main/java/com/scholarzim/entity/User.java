@@ -34,4 +34,7 @@ public class User {
 
     @Column(name = "account_status")
     private String accountStatus;
+
+    @Column(name = "email_verified", nullable = false)
+    private boolean emailVerified = true;
 }

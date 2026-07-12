@@ -19,17 +19,24 @@ import io.github.bucket4j.Bucket;
 @Order(1)
 public class LoginRateLimitFilter implements Filter {
 
-    private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> authBuckets = new ConcurrentHashMap<>();
     private final Map<String, Bucket> providerRegisterBuckets = new ConcurrentHashMap<>();
+    private final Map<String, Bucket> apiBuckets = new ConcurrentHashMap<>();
     private final int limitPerMinute;
     private final int providerRegisterPerHour;
+    private final int forgotPasswordPerHour;
+    private final int apiPerMinute;
 
     public LoginRateLimitFilter(
             @Value("${scholarzim.rate-limit.login-per-minute:10}") int limitPerMinute,
-            @Value("${scholarzim.rate-limit.provider-register-per-hour:5}") int providerRegisterPerHour) {
+            @Value("${scholarzim.rate-limit.provider-register-per-hour:5}") int providerRegisterPerHour,
+            @Value("${scholarzim.rate-limit.forgot-password-per-hour:5}") int forgotPasswordPerHour,
+            @Value("${scholarzim.rate-limit.api-per-minute:60}") int apiPerMinute) {
 
         this.limitPerMinute = limitPerMinute;
         this.providerRegisterPerHour = providerRegisterPerHour;
+        this.forgotPasswordPerHour = forgotPasswordPerHour;
+        this.apiPerMinute = apiPerMinute;
     }
 
     @Override
@@ -38,46 +45,87 @@ public class LoginRateLimitFilter implements Filter {
 
         HttpServletRequest req = (HttpServletRequest) request;
         HttpServletResponse res = (HttpServletResponse) response;
+        String path = req.getServletPath();
+        String clientKey = req.getRemoteAddr();
 
-        if ("POST".equalsIgnoreCase(req.getMethod())
-                && "/register/provider".equals(req.getServletPath())) {
-
-            String key = req.getRemoteAddr() + ":provider-register";
-            Bucket bucket = providerRegisterBuckets.computeIfAbsent(key, k -> providerRegisterBucket());
-            if (!bucket.tryConsume(1)) {
-                res.sendError(429, "Too many provider applications. Please try again later.");
-                return;
+        if ("POST".equalsIgnoreCase(req.getMethod())) {
+            if ("/register/provider".equals(path)) {
+                if (!consume(providerRegisterBuckets, clientKey + ":provider-register",
+                        providerRegisterBucket(), res,
+                        "Too many provider applications. Please try again later.")) {
+                    return;
+                }
+            } else if ("/forgot-password".equals(path)) {
+                if (!consume(authBuckets, clientKey + ":forgot-password",
+                        forgotPasswordBucket(), res,
+                        "Too many reset requests. Please try again later.")) {
+                    return;
+                }
+            } else if ("/login".equals(path) || "/register".equals(path)) {
+                if (!consume(authBuckets, clientKey + ":" + path,
+                        loginBucket(), res,
+                        "Too many attempts. Please wait a minute.")) {
+                    return;
+                }
             }
         }
 
-        if ("POST".equalsIgnoreCase(req.getMethod())
-                && ("/login".equals(req.getServletPath()) || "/register".equals(req.getServletPath()))) {
-
-            String key = req.getRemoteAddr() + ":" + req.getServletPath();
-            Bucket bucket = buckets.computeIfAbsent(key, k -> loginBucket());
-
-            if (!bucket.tryConsume(1)) {
-                res.sendError(429, "Too many attempts. Please wait a minute.");
-                return;
-            }
+        if (path.startsWith("/api/") && !consume(apiBuckets, clientKey + ":api",
+                apiBucket(), res, "API rate limit exceeded. Please slow down.")) {
+            return;
         }
 
         chain.doFilter(request, response);
     }
 
+    private boolean consume(
+            Map<String, Bucket> store,
+            String key,
+            Bucket prototype,
+            HttpServletResponse res,
+            String message) throws IOException {
+
+        Bucket bucket = store.computeIfAbsent(key, k -> prototype);
+        if (!bucket.tryConsume(1)) {
+            res.sendError(429, message);
+            return false;
+        }
+        return true;
+    }
+
     private Bucket loginBucket() {
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(limitPerMinute)
-                .refillGreedy(limitPerMinute, Duration.ofMinutes(1))
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(limitPerMinute)
+                        .refillGreedy(limitPerMinute, Duration.ofMinutes(1))
+                        .build())
                 .build();
-        return Bucket.builder().addLimit(limit).build();
     }
 
     private Bucket providerRegisterBucket() {
-        Bandwidth limit = Bandwidth.builder()
-                .capacity(providerRegisterPerHour)
-                .refillGreedy(providerRegisterPerHour, Duration.ofHours(1))
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(providerRegisterPerHour)
+                        .refillGreedy(providerRegisterPerHour, Duration.ofHours(1))
+                        .build())
                 .build();
-        return Bucket.builder().addLimit(limit).build();
+    }
+
+    private Bucket forgotPasswordBucket() {
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(forgotPasswordPerHour)
+                        .refillGreedy(forgotPasswordPerHour, Duration.ofHours(1))
+                        .build())
+                .build();
+    }
+
+    private Bucket apiBucket() {
+        return Bucket.builder()
+                .addLimit(Bandwidth.builder()
+                        .capacity(apiPerMinute)
+                        .refillGreedy(apiPerMinute, Duration.ofMinutes(1))
+                        .build())
+                .build();
     }
 }
