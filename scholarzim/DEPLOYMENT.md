@@ -64,6 +64,23 @@ If startup still fails, connect with a MySQL client and run either:
 DELETE FROM flyway_schema_history WHERE version = '10' AND success = 0;
 ```
 
+**Helper scripts** (from `scholarzim/` directory):
+
+```powershell
+# 1) Redeploy checklist (manual steps in Render dashboard)
+.\scripts\render-redeploy-notes.ps1
+
+# 2) Repair failed V10 via mysql CLI (set SCHOLARZIM_DB_* env vars first)
+.\scripts\render-mysql-repair.ps1
+
+# 3) Or open scripts/render-flyway-repair.sql in DBeaver / MySQL Workbench
+
+# 4) After deploy, verify app is up
+.\scripts\render-health-check.ps1 -BaseUrl "https://YOUR-SERVICE.onrender.com"
+```
+
+Set credentials from Render → **MySQL** → **Connections** (external hostname, port, database, user, password). Match your web service env vars `SCHOLARZIM_DB_URL`, `SCHOLARZIM_DB_USER`, `SCHOLARZIM_DB_PASSWORD`.
+
 or, for a completely broken early migrate:
 
 ```sql
