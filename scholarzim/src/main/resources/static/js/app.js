@@ -855,6 +855,7 @@
 
     /* Page skeleton reveal — dashboard, profile, notifications, applications, messages, scholarships */
     (function initPageShells() {
+        document.documentElement.classList.add("js");
         var shells = document.querySelectorAll(".sz-page-shell");
         if (!shells.length) return;
 

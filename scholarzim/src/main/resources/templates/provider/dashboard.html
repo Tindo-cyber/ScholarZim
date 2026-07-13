@@ -210,7 +210,7 @@
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="small fw-semibold text-truncate"
                                          th:text="${app.user != null ? app.user.fullName : 'Applicant'}">Name</div>
-                                    <div class="text-secondary text-truncate" style="font-size:.75rem;"
+                                    <div class="text-secondary text-truncate sz-text-xs"
                                          th:text="${app.opportunity != null ? app.opportunity.title : '—'}">Opp</div>
                                 </div>
                                 <span th:replace="~{fragments/components :: status-badge(${app.applicationStatus})}"></span>

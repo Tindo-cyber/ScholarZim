@@ -93,7 +93,7 @@
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                             <input id="username" name="username" type="email" class="form-control"
                                    th:placeholder="${loginRole == 'provider'} ? 'org@example.co.zw' : 'you@student.co.zw'"
-                                   required autofocus>
+                                   autocomplete="username" required autofocus>
                         </div>
                     </div>
                     <div class="mb-3">
@@ -104,7 +104,8 @@
                         <div class="input-group input-group-sm mt-1">
                             <span class="input-group-text"><i class="bi bi-lock"></i></span>
                             <input id="password" name="password" type="password"
-                                   class="form-control" placeholder="Your password" required>
+                                   class="form-control" placeholder="Your password"
+                                   autocomplete="current-password" required>
                         </div>
                     </div>
                     <div class="d-grid mt-3">

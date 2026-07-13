@@ -99,4 +99,18 @@
             alert.remove();
         });
     })();
+
+    (function initPageShells() {
+        document.documentElement.classList.add("js");
+        var shells = document.querySelectorAll(".sz-page-shell");
+        if (!shells.length) return;
+
+        var delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 80;
+
+        window.setTimeout(function () {
+            shells.forEach(function (shell) {
+                shell.classList.add("is-loaded");
+            });
+        }, delay);
+    })();
 })();

@@ -2,7 +2,7 @@
 
 /* ── Page transitions ── */
 body.sz-page-ready .sz-content,
-body.sz-page-ready .sz-auth-wrap,
+body.sz-page-ready .sz-auth-public,
 body.sz-page-ready .sz-error-page .container {
     animation: sz-page-enter var(--sz-duration-slow) var(--sz-ease-out);
 }
@@ -40,7 +40,7 @@ body.sz-page-ready .sz-page-shell__content > *:nth-child(4) { animation-delay: 1
 
 @media (prefers-reduced-motion: reduce) {
     body.sz-page-ready .sz-content,
-    body.sz-page-ready .sz-auth-wrap,
+    body.sz-page-ready .sz-auth-public,
     body.sz-page-ready .sz-error-page .container,
     body.sz-page-ready .sz-page-shell__content > * {
         animation: none;

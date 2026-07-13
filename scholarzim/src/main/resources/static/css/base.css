@@ -83,38 +83,12 @@ h1, h2, h3, h4, h5, h6,
 .min-w-0 { min-width: 0; }
 
 .sz-shell { min-height: 100vh; }
-.sz-main {
-    background-color: transparent;
-}
+.sz-main { background-color: transparent; }
+[data-bs-theme="light"] .sz-main { background: transparent !important; }
 
-/* Mesh shows through frosted panels — do not paint a solid main column */
-[data-bs-theme="light"] .sz-main {
-    background: transparent !important;
-}
-
-
-
-
-
-:root {
-    --sz-space-page: 1.5rem;
-    --sz-space-section: 4rem;
-    --sz-space-block: 1.25rem;
-    --sz-radius-ui: 8px;
-    --sz-border-subtle: 1px solid #e2e8f0;
-}
-
-@media (min-width: 768px) {
-    :root {
-        --sz-space-page: 2rem;
-        --sz-space-section: 5rem;
-    }
-}
-
-/* Disable decorative motion */
-.sz-animate-in,
-.sz-reveal,
-.sz-landing.js-reveal .sz-reveal {
+/* Disable decorative motion on dashboard only — landing keeps reveal */
+body:not(.sz-landing) .sz-animate-in,
+body:not(.sz-landing) .sz-reveal {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

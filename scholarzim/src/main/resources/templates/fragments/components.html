@@ -4,7 +4,7 @@
 <body>
 
 <div th:fragment="scholarship-card(opportunity, showApply, withApplyBtn, removeId, matchScore, eligibilityText)"
-     class="sz-scholarship-card sz-opp-card"
+     class="sz-scholarship-card"
      th:classappend="${matchScore != null} ? 'sz-scholarship-card--matched' : ''"
      th:attr="data-opportunity-id=${opportunity.opportunityId},
               data-share-title=${opportunity.title},
@@ -302,7 +302,7 @@
 </th:block>
 
 <!-- Error state components — never surface raw exception text -->
-<svg th:fragment="error-illustration(type)" class="sz-error-state__art" viewBox="0 0 200 160" role="img" aria-hidden="true"
+<svg th:fragment="error-illustration(type)" class="sz-error-state__art" viewBox="0 0 200 160" aria-hidden="true"
      th:classappend="' sz-error-state__art--' + ${type}">
     <defs>
         <linearGradient id="szErrGrad" x1="0%" y1="0%" x2="100%" y2="100%">

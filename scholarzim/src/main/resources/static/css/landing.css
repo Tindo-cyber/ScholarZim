@@ -1120,16 +1120,8 @@ body.sz-landing .sz-landing-preview-label {
     background: #f8fafc;
 }
 
-/* Opportunity cards in app */
-.sz-opp-card {
-    border: var(--sz-border-subtle);
-    border-radius: var(--sz-radius-ui);
-    box-shadow: none;
-}
 
-.sz-opp-card:hover {
-    border-color: #cbd5e1;
-}
+/* Legacy opportunity card alias — use .sz-scholarship-card */
 
 .sz-opp-title {
     font-size: 1rem;

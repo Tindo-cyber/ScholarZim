@@ -21,27 +21,27 @@
             <div class="card-body p-4">
                 <form th:action="@{/scholarships}" method="get" th:object="${searchRequest}" class="row g-3 align-items-end">
                     <div class="col-12 col-md-6 col-lg-4">
-                        <label class="form-label">Keyword</label>
-                        <input type="search" class="form-control" th:field="*{keyword}"
+                        <label class="form-label" for="schKeyword">Keyword</label>
+                        <input id="schKeyword" type="search" class="form-control" th:field="*{keyword}"
                                placeholder="Search title, provider, description…">
                     </div>
                     <div class="col-6 col-md-3 col-lg-2">
-                        <label class="form-label">Level</label>
-                        <select class="form-select" th:field="*{educationLevel}">
+                        <label class="form-label" for="schLevel">Level</label>
+                        <select id="schLevel" class="form-select" th:field="*{educationLevel}">
                             <option value="">All</option>
                             <option th:each="l : ${educationLevels}" th:value="${l}" th:text="${l}"></option>
                         </select>
                     </div>
                     <div class="col-6 col-md-3 col-lg-2">
-                        <label class="form-label">Field</label>
-                        <select class="form-select" th:field="*{fieldOfStudy}">
+                        <label class="form-label" for="schField">Field</label>
+                        <select id="schField" class="form-select" th:field="*{fieldOfStudy}">
                             <option value="">All</option>
                             <option th:each="f : ${fieldsOfStudy}" th:value="${f}" th:text="${f}"></option>
                         </select>
                     </div>
                     <div class="col-6 col-md-3 col-lg-2">
-                        <label class="form-label">Country</label>
-                        <select class="form-select" th:field="*{country}">
+                        <label class="form-label" for="schCountry">Country</label>
+                        <select id="schCountry" class="form-select" th:field="*{country}">
                             <option value="">All</option>
                             <option th:each="c : ${countries}" th:value="${c}" th:text="${c}"></option>
                         </select>

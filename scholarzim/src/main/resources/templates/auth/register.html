@@ -41,47 +41,50 @@
                     <p class="sz-auth-muted small mb-0">Free for all Zimbabwean students</p>
                 </div>
 
-                <form th:object="${registerRequest}" action="/register" method="post">
+                <form th:object="${registerRequest}" action="/register" method="post" novalidate>
                     <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                     <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
                         <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Full name</label>
-                        <input type="text" class="form-control form-control-sm" th:field="*{fullName}"
-                               placeholder="e.g. Tanaka Moyo"
+                        <label for="regFullName" class="form-label">Full name</label>
+                        <input id="regFullName" type="text" class="form-control" th:field="*{fullName}"
+                               placeholder="e.g. Tanaka Moyo" autocomplete="name"
                                th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
                         <div class="invalid-feedback"
                              th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Email address</label>
-                        <input type="email" class="form-control form-control-sm" th:field="*{email}"
-                               placeholder="you@student.co.zw"
+                        <label for="regEmail" class="form-label">Email address</label>
+                        <input id="regEmail" type="email" class="form-control" th:field="*{email}"
+                               placeholder="you@student.co.zw" autocomplete="email"
                                th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
                         <div class="invalid-feedback"
                              th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Mobile number</label>
-                        <input type="text" class="form-control form-control-sm" th:field="*{phone}"
-                               placeholder="+263 77 000 0000">
+                        <label for="regPhone" class="form-label">Mobile number <span class="text-secondary fw-normal">(optional)</span></label>
+                        <input id="regPhone" type="tel" class="form-control" th:field="*{phone}"
+                               placeholder="+263 77 000 0000" autocomplete="tel">
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" class="form-control form-control-sm" th:field="*{password}"
+                        <label for="regPassword" class="form-label">Password</label>
+                        <input id="regPassword" type="password" class="form-control" th:field="*{password}"
+                               autocomplete="new-password"
                                th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
+                        <div class="form-text">At least 8 characters with a letter and number.</div>
                         <div class="invalid-feedback"
                              th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Confirm password</label>
-                        <input type="password" class="form-control form-control-sm" th:field="*{confirmPassword}"
+                        <label for="regConfirmPassword" class="form-label">Confirm password</label>
+                        <input id="regConfirmPassword" type="password" class="form-control" th:field="*{confirmPassword}"
+                               autocomplete="new-password"
                                th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'">
                         <div class="invalid-feedback"
                              th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>

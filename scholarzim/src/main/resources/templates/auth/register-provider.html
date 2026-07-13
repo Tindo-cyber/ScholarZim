@@ -44,32 +44,32 @@
                         <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Organisation name</label>
-                        <input type="text" class="form-control form-control-sm" th:field="*{fullName}"
-                               placeholder="e.g. CBZ Foundation"
+                        <label for="provOrgName" class="form-label">Organisation name</label>
+                        <input id="provOrgName" type="text" class="form-control" th:field="*{fullName}"
+                               placeholder="e.g. CBZ Foundation" autocomplete="organization"
                                th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid'">
-                        <div class="invalid-feedback" th:errors="*{fullName}"></div>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Organisation type</label>
-                        <select class="form-select form-select-sm" th:field="*{organisationType}"
+                        <label for="provOrgType" class="form-label">Organisation type</label>
+                        <select id="provOrgType" class="form-select" th:field="*{organisationType}"
                                 th:classappend="${#fields.hasErrors('organisationType')} ? 'is-invalid'">
                             <option value="">Select type…</option>
                             <option th:each="t : ${organisationTypes}" th:value="${t}"
                                     th:text="${T(com.scholarzim.util.ProviderOrgType).label(t)}">Type</option>
                         </select>
-                        <div class="invalid-feedback" th:errors="*{organisationType}"></div>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('organisationType')}" th:errors="*{organisationType}"></div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Zimbabwe registration number</label>
-                        <input type="text" class="form-control form-control-sm" th:field="*{registrationNumber}"
+                        <label for="provRegNum" class="form-label">Zimbabwe registration number</label>
+                        <input id="provRegNum" type="text" class="form-control" th:field="*{registrationNumber}"
                                placeholder="e.g. 12345/2020"
                                th:classappend="${#fields.hasErrors('registrationNumber')} ? 'is-invalid'">
                         <div class="form-text">As shown on your certificate of incorporation or registration.</div>
-                        <div class="invalid-feedback" th:errors="*{registrationNumber}"></div>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('registrationNumber')}" th:errors="*{registrationNumber}"></div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Registration certificate (PDF)</label>
+                        <label for="providerCertInput" class="form-label">Registration certificate (PDF)</label>
                         <div th:replace="~{fragments/components :: file-upload-zone(
                             'providerCertInput',
                             'certificate',
@@ -81,25 +81,30 @@
                         <div class="form-text mt-2">Must prove the organisation is registered in Zimbabwe.</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Work email</label>
-                        <input type="email" class="form-control form-control-sm" th:field="*{email}"
+                        <label for="provEmail" class="form-label">Work email</label>
+                        <input id="provEmail" type="email" class="form-control" th:field="*{email}"
+                               autocomplete="email"
                                th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
-                        <div class="invalid-feedback" th:errors="*{email}"></div>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Phone</label>
-                        <input type="text" class="form-control form-control-sm" th:field="*{phone}"
-                               placeholder="+263 77 000 0000">
+                        <label for="provPhone" class="form-label">Phone <span class="text-secondary fw-normal">(optional)</span></label>
+                        <input id="provPhone" type="tel" class="form-control" th:field="*{phone}"
+                               placeholder="+263 77 000 0000" autocomplete="tel">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Password</label>
-                        <input type="password" class="form-control form-control-sm" th:field="*{password}"
+                        <label for="provPassword" class="form-label">Password</label>
+                        <input id="provPassword" type="password" class="form-control" th:field="*{password}"
+                               autocomplete="new-password"
                                th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
-                        <div class="invalid-feedback" th:errors="*{password}"></div>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold small">Confirm password</label>
-                        <input type="password" class="form-control form-control-sm" th:field="*{confirmPassword}">
+                        <label for="provConfirmPassword" class="form-label">Confirm password</label>
+                        <input id="provConfirmPassword" type="password" class="form-control" th:field="*{confirmPassword}"
+                               autocomplete="new-password"
+                               th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
                     </div>
                     <div class="d-grid mt-3">
                         <button class="btn btn-primary sz-btn-landing-primary" type="submit">Submit for approval</button>

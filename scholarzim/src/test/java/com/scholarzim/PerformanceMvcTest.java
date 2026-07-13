@@ -18,13 +18,13 @@ class PerformanceMvcTest extends MvcIntegrationTestBase {
     void landingUsesLightweightPublicScripts() throws Exception {
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("public-shell.js?v=47")))
-                .andExpect(content().string(containsString("performance.js?v=47")))
-                .andExpect(content().string(containsString("performance.css?v=47")))
+                .andExpect(content().string(containsString("public-shell.js?v=48")))
+                .andExpect(content().string(containsString("performance.js?v=48")))
+                .andExpect(content().string(containsString("production.css?v=48")))
                 .andExpect(content().string(containsString("Manrope")))
                 .andExpect(content().string(containsString("rel=\"preload\"")))
                 .andExpect(content().string(containsString("auth-education.webp")))
-                .andExpect(content().string(not(containsString("app.js?v=47"))))
+                .andExpect(content().string(not(containsString("app.js?v=48"))))
                 .andExpect(content().string(containsString("defer")));
     }
 
@@ -35,8 +35,8 @@ class PerformanceMvcTest extends MvcIntegrationTestBase {
 
         mockMvc.perform(get("/applicant/profile").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("app.js?v=47")))
-                .andExpect(content().string(containsString("performance.css?v=47")))
+                .andExpect(content().string(containsString("app.js?v=48")))
+                .andExpect(content().string(containsString("production.css?v=48")))
                 .andExpect(content().string(containsString("defer")));
     }
 }
