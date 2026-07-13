@@ -14,6 +14,24 @@ public final class FlywayMigrationAssertions {
     private FlywayMigrationAssertions() {
     }
 
+    public static void assertMigrationsAppliedThroughV10(JdbcTemplate jdbc) {
+        List<String> versions = jdbc.queryForList(
+                "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank",
+                String.class);
+
+        Set<String> applied = new HashSet<>(versions);
+        assertTrue(applied.containsAll(Set.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")),
+                () -> "Expected V1–V10 to be applied, but found: " + applied);
+
+        Integer providerUserIndex = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS "
+                        + "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'opportunities' "
+                        + "AND INDEX_NAME = 'idx_opportunities_provider_user_id'",
+                Integer.class);
+        assertTrue(providerUserIndex != null && providerUserIndex > 0,
+                "idx_opportunities_provider_user_id should exist after V10");
+    }
+
     public static void assertMigrationsAppliedThroughV7(JdbcTemplate jdbc) {
         List<String> versions = jdbc.queryForList(
                 "SELECT version FROM flyway_schema_history WHERE success = 1 ORDER BY installed_rank",

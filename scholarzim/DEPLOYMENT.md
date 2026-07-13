@@ -55,7 +55,16 @@ Demo accounts after seeding (password for all: `Password123!`):
 
 Do **not** deploy [`scholarzim-web/`](../scholarzim-web/DEPRECATED.md) (deprecated Next.js). Do **not** point production at local MySQL. Flyway migrates on startup (V1 creates the base schema). By default prod has `scholarzim.demo.seed=false`; for FYP demos set `SCHOLARZIM_DEMO_SEED=true` in Render (see env block above).
 
-**If a deploy failed on Flyway** (e.g. `Failed to open the referenced table 'users'`), the Aiven DB may have a partial `flyway_schema_history`. In the Aiven console → your service → **Query statistics** or connect with a MySQL client and run:
+**If a deploy failed on Flyway** (e.g. `Failed to open the referenced table 'users'`, or `Detected failed migration to version 10`), the DB may have a partial or failed `flyway_schema_history`. Latest builds run `flyway repair()` automatically in the `prod` profile before migrate; redeploy after pulling the fix.
+
+If startup still fails, connect with a MySQL client and run either:
+
+```sql
+-- Failed V10 only (keeps all other history)
+DELETE FROM flyway_schema_history WHERE version = '10' AND success = 0;
+```
+
+or, for a completely broken early migrate:
 
 ```sql
 DROP TABLE IF EXISTS flyway_schema_history;
@@ -64,7 +73,7 @@ DROP TABLE IF EXISTS saved_scholarships;
 DROP TABLE IF EXISTS tenants;
 ```
 
-Then push the latest code (includes `V1__initial_schema.sql`) and redeploy on Render.
+Then push the latest code and redeploy on Render.
 
 ---
 
