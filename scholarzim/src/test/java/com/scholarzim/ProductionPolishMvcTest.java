@@ -17,7 +17,7 @@ class ProductionPolishMvcTest extends MvcIntegrationTestBase {
                 .andExpect(content().string(containsString("sz-page-shell")))
                 .andExpect(content().string(containsString("Browse scholarships")))
                 .andExpect(content().string(containsString("id=\"schKeyword\"")))
-                .andExpect(content().string(containsString("production.css?v=49")));
+                .andExpect(content().string(containsString("production.css?v=50")));
     }
 
     @Test

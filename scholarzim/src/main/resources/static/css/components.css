@@ -1414,10 +1414,9 @@
     padding: 0.55rem 0.75rem;
     font-size: 0.78rem;
     white-space: nowrap;
-    background: rgba(255, 255, 255, 0.13);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: var(--sz-surface-muted);
+    border: 1px solid var(--sz-border);
     border-radius: 999px;
-    backdrop-filter: blur(8px);
 }
 
 .sz-notification-center__unread-dot {
@@ -2006,8 +2005,7 @@
     align-items: center;
     justify-content: center;
     padding: 1.5rem;
-    background: rgba(15, 23, 42, 0.45);
-    backdrop-filter: blur(4px);
+    background: rgba(15, 23, 42, 0.32);
 }
 
 .sz-network-error:not(.d-none) {

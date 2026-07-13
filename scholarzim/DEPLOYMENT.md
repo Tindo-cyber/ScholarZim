@@ -55,6 +55,8 @@ Demo accounts after seeding (password for all: `Password123!`):
 
 Do **not** deploy [`scholarzim-web/`](../scholarzim-web/DEPRECATED.md) (deprecated Next.js). Do **not** point production at local MySQL. Flyway migrates on startup (V1 creates the base schema). By default prod has `scholarzim.demo.seed=false`; for FYP demos set `SCHOLARZIM_DEMO_SEED=true` in Render (see env block above).
 
+**If health stays DOWN after deploy:** ensure `SPRING_PROFILES_ACTIVE=prod` (mail health is disabled in prod when SMTP is unset). Render's health check uses `/actuator/health` — a misconfigured mail server on `localhost` used to mark the whole app unhealthy.
+
 **If a deploy failed on Flyway** (e.g. `Failed to open the referenced table 'users'`, or `Detected failed migration to version 10`), the DB may have a partial or failed `flyway_schema_history`. Latest builds run `flyway repair()` automatically in the `prod` profile before migrate; redeploy after pulling the fix.
 
 If startup still fails, connect with a MySQL client and run either:
