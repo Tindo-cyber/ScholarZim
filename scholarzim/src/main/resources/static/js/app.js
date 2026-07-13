@@ -780,47 +780,40 @@
         });
     };
 
-    /* Brief loader on in-app navigation */
+    /* Brief top progress bar on in-app navigation — UI stays visible */
     (function initPageLoader() {
         if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-        var loader = document.getElementById("sz-page-loader");
-        if (!loader) {
-            loader = document.createElement("div");
-            loader.id = "sz-page-loader";
-            loader.className = "sz-page-loader";
-            loader.setAttribute("aria-hidden", "true");
-            loader.innerHTML =
-                '<div class="sz-page-loader__panel">' +
-                '<div class="sz-page-loader__skeleton sz-skeleton-nav-overlay" role="status" aria-live="polite">' +
-                '<div class="sz-skeleton sz-skeleton-line sz-skeleton-line--title"></div>' +
-                '<div class="sz-skeleton sz-skeleton-line"></div>' +
-                '<div class="sz-skeleton sz-skeleton-line sz-skeleton-line--short"></div>' +
-                '</div>' +
-                '<p class="sz-page-loader__text small text-secondary mb-0 mt-2 d-none" id="sz-page-loader-text"></p>' +
-                '<div class="sz-upload-progress d-none" id="sz-page-loader-progress">' +
-                '<div class="sz-upload-progress__bar"></div></div></div>';
-            document.body.appendChild(loader);
+        var bar = document.getElementById("sz-nav-progress");
+        if (!bar) {
+            bar = document.createElement("div");
+            bar.id = "sz-nav-progress";
+            bar.className = "sz-nav-progress";
+            bar.setAttribute("aria-hidden", "true");
+            bar.innerHTML = '<div class="sz-nav-progress__bar"></div>';
+            document.body.appendChild(bar);
         }
 
-        var loaderText = document.getElementById("sz-page-loader-text");
-        var loaderProgress = document.getElementById("sz-page-loader-progress");
+        var inner = bar.querySelector(".sz-nav-progress__bar");
 
-        function showLoader(message) {
-            if (loaderText) {
-                if (message) {
-                    loaderText.textContent = message;
-                    loaderText.classList.remove("d-none");
-                } else {
-                    loaderText.textContent = "";
-                    loaderText.classList.add("d-none");
-                }
-            }
-            if (loaderProgress) {
-                loaderProgress.classList.toggle("d-none", !message);
-            }
-            loader.classList.add("is-active");
+        function showLoader() {
+            bar.classList.add("is-active");
+            inner.style.width = "0%";
+            requestAnimationFrame(function () {
+                inner.style.width = "72%";
+            });
         }
+
+        function completeLoader() {
+            if (!bar.classList.contains("is-active")) return;
+            inner.style.width = "100%";
+            window.setTimeout(function () {
+                bar.classList.remove("is-active");
+                inner.style.width = "0%";
+            }, 180);
+        }
+
+        window.addEventListener("pageshow", completeLoader);
 
         document.addEventListener("click", function (e) {
             var link = e.target.closest("a[href]");
@@ -842,14 +835,7 @@
             if (form.method && form.method.toLowerCase() === "get") return;
             if (form.hasAttribute("data-no-loader")) return;
             if (e.defaultPrevented) return;
-
-            var uploadMsg = null;
-            if (form.getAttribute("enctype") === "multipart/form-data") {
-                form.querySelectorAll('input[type="file"]').forEach(function (inp) {
-                    if (inp.files && inp.files.length) uploadMsg = "Uploading file…";
-                });
-            }
-            showLoader(uploadMsg);
+            showLoader();
         });
     })();
 

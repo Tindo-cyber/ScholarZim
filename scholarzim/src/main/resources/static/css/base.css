@@ -9,17 +9,30 @@ body {
 
 /* ── Bootstrap overrides (SaaS polish) ── */
 .btn {
-    border-radius: 10px;
+    border-radius: var(--sz-radius-ui);
     font-weight: 600;
-    font-size: 0.875rem;
-    padding: 0.5rem 1rem;
-    transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    font-size: var(--sz-text-sm);
+    padding: var(--sz-space-2) var(--sz-space-4);
+    min-height: 2.25rem;
+    line-height: 1.25;
+    transition: background var(--sz-duration) var(--sz-ease),
+                border-color var(--sz-duration) var(--sz-ease),
+                box-shadow var(--sz-duration) var(--sz-ease),
+                color var(--sz-duration) var(--sz-ease);
+}
+
+.btn-sm {
+    min-height: 2rem;
+    padding: var(--sz-space-1) var(--sz-space-3);
+    font-size: var(--sz-text-xs);
+    border-radius: var(--sz-radius);
 }
 
 .btn-lg {
-    border-radius: 12px;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
+    border-radius: var(--sz-radius-ui);
+    padding: var(--sz-space-3) var(--sz-space-6);
+    font-size: var(--sz-text-base);
+    min-height: 2.75rem;
 }
 
 .btn-primary {
@@ -33,7 +46,7 @@ body {
     background: var(--sz-primary-dark);
     border-color: var(--sz-primary-dark);
     transform: none;
-    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.28);
+    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.24);
 }
 
 .btn-outline-primary {
@@ -51,7 +64,7 @@ body {
     border: 1px solid var(--sz-border);
     border-radius: var(--sz-radius-lg);
     background: var(--sz-card);
-    box-shadow: var(--sz-shadow);
+    box-shadow: var(--sz-shadow-card);
 }
 
 .form-control,
@@ -119,7 +132,7 @@ a.btn:focus-visible {
     box-shadow: var(--sz-focus-ring);
 }
 
-/* Solid surfaces only — no glassmorphism mesh or blur */
+/* Solid surfaces — blur only on overlays and menus */
 body {
     position: relative;
     background-color: var(--sz-bg) !important;
@@ -136,9 +149,10 @@ body::before {
     background: transparent !important;
 }
 
-*,
-*::before,
-*::after {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
+.modal-backdrop,
+.dropdown-menu,
+.offcanvas-backdrop,
+.sz-confirm-modal .modal-content {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }

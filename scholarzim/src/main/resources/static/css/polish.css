@@ -77,8 +77,8 @@ body.sz-page-ready .sz-page-shell__content > *:nth-child(4) { animation-delay: 1
     .sz-stat-card:hover,
     .sz-dash-highlight:hover,
     .sz-filter-card:hover {
-        transform: translateY(-2px);
-        box-shadow: var(--sz-shadow-hover);
+        transform: none;
+        box-shadow: var(--sz-shadow-md);
     }
 
     .sz-list-row:hover,
@@ -90,13 +90,16 @@ body.sz-page-ready .sz-page-shell__content > *:nth-child(4) { animation-delay: 1
     }
 
     .btn:not(:disabled):not(.is-loading):hover {
-        transform: translateY(-1px);
-        box-shadow: var(--sz-shadow-sm);
+        transform: none;
+    }
+
+    .btn-primary:not(:disabled):not(.is-loading):hover {
+        box-shadow: 0 2px 8px rgba(22, 163, 74, 0.24);
     }
 
     .btn-outline-secondary:hover,
     .btn-outline-primary:hover {
-        box-shadow: var(--sz-shadow-sm);
+        box-shadow: none;
     }
 
     a:not(.btn):not(.nav-link):not(.dropdown-item):hover {

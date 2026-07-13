@@ -10,12 +10,12 @@
     --sz-success: #22C55E;
     --sz-warning: #F59E0B;
     --sz-danger: #EF4444;
-    --sz-bg: #EEF2F6;
-    --sz-card: #F8FAFC;
+    --sz-bg: #F4F6F9;
+    --sz-card: #FFFFFF;
     --sz-text: #0F172A;
-    --sz-muted: #64748B;
-    --sz-text-muted: #64748B;
-    --sz-text-secondary: #475569;
+    --sz-muted: #5B6778;
+    --sz-text-muted: #5B6778;
+    --sz-text-secondary: #3D4A5C;
     --sz-border: #E2E8F0;
 
     /* Semantic surfaces */
@@ -26,7 +26,7 @@
     --sz-sidebar-hover: #F1F5F9;
 
     /* Surfaces */
-    --sz-main-bg: #e8ecf1;
+    --sz-main-bg: #F4F6F9;
     --sz-surface-hover: #f8fafc;
     --sz-surface-muted: #f1f5f9;
     --sz-input-bg: #ffffff;
@@ -65,23 +65,24 @@
     --sz-space-10: 2.5rem;
     --sz-space-12: 3rem;
     --sz-space-page: 1.5rem;
-    --sz-space-section: 4rem;
-    --sz-space-block: 1.25rem;
+    --sz-space-section: 2rem;
+    --sz-space-block: 1.5rem;
+    --sz-space-grid: 1rem;
 
-    /* Radius — 20–24px cards per design brief */
-    --sz-radius: 12px;
-    --sz-radius-ui: 12px;
-    --sz-radius-lg: 20px;
-    --sz-radius-xl: 24px;
+    /* Radius — consistent SaaS UI */
+    --sz-radius: 8px;
+    --sz-radius-ui: 10px;
+    --sz-radius-lg: 12px;
+    --sz-radius-xl: 16px;
 
-    /* Elevation */
-    --sz-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 20px rgba(15, 23, 42, 0.06);
-    --sz-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
-    --sz-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
-    --sz-shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.12), 0 4px 8px rgba(15, 23, 42, 0.04);
-    --sz-shadow-hover: 0 8px 24px rgba(15, 23, 42, 0.1);
+    /* Elevation — solid cards, subtle depth */
+    --sz-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.04);
+    --sz-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --sz-shadow-md: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --sz-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.1), 0 2px 6px rgba(15, 23, 42, 0.04);
+    --sz-shadow-hover: 0 4px 16px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
     --sz-shadow-glass: var(--sz-shadow);
-    --sz-shadow-card: 0 0 0 1px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.04);
+    --sz-shadow-card: 0 0 0 1px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05);
 
     /* Motion */
     --sz-ease: cubic-bezier(0.4, 0, 0.2, 1);
@@ -107,8 +108,9 @@
     --sz-text-sm: 0.8125rem;
     --sz-text-base: 0.9375rem;
     --sz-text-lg: 1.0625rem;
-    --sz-text-xl: 1.25rem;
-    --sz-text-2xl: 1.5rem;
+    --sz-text-xl: 1.3125rem;
+    --sz-text-2xl: 1.625rem;
+    --sz-text-3xl: 2rem;
     --sz-leading-tight: 1.25;
     --sz-leading-normal: 1.6;
 
