@@ -79,6 +79,10 @@
                         </div>
                     </form>
                 </div>
+                <div class="alert alert-warning rounded-3 py-2 small" th:if="${loginError == 'rate_limit'}">
+                    <i class="bi bi-hourglass-split me-2"></i>
+                    Too many sign-in attempts. Please wait a minute and try again.
+                </div>
                 <div class="alert alert-danger rounded-3 py-2 small" th:if="${showCredentialsError}">
                     <i class="bi bi-exclamation-circle me-2"></i>Invalid email or password.
                     <span th:if="${!demoLoginEnabled}" class="d-block mt-1">
@@ -98,6 +102,7 @@
 
                 <form action="/login" method="post">
                     <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                    <input type="hidden" name="role" th:value="${loginRole}">
                     <div class="mb-3">
                         <label for="username" class="form-label fw-semibold small">Email address</label>
                         <div class="input-group input-group-sm">

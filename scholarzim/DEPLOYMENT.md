@@ -46,7 +46,15 @@ Use [Aiven](https://aiven.io) for managed MySQL instead of Render MySQL if you p
 4. Allow Render’s outbound IPs if Aiven has IP allowlisting enabled (or temporarily allow all for FYP).
 5. Redeploy the web service after saving env vars.
 
-If login shows **“Something went wrong”** after switching to Aiven, check Render **Logs** for Flyway validation errors or SSL/connection failures, then run the Flyway repair SQL below.
+If login shows **“Something went wrong”** after switching to Aiven, check Render **Logs** for the `/error` line (`uri=... status=...`):
+
+| Log signal | What to do |
+|------------|------------|
+| `status=429` / `uri=/login` | Fixed in app (rate limit now returns to login with `error=rate_limit`). Redeploy latest `main`. |
+| `status=500` / `uri=/admin/dashboard` (or provider) | Soft-fail dashboards should still load after redeploy; WARN lines show the real DB cause. |
+| Flyway / SSL / `Communications link failure` | Confirm JDBC URL uses `sslMode=REQUIRED`, then run the Flyway repair SQL below. |
+
+Also confirm `SCHOLARZIM_DEMO_SEED=true` if you rely on seeded `admin@scholarzim.co.zw`.
 
 ### Render uploads disk (required for certificates)
 

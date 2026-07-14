@@ -1,6 +1,11 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.dto.AdminDashboardDTO;
+import com.scholarzim.dto.AdminUserViewDTO;
+import com.scholarzim.dto.AuditActivityDTO;
+import com.scholarzim.dto.ChartData;
+import com.scholarzim.dto.PageResult;
+import com.scholarzim.dto.RecentUserDTO;
 import com.scholarzim.dto.StoredFileResource;
 import com.scholarzim.exception.AdminOperationException;
 import com.scholarzim.exception.ResourceNotFoundException;
@@ -9,6 +14,7 @@ import com.scholarzim.service.AdminUserService;
 import com.scholarzim.service.AnalyticsService;
 import com.scholarzim.service.AuditLogService;
 import com.scholarzim.util.ChartMonths;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -23,9 +29,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 
+@Slf4j
 @Controller
 public class AdminController {
 
@@ -54,21 +64,32 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int providerPage,
             Model model) {
 
-        model.addAttribute("stats", analyticsService.getDashboardStats());
-        model.addAttribute("recentActivity", analyticsService.getRecentActivity(8));
-        model.addAttribute("applicants", adminUserService.listApplicants(applicantPage, PAGE_SIZE));
-        model.addAttribute("providers", adminUserService.listProviders(providerPage, PAGE_SIZE));
-        model.addAttribute("pendingProviders", adminUserService.listPendingProviders());
+        model.addAttribute("stats", soft("dashboard stats", new AdminDashboardDTO(),
+                analyticsService::getDashboardStats));
+        model.addAttribute("recentActivity", soft("recent activity", List.<AuditActivityDTO>of(),
+                () -> analyticsService.getRecentActivity(8)));
+        model.addAttribute("applicants", soft("applicants list",
+                emptyPage(applicantPage),
+                () -> adminUserService.listApplicants(applicantPage, PAGE_SIZE)));
+        model.addAttribute("providers", soft("providers list",
+                emptyPage(providerPage),
+                () -> adminUserService.listProviders(providerPage, PAGE_SIZE)));
+        model.addAttribute("pendingProviders", soft("pending providers",
+                List.<AdminUserViewDTO>of(),
+                adminUserService::listPendingProviders));
         model.addAttribute("applicantPage", applicantPage);
         model.addAttribute("providerPage", providerPage);
 
         int months = 6;
-        model.addAttribute("monthlyCounts", analyticsService.getMonthlyApplicationCounts(months));
+        model.addAttribute("monthlyCounts", soft("monthly counts",
+                zeroSeries(months),
+                () -> analyticsService.getMonthlyApplicationCounts(months)));
         model.addAttribute("monthLabels", ChartMonths.labelsForLastMonths(months));
 
-        model.addAttribute("topProviders", analyticsService.getTopProviders(5));
-        model.addAttribute("mostAppliedOpportunities",
-                analyticsService.getMostAppliedOpportunities(5));
+        model.addAttribute("topProviders", soft("top providers", new ChartData(),
+                () -> analyticsService.getTopProviders(5)));
+        model.addAttribute("mostAppliedOpportunities", soft("most applied opportunities", new ChartData(),
+                () -> analyticsService.getMostAppliedOpportunities(5)));
 
         return "admin/dashboard";
     }
@@ -84,27 +105,44 @@ public class AdminController {
             Model model) {
 
         int range = Math.min(Math.max(months, 3), 24);
-        AdminDashboardDTO stats = analyticsService.getDashboardStats();
+        AdminDashboardDTO stats = soft("analytics stats", new AdminDashboardDTO(),
+                analyticsService::getDashboardStats);
 
         model.addAttribute("stats", stats);
         model.addAttribute("months", range);
 
-        List<Long> monthlyCounts = analyticsService.getMonthlyApplicationCounts(range);
+        List<Long> monthlyCounts = soft("analytics monthly counts",
+                zeroSeries(range),
+                () -> analyticsService.getMonthlyApplicationCounts(range));
         model.addAttribute("monthlyCounts", monthlyCounts);
         model.addAttribute("monthLabels", ChartMonths.labelsForLastMonths(range));
 
-        model.addAttribute("statusBreakdown", analyticsService.getApplicationStatusBreakdown());
-        model.addAttribute("userRoles", analyticsService.getUserRoleBreakdown());
-        model.addAttribute("scholarshipAvailability", analyticsService.getScholarshipAvailabilityBreakdown());
-        model.addAttribute("topProviders", analyticsService.getTopProviders(10));
-        model.addAttribute("mostAppliedOpportunities", analyticsService.getMostAppliedOpportunities(10));
-        model.addAttribute("mostViewedOpportunities", analyticsService.getMostViewedOpportunities(8));
-        model.addAttribute("monthlyStudents", analyticsService.getMonthlyStudentRegistrations(range));
-        model.addAttribute("monthlyProviders", analyticsService.getMonthlyProviderRegistrations(range));
-        model.addAttribute("monthlyScholarships", analyticsService.getMonthlyScholarshipCounts(range));
-        model.addAttribute("recentActivity", analyticsService.getRecentActivity(10));
-        model.addAttribute("recentUsers", analyticsService.getRecentUsers(8));
-        model.addAttribute("pendingProviders", adminUserService.listPendingProviders());
+        model.addAttribute("statusBreakdown", soft("status breakdown", new ChartData(),
+                analyticsService::getApplicationStatusBreakdown));
+        model.addAttribute("userRoles", soft("user roles", new ChartData(),
+                analyticsService::getUserRoleBreakdown));
+        model.addAttribute("scholarshipAvailability", soft("scholarship availability", new ChartData(),
+                analyticsService::getScholarshipAvailabilityBreakdown));
+        model.addAttribute("topProviders", soft("analytics top providers", new ChartData(),
+                () -> analyticsService.getTopProviders(10)));
+        model.addAttribute("mostAppliedOpportunities", soft("analytics most applied", new ChartData(),
+                () -> analyticsService.getMostAppliedOpportunities(10)));
+        model.addAttribute("mostViewedOpportunities", soft("most viewed", new ChartData(),
+                () -> analyticsService.getMostViewedOpportunities(8)));
+        model.addAttribute("monthlyStudents", soft("monthly students", zeroSeries(range),
+                () -> analyticsService.getMonthlyStudentRegistrations(range)));
+        model.addAttribute("monthlyProviders", soft("monthly providers", zeroSeries(range),
+                () -> analyticsService.getMonthlyProviderRegistrations(range)));
+        model.addAttribute("monthlyScholarships", soft("monthly scholarships", zeroSeries(range),
+                () -> analyticsService.getMonthlyScholarshipCounts(range)));
+        model.addAttribute("recentActivity", soft("analytics recent activity",
+                List.<AuditActivityDTO>of(),
+                () -> analyticsService.getRecentActivity(10)));
+        model.addAttribute("recentUsers", soft("recent users", List.<RecentUserDTO>of(),
+                () -> analyticsService.getRecentUsers(8)));
+        model.addAttribute("pendingProviders", soft("analytics pending providers",
+                List.<AdminUserViewDTO>of(),
+                adminUserService::listPendingProviders));
 
         long profileRate = stats.getTotalApplicants() == 0 ? 0
                 : (int) Math.round(100.0 * stats.getCompleteProfiles() / stats.getTotalApplicants());
@@ -125,10 +163,13 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int page,
             Model model) {
 
-        model.addAttribute("auditPage", auditLogService.search(q, action, page, 25));
+        model.addAttribute("auditPage", soft("audit search",
+                emptyPage(page),
+                () -> auditLogService.search(q, action, page, 25)));
         model.addAttribute("query", q != null ? q : "");
         model.addAttribute("actionFilter", action != null ? action : "");
-        model.addAttribute("auditActions", auditLogService.listDistinctActions());
+        model.addAttribute("auditActions", soft("audit actions", List.<String>of(),
+                auditLogService::listDistinctActions));
         model.addAttribute("page", page);
         return "admin/audit-log";
     }
@@ -140,7 +181,9 @@ public class AdminController {
 
         String query = q != null ? q : "";
         model.addAttribute("query", query);
-        model.addAttribute("results", adminSearchService.search(query));
+        model.addAttribute("results", soft("admin search",
+                new com.scholarzim.dto.AdminSearchResultsDTO(),
+                () -> adminSearchService.search(query)));
         return "admin/search";
     }
 
@@ -245,5 +288,22 @@ public class AdminController {
         }
 
         return "redirect:/admin/dashboard#user-management";
+    }
+
+    private <T> T soft(String label, T fallback, Supplier<T> supplier) {
+        try {
+            return supplier.get();
+        } catch (Exception ex) {
+            log.warn("Admin {} failed: {}", label, ex.getMessage());
+            return fallback;
+        }
+    }
+
+    private static <T> PageResult<T> emptyPage(int page) {
+        return new PageResult<>(Collections.emptyList(), Math.max(page, 0), PAGE_SIZE, 0);
+    }
+
+    private static List<Long> zeroSeries(int months) {
+        return IntStream.range(0, Math.max(months, 0)).mapToObj(i -> 0L).toList();
     }
 }

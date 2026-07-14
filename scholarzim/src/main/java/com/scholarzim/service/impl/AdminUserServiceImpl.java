@@ -125,10 +125,20 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Override
     public List<AdminUserViewDTO> listPendingProviders() {
 
-        return userRepository.findByRoleRoleNameAndAccountStatus("ROLE_PROVIDER", "PENDING_APPROVAL")
+        List<User> pending = userRepository
+                .findByRoleRoleNameAndAccountStatus("ROLE_PROVIDER", "PENDING_APPROVAL")
                 .stream()
                 .sorted(Comparator.comparing(User::getFullName, Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)))
-                .map(this::toProviderView)
+                .toList();
+
+        List<Long> userIds = pending.stream().map(User::getUserId).toList();
+        Map<Long, ProviderProfile> profiles = userIds.isEmpty()
+                ? Map.of()
+                : providerProfileRepository.findByUserUserIdIn(userIds).stream()
+                        .collect(Collectors.toMap(p -> p.getUser().getUserId(), p -> p, (a, b) -> a));
+
+        return pending.stream()
+                .map(user -> toProviderView(user, Map.of(), Map.of(), profiles))
                 .toList();
     }
 

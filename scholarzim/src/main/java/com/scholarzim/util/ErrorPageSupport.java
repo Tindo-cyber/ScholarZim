@@ -14,6 +14,7 @@ public final class ErrorPageSupport {
     public static final String NETWORK = "network";
     public static final String PERMISSION_DENIED = "permission-denied";
     public static final String NO_DATA = "no-data";
+    public static final String RATE_LIMITED = "rate-limited";
 
     private static final String SUPPORT_EMAIL = "support@scholarzim.co.zw";
 
@@ -22,7 +23,8 @@ public final class ErrorPageSupport {
             SERVER_ERROR, "Something went wrong",
             NETWORK, "Connection problem",
             PERMISSION_DENIED, "Permission denied",
-            NO_DATA, "Nothing here yet");
+            NO_DATA, "Nothing here yet",
+            RATE_LIMITED, "Too many attempts");
 
     private static final Map<String, String> MESSAGES = Map.of(
             NOT_FOUND,
@@ -34,7 +36,9 @@ public final class ErrorPageSupport {
             PERMISSION_DENIED,
             "You don't have access to this area. Sign in with the right account or return to your dashboard.",
             NO_DATA,
-            "There's nothing to show here yet. Check back later or explore scholarships to get started.");
+            "There's nothing to show here yet. Check back later or explore scholarships to get started.",
+            RATE_LIMITED,
+            "You've made too many requests in a short time. Please wait a minute and try again.");
 
     private ErrorPageSupport() {
     }
@@ -46,7 +50,8 @@ public final class ErrorPageSupport {
         return switch (status) {
             case 403 -> PERMISSION_DENIED;
             case 404 -> NOT_FOUND;
-            default -> status >= 500 ? SERVER_ERROR : SERVER_ERROR;
+            case 429 -> RATE_LIMITED;
+            default -> SERVER_ERROR;
         };
     }
 

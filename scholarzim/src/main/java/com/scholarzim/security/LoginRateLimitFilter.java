@@ -8,6 +8,8 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,44 +52,67 @@ public class LoginRateLimitFilter implements Filter {
 
         if ("POST".equalsIgnoreCase(req.getMethod())) {
             if ("/register/provider".equals(path)) {
-                if (!consume(providerRegisterBuckets, clientKey + ":provider-register",
+                if (!consumeRedirect(providerRegisterBuckets, clientKey + ":provider-register",
                         providerRegisterBucket(), res,
-                        "Too many provider applications. Please try again later.")) {
+                        "/register/provider?error=rate_limit")) {
                     return;
                 }
             } else if ("/forgot-password".equals(path)) {
-                if (!consume(authBuckets, clientKey + ":forgot-password",
+                if (!consumeRedirect(authBuckets, clientKey + ":forgot-password",
                         forgotPasswordBucket(), res,
-                        "Too many reset requests. Please try again later.")) {
+                        "/forgot-password?error=rate_limit")) {
                     return;
                 }
-            } else if ("/login".equals(path) || "/register".equals(path)) {
-                if (!consume(authBuckets, clientKey + ":" + path,
-                        loginBucket(), res,
-                        "Too many attempts. Please wait a minute.")) {
+            } else if ("/login".equals(path)) {
+                String role = req.getParameter("role");
+                if (role == null || role.isBlank()) {
+                    role = "student";
+                }
+                String redirect = "/login?role="
+                        + URLEncoder.encode(role, StandardCharsets.UTF_8)
+                        + "&error=rate_limit";
+                if (!consumeRedirect(authBuckets, clientKey + ":/login", loginBucket(), res, redirect)) {
+                    return;
+                }
+            } else if ("/register".equals(path)) {
+                if (!consumeRedirect(authBuckets, clientKey + ":/register",
+                        loginBucket(), res, "/register?error=rate_limit")) {
                     return;
                 }
             }
         }
 
-        if (path.startsWith("/api/") && !consume(apiBuckets, clientKey + ":api",
-                apiBucket(), res, "API rate limit exceeded. Please slow down.")) {
+        if (path.startsWith("/api/") && !consumeApi(apiBuckets, clientKey + ":api", apiBucket(), res)) {
             return;
         }
 
         chain.doFilter(request, response);
     }
 
-    private boolean consume(
+    private boolean consumeRedirect(
             Map<String, Bucket> store,
             String key,
             Bucket prototype,
             HttpServletResponse res,
-            String message) throws IOException {
+            String redirectUrl) throws IOException {
 
         Bucket bucket = store.computeIfAbsent(key, k -> prototype);
         if (!bucket.tryConsume(1)) {
-            res.sendError(429, message);
+            res.sendRedirect(redirectUrl);
+            return false;
+        }
+        return true;
+    }
+
+    private boolean consumeApi(
+            Map<String, Bucket> store,
+            String key,
+            Bucket prototype,
+            HttpServletResponse res) throws IOException {
+
+        Bucket bucket = store.computeIfAbsent(key, k -> prototype);
+        if (!bucket.tryConsume(1)) {
+            res.sendError(429, "API rate limit exceeded. Please slow down.");
             return false;
         }
         return true;
