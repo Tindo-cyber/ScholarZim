@@ -16,6 +16,7 @@ services:
       # Mount a Render persistent disk at /var/data/uploads and set this to that path
       - key: SCHOLARZIM_UPLOAD_DIR
         value: /var/data/uploads
+      # Aiven: jdbc:mysql://HOST:PORT/defaultdb?sslMode=REQUIRED&allowPublicKeyRetrieval=true
       - key: SCHOLARZIM_DB_URL
         sync: false
       - key: SCHOLARZIM_DB_USER

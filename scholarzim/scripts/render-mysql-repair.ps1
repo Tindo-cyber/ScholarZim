@@ -1,9 +1,9 @@
-# Connect to Render MySQL and repair failed Flyway V10 migration.
+# Connect to Aiven/Render MySQL and repair failed Flyway migrations.
 #
 # Set env vars, then run from scholarzim/:
 #   .\scripts\render-mysql-repair.ps1
 #
-# Or use render-flyway-repair.sql in DBeaver / MySQL Workbench.
+# Or use render-flyway-repair.sql in DBeaver / MySQL Workbench (SSL required for Aiven).
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -39,14 +39,14 @@ if (-not $host_ -or -not $db -or -not $user -or -not $pass) {
     Write-Host "Missing database credentials." -ForegroundColor Yellow
     Write-Host ""
     Write-Host "Option A - set env vars:" -ForegroundColor Cyan
-    Write-Host '  $env:SCHOLARZIM_DB_HOST = "your-host.render.com"'
-    Write-Host '  $env:SCHOLARZIM_DB_PORT = "3306"'
-    Write-Host '  $env:SCHOLARZIM_DB_NAME = "scholarzim"'
-    Write-Host '  $env:SCHOLARZIM_DB_USER = "your_user"'
+    Write-Host '  $env:SCHOLARZIM_DB_HOST = "your-host.aivencloud.com"'
+    Write-Host '  $env:SCHOLARZIM_DB_PORT = "12345"'
+    Write-Host '  $env:SCHOLARZIM_DB_NAME = "defaultdb"'
+    Write-Host '  $env:SCHOLARZIM_DB_USER = "avnadmin"'
     Write-Host '  $env:SCHOLARZIM_DB_PASSWORD = "your_password"'
     Write-Host ""
     Write-Host "Option B - JDBC URL plus user/password:" -ForegroundColor Cyan
-    Write-Host '  $env:SCHOLARZIM_DB_URL = "jdbc:mysql://host:3306/db?useSSL=true"'
+    Write-Host '  $env:SCHOLARZIM_DB_URL = "jdbc:mysql://host:port/defaultdb?sslMode=REQUIRED"'
     Write-Host '  $env:SCHOLARZIM_DB_USER = "..."'
     Write-Host '  $env:SCHOLARZIM_DB_PASSWORD = "..."'
     Write-Host ""
@@ -67,7 +67,7 @@ Write-Host "Connecting to ${host_}:${port} / $db as $user ..." -ForegroundColor 
 
 $repairSql = @(
     "SELECT version, description, success, installed_on FROM flyway_schema_history ORDER BY installed_rank;"
-    "DELETE FROM flyway_schema_history WHERE version = '10' AND success = 0;"
+    "DELETE FROM flyway_schema_history WHERE success = 0;"
     "SELECT version, success, installed_on FROM flyway_schema_history ORDER BY installed_rank;"
 ) -join "`n"
 

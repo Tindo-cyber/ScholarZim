@@ -38,7 +38,13 @@ public class AuditServiceImpl implements AuditService {
         entry.setDetails(details);
         entry.setCreatedAt(LocalDateTime.now());
 
-        auditLogRepository.save(entry);
-        log.info("AUDIT {} {} id={} by={} — {}", action, entityType, entityId, actorEmail, details);
+        try {
+            auditLogRepository.save(entry);
+            log.info("AUDIT {} {} id={} by={} — {}", action, entityType, entityId, actorEmail, details);
+        } catch (Exception ex) {
+            // Auditing must not turn into a user-facing 500 (DB blips, schema drift, etc.).
+            log.warn("Failed to persist audit log {} {} id={} by={}: {}",
+                    action, entityType, entityId, actorEmail, ex.getMessage());
+        }
     }
 }

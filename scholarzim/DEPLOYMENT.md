@@ -16,7 +16,8 @@ ScholarZim is a **Spring Boot + Thymeleaf monolith** (no separate Next.js fronte
 
 ```bash
 SPRING_PROFILES_ACTIVE=prod
-SCHOLARZIM_DB_URL=jdbc:mysql://HOST:PORT/DATABASE?useSSL=true&allowPublicKeyRetrieval=true
+# Prefer sslMode=REQUIRED for Aiven / managed MySQL (see "Aiven MySQL" below)
+SCHOLARZIM_DB_URL=jdbc:mysql://HOST:PORT/DATABASE?sslMode=REQUIRED&allowPublicKeyRetrieval=true
 SCHOLARZIM_DB_USER=...
 SCHOLARZIM_DB_PASSWORD=...
 SCHOLARZIM_APP_BASE_URL=https://YOUR-SERVICE.onrender.com
@@ -31,6 +32,21 @@ SPRING_MAIL_PASSWORD=
 # FYP demo: populate sample scholarships and users on startup (set SCHOLARZIM_DEMO_SEED=false for real production)
 SCHOLARZIM_DEMO_SEED=true
 ```
+
+### Aiven MySQL (recommended with Render)
+
+Use [Aiven](https://aiven.io) for managed MySQL instead of Render MySQL if you prefer:
+
+1. Create a MySQL service in Aiven → **Overview** → copy **Service URI** / host, port, database, user, password.
+2. On Render → Web Service → **Environment**, set:
+   - `SCHOLARZIM_DB_URL=jdbc:mysql://HOST:PORT/DBNAME?sslMode=REQUIRED&allowPublicKeyRetrieval=true`
+   - `SCHOLARZIM_DB_USER` / `SCHOLARZIM_DB_PASSWORD` from Aiven
+   - Database name is often `defaultdb` on Aiven — use the exact name from the console
+3. Aiven **requires TLS**. Do **not** use `useSSL=false`. Prefer `sslMode=REQUIRED` (MySQL Connector/J).
+4. Allow Render’s outbound IPs if Aiven has IP allowlisting enabled (or temporarily allow all for FYP).
+5. Redeploy the web service after saving env vars.
+
+If login shows **“Something went wrong”** after switching to Aiven, check Render **Logs** for Flyway validation errors or SSL/connection failures, then run the Flyway repair SQL below.
 
 ### Render uploads disk (required for certificates)
 
@@ -57,12 +73,23 @@ Do **not** deploy [`scholarzim-web/`](../scholarzim-web/DEPRECATED.md) (deprecat
 
 **If health stays DOWN after deploy:** ensure `SPRING_PROFILES_ACTIVE=prod` (mail health is disabled in prod when SMTP is unset). Render's health check uses `/actuator/health` — a misconfigured mail server on `localhost` used to mark the whole app unhealthy.
 
-**If a deploy failed on Flyway** (e.g. `Failed to open the referenced table 'users'`, or `Detected failed migration to version 10`), the DB may have a partial or failed `flyway_schema_history`. Latest builds run `flyway repair()` automatically in the `prod` profile before migrate; redeploy after pulling the fix.
+**If a deploy failed on Flyway** (e.g. `Failed to open the referenced table 'users'`, or `Detected failed migration to version 10`), the DB may have a partial or failed `flyway_schema_history`. Latest builds run `flyway repair()` automatically before migrate on startup; redeploy after pulling the fix.
 
-If startup still fails, connect with a MySQL client and run either:
+If startup still fails, connect with a MySQL client (Aiven console or local mysql with SSL) and run:
 
 ```sql
--- Failed V10 only (keeps all other history)
+-- Inspect
+SELECT version, description, success, installed_on
+FROM flyway_schema_history
+ORDER BY installed_rank;
+
+-- Remove ALL failed migration rows (keeps successful history)
+DELETE FROM flyway_schema_history WHERE success = 0;
+```
+
+Or only a specific version (example V10):
+
+```sql
 DELETE FROM flyway_schema_history WHERE version = '10' AND success = 0;
 ```
 
@@ -72,16 +99,16 @@ DELETE FROM flyway_schema_history WHERE version = '10' AND success = 0;
 # 1) Redeploy checklist (manual steps in Render dashboard)
 .\scripts\render-redeploy-notes.ps1
 
-# 2) Repair failed V10 via mysql CLI (set SCHOLARZIM_DB_* env vars first)
+# 2) Repair failed Flyway rows via mysql CLI (set SCHOLARZIM_DB_* env vars first; works with Aiven SSL)
 .\scripts\render-mysql-repair.ps1
 
-# 3) Or open scripts/render-flyway-repair.sql in DBeaver / MySQL Workbench
+# 3) Or open scripts/render-flyway-repair.sql in DBeaver / MySQL Workbench (enable SSL)
 
 # 4) After deploy, verify app is up
 .\scripts\render-health-check.ps1 -BaseUrl "https://YOUR-SERVICE.onrender.com"
 ```
 
-Set credentials from Render → **MySQL** → **Connections** (external hostname, port, database, user, password). Match your web service env vars `SCHOLARZIM_DB_URL`, `SCHOLARZIM_DB_USER`, `SCHOLARZIM_DB_PASSWORD`.
+Set credentials from **Aiven** → MySQL → **Connection information** (or Render MySQL → Connections). Match web service env vars `SCHOLARZIM_DB_URL`, `SCHOLARZIM_DB_USER`, `SCHOLARZIM_DB_PASSWORD`.
 
 or, for a completely broken early migrate:
 

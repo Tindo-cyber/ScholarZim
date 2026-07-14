@@ -1,26 +1,38 @@
-# Render redeploy checklist (manual steps — no API key configured in this repo).
+# Render + Aiven redeploy checklist (manual steps — no API key in this repo).
 #
 # Run: .\scripts\render-redeploy-notes.ps1
 
 Write-Host @"
 
-=== ScholarZim Render redeploy ===
+=== ScholarZim Render + Aiven redeploy ===
 
-1. Confirm latest main is pushed (includes Flyway V10 fix + prod repair):
+1. Confirm latest main is pushed:
    git log -1 --oneline origin/main
 
-2. Render dashboard -> Web Service (scholarzim) -> Manual Deploy -> Deploy latest commit
+2. Env vars on Render Web Service:
+   SPRING_PROFILES_ACTIVE=prod
+   SCHOLARZIM_DB_URL=jdbc:mysql://HOST:PORT/DB?sslMode=REQUIRED&allowPublicKeyRetrieval=true
+   SCHOLARZIM_DB_USER / SCHOLARZIM_DB_PASSWORD (from Aiven)
+   SCHOLARZIM_APP_BASE_URL=https://YOUR-SERVICE.onrender.com
+   SCHOLARZIM_SESSION_COOKIE_SECURE=true
 
-3. Watch Logs until you see:
-   Started ScholarzimApplication
+3. Render dashboard -> Web Service -> Manual Deploy -> Deploy latest commit
 
-4. Verify health:
+4. Watch Logs until: Started ScholarzimApplication
+   (FlywayConfig runs repair() then migrate() on startup)
+
+5. Verify health:
    .\scripts\render-health-check.ps1 -BaseUrl "https://YOUR-SERVICE.onrender.com"
 
-If logs show 'Detected failed migration to version 10':
-   - Latest deploy should auto-repair via FlywayConfig (prod profile)
-   - If still failing, run: .\scripts\render-mysql-repair.ps1
+If Logs show Flyway failed migration / schema validation:
+   - Run: .\scripts\render-mysql-repair.ps1  (with Aiven SCHOLARZIM_DB_* env vars)
+   - Or open scripts/render-flyway-repair.sql in DBeaver with SSL
    - Then Manual Deploy again
+
+If login shows 'Something went wrong':
+   - Confirm SSL JDBC URL above
+   - Confirm rebuild includes login audit hardening
+   - Paste the stack trace from Render Logs around login time
 
 "@ -ForegroundColor Cyan
 

@@ -1,6 +1,7 @@
 package com.scholarzim.service.impl;
 
 import com.scholarzim.dto.OpportunityRequest;
+import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.User;
 import com.scholarzim.repository.OpportunityRepository;
 import com.scholarzim.repository.UserRepository;
@@ -9,11 +10,14 @@ import com.scholarzim.service.NotificationService;
 import com.scholarzim.service.RecommendationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.security.access.AccessDeniedException;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -25,16 +29,18 @@ class OpportunityServiceImplProviderStatusTest {
 
     private UserRepository userRepository;
     private OpportunityRepository opportunityRepository;
+    private RecommendationService recommendationService;
     private OpportunityServiceImpl service;
 
     @BeforeEach
     void setUp() {
         userRepository = mock(UserRepository.class);
         opportunityRepository = mock(OpportunityRepository.class);
+        recommendationService = mock(RecommendationService.class);
         service = new OpportunityServiceImpl(
                 opportunityRepository,
                 userRepository,
-                mock(RecommendationService.class),
+                recommendationService,
                 mock(NotificationService.class),
                 mock(AuditService.class));
     }
@@ -58,5 +64,37 @@ class OpportunityServiceImplProviderStatusTest {
                 () -> service.createOpportunity(request, "pending@org.co.zw"));
 
         verify(opportunityRepository, never()).save(any());
+    }
+
+    @Test
+    void createOpportunitySetsCountryAndTargetCountryFromHostCountry() {
+        User provider = new User();
+        provider.setEmail("provider@org.co.zw");
+        provider.setFullName("UK Trust");
+        provider.setAccountStatus("ACTIVE");
+        when(userRepository.findByEmail("provider@org.co.zw")).thenReturn(Optional.of(provider));
+        when(opportunityRepository.save(any(Opportunity.class))).thenAnswer(invocation -> {
+            Opportunity opp = invocation.getArgument(0);
+            opp.setOpportunityId(42L);
+            return opp;
+        });
+        when(recommendationService.findMatchingApplicants(any(Opportunity.class))).thenReturn(List.of());
+
+        OpportunityRequest request = new OpportunityRequest();
+        request.setTitle("Chevening Match");
+        request.setDescription("Study in the UK");
+        request.setEducationLevel("Undergraduate");
+        request.setFundingType("Full Scholarship");
+        request.setCountry("United Kingdom");
+        request.setTargetField("Computer Science & IT");
+        request.setDeadline(LocalDate.now().plusMonths(3));
+
+        service.createOpportunity(request, "provider@org.co.zw");
+
+        ArgumentCaptor<Opportunity> captor = ArgumentCaptor.forClass(Opportunity.class);
+        verify(opportunityRepository).save(captor.capture());
+        Opportunity saved = captor.getValue();
+        assertEquals("United Kingdom", saved.getCountry());
+        assertEquals("United Kingdom", saved.getTargetCountry());
     }
 }

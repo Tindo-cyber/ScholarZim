@@ -66,10 +66,11 @@ public class OpportunityServiceImpl implements OpportunityService {
         opportunity.setDescription(request.getDescription());
         opportunity.setEducationLevel(request.getEducationLevel());
         opportunity.setFundingType(request.getFundingType());
-        opportunity.setCountry(normalizeCountry(request.getCountry()));
+        String country = normalizeCountry(request.getCountry());
+        opportunity.setCountry(country);
         opportunity.setDeadline(request.getDeadline());
         opportunity.setTargetField(request.getTargetField() != null ? request.getTargetField().trim() : null);
-        opportunity.setTargetCountry(FormOptions.DEFAULT_COUNTRY);
+        opportunity.setTargetCountry(country);
         opportunity.setStatus("ACTIVE");
         opportunity.setProvider(provider);
         opportunity.setProviderName(provider.getFullName());

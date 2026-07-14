@@ -5,6 +5,7 @@ import com.scholarzim.service.AuditService;
 import com.scholarzim.util.AuditAction;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 
+@Slf4j
 @Component
 public class RoleBasedAuthenticationSuccessHandler
         implements AuthenticationSuccessHandler {
@@ -36,12 +38,17 @@ public class RoleBasedAuthenticationSuccessHandler
             throws IOException {
 
         String email = authentication.getName();
-        userRepository.findByEmail(email).ifPresent(user -> auditService.log(
-                email,
-                AuditAction.LOGIN_SUCCESS,
-                "USER",
-                user.getUserId(),
-                "Successful login"));
+        try {
+            userRepository.findByEmail(email).ifPresent(user -> auditService.log(
+                    email,
+                    AuditAction.LOGIN_SUCCESS,
+                    "USER",
+                    user.getUserId(),
+                    "Successful login"));
+        } catch (Exception ex) {
+            // Never block redirect/dashboard access if audit persistence fails (e.g. Aiven blip).
+            log.warn("Login audit write failed for {}: {}", email, ex.getMessage());
+        }
 
         response.sendRedirect(request.getContextPath()
                 + RoleRedirectUtil.getDashboardUrl(authentication.getAuthorities()));
