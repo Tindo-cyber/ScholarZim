@@ -46,7 +46,7 @@ class RoleBasedAuthenticationSuccessHandlerTest {
         User user = new User();
         user.setUserId(7L);
         user.setEmail("student@example.com");
-        when(userRepository.findByEmail("student@example.com")).thenReturn(Optional.of(user));
+        when(userRepository.findByEmailWithRole("student@example.com")).thenReturn(Optional.of(user));
         doThrow(new RuntimeException("Aiven connection lost"))
                 .when(auditService).log(anyString(), anyString(), anyString(), anyLong(), anyString());
 

@@ -10,6 +10,7 @@ import com.scholarzim.service.OpportunityService;
 import com.scholarzim.service.RecommendationService;
 import com.scholarzim.service.SavedScholarshipService;
 import com.scholarzim.util.ProfileCompletionSupport;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 
+@Slf4j
 @Service
 public class ApplicantDashboardServiceImpl implements ApplicantDashboardService {
 
@@ -42,6 +44,20 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
 
     @Override
     public ApplicantDashboardDTO getDashboardStats(String email) {
+
+        try {
+            return buildDashboardStats(email);
+        } catch (Exception ex) {
+            // Prefer a degraded dashboard over a 500 error page after login.
+            log.warn("Dashboard stats failed for {}: {}", email, ex.getMessage());
+            ApplicantDashboardDTO dto = new ApplicantDashboardDTO();
+            dto.setHasProfile(false);
+            dto.setProfileCompletion(0);
+            return dto;
+        }
+    }
+
+    private ApplicantDashboardDTO buildDashboardStats(String email) {
 
         ApplicantDashboardDTO dto = new ApplicantDashboardDTO();
 

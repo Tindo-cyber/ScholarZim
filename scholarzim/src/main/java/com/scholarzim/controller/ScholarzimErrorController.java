@@ -4,6 +4,7 @@ import com.scholarzim.util.ErrorPageSupport;
 import com.scholarzim.util.LayoutViewUtil;
 import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.web.servlet.error.ErrorController;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import java.util.Optional;
 
 
+@Slf4j
 @Controller
 public class ScholarzimErrorController implements ErrorController {
 
@@ -20,6 +22,16 @@ public class ScholarzimErrorController implements ErrorController {
     public String handleError(HttpServletRequest request, Model model) {
         Integer status = statusCode(request);
         String errorType = ErrorPageSupport.resolveType(status);
+
+        Object exception = request.getAttribute(RequestDispatcher.ERROR_EXCEPTION);
+        Object message = request.getAttribute(RequestDispatcher.ERROR_MESSAGE);
+        Object uri = request.getAttribute(RequestDispatcher.ERROR_REQUEST_URI);
+        if (exception instanceof Throwable throwable) {
+            log.error("Request failed uri={} status={} message={}",
+                    uri, status, message, throwable);
+        } else {
+            log.warn("Request failed uri={} status={} message={}", uri, status, message);
+        }
 
         model.addAttribute("status", status != null ? status : 500);
         model.addAttribute("errorType", errorType);

@@ -41,7 +41,11 @@ public class SavedScholarshipModelAdvice {
             return;
         }
 
-        Set<Long> savedIds = savedScholarshipService.listSavedOpportunityIds(authentication.getName());
-        model.addAttribute("savedOpportunityIds", savedIds);
+        try {
+            Set<Long> savedIds = savedScholarshipService.listSavedOpportunityIds(authentication.getName());
+            model.addAttribute("savedOpportunityIds", savedIds);
+        } catch (Exception ex) {
+            model.addAttribute("savedOpportunityIds", Collections.emptySet());
+        }
     }
 }

@@ -68,6 +68,17 @@
                     <i class="bi bi-slash-circle me-2"></i>
                     This account has been suspended. Contact support for assistance.
                 </div>
+                <div class="alert alert-warning rounded-3 py-2 small" th:if="${loginError == 'unverified'}">
+                    <i class="bi bi-envelope-exclamation me-2"></i>
+                    Please verify your email before signing in.
+                    <form th:action="@{/resend-verification}" method="post" class="mt-2 mb-0">
+                        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                        <div class="input-group input-group-sm">
+                            <input type="email" name="email" class="form-control" placeholder="Your email" required>
+                            <button type="submit" class="btn btn-outline-secondary">Resend link</button>
+                        </div>
+                    </form>
+                </div>
                 <div class="alert alert-danger rounded-3 py-2 small" th:if="${showCredentialsError}">
                     <i class="bi bi-exclamation-circle me-2"></i>Invalid email or password.
                     <span th:if="${!demoLoginEnabled}" class="d-block mt-1">

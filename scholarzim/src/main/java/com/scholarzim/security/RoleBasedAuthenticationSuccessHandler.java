@@ -39,7 +39,7 @@ public class RoleBasedAuthenticationSuccessHandler
 
         String email = authentication.getName();
         try {
-            userRepository.findByEmail(email).ifPresent(user -> auditService.log(
+            userRepository.findByEmailWithRole(email).ifPresent(user -> auditService.log(
                     email,
                     AuditAction.LOGIN_SUCCESS,
                     "USER",
