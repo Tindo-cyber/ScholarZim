@@ -5,6 +5,7 @@ import com.scholarzim.entity.ApplicantProfile;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.util.ProfileCompletionSupport;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -15,6 +16,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 
+@Slf4j
 @Controller
 public class ApplicantProfileController {
 
@@ -30,16 +32,8 @@ public class ApplicantProfileController {
             @RequestParam(name = "resultsRequired", required = false) Boolean resultsRequired,
             Model model) {
 
-        ApplicantProfile profile = profileService.getProfileByEmail(authentication.getName());
-
-        model.addAttribute("profileRequest", profileService.toRequest(profile));
-        model.addAttribute("existingProfile", profile);
-        model.addAttribute("hasResultsCertificate",
-                profileService.hasResultsCertificate(authentication.getName()));
-        model.addAttribute("resultsRequired", Boolean.TRUE.equals(resultsRequired));
-        model.addAttribute("profileCompletion",
-                profileService.getProfileCompletion(authentication.getName()));
-
+        String email = authentication.getName();
+        populateProfileModel(email, model, Boolean.TRUE.equals(resultsRequired));
         return "applicant/profile";
     }
 
@@ -53,12 +47,8 @@ public class ApplicantProfileController {
             RedirectAttributes redirect) {
 
         if (bindingResult.hasErrors()) {
-            model.addAttribute("existingProfile",
-                    profileService.getProfileByEmail(authentication.getName()));
-            model.addAttribute("hasResultsCertificate",
-                    profileService.hasResultsCertificate(authentication.getName()));
-            model.addAttribute("profileCompletion",
-                    profileService.getProfileCompletion(authentication.getName()));
+            populateProfileModel(authentication.getName(), model, false);
+            model.addAttribute("profileRequest", request);
             return "applicant/profile";
         }
 
@@ -66,12 +56,8 @@ public class ApplicantProfileController {
             profileService.saveProfile(request, resultsCertificate, authentication.getName());
         } catch (IllegalArgumentException ex) {
             bindingResult.reject("certificateError", ex.getMessage());
-            model.addAttribute("existingProfile",
-                    profileService.getProfileByEmail(authentication.getName()));
-            model.addAttribute("hasResultsCertificate",
-                    profileService.hasResultsCertificate(authentication.getName()));
-            model.addAttribute("profileCompletion",
-                    profileService.getProfileCompletion(authentication.getName()));
+            populateProfileModel(authentication.getName(), model, false);
+            model.addAttribute("profileRequest", request);
             return "applicant/profile";
         }
 
@@ -96,5 +82,28 @@ public class ApplicantProfileController {
         }
 
         return "redirect:/applicant/profile";
+    }
+
+    private void populateProfileModel(String email, Model model, boolean resultsRequired) {
+        ApplicantProfile profile = null;
+        ApplicantProfileRequest profileRequest = new ApplicantProfileRequest();
+        boolean hasResultsCertificate = false;
+        ProfileCompletionSupport.Snapshot completion =
+                ProfileCompletionSupport.build(null, path -> false);
+
+        try {
+            profile = profileService.getProfileByEmail(email);
+            profileRequest = profileService.toRequest(profile);
+            hasResultsCertificate = profileService.hasResultsCertificate(email);
+            completion = profileService.getProfileCompletion(email);
+        } catch (Exception ex) {
+            log.warn("Profile page load failed for {}: {}", email, ex.getMessage());
+        }
+
+        model.addAttribute("profileRequest", profileRequest);
+        model.addAttribute("existingProfile", profile);
+        model.addAttribute("hasResultsCertificate", hasResultsCertificate);
+        model.addAttribute("resultsRequired", resultsRequired);
+        model.addAttribute("profileCompletion", completion);
     }
 }

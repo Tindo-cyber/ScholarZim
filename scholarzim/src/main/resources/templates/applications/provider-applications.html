@@ -30,8 +30,9 @@
                         </thead>
                         <tbody>
                         <tr th:each="app : ${applications}">
-                            <td class="fw-semibold" th:text="${app.user.fullName}"></td>
-                            <td th:text="${app.opportunity.title}"></td>
+                            <td class="fw-semibold"
+                                th:text="${app.user != null ? app.user.fullName : 'Applicant'}"></td>
+                            <td th:text="${app.opportunity != null ? app.opportunity.title : 'Opportunity'}"></td>
                             <td>
                                 <span class="badge"
                                       th:classappend="${app.applicationStatus == 'APPROVED' ? 'text-bg-success'

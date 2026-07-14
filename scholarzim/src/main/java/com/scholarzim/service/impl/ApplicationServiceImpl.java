@@ -140,7 +140,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         if (opportunities.isEmpty()) {
             return List.of();
         }
-        return applicationRepository.findByOpportunityIn(opportunities);
+        return applicationRepository.findByOpportunityInWithDetails(opportunities);
     }
 
     @Override

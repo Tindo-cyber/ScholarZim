@@ -1,6 +1,7 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.service.SavedScholarshipService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -10,7 +11,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Collections;
 
+
+@Slf4j
 @Controller
 public class SavedScholarshipController {
 
@@ -22,7 +26,13 @@ public class SavedScholarshipController {
 
     @GetMapping("/applicant/saved")
     public String listSaved(@NonNull Authentication auth, Model model) {
-        model.addAttribute("saved", savedScholarshipService.listSaved(auth.getName()));
+        try {
+            model.addAttribute("saved", savedScholarshipService.listSaved(auth.getName()));
+        } catch (Exception ex) {
+            log.warn("Saved scholarships list failed for {}: {}", auth.getName(), ex.getMessage());
+            model.addAttribute("saved", Collections.emptyList());
+            model.addAttribute("loadFailed", true);
+        }
         return "applicant/saved";
     }
 
@@ -32,8 +42,13 @@ public class SavedScholarshipController {
             @NonNull Authentication auth,
             RedirectAttributes redirect) {
 
-        savedScholarshipService.save(auth.getName(), id);
-        redirect.addFlashAttribute("successMessage", "Scholarship saved.");
+        try {
+            savedScholarshipService.save(auth.getName(), id);
+            redirect.addFlashAttribute("successMessage", "Scholarship saved.");
+        } catch (Exception ex) {
+            log.warn("Save scholarship failed for {}: {}", auth.getName(), ex.getMessage());
+            redirect.addFlashAttribute("errorMessage", "Could not save scholarship. Please try again.");
+        }
         return "redirect:/scholarships/" + id;
     }
 
@@ -43,8 +58,13 @@ public class SavedScholarshipController {
             @NonNull Authentication auth,
             RedirectAttributes redirect) {
 
-        savedScholarshipService.remove(auth.getName(), id);
-        redirect.addFlashAttribute("successMessage", "Removed from saved list.");
+        try {
+            savedScholarshipService.remove(auth.getName(), id);
+            redirect.addFlashAttribute("successMessage", "Removed from saved list.");
+        } catch (Exception ex) {
+            log.warn("Remove saved scholarship failed for {}: {}", auth.getName(), ex.getMessage());
+            redirect.addFlashAttribute("errorMessage", "Could not remove saved scholarship.");
+        }
         return "redirect:/applicant/saved";
     }
 }

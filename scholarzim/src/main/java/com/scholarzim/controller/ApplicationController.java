@@ -155,23 +155,42 @@ public class ApplicationController {
 
     @GetMapping("/provider/applications")
     public String providerApplications(@NonNull Authentication authentication, Model model) {
-        model.addAttribute("applications",
-                applicationService.getApplicationsForProvider(authentication.getName()));
+        try {
+            model.addAttribute("applications",
+                    applicationService.getApplicationsForProvider(authentication.getName()));
+        } catch (Exception ex) {
+            log.warn("Provider applications list failed for {}: {}",
+                    authentication.getName(), ex.getMessage());
+            model.addAttribute("applications", Collections.emptyList());
+            model.addAttribute("loadFailed", true);
+        }
         return "applications/provider-applications";
     }
 
     @GetMapping("/provider/applications/{id}")
     public String providerReview(@PathVariable Long id, @NonNull Authentication authentication, Model model) {
 
-        var apps = applicationService.getApplicationsForProvider(authentication.getName());
-        var app = apps.stream().filter(a -> a.getApplicationId().equals(id)).findFirst()
-                .orElseThrow();
-        model.addAttribute("application", app);
-        if (app.getUser() != null) {
-            model.addAttribute("applicantProfile",
-                    applicantProfileService.getProfileByUserId(app.getUser().getUserId()));
+        try {
+            var apps = applicationService.getApplicationsForProvider(authentication.getName());
+            var app = apps.stream().filter(a -> a.getApplicationId().equals(id)).findFirst()
+                    .orElse(null);
+            if (app == null) {
+                return "redirect:/provider/applications";
+            }
+            model.addAttribute("application", app);
+            if (app.getUser() != null) {
+                try {
+                    model.addAttribute("applicantProfile",
+                            applicantProfileService.getProfileByUserId(app.getUser().getUserId()));
+                } catch (Exception ex) {
+                    log.warn("Applicant profile load failed for review {}: {}", id, ex.getMessage());
+                }
+            }
+            return "applications/provider-review";
+        } catch (Exception ex) {
+            log.warn("Provider review page failed for {}: {}", authentication.getName(), ex.getMessage());
+            return "redirect:/provider/applications";
         }
-        return "applications/provider-review";
     }
 
     @PostMapping("/provider/applications/{id}/approve")

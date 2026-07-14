@@ -2,6 +2,7 @@ package com.scholarzim.controller;
 
 import com.scholarzim.service.NotificationService;
 import com.scholarzim.util.NotificationCenterSupport;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -12,7 +13,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.Collections;
+import java.util.List;
 
+
+@Slf4j
 @Controller
 public class NotificationController {
 
@@ -32,21 +37,35 @@ public class NotificationController {
             Model model) {
 
         String email = authentication.getName();
-        var result = NotificationCenterSupport.buildPage(
-                notificationService.allForUser(email), q, category, read, page);
-
-        model.addAttribute("notifications", result.notifications());
         model.addAttribute("q", q != null ? q : "");
         model.addAttribute("categoryFilter", category != null ? category : "");
         model.addAttribute("readFilter", read != null ? read : "ALL");
         model.addAttribute("categories", NotificationCenterSupport.CATEGORIES);
-        model.addAttribute("categoryCounts", result.categoryCounts());
-        model.addAttribute("filteredTotal", result.filteredTotal());
-        model.addAttribute("totalAll", result.totalAll());
-        model.addAttribute("filteredUnread", result.filteredUnread());
-        model.addAttribute("totalPages", result.totalPages());
-        model.addAttribute("currentPage", result.currentPage());
-        model.addAttribute("unreadCount", notificationService.unreadCount(email));
+
+        try {
+            var result = NotificationCenterSupport.buildPage(
+                    notificationService.allForUser(email), q, category, read, page);
+
+            model.addAttribute("notifications", result.notifications());
+            model.addAttribute("categoryCounts", result.categoryCounts());
+            model.addAttribute("filteredTotal", result.filteredTotal());
+            model.addAttribute("totalAll", result.totalAll());
+            model.addAttribute("filteredUnread", result.filteredUnread());
+            model.addAttribute("totalPages", result.totalPages());
+            model.addAttribute("currentPage", result.currentPage());
+            model.addAttribute("unreadCount", notificationService.unreadCount(email));
+        } catch (Exception ex) {
+            log.warn("Notifications list failed for {}: {}", email, ex.getMessage());
+            model.addAttribute("notifications", List.of());
+            model.addAttribute("categoryCounts", Collections.emptyMap());
+            model.addAttribute("filteredTotal", 0);
+            model.addAttribute("totalAll", 0);
+            model.addAttribute("filteredUnread", 0);
+            model.addAttribute("totalPages", 0);
+            model.addAttribute("currentPage", 0);
+            model.addAttribute("unreadCount", 0L);
+            model.addAttribute("loadFailed", true);
+        }
 
         return "notifications/list";
     }
@@ -56,8 +75,12 @@ public class NotificationController {
             @PathVariable Long id,
             @NonNull Authentication authentication) {
 
-        String link = notificationService.open(id, authentication.getName());
-        return "redirect:" + link;
+        try {
+            String link = notificationService.open(id, authentication.getName());
+            return "redirect:" + link;
+        } catch (Exception ex) {
+            return "redirect:/notifications";
+        }
     }
 
     @PostMapping("/notifications/read-all")
@@ -65,7 +88,11 @@ public class NotificationController {
             @NonNull Authentication authentication,
             @RequestHeader(value = "Referer", required = false) String referer) {
 
-        notificationService.markAllRead(authentication.getName());
+        try {
+            notificationService.markAllRead(authentication.getName());
+        } catch (Exception ex) {
+            // Prefer returning to the list over a 500 on a mark-read failure.
+        }
 
         if (referer != null && !referer.isBlank()) {
             return "redirect:" + referer;

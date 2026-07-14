@@ -9,6 +9,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
+import java.util.List;
+
 
 @Slf4j
 @ControllerAdvice
@@ -26,6 +28,8 @@ public class NotificationModelAdvice {
         if (authentication == null
                 || !authentication.isAuthenticated()
                 || authentication instanceof AnonymousAuthenticationToken) {
+            model.addAttribute("notifUnreadCount", 0L);
+            model.addAttribute("notifRecent", List.of());
             return;
         }
 
@@ -36,6 +40,8 @@ public class NotificationModelAdvice {
             model.addAttribute("notifRecent", nav.recent());
         } catch (Exception ex) {
             log.warn("Failed to load notifications for session: {}", ex.getMessage());
+            model.addAttribute("notifUnreadCount", 0L);
+            model.addAttribute("notifRecent", List.of());
         }
     }
 }

@@ -89,8 +89,21 @@ public class ApplicantDashboardController {
     @GetMapping("/applicant/recommendations")
     public String recommendations(@NonNull Authentication auth, Model model) {
 
-        model.addAttribute("hasProfile", profileService.hasProfile(auth.getName()));
-        model.addAttribute("opportunities", recommendationService.recommendForApplicant(auth.getName()));
+        String email = auth.getName();
+        boolean hasProfile = false;
+        List<ScoredOpportunityDTO> opportunities = Collections.emptyList();
+        try {
+            hasProfile = profileService.hasProfile(email);
+        } catch (Exception ex) {
+            log.warn("Profile check failed for {}: {}", email, ex.getMessage());
+        }
+        try {
+            opportunities = recommendationService.recommendForApplicant(email);
+        } catch (Exception ex) {
+            log.warn("Recommendations page failed for {}: {}", email, ex.getMessage());
+        }
+        model.addAttribute("hasProfile", hasProfile);
+        model.addAttribute("opportunities", opportunities);
         return "applicant/recommendations";
     }
 }
