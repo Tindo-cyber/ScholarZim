@@ -79,7 +79,7 @@
                             </div>
                         </div>
 
-                        <th:block th:if="${!featured.isEmpty()}">
+                        <th:block th:if="${featured != null and !featured.isEmpty()}">
                             <a th:each="opp, stat : ${featured}"
                                th:if="${stat.index < 3}"
                                th:href="@{/scholarships/{id}(id=${opp.opportunityId})}"
@@ -93,30 +93,6 @@
                                 </span>
                                 <span class="sz-home-float-card__match" th:if="${stat.index == 0}">95%</span>
                             </a>
-                        </th:block>
-                        <th:block th:if="${featured.isEmpty()}">
-                            <div class="sz-home-float-card sz-home-float-card--1">
-                                <span class="sz-home-float-card__logo">UZ</span>
-                                <span class="sz-home-float-card__body">
-                                    <strong>STEM Excellence Award</strong>
-                                    <small>Full scholarship</small>
-                                </span>
-                                <span class="sz-home-float-card__match">95%</span>
-                            </div>
-                            <div class="sz-home-float-card sz-home-float-card--2">
-                                <span class="sz-home-float-card__logo">HL</span>
-                                <span class="sz-home-float-card__body">
-                                    <strong>Higher Life Bursary</strong>
-                                    <small>Tuition support</small>
-                                </span>
-                            </div>
-                            <div class="sz-home-float-card sz-home-float-card--3">
-                                <span class="sz-home-float-card__logo">CB</span>
-                                <span class="sz-home-float-card__body">
-                                    <strong>CBZ University Fund</strong>
-                                    <small>Undergraduate</small>
-                                </span>
-                            </div>
                         </th:block>
                     </div>
                 </div>
@@ -184,8 +160,10 @@
         </div>
     </section>
 
-    <!-- Featured Scholarships -->
-    <section class="sz-home-section sz-home-section--alt" id="featured-scholarships" aria-labelledby="featured-title">
+    <!-- Featured Scholarships: only when listings exist -->
+    <section class="sz-home-section sz-home-section--alt" id="featured-scholarships"
+             aria-labelledby="featured-title"
+             th:if="${featured != null and !featured.isEmpty()}">
         <div class="container sz-container">
             <div class="sz-home-section__head sz-reveal">
                 <div>
@@ -197,15 +175,10 @@
                     View all <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
                 </a>
             </div>
-            <div class="sz-home-featured-grid" th:if="${!featured.isEmpty()}">
+            <div class="sz-home-featured-grid">
                 <th:block th:each="opp : ${featured}">
                     <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=false, removeId=null, matchScore=null, eligibilityText=null)}"></div>
                 </th:block>
-            </div>
-            <div th:if="${featured.isEmpty()}" class="sz-landing-empty sz-reveal">
-                <div class="sz-landing-empty__icon" aria-hidden="true"><i class="bi bi-mortarboard"></i></div>
-                <p class="sz-landing-muted mb-3">New scholarships are added regularly. Create an account to get notified.</p>
-                <a th:href="@{/register}" class="btn btn-primary sz-btn-landing-primary">Create free account</a>
             </div>
         </div>
     </section>
