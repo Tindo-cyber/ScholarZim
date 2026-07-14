@@ -104,18 +104,20 @@
                 </div>
             </div>
 
-            <div class="row g-3 g-md-4">
-                <div class="col-12 col-lg-7">
+            <div class="row g-3 g-md-4"
+                 th:if="${(opportunities != null and !opportunities.isEmpty())
+                       or (upcomingDeadlines != null and !upcomingDeadlines.isEmpty())
+                       or (notifRecent != null and !notifRecent.isEmpty())
+                       or (recentApplications != null and !recentApplications.isEmpty())}">
+                <div class="col-12 col-lg-7"
+                     th:if="${opportunities != null and !opportunities.isEmpty()}">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-briefcase text-primary me-1"></i> My opportunities</h2>
                             <a th:href="@{/opportunities/create}" class="small text-decoration-none fw-medium">Add new</a>
                         </div>
                         <div class="sz-dashboard-panel__body sz-dashboard-panel__body--flush">
-                            <div th:if="${opportunities == null or opportunities.isEmpty()}" class="p-4">
-                                <div th:replace="~{fragments/components :: empty-state('bi-briefcase', 'No opportunities yet', 'Create your first scholarship listing for students to discover.', @{/opportunities/create}, 'Create opportunity')}"></div>
-                            </div>
-                            <div th:if="${opportunities != null and !opportunities.isEmpty()}" class="sz-pro-table">
+                            <div class="sz-pro-table">
                                 <div class="table-responsive">
                                     <table class="table align-middle mb-0">
                                         <thead>
@@ -148,7 +150,10 @@
                     </section>
                 </div>
 
-                <div class="col-12 col-lg-5 d-flex flex-column gap-3 gap-md-4">
+                <div class="col-12 col-lg-5 d-flex flex-column gap-3 gap-md-4"
+                     th:if="${(upcomingDeadlines != null and !upcomingDeadlines.isEmpty())
+                           or (notifRecent != null and !notifRecent.isEmpty())
+                           or (recentApplications != null and !recentApplications.isEmpty())}">
                     <section class="sz-dashboard-panel" th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-calendar-event text-warning me-1"></i> Upcoming deadlines</h2>
@@ -163,49 +168,31 @@
                         </div>
                     </section>
 
-                    <section class="sz-dashboard-panel">
+                    <section class="sz-dashboard-panel" th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-bell text-warning me-1"></i> Notifications</h2>
                             <a th:href="@{/notifications}" class="small text-decoration-none fw-medium">View all</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <th:block th:if="${notifRecent == null or notifRecent.isEmpty()}">
-                                <div th:replace="~{fragments/components :: empty-state(
-                                    'bi-bell',
-                                    'No notifications',
-                                    'Alerts about new applications will appear here.',
-                                    null,
-                                    null)}"></div>
-                            </th:block>
-                            <th:block th:if="${notifRecent != null and !notifRecent.isEmpty()}">
-                                <a th:each="n : ${notifRecent}"
-                                   th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
-                                   class="sz-list-row text-decoration-none text-reset align-items-start">
-                                    <span class="sz-dot"
-                                          th:classappend="${n.unread} ? 'bg-primary' : 'bg-secondary'"></span>
-                                    <div class="flex-grow-1 min-w-0">
-                                        <div class="small" th:classappend="${n.unread} ? 'fw-semibold' : ''"
-                                             th:text="${n.message}">Message</div>
-                                    </div>
-                                </a>
-                            </th:block>
+                            <a th:each="n : ${notifRecent}"
+                               th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
+                               class="sz-list-row text-decoration-none text-reset align-items-start">
+                                <span class="sz-dot"
+                                      th:classappend="${n.unread} ? 'bg-primary' : 'bg-secondary'"></span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="small" th:classappend="${n.unread} ? 'fw-semibold' : ''"
+                                         th:text="${n.message}">Message</div>
+                                </div>
+                            </a>
                         </div>
                     </section>
 
-                    <section class="sz-dashboard-panel">
+                    <section class="sz-dashboard-panel" th:if="${recentApplications != null and !recentApplications.isEmpty()}">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-people text-info me-1"></i> Recent applicants</h2>
                             <a th:href="@{/provider/applications}" class="small text-decoration-none fw-medium">Review all</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <th:block th:if="${recentApplications == null or recentApplications.isEmpty()}">
-                                <div th:replace="~{fragments/components :: empty-state(
-                                    'bi-inbox',
-                                    'No applications yet',
-                                    'Students will appear here when they apply to your scholarships.',
-                                    @{/opportunities/create},
-                                    'Create opportunity')}"></div>
-                            </th:block>
                             <div class="sz-list-row" th:each="app : ${recentApplications}">
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="small fw-semibold text-truncate"

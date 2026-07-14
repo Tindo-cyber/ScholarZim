@@ -45,23 +45,27 @@
                         '/applicant/profile',
                         'Continue')}"></div>
 
-                    <div th:replace="~{fragments/components :: premium-highlight-card(
-                        'bi-bell',
-                        'sz-tone-warning',
-                        'Notifications',
-                        ${notifUnreadCount != null ? notifUnreadCount : 0},
-                        ${notifUnreadCount != null and notifUnreadCount > 0 ? 'Unread updates waiting for you' : 'You are all caught up'},
-                        '/notifications',
-                        'View all')}"></div>
+                    <th:block th:if="${notifUnreadCount != null and notifUnreadCount > 0}">
+                        <div th:replace="~{fragments/components :: premium-highlight-card(
+                            'bi-bell',
+                            'sz-tone-warning',
+                            'Notifications',
+                            ${notifUnreadCount},
+                            'Unread updates waiting for you',
+                            '/notifications',
+                            'View all')}"></div>
+                    </th:block>
 
-                    <div th:replace="~{fragments/components :: premium-highlight-card(
-                        'bi-calendar-event',
-                        'sz-tone-accent',
-                        'Upcoming Deadlines',
-                        ${stats.upcomingDeadlinesCount},
-                        'Scholarships closing soon',
-                        '/applicant/recommendations',
-                        'See deadlines')}"></div>
+                    <th:block th:if="${stats.upcomingDeadlinesCount > 0}">
+                        <div th:replace="~{fragments/components :: premium-highlight-card(
+                            'bi-calendar-event',
+                            'sz-tone-accent',
+                            'Upcoming Deadlines',
+                            ${stats.upcomingDeadlinesCount},
+                            'Scholarships closing soon',
+                            '/applicant/recommendations',
+                            'See deadlines')}"></div>
+                    </th:block>
                 </div>
             </header>
 
@@ -99,8 +103,9 @@
                 </div>
             </section>
 
-            <!-- Row 2: AI recommendations -->
-            <section class="sz-dash-section" aria-label="AI recommended scholarships">
+            <!-- ScholarFit: only when incomplete profile CTA or real matches -->
+            <section class="sz-dash-section" aria-label="AI recommended scholarships"
+                     th:if="${!stats.hasProfile or (recommendations != null and !recommendations.isEmpty())}">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-robot',
                     'ScholarFit AI Matches',
@@ -114,16 +119,8 @@
                             <span>Complete your <a th:href="@{/applicant/profile}">profile</a> to unlock AI recommendations.</span>
                         </div>
 
-                        <th:block th:if="${stats.hasProfile and recommendations.isEmpty()}">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-inbox',
-                                'No matches yet',
-                                'New opportunities are added regularly. Check back soon or browse the catalogue.',
-                                '/opportunities',
-                                'Browse scholarships')}"></div>
-                        </th:block>
-
-                        <div class="sz-scholarfit-grid sz-scholarfit-grid--compact" th:if="${stats.hasProfile and !recommendations.isEmpty()}">
+                        <div class="sz-scholarfit-grid sz-scholarfit-grid--compact"
+                             th:if="${stats.hasProfile and recommendations != null and !recommendations.isEmpty()}">
                             <th:block th:each="scored : ${recommendations}">
                                 <div th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}"></div>
                             </th:block>
@@ -132,8 +129,9 @@
                 </div>
             </section>
 
-            <!-- Row 3: application timeline -->
-            <section class="sz-dash-section" aria-label="Application timeline">
+            <!-- Application timeline: only when there is activity -->
+            <section class="sz-dash-section" aria-label="Application timeline"
+                     th:if="${recentApplications != null and !recentApplications.isEmpty()}">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-diagram-3',
                     'Application Timeline',
@@ -142,15 +140,7 @@
                     ~{:: #timeline-body}
                 )}">
                     <th:block id="timeline-body">
-                        <th:block th:if="${recentApplications.isEmpty()}">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-clock-history',
-                                'No activity yet',
-                                'Your application timeline will appear here once you submit your first application.',
-                                '/opportunities',
-                                'Browse scholarships')}"></div>
-                        </th:block>
-                        <div class="sz-dash-timeline" th:if="${!recentApplications.isEmpty()}">
+                        <div class="sz-dash-timeline">
                             <article class="sz-dash-timeline__item" th:each="app : ${recentApplications}">
                                 <div class="sz-dash-timeline__dot" aria-hidden="true"></div>
                                 <div class="sz-dash-timeline__card">
@@ -169,8 +159,9 @@
                 </div>
             </section>
 
-            <!-- Row 4: recent notifications -->
-            <section class="sz-dash-section" aria-label="Recent notifications">
+            <!-- Notifications: only when present -->
+            <section class="sz-dash-section" aria-label="Recent notifications"
+                     th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-bell',
                     'Recent Notifications',
@@ -179,15 +170,7 @@
                     ~{:: #notif-body}
                 )}">
                     <th:block id="notif-body">
-                        <th:block th:if="${notifRecent == null or notifRecent.isEmpty()}">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-bell-slash',
-                                'All caught up',
-                                'Application updates and deadline reminders will appear here.',
-                                null,
-                                null)}"></div>
-                        </th:block>
-                        <div class="sz-dash-notif-list" th:if="${notifRecent != null and !notifRecent.isEmpty()}">
+                        <div class="sz-dash-notif-list">
                             <a th:each="n : ${notifRecent}"
                                th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
                                class="sz-dash-notif-item"
@@ -209,8 +192,9 @@
                 </div>
             </section>
 
-            <!-- Row 5: deadlines calendar -->
-            <section class="sz-dash-section" aria-label="Upcoming deadlines calendar">
+            <!-- Deadlines: only when present -->
+            <section class="sz-dash-section" aria-label="Upcoming deadlines calendar"
+                     th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-calendar3',
                     'Upcoming Deadlines Calendar',
@@ -219,15 +203,7 @@
                     ~{:: #calendar-body}
                 )}">
                     <th:block id="calendar-body">
-                        <th:block th:if="${upcomingDeadlines.isEmpty()}">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-calendar-x',
-                                'No upcoming deadlines',
-                                'Matched scholarships with closing dates will show on your calendar.',
-                                '/opportunities',
-                                'Browse scholarships')}"></div>
-                        </th:block>
-                        <div class="sz-dash-calendar-wrap" th:if="${!upcomingDeadlines.isEmpty()}">
+                        <div class="sz-dash-calendar-wrap">
                             <div class="sz-dash-calendar" id="szDashCalendar" aria-label="Deadline calendar"></div>
                             <div class="sz-dash-calendar-events" id="szDashCalendarEvents" hidden>
                                 <span th:each="item : ${upcomingDeadlines}"

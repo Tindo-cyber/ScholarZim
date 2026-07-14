@@ -108,24 +108,17 @@
                 </div>
             </div>
 
-            <div class="row g-3 g-md-4 mb-4">
+            <div class="row g-3 g-md-4 mb-4"
+                 th:if="${!recentActivity.isEmpty() or stats.totalApplications > 0}">
 
                 <!-- Recent activity -->
-                <div class="col-12 col-lg-5">
+                <div class="col-12 col-lg-5" th:if="${!recentActivity.isEmpty()}">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-activity text-primary me-1"></i> Recent platform activity</h2>
                             <a th:href="@{/admin/audit-log}" class="small text-decoration-none fw-medium">Audit log</a>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <th:block th:if="${recentActivity.isEmpty()}">
-                                <div th:replace="~{fragments/components :: empty-state(
-                                    'bi-activity',
-                                    'No activity yet',
-                                    'Platform events will appear here as users register, apply, and admins take action.',
-                                    @{/admin/audit-log},
-                                    'View audit log')}"></div>
-                            </th:block>
                             <div th:each="entry : ${recentActivity}" class="sz-list-row align-items-start">
                                 <span class="sz-dot bg-primary"></span>
                                 <div class="flex-grow-1 min-w-0">
@@ -145,7 +138,7 @@
                 </div>
 
                 <!-- Application status chart -->
-                <div class="col-12 col-lg-7">
+                <div class="col-12 col-lg-7" th:if="${stats.totalApplications > 0}">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-pie-chart text-success me-1"></i> Application outcomes</h2>
@@ -231,11 +224,8 @@
                     <div class="tab-content">
                         <!-- Applicants tab -->
                         <div class="tab-pane fade show active" id="tab-applicants">
-                            <div th:if="${applicants.content.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
-                                     'bi-person', 'No applicants yet',
-                                     'Registered students will appear here.',
-                                     null, null)}"></div>
+                            <p th:if="${applicants.content.isEmpty()}"
+                               class="text-secondary small mb-0 py-3">No applicants registered yet.</p>
                             <div th:if="${!applicants.content.isEmpty()}" class="table-responsive">
                                 <table class="table table-hover align-middle mb-0 sz-admin-table">
                                     <thead>
@@ -319,11 +309,8 @@
 
                         <!-- Providers tab -->
                         <div class="tab-pane fade" id="tab-providers">
-                            <div th:if="${providers.content.isEmpty()}"
-                                 th:replace="~{fragments/components :: empty-state(
-                                     'bi-building', 'No providers yet',
-                                     'Registered organisations will appear here.',
-                                     null, null)}"></div>
+                            <p th:if="${providers.content.isEmpty()}"
+                               class="text-secondary small mb-0 py-3">No providers registered yet.</p>
                             <div th:if="${!providers.content.isEmpty()}" class="table-responsive">
                                 <table class="table table-hover align-middle mb-0 sz-admin-table">
                                     <thead>
@@ -484,9 +471,10 @@
             <!-- Reports -->
             <div th:replace="~{fragments/components :: report-export-grid}"></div>
 
-            <!-- Charts row -->
-            <div class="row g-3 g-md-4 mb-4">
-                <div class="col-12 col-lg-7">
+            <!-- Charts row: only when series have data -->
+            <div class="row g-3 g-md-4 mb-4"
+                 th:if="${stats.totalApplications > 0 or !topProviders.labels.isEmpty()}">
+                <div class="col-12 col-lg-7" th:if="${stats.totalApplications > 0}">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2>Applications per month</h2>
@@ -498,46 +486,30 @@
                         </div>
                     </section>
                 </div>
-                <div class="col-12 col-lg-5">
+                <div class="col-12 col-lg-5" th:if="${!topProviders.labels.isEmpty()}">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2>Top providers</h2>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div class="sz-chart-wrap" th:if="${!topProviders.labels.isEmpty()}">
+                            <div class="sz-chart-wrap">
                                 <canvas id="providersChart"></canvas>
                             </div>
-                            <th:block th:if="${topProviders.labels.isEmpty()}">
-                                <div th:replace="~{fragments/components :: empty-state(
-                                    'bi-building',
-                                    'No provider data',
-                                    'Application counts by provider will appear once students start applying.',
-                                    null,
-                                    null)}"></div>
-                            </th:block>
                         </div>
                     </section>
                 </div>
             </div>
 
-            <div class="row g-3 g-md-4">
+            <div class="row g-3 g-md-4" th:if="${!mostAppliedOpportunities.labels.isEmpty()}">
                 <div class="col-12">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-graph-up-arrow text-primary me-1"></i> Most applied scholarships</h2>
                         </div>
                         <div class="sz-dashboard-panel__body">
-                            <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!mostAppliedOpportunities.labels.isEmpty()}">
+                            <div class="sz-chart-wrap sz-chart-wrap--wide">
                                 <canvas id="mostAppliedChart"></canvas>
                             </div>
-                            <th:block th:if="${mostAppliedOpportunities.labels.isEmpty()}">
-                                <div th:replace="~{fragments/components :: empty-state(
-                                    'bi-briefcase',
-                                    'No application data',
-                                    'Scholarship popularity will be charted here after the first applications are submitted.',
-                                    null,
-                                    null)}"></div>
-                            </th:block>
                         </div>
                     </section>
                 </div>
@@ -558,48 +530,54 @@
                 const chartPrimary = rootStyles.getPropertyValue('--sz-chart-primary').trim() || 'rgba(22, 163, 74, 0.75)';
                 const chartAccent = rootStyles.getPropertyValue('--sz-chart-accent').trim() || 'rgba(59, 130, 246, 0.7)';
 
-                new Chart(document.getElementById('statusChart'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Approved', 'Pending', 'Rejected'],
-                        datasets: [{
-                            data: [approved, pending, rejected],
-                            backgroundColor: [chartSuccess, chartWarning, chartDanger],
-                            borderWidth: 0
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '65%',
-                        plugins: { legend: { position: 'bottom' } }
-                    }
-                });
+                const statusEl = document.getElementById('statusChart');
+                if (statusEl) {
+                    new Chart(statusEl, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Approved', 'Pending', 'Rejected'],
+                            datasets: [{
+                                data: [approved, pending, rejected],
+                                backgroundColor: [chartSuccess, chartWarning, chartDanger],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '65%',
+                            plugins: { legend: { position: 'bottom' } }
+                        }
+                    });
+                }
 
-                new Chart(document.getElementById('monthlyChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: monthLabels,
-                        datasets: [{
-                            label: 'Applications',
-                            data: monthlyCounts,
-                            backgroundColor: chartPrimary,
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
-                    }
-                });
+                const monthlyEl = document.getElementById('monthlyChart');
+                if (monthlyEl) {
+                    new Chart(monthlyEl, {
+                        type: 'bar',
+                        data: {
+                            labels: monthLabels,
+                            datasets: [{
+                                label: 'Applications',
+                                data: monthlyCounts,
+                                backgroundColor: chartPrimary,
+                                borderRadius: 6
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: { legend: { display: false } },
+                            scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+                        }
+                    });
+                }
 
                 const providerLabels = [[${topProviders.labels}]];
                 const providerData = [[${topProviders.data}]];
-
-                if (providerLabels.length) {
-                    new Chart(document.getElementById('providersChart'), {
+                const providersEl = document.getElementById('providersChart');
+                if (providersEl && providerLabels.length) {
+                    new Chart(providersEl, {
                         type: 'bar',
                         data: {
                             labels: providerLabels,
@@ -622,9 +600,9 @@
 
                 const mostAppliedLabels = [[${mostAppliedOpportunities.labels}]];
                 const mostAppliedData = [[${mostAppliedOpportunities.data}]];
-
-                if (mostAppliedLabels.length) {
-                    new Chart(document.getElementById('mostAppliedChart'), {
+                const mostAppliedEl = document.getElementById('mostAppliedChart');
+                if (mostAppliedEl && mostAppliedLabels.length) {
+                    new Chart(mostAppliedEl, {
                         type: 'bar',
                         data: {
                             labels: mostAppliedLabels,
