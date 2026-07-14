@@ -16,12 +16,43 @@
 .sz-landing-brand {
     display: inline-flex;
     align-items: center;
-    gap: .625rem;
+    gap: .75rem;
     font-family: var(--sz-font-display);
-    font-weight: 800;
-    font-size: 1.2rem;
     color: var(--sz-lp-text) !important;
     text-decoration: none;
+    letter-spacing: -.03em;
+    transition: transform .2s ease;
+}
+
+.sz-landing-brand:hover {
+    transform: translateY(-1px);
+}
+
+.sz-landing-brand__mark {
+    width: 42px;
+    height: 42px;
+    display: block;
+    flex-shrink: 0;
+    border-radius: 14px;
+    box-shadow: 0 6px 16px rgba(21, 128, 61, .28);
+}
+
+.sz-landing-brand__wordmark {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
+
+.sz-landing-brand__name {
+    font-weight: 800;
+    font-size: 1.35rem;
+    letter-spacing: -.04em;
+    color: inherit;
+}
+
+.sz-landing-brand__name em {
+    font-style: normal;
+    color: var(--sz-lp-primary);
 }
 
 .sz-landing-brand__icon {
@@ -96,6 +127,14 @@
 }
 
 .sz-landing-brand--footer { color: #fff !important; }
+
+.sz-landing-brand--footer .sz-landing-brand__name em {
+    color: #86EFAC;
+}
+
+.sz-landing-brand--footer .sz-landing-brand__mark {
+    box-shadow: 0 8px 20px rgba(0, 0, 0, .35);
+}
 
 .sz-landing-footer__text {
     font-size: .9375rem;
@@ -1499,38 +1538,6 @@ body.sz-landing {
 .sz-text-highlight {
     color: var(--sz-primary);
     font-weight: 600;
-}
-
-/* Announcement bar */
-.sz-landing-announce {
-    background: linear-gradient(90deg, #15803D, #16A34A);
-    color: #fff;
-    font-size: 0.8125rem;
-    padding: 0.5rem 0;
-}
-
-.sz-landing-announce__text {
-    font-weight: 500;
-}
-
-.sz-landing-announce__links {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    opacity: 0.95;
-}
-
-.sz-landing-announce__links a {
-    color: #fff;
-    text-decoration: none;
-}
-
-.sz-landing-announce__links a:hover {
-    text-decoration: underline;
-}
-
-.sz-landing-announce__sep {
-    opacity: 0.5;
 }
 
 /* Header — 72–80px */

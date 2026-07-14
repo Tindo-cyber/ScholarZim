@@ -58,27 +58,17 @@
 
 <a th:fragment="skip-link" class="sz-skip-link" href="#main-content">Skip to main content</a>
 
-<div th:fragment="announcement-bar" class="sz-landing-announce">
-    <div class="sz-container d-flex flex-wrap align-items-center justify-content-between gap-2">
-        <span class="sz-landing-announce__text">
-            <i class="bi bi-megaphone me-1" aria-hidden="true"></i>
-            Connecting students with verified scholarships across Zimbabwe.
-        </span>
-        <span class="sz-landing-announce__links">
-            <a th:href="@{/#faq}">Help center</a>
-            <span class="sz-landing-announce__sep" aria-hidden="true">·</span>
-            <span><i class="bi bi-globe2 me-1" aria-hidden="true"></i>English</span>
-        </span>
-    </div>
-</div>
-
 <header th:fragment="navbar" class="sz-landing-header" id="szLandingHeader">
-    <div th:replace="~{fragments/public-layout :: announcement-bar}"></div>
     <div class="sz-container">
         <nav class="navbar navbar-expand-lg sz-landing-nav" aria-label="Primary">
-            <a class="navbar-brand sz-landing-brand" th:href="@{/}">
-                <span class="sz-landing-brand__icon" aria-hidden="true"><i class="bi bi-mortarboard-fill"></i></span>
-                <span>ScholarZim</span>
+            <a class="navbar-brand sz-landing-brand" th:href="@{/}" aria-label="ScholarZim home">
+                <img class="sz-landing-brand__mark"
+                     th:src="@{/images/scholarzim-mark.svg}"
+                     src="/images/scholarzim-mark.svg"
+                     width="42" height="42" alt="" aria-hidden="true">
+                <span class="sz-landing-brand__wordmark">
+                    <span class="sz-landing-brand__name">Scholar<em>Zim</em></span>
+                </span>
             </a>
             <button class="navbar-toggler sz-landing-nav__toggle" type="button" data-bs-toggle="collapse"
                     data-bs-target="#pubNav" aria-controls="pubNav" aria-expanded="false"
@@ -115,11 +105,16 @@
     <div class="container sz-container">
         <div class="row g-4 g-lg-5">
             <div class="col-lg-4">
-                <a class="sz-landing-brand sz-landing-brand--footer mb-3" th:href="@{/}">
-                    <span class="sz-landing-brand__icon" aria-hidden="true"><i class="bi bi-mortarboard-fill"></i></span>
-                    <span>ScholarZim</span>
+                <a class="sz-landing-brand sz-landing-brand--footer mb-3" th:href="@{/}" aria-label="ScholarZim home">
+                    <img class="sz-landing-brand__mark"
+                         th:src="@{/images/scholarzim-mark.svg}"
+                         src="/images/scholarzim-mark.svg"
+                         width="42" height="42" alt="" aria-hidden="true">
+                    <span class="sz-landing-brand__wordmark">
+                        <span class="sz-landing-brand__name">Scholar<em>Zim</em></span>
+                    </span>
                 </a>
-                <p class="sz-landing-footer__text">Zimbabwe's scholarship platform — primary school through postgraduate funding. Connecting students with verified opportunities.</p>
+                <p class="sz-landing-footer__text">Zimbabwe's scholarship platform — primary school through postgraduate funding.</p>
                 <div class="sz-landing-social d-flex gap-2 mt-3" aria-label="Social media">
                     <span class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true" title="Coming soon"><i class="bi bi-facebook" aria-hidden="true"></i></span>
                     <span class="btn btn-sm btn-outline-secondary disabled" aria-disabled="true" title="Coming soon"><i class="bi bi-twitter-x" aria-hidden="true"></i></span>
@@ -185,10 +180,10 @@
             false)}"></div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" defer></script>
-    <script th:src="@{/js/public-shell.js(v=50)}" defer></script>
-    <script th:src="@{/js/landing.js(v=50)}" defer></script>
-    <script th:src="@{/js/performance.js(v=50)}" defer></script>
-    <script th:src="@{/js/pwa.js(v=50)}" defer></script>
+    <script th:src="@{/js/public-shell.js(v=51)}" defer></script>
+    <script th:src="@{/js/landing.js(v=51)}" defer></script>
+    <script th:src="@{/js/performance.js(v=51)}" defer></script>
+    <script th:src="@{/js/pwa.js(v=51)}" defer></script>
 </th:block>
 
 </body>
