@@ -232,7 +232,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             throw new InvalidStatusException("Invalid application status: " + status);
         }
 
-        Application application = applicationRepository.findById(applicationId)
+        Application application = applicationRepository.findByIdWithDetails(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found."));
 
         User provider = findUserByEmail(providerEmail);

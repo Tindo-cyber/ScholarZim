@@ -123,16 +123,24 @@ public class DemoDataSeeder implements CommandLineRunner {
 
         ensurePendingProviderProfile(pendingProvider, ProviderOrgType.NGO, "NGO-PENDING-2026");
 
-        if (opportunityRepository.count() > 0) {
-            refreshExpiredDemoOpportunities();
-            log.info("Demo accounts ready (password: {}). Scholarships already in database.",
-                    DEMO_PASSWORD);
-            logDemoAccounts();
-            return;
+        // Revive any stale rows first, then seed a full catalogue if none are active.
+        refreshExpiredDemoOpportunities();
+        long activeCount = opportunityRepository.countActive(LocalDate.now());
+        if (activeCount == 0) {
+            log.info("No active scholarships found — seeding demo catalogue…");
+            seedScholarshipCatalogue(chevening, higherlife, cbz, mastercard);
         }
 
-        log.info("Seeding scholarship demo data…");
-        Opportunity cheveningSch = saveOpportunity(chevening, "Chevening Scholarships 2026",
+        ensureDemoStudentActivity(tanaka, rudo, simba);
+
+        log.info("Demo data ready. Login with any account using password: {}", DEMO_PASSWORD);
+        logDemoAccounts();
+    }
+
+    private void seedScholarshipCatalogue(
+            User chevening, User higherlife, User cbz, User mastercard) {
+
+        saveOpportunity(chevening, "Chevening Scholarships 2026",
                 "Fully funded one-year master's degree at any UK university. "
                         + "Covers tuition, living allowance, return flights, and visa costs. "
                         + "Open to Zimbabwean professionals with leadership potential.",
@@ -140,7 +148,7 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "United Kingdom", LocalDate.now().plusMonths(4),
                 "Social Sciences", "Zimbabwe");
 
-        Opportunity higherlifeSch = saveOpportunity(higherlife,
+        saveOpportunity(higherlife,
                 "Higherlife Joshua Nkomo Scholarship",
                 "Comprehensive support for academically gifted Zimbabwean students "
                         + "from disadvantaged backgrounds. Covers tuition, boarding, "
@@ -157,7 +165,7 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "Zimbabwe", LocalDate.now().plusMonths(3),
                 "Business & Finance", "Zimbabwe");
 
-        Opportunity mastercardSch = saveOpportunity(mastercard,
+        saveOpportunity(mastercard,
                 "Mastercard Foundation Scholars — Africa",
                 "Transformative leadership programme for young Africans. "
                         + "Full scholarship to partner universities including UCT, "
@@ -166,28 +174,28 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "South Africa", LocalDate.now().plusMonths(5),
                 "Computer Science & IT", "Zimbabwe");
 
-        Opportunity daadSch = saveOpportunity(chevening, "DAAD In-Country/In-Region Scholarship",
+        saveOpportunity(chevening, "DAAD In-Country/In-Region Scholarship",
                 "German Academic Exchange Service funding for postgraduate studies "
                         + "in engineering and natural sciences at African partner institutions.",
                 "DAAD Regional Office", "Masters", "Partial Scholarship",
                 "Germany", LocalDate.now().plusMonths(6),
                 "Engineering", "Zimbabwe");
 
-        Opportunity econetSch = saveOpportunity(higherlife, "Econet Capernaum Trust STEM Grant",
+        saveOpportunity(higherlife, "Econet Capernaum Trust STEM Grant",
                 "STEM bursaries for Zimbabwean students pursuing degrees in "
                         + "technology, engineering, and mathematics at accredited institutions.",
                 "Econet Wireless Zimbabwe", "Undergraduate", "Tuition + Accommodation",
                 "Zimbabwe", LocalDate.now().plusDays(45),
                 "Computer Science & IT", "Zimbabwe");
 
-        Opportunity ausSch = saveOpportunity(cbz, "Australia Awards Africa — Zimbabwe",
+        saveOpportunity(cbz, "Australia Awards Africa — Zimbabwe",
                 "Australian Government scholarships for Zimbabweans to study "
                         + "development-related fields at Australian universities.",
                 "Australian Embassy Harare", "Masters", "Full Scholarship",
                 "Australia", LocalDate.now().plusMonths(7),
                 "Environmental Science", "Zimbabwe");
 
-        Opportunity mandelaSch = saveOpportunity(mastercard,
+        saveOpportunity(mastercard,
                 "Mandela Rhodes Scholarship",
                 "Prestigious scholarship for young African leaders to pursue "
                         + "postgraduate study at any recognised South African institution. "
@@ -195,46 +203,71 @@ public class DemoDataSeeder implements CommandLineRunner {
                 "Mandela Rhodes Foundation", "Postgraduate", "Full Scholarship",
                 "South Africa", LocalDate.now().plusMonths(3),
                 "Law", "Zimbabwe");
+    }
 
-        saveApplication(tanaka, cheveningSch, "PENDING", LocalDateTime.now().minusDays(5));
-        saveApplication(tanaka, econetSch, "APPROVED", LocalDateTime.now().minusDays(12));
-        saveApplication(tanaka, higherlifeSch, "PENDING", LocalDateTime.now().minusDays(2));
+    /**
+     * Ensures demo students have applications + notifications so dashboards are not empty
+     * after a partial seed or Aiven restore that only kept opportunity rows.
+     */
+    private void ensureDemoStudentActivity(User tanaka, User rudo, User simba) {
 
-        saveApplication(rudo, mandelaSch, "APPROVED", LocalDateTime.now().minusDays(20));
-        saveApplication(rudo, daadSch, "PENDING", LocalDateTime.now().minusDays(8));
-        saveApplication(rudo, ausSch, "REJECTED", LocalDateTime.now().minusDays(15));
+        List<Opportunity> active = opportunityRepository.search(
+                LocalDate.now(), null, null, null, null, null, null);
+        if (active.isEmpty()) {
+            log.warn("No active opportunities available for demo student activity.");
+            return;
+        }
 
-        saveNotification(tanaka, NotificationType.APPLICATION_APPROVED,
-                "Congratulations! Your application for Econet Capernaum Trust STEM Grant was approved.",
-                "/my-applications", econetSch.getOpportunityId(), false,
-                LocalDateTime.now().minusDays(1));
+        Opportunity first = active.get(0);
+        Opportunity second = active.size() > 1 ? active.get(1) : first;
+        Opportunity third = active.size() > 2 ? active.get(2) : first;
 
-        saveNotification(tanaka, NotificationType.DEADLINE_REMINDER,
-                "Reminder: Higherlife Joshua Nkomo Scholarship closes in 2 months. Apply soon!",
-                "/opportunities", higherlifeSch.getOpportunityId(), false,
-                LocalDateTime.now().minusHours(6));
+        ensureApplication(tanaka, first, "PENDING", LocalDateTime.now().minusDays(5));
+        ensureApplication(tanaka, second, "APPROVED", LocalDateTime.now().minusDays(12));
+        ensureApplication(tanaka, third, "PENDING", LocalDateTime.now().minusDays(2));
 
-        saveNotification(tanaka, NotificationType.NEW_OPPORTUNITY,
-                "New opportunity: Mastercard Foundation Scholars — Africa is now open.",
-                "/opportunities", mastercardSch.getOpportunityId(), true,
-                LocalDateTime.now().minusDays(3));
+        ensureApplication(rudo, first, "APPROVED", LocalDateTime.now().minusDays(20));
+        ensureApplication(rudo, second, "PENDING", LocalDateTime.now().minusDays(8));
+        ensureApplication(rudo, third, "REJECTED", LocalDateTime.now().minusDays(15));
 
-        saveNotification(rudo, NotificationType.APPLICATION_APPROVED,
-                "Your Mandela Rhodes Scholarship application has been approved!",
-                "/my-applications", mandelaSch.getOpportunityId(), false,
-                LocalDateTime.now().minusDays(2));
+        if (notificationRepository.findByUserOrderByCreatedAtDesc(tanaka).isEmpty()) {
+            saveNotification(tanaka, NotificationType.APPLICATION_APPROVED,
+                    "Congratulations! Your application for \"" + second.getTitle() + "\" was approved.",
+                    "/my-applications", second.getOpportunityId(), false,
+                    LocalDateTime.now().minusDays(1));
+            saveNotification(tanaka, NotificationType.DEADLINE_REMINDER,
+                    "Reminder: \"" + third.getTitle() + "\" closes soon. Apply or update your documents!",
+                    "/opportunities", third.getOpportunityId(), false,
+                    LocalDateTime.now().minusHours(6));
+            saveNotification(tanaka, NotificationType.NEW_OPPORTUNITY,
+                    "New opportunity: \"" + first.getTitle() + "\" is now open.",
+                    "/opportunities", first.getOpportunityId(), true,
+                    LocalDateTime.now().minusDays(3));
+        }
 
-        saveNotification(rudo, NotificationType.APPLICATION_REJECTED,
-                "Your Australia Awards Africa application was not successful this round.",
-                "/my-applications", ausSch.getOpportunityId(), true,
-                LocalDateTime.now().minusDays(10));
+        if (notificationRepository.findByUserOrderByCreatedAtDesc(rudo).isEmpty()) {
+            saveNotification(rudo, NotificationType.APPLICATION_APPROVED,
+                    "Your application for \"" + first.getTitle() + "\" has been approved!",
+                    "/my-applications", first.getOpportunityId(), false,
+                    LocalDateTime.now().minusDays(2));
+            saveNotification(rudo, NotificationType.APPLICATION_REJECTED,
+                    "Your application for \"" + third.getTitle() + "\" was not successful this round.",
+                    "/my-applications", third.getOpportunityId(), true,
+                    LocalDateTime.now().minusDays(10));
+        }
 
-        saveNotification(simba, NotificationType.PROFILE_INCOMPLETE,
-                "Welcome to ScholarZim! Complete your profile and upload your results certificate to apply.",
-                "/applicant/profile", simba.getUserId(), false, LocalDateTime.now().minusHours(1));
+        if (notificationRepository.findByUserOrderByCreatedAtDesc(simba).isEmpty()) {
+            saveNotification(simba, NotificationType.PROFILE_INCOMPLETE,
+                    "Welcome to ScholarZim! Complete your profile and upload your results certificate to apply.",
+                    "/applicant/profile", simba.getUserId(), false, LocalDateTime.now().minusHours(1));
+        }
+    }
 
-        log.info("Demo data seeded. Login with any account using password: {}", DEMO_PASSWORD);
-        logDemoAccounts();
+    private void ensureApplication(User user, Opportunity opp, String status, LocalDateTime submittedAt) {
+        if (applicationRepository.existsByUserAndOpportunity(user, opp)) {
+            return;
+        }
+        saveApplication(user, opp, status, submittedAt);
     }
 
     private void logDemoAccounts() {

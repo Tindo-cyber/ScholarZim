@@ -55,11 +55,16 @@
             </div>
         </div>
 
-        <p th:if="${opportunities.isEmpty()}" class="text-secondary small mb-0 py-2">
-            No active scholarships match these filters right now.
-            <a th:href="@{/scholarships}" class="fw-semibold">Reset filters</a>
-            or check back soon.
-        </p>
+        <div th:if="${opportunities.isEmpty()}" class="sz-empty">
+            <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
+            <h3 class="h5 fw-bold">No scholarships found</h3>
+            <p class="text-secondary mb-3">
+                No active listings match your search yet. After deploy with demo seed enabled,
+                verified sample scholarships should appear here automatically.
+            </p>
+            <a th:href="@{/scholarships}" class="btn btn-outline-primary btn-sm me-2">Reset filters</a>
+            <a th:href="@{/register}" class="btn btn-primary btn-sm sz-btn-landing-primary">Create student account</a>
+        </div>
 
         <div class="sz-opp-grid" th:if="${!opportunities.isEmpty()}">
             <th:block th:each="opp : ${opportunities}">
