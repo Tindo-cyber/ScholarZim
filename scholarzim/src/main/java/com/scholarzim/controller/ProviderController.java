@@ -6,6 +6,7 @@ import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.User;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.ProviderService;
+import com.scholarzim.util.SoftLoad;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Slf4j
@@ -37,35 +39,20 @@ public class ProviderController {
     public String dashboard(@NonNull Authentication auth, Model model) {
 
         String email = auth.getName();
-        String providerName = "Provider";
-        try {
-            providerName = userRepository.findByEmail(email)
-                    .map(User::getFullName)
-                    .orElse(email);
-        } catch (Exception ex) {
-            log.warn("Could not load provider name for {}: {}", email, ex.getMessage());
-        }
+        AtomicBoolean loadFailed = new AtomicBoolean(false);
 
-        ProviderDashboardDTO stats = new ProviderDashboardDTO();
-        try {
-            stats = providerService.getDashboardStats(email);
-        } catch (Exception ex) {
-            log.warn("Provider dashboard stats failed for {}: {}", email, ex.getMessage());
-        }
+        String providerName = SoftLoad.of(log, "Provider name", "Provider",
+                () -> userRepository.findByEmail(email).map(User::getFullName).orElse(email),
+                loadFailed);
 
-        List<Opportunity> opportunities = Collections.emptyList();
-        try {
-            opportunities = providerService.getMyOpportunities(email);
-        } catch (Exception ex) {
-            log.warn("Provider opportunities failed for {}: {}", email, ex.getMessage());
-        }
+        ProviderDashboardDTO stats = SoftLoad.of(log, "Provider dashboard stats",
+                new ProviderDashboardDTO(), () -> providerService.getDashboardStats(email), loadFailed);
 
-        List<Application> recentApplications = Collections.emptyList();
-        try {
-            recentApplications = providerService.getRecentApplications(email, 8);
-        } catch (Exception ex) {
-            log.warn("Provider recent applications failed for {}: {}", email, ex.getMessage());
-        }
+        List<Opportunity> opportunities = SoftLoad.of(log, "Provider opportunities",
+                Collections.emptyList(), () -> providerService.getMyOpportunities(email), loadFailed);
+
+        List<Application> recentApplications = SoftLoad.of(log, "Provider recent applications",
+                Collections.emptyList(), () -> providerService.getRecentApplications(email, 8), loadFailed);
 
         model.addAttribute("providerName", providerName);
         model.addAttribute("stats", stats);
@@ -79,6 +66,7 @@ public class ProviderController {
                 .sorted(Comparator.comparing(Opportunity::getDeadline))
                 .limit(5)
                 .toList());
+        model.addAttribute("loadFailed", loadFailed.get());
 
         return "provider/dashboard";
     }

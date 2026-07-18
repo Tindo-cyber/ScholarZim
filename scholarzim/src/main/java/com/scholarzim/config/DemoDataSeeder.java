@@ -3,6 +3,7 @@ package com.scholarzim.config;
 import com.scholarzim.entity.*;
 import com.scholarzim.repository.*;
 import com.scholarzim.service.FileStorageService;
+import com.scholarzim.util.ApplicationStatus;
 import com.scholarzim.util.NotificationType;
 import com.scholarzim.util.ProviderOrgType;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +18,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 
 @Slf4j
@@ -26,6 +28,17 @@ public class DemoDataSeeder implements CommandLineRunner {
 
     private static final String DEMO_PASSWORD = "Password123!";
     private static final String DEMO_APPLICANT_EMAIL = "tanaka.moyo@student.co.zw";
+
+    /** Catalogue titles owned by the seeder — only these are revived on refresh. */
+    private static final Set<String> DEMO_TITLES = Set.of(
+            "Chevening Scholarships 2026",
+            "Higherlife Joshua Nkomo Scholarship",
+            "CBZ University Scholarship Programme",
+            "Mastercard Foundation Scholars — Africa",
+            "DAAD In-Country/In-Region Scholarship",
+            "Econet Capernaum Trust STEM Grant",
+            "Australia Awards Africa — Zimbabwe",
+            "Mandela Rhodes Scholarship");
 
     private final boolean seedEnabled;
     private final UserRepository userRepository;
@@ -123,13 +136,10 @@ public class DemoDataSeeder implements CommandLineRunner {
 
         ensurePendingProviderProfile(pendingProvider, ProviderOrgType.NGO, "NGO-PENDING-2026");
 
-        // Revive any stale rows first, then seed a full catalogue if none are active.
+        // Revive demo catalogue rows, then upsert the full set (missing titles backfill).
         refreshExpiredDemoOpportunities();
-        long activeCount = opportunityRepository.countActive(LocalDate.now());
-        if (activeCount == 0) {
-            log.info("No active scholarships found — seeding demo catalogue…");
-            seedScholarshipCatalogue(chevening, higherlife, cbz, mastercard);
-        }
+        log.info("Ensuring demo scholarship catalogue…");
+        seedScholarshipCatalogue(chevening, higherlife, cbz, mastercard);
 
         ensureDemoStudentActivity(tanaka, rudo, simba);
 
@@ -222,13 +232,16 @@ public class DemoDataSeeder implements CommandLineRunner {
         Opportunity second = active.size() > 1 ? active.get(1) : first;
         Opportunity third = active.size() > 2 ? active.get(2) : first;
 
-        ensureApplication(tanaka, first, "PENDING", LocalDateTime.now().minusDays(5));
-        ensureApplication(tanaka, second, "APPROVED", LocalDateTime.now().minusDays(12));
-        ensureApplication(tanaka, third, "PENDING", LocalDateTime.now().minusDays(2));
+        Application tanakaSubmitted = ensureApplication(tanaka, first, ApplicationStatus.SUBMITTED,
+                LocalDateTime.now().minusDays(5));
+        ensureApplication(tanaka, second, ApplicationStatus.APPROVED, LocalDateTime.now().minusDays(12));
+        Application tanakaRecent = ensureApplication(tanaka, third, ApplicationStatus.SUBMITTED,
+                LocalDateTime.now().minusDays(2));
 
-        ensureApplication(rudo, first, "APPROVED", LocalDateTime.now().minusDays(20));
-        ensureApplication(rudo, second, "PENDING", LocalDateTime.now().minusDays(8));
-        ensureApplication(rudo, third, "REJECTED", LocalDateTime.now().minusDays(15));
+        ensureApplication(rudo, first, ApplicationStatus.APPROVED, LocalDateTime.now().minusDays(20));
+        Application rudoSubmitted = ensureApplication(rudo, second, ApplicationStatus.SUBMITTED,
+                LocalDateTime.now().minusDays(8));
+        ensureApplication(rudo, third, ApplicationStatus.REJECTED, LocalDateTime.now().minusDays(15));
 
         if (notificationRepository.findByUserOrderByCreatedAtDesc(tanaka).isEmpty()) {
             saveNotification(tanaka, NotificationType.APPLICATION_APPROVED,
@@ -261,13 +274,39 @@ public class DemoDataSeeder implements CommandLineRunner {
                     "Welcome to ScholarZim! Complete your profile and upload your results certificate to apply.",
                     "/applicant/profile", simba.getUserId(), false, LocalDateTime.now().minusHours(1));
         }
+
+        ensureProviderNewApplicationNotification(first.getProvider(), tanaka, tanakaSubmitted);
+        ensureProviderNewApplicationNotification(third.getProvider(), tanaka, tanakaRecent);
+        ensureProviderNewApplicationNotification(second.getProvider(), rudo, rudoSubmitted);
     }
 
-    private void ensureApplication(User user, Opportunity opp, String status, LocalDateTime submittedAt) {
-        if (applicationRepository.existsByUserAndOpportunity(user, opp)) {
+    private void ensureProviderNewApplicationNotification(User provider, User applicant, Application app) {
+        if (provider == null || app == null || app.getApplicationId() == null) {
             return;
         }
-        saveApplication(user, opp, status, submittedAt);
+        if (!notificationRepository.findByUserOrderByCreatedAtDesc(provider).isEmpty()) {
+            return;
+        }
+        Opportunity opp = app.getOpportunity();
+        String title = opp != null ? opp.getTitle() : "a scholarship";
+        saveNotification(provider, NotificationType.NEW_APPLICATION,
+                applicant.getFullName() + " applied to \"" + title + "\".",
+                "/provider/applications/" + app.getApplicationId(),
+                app.getApplicationId(), false,
+                app.getSubmittedAt() != null ? app.getSubmittedAt() : LocalDateTime.now().minusDays(1));
+    }
+
+    private Application ensureApplication(User user, Opportunity opp, String status, LocalDateTime submittedAt) {
+        return applicationRepository.findByUserAndOpportunity(user, opp)
+                .map(existing -> {
+                    if (ApplicationStatus.PENDING.equals(existing.getApplicationStatus())
+                            && ApplicationStatus.SUBMITTED.equals(status)) {
+                        existing.setApplicationStatus(ApplicationStatus.SUBMITTED);
+                        return applicationRepository.save(existing);
+                    }
+                    return existing;
+                })
+                .orElseGet(() -> saveApplication(user, opp, status, submittedAt));
     }
 
     private void logDemoAccounts() {
@@ -429,28 +468,30 @@ public class DemoDataSeeder implements CommandLineRunner {
 
     private void ensureApplicantResultsCertificate(ApplicantProfile profile) {
 
-        if (profile.getResultsCertificatePath() != null && !profile.getResultsCertificatePath().isBlank()) {
-            return;
-        }
-
         String storedName = "applicant-results-demo-stub.pdf";
+        boolean onDisk = false;
         try {
             var path = fileStorageService.resolve(storedName);
             if (!java.nio.file.Files.exists(path)) {
                 java.nio.file.Files.writeString(path, "%PDF-1.4 ScholarZim demo results stub");
             }
+            onDisk = java.nio.file.Files.exists(path);
         } catch (Exception ex) {
             log.warn("Could not create demo applicant results stub: {}", ex.getMessage());
         }
 
-        profile.setResultsCertificatePath(storedName);
-        profile.setResultsCertificateFilename("demo-results.pdf");
-        profile.setResultsUploadedAt(LocalDateTime.now().minusDays(60));
+        // Only persist a path when the file is actually available for hasResultsCertificate().
+        if (onDisk) {
+            profile.setResultsCertificatePath(storedName);
+            profile.setResultsCertificateFilename("demo-results.pdf");
+            if (profile.getResultsUploadedAt() == null) {
+                profile.setResultsUploadedAt(LocalDateTime.now().minusDays(60));
+            }
+        }
     }
 
     /**
-     * Persistent dev databases keep old rows but the seeder skips re-insertion.
-     * Roll forward deadlines so browse/search still returns active listings.
+     * Roll forward deadlines / revive status for known demo catalogue titles only.
      */
     private void refreshExpiredDemoOpportunities() {
 
@@ -458,6 +499,10 @@ public class DemoDataSeeder implements CommandLineRunner {
         int refreshed = 0;
 
         for (Opportunity opportunity : opportunityRepository.findAll()) {
+            if (opportunity.getTitle() == null || !DEMO_TITLES.contains(opportunity.getTitle())) {
+                continue;
+            }
+
             boolean inactive = opportunity.getStatus() == null
                     || !"ACTIVE".equalsIgnoreCase(opportunity.getStatus());
             boolean expired = opportunity.getDeadline() != null
@@ -489,7 +534,10 @@ public class DemoDataSeeder implements CommandLineRunner {
                                         LocalDate deadline, String targetField,
                                         String targetCountry) {
 
-        Opportunity opp = new Opportunity();
+        Opportunity opp = opportunityRepository.findFirstByTitleOrderByCreatedAtDesc(title)
+                .orElseGet(Opportunity::new);
+        boolean isNew = opp.getOpportunityId() == null;
+
         opp.setProvider(provider);
         opp.setTitle(title);
         opp.setDescription(description);
@@ -497,24 +545,28 @@ public class DemoDataSeeder implements CommandLineRunner {
         opp.setEducationLevel(educationLevel);
         opp.setFundingType(fundingType);
         opp.setCountry(country);
-        opp.setDeadline(deadline);
         opp.setStatus("ACTIVE");
-        opp.setCreatedAt(LocalDateTime.now().minusDays(
-                (long) (Math.random() * 30) + 5));
+        if (isNew || opp.getDeadline() == null || opp.getDeadline().isBefore(LocalDate.now())) {
+            opp.setDeadline(deadline);
+        }
+        if (isNew || opp.getCreatedAt() == null) {
+            opp.setCreatedAt(LocalDateTime.now().minusDays(
+                    (long) (Math.random() * 30) + 5));
+        }
         opp.setTargetField(targetField);
         opp.setTargetCountry(targetCountry);
         return opportunityRepository.save(opp);
     }
 
-    private void saveApplication(User user, Opportunity opp, String status,
-                                 LocalDateTime submittedAt) {
+    private Application saveApplication(User user, Opportunity opp, String status,
+                                        LocalDateTime submittedAt) {
 
         Application app = new Application();
         app.setUser(user);
         app.setOpportunity(opp);
         app.setApplicationStatus(status);
         app.setSubmittedAt(submittedAt);
-        applicationRepository.save(app);
+        return applicationRepository.save(app);
     }
 
     private void saveNotification(User user, String type, String message,

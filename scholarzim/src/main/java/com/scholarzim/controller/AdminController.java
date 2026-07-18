@@ -14,6 +14,7 @@ import com.scholarzim.service.AdminUserService;
 import com.scholarzim.service.AnalyticsService;
 import com.scholarzim.service.AuditLogService;
 import com.scholarzim.util.ChartMonths;
+import com.scholarzim.util.SoftLoad;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -31,6 +32,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -64,32 +66,35 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int providerPage,
             Model model) {
 
+        AtomicBoolean loadFailed = new AtomicBoolean(false);
+
         model.addAttribute("stats", soft("dashboard stats", new AdminDashboardDTO(),
-                analyticsService::getDashboardStats));
+                analyticsService::getDashboardStats, loadFailed));
         model.addAttribute("recentActivity", soft("recent activity", List.<AuditActivityDTO>of(),
-                () -> analyticsService.getRecentActivity(8)));
+                () -> analyticsService.getRecentActivity(8), loadFailed));
         model.addAttribute("applicants", soft("applicants list",
                 emptyPage(applicantPage),
-                () -> adminUserService.listApplicants(applicantPage, PAGE_SIZE)));
+                () -> adminUserService.listApplicants(applicantPage, PAGE_SIZE), loadFailed));
         model.addAttribute("providers", soft("providers list",
                 emptyPage(providerPage),
-                () -> adminUserService.listProviders(providerPage, PAGE_SIZE)));
+                () -> adminUserService.listProviders(providerPage, PAGE_SIZE), loadFailed));
         model.addAttribute("pendingProviders", soft("pending providers",
                 List.<AdminUserViewDTO>of(),
-                adminUserService::listPendingProviders));
+                adminUserService::listPendingProviders, loadFailed));
         model.addAttribute("applicantPage", applicantPage);
         model.addAttribute("providerPage", providerPage);
 
         int months = 6;
         model.addAttribute("monthlyCounts", soft("monthly counts",
                 zeroSeries(months),
-                () -> analyticsService.getMonthlyApplicationCounts(months)));
+                () -> analyticsService.getMonthlyApplicationCounts(months), loadFailed));
         model.addAttribute("monthLabels", ChartMonths.labelsForLastMonths(months));
 
         model.addAttribute("topProviders", soft("top providers", new ChartData(),
-                () -> analyticsService.getTopProviders(5)));
+                () -> analyticsService.getTopProviders(5), loadFailed));
         model.addAttribute("mostAppliedOpportunities", soft("most applied opportunities", new ChartData(),
-                () -> analyticsService.getMostAppliedOpportunities(5)));
+                () -> analyticsService.getMostAppliedOpportunities(5), loadFailed));
+        model.addAttribute("loadFailed", loadFailed.get());
 
         return "admin/dashboard";
     }
@@ -291,12 +296,11 @@ public class AdminController {
     }
 
     private <T> T soft(String label, T fallback, Supplier<T> supplier) {
-        try {
-            return supplier.get();
-        } catch (Exception ex) {
-            log.warn("Admin {} failed: {}", label, ex.getMessage());
-            return fallback;
-        }
+        return SoftLoad.of(log, "Admin " + label, fallback, supplier);
+    }
+
+    private <T> T soft(String label, T fallback, Supplier<T> supplier, AtomicBoolean failed) {
+        return SoftLoad.of(log, "Admin " + label, fallback, supplier, failed);
     }
 
     private static <T> PageResult<T> emptyPage(int page) {

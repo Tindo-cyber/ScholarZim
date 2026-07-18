@@ -11,6 +11,8 @@ public final class NotificationType {
     public static final String APPLICATION_APPROVED = "APPLICATION_APPROVED";
     public static final String APPLICATION_REJECTED = "APPLICATION_REJECTED";
     public static final String APPLICATION_SUBMITTED = "APPLICATION_SUBMITTED";
+    public static final String APPLICATION_UNDER_REVIEW = "APPLICATION_UNDER_REVIEW";
+    public static final String APPLICATION_WAITLISTED = "APPLICATION_WAITLISTED";
     public static final String NEW_APPLICATION = "NEW_APPLICATION";
     public static final String DOCUMENTS_REQUESTED = "DOCUMENTS_REQUESTED";
     public static final String NEW_OPPORTUNITY = "NEW_OPPORTUNITY";
@@ -23,6 +25,8 @@ public final class NotificationType {
 
     public static final List<String> ALL = List.of(
             APPLICATION_SUBMITTED,
+            APPLICATION_UNDER_REVIEW,
+            APPLICATION_WAITLISTED,
             NEW_APPLICATION,
             APPLICATION_APPROVED,
             APPLICATION_REJECTED,

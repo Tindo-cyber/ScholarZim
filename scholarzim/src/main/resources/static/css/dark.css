@@ -279,12 +279,24 @@
 
 /* ── Landing / public ── */
 [data-bs-theme="dark"] .sz-theme-toggle {
-    color: var(--sz-muted);
+    color: #94a3b8;
+    opacity: 0.9;
 }
 
 [data-bs-theme="dark"] .sz-theme-toggle:hover {
-    color: var(--sz-secondary);
-    background: rgba(22, 163, 74, 0.12);
+    color: #e2e8f0;
+    background: rgba(148, 163, 184, 0.12);
+    opacity: 1;
+}
+
+[data-bs-theme="dark"] .sz-dashboard-panel,
+[data-bs-theme="dark"] .sz-section-card {
+    background: #111827;
+    border-color: #334155;
+}
+
+[data-bs-theme="dark"] .sz-content {
+    color: #e2e8f0;
 }
 
 [data-bs-theme="dark"] body.sz-landing {

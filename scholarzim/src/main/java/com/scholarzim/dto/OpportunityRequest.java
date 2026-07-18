@@ -31,4 +31,7 @@ public class OpportunityRequest {
 
     @NotBlank(message = "Target field is required")
     private String targetField;
+
+    /** Optional awarding-body label; defaults to the provider account name. */
+    private String providerDisplayName;
 }

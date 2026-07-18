@@ -119,6 +119,9 @@ public class ApplicationController {
         Long applicationId;
         try {
             applicationId = applicationService.submitApplication(request, document, authentication.getName());
+        } catch (IllegalStateException ex) {
+            redirect.addFlashAttribute("errorMessage", ex.getMessage());
+            return "redirect:/applicant/profile?resultsRequired=1";
         } catch (DuplicateApplicationException | IllegalArgumentException ex) {
             redirect.addFlashAttribute("errorMessage", ex.getMessage());
             return "redirect:/opportunities";
@@ -168,7 +171,11 @@ public class ApplicationController {
     }
 
     @GetMapping("/provider/applications/{id}")
-    public String providerReview(@PathVariable Long id, @NonNull Authentication authentication, Model model) {
+    public String providerReview(
+            @PathVariable Long id,
+            @NonNull Authentication authentication,
+            Model model,
+            RedirectAttributes redirect) {
 
         try {
             var app = applicationService.getApplicationForProvider(id, authentication.getName());
@@ -180,12 +187,17 @@ public class ApplicationController {
                             applicantProfileService.getProfileByUserId(app.getUser().getUserId()));
                 } catch (Exception ex) {
                     log.warn("Applicant profile load failed for review {}: {}", id, ex.getMessage());
+                    model.addAttribute("profileLoadFailed", true);
                 }
             }
             return "applications/provider-review";
         } catch (Exception ex) {
             log.warn("Provider review page failed for {} app {}: {}",
                     authentication.getName(), id, ex.getMessage());
+            String msg = ex.getMessage();
+            redirect.addFlashAttribute("errorMessage",
+                    "Unable to open that application for review. "
+                            + (msg != null && !msg.isBlank() ? msg : "Please try again."));
             return "redirect:/provider/applications";
         }
     }

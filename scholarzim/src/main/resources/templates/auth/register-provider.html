@@ -38,7 +38,7 @@
                 </div>
 
                 <form th:object="${registerRequest}" action="/register/provider" method="post"
-                      enctype="multipart/form-data">
+                      enctype="multipart/form-data" novalidate>
                     <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                     <div class="alert alert-danger rounded-3 py-2 small" th:if="${#fields.hasGlobalErrors()}">
                         <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}"></p>
@@ -107,15 +107,18 @@
                         <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
                     </div>
                     <div class="d-grid mt-3">
-                        <button class="btn btn-primary sz-btn-landing-primary" type="submit">Submit for approval</button>
+                        <button class="btn btn-primary sz-btn-landing-primary" type="submit">
+                            <i class="bi bi-building-check me-1"></i>Submit for approval
+                        </button>
                     </div>
                 </form>
 
-                <p class="text-center mt-3 mb-0 small sz-auth-register-links">
-                    Already approved? <a th:href="@{/login(role='provider')}" class="fw-semibold">Provider sign in</a>
-                    <span class="sz-auth-muted">·</span>
-                    <a th:href="@{/register}" class="fw-semibold">Student register</a>
-                </p>
+                <div class="sz-auth-register-links text-center mt-3">
+                    <span class="sz-auth-muted small">Already approved?</span>
+                    <a th:href="@{/login(role='provider')}" class="fw-semibold small">Provider sign in</a>
+                    <span class="sz-auth-muted small">·</span>
+                    <a th:href="@{/register}" class="fw-semibold small">Student register</a>
+                </div>
             </div>
 
         </div>

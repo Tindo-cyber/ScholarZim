@@ -4,8 +4,8 @@
           'Dashboard',
           'dashboard',
           'dashboard',
-          'applications',
-          'dashboard',
+          '',
+          '',
           ~{:: #dashboard-content}
       )}">
 <body>
@@ -13,6 +13,11 @@
 
     <div class="sz-page-shell is-loaded sz-applicant-dashboard" id="szApplicantDashboard" data-page="dashboard">
         <div class="sz-page-shell__content sz-dash-content">
+
+            <div th:if="${loadFailed}" class="alert alert-warning rounded-3 py-2 small mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Some dashboard data could not be loaded. Refresh the page or try again shortly.
+            </div>
 
             <header class="sz-dash-hero">
                 <div class="sz-dash-hero__intro">

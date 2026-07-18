@@ -73,7 +73,9 @@ public class OpportunityServiceImpl implements OpportunityService {
         opportunity.setTargetCountry(country);
         opportunity.setStatus("ACTIVE");
         opportunity.setProvider(provider);
-        opportunity.setProviderName(provider.getFullName());
+        String displayName = request.getProviderDisplayName();
+        opportunity.setProviderName(
+                displayName != null && !displayName.isBlank() ? displayName.trim() : provider.getFullName());
         opportunity.setCreatedAt(LocalDateTime.now());
 
         Opportunity saved = opportunityRepository.save(opportunity);

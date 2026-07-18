@@ -111,7 +111,16 @@
                             </a>
                         </div>
                     </div>
-                    <div class="card sz-section-card mb-4" th:if="${applicantProfile == null}">
+                    <div class="card sz-section-card mb-4" th:if="${profileLoadFailed}">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold mb-2">Academic profile</h2>
+                            <p class="small text-danger mb-0">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Could not load this applicant's academic profile. Try refreshing the page.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="card sz-section-card mb-4" th:if="${!profileLoadFailed and applicantProfile == null}">
                         <div class="card-body p-4">
                             <h2 class="h6 fw-bold mb-2">Academic profile</h2>
                             <p class="small text-secondary mb-0">This applicant has not completed an academic profile yet.</p>

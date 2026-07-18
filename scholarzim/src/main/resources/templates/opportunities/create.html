@@ -109,6 +109,18 @@
                                 <div class="form-text">Choose from the list or enter a custom subject (e.g. Primary General).</div>
                             </div>
 
+                            <div class="col-12 col-md-6">
+                                <label class="form-label">Awarding body / institution <span class="text-secondary fw-normal">(optional)</span></label>
+                                <input type="text" class="form-control"
+                                       th:field="*{providerDisplayName}"
+                                       list="oppInstitutionList"
+                                       placeholder="Select or type a university / organisation">
+                                <datalist id="oppInstitutionList">
+                                    <option th:each="inst : ${institutions}" th:value="${inst}"></option>
+                                </datalist>
+                                <div class="form-text">Defaults to your organisation name. Type a custom name if needed.</div>
+                            </div>
+
                         </div>
 
                         <div class="mt-4">

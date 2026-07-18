@@ -62,6 +62,11 @@
                 </span>
             </div>
 
+            <div th:if="${loadFailed}" class="alert alert-warning rounded-3 py-2 small mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Some dashboard data could not be loaded. Refresh the page or try again shortly.
+            </div>
+
             <!-- Executive metrics -->
             <div class="row g-3 mb-4">
                 <div class="col-6 col-xl-3">
@@ -108,17 +113,16 @@
                 </div>
             </div>
 
-            <div class="row g-3 g-md-4 mb-4"
-                 th:if="${!recentActivity.isEmpty() or stats.totalApplications > 0}">
+            <div class="row g-3 g-md-4 mb-4">
 
                 <!-- Recent activity -->
-                <div class="col-12 col-lg-5" th:if="${!recentActivity.isEmpty()}">
+                <div class="col-12 col-lg-5">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-activity text-primary me-1"></i> Recent platform activity</h2>
                             <a th:href="@{/admin/audit-log}" class="small text-decoration-none fw-medium">Audit log</a>
                         </div>
-                        <div class="sz-dashboard-panel__body">
+                        <div class="sz-dashboard-panel__body" th:if="${!recentActivity.isEmpty()}">
                             <div th:each="entry : ${recentActivity}" class="sz-list-row align-items-start">
                                 <span class="sz-dot bg-primary"></span>
                                 <div class="flex-grow-1 min-w-0">
@@ -134,16 +138,19 @@
                                       th:text="${entry.action}">ACTION</span>
                             </div>
                         </div>
+                        <div class="sz-dashboard-panel__body" th:if="${recentActivity.isEmpty()}">
+                            <p class="text-secondary small mb-0">No recent activity yet. New registrations and applications will appear here.</p>
+                        </div>
                     </section>
                 </div>
 
                 <!-- Application status chart -->
-                <div class="col-12 col-lg-7" th:if="${stats.totalApplications > 0}">
+                <div class="col-12 col-lg-7">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-pie-chart text-success me-1"></i> Application outcomes</h2>
                         </div>
-                        <div class="sz-dashboard-panel__body">
+                        <div class="sz-dashboard-panel__body" th:if="${stats.totalApplications > 0}">
                             <div class="sz-chart-wrap">
                                 <canvas id="statusChart"></canvas>
                             </div>
@@ -164,6 +171,9 @@
                                     </span>
                                 </div>
                             </div>
+                        </div>
+                        <div class="sz-dashboard-panel__body" th:if="${stats.totalApplications == 0}">
+                            <p class="text-secondary small mb-0">No applications submitted yet — outcome charts will appear once students apply.</p>
                         </div>
                     </section>
                 </div>

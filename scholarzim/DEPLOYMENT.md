@@ -54,7 +54,7 @@ If login shows **“Something went wrong”** after switching to Aiven, check Re
 | `status=500` / `uri=/admin/dashboard` (or provider) | Soft-fail dashboards should still load after redeploy; WARN lines show the real DB cause. |
 | Flyway / SSL / `Communications link failure` | Confirm JDBC URL uses `sslMode=REQUIRED`, then run the Flyway repair SQL below. |
 
-Also confirm `SCHOLARZIM_DEMO_SEED=true` (now the prod default) so `admin@scholarzim.co.zw` / `Password123!` is created on startup. If admin login fails with “Invalid email or password”, the admin user is missing — set that env var and **Manual Deploy** so `AdminBootstrap` can recreate it.
+Prod defaults `scholarzim.demo.seed` to **false**. For FYP demos you **must** set `SCHOLARZIM_DEMO_SEED=true` so `admin@scholarzim.co.zw` / `Password123!` and sample scholarships are created on startup. If admin login fails with “Invalid email or password”, the admin user is missing — set that env var and **Manual Deploy** so `AdminBootstrap` can recreate it.
 
 ### Render uploads disk (required for certificates)
 

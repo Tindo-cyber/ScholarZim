@@ -341,24 +341,34 @@ public class ApplicationServiceImpl implements ApplicationService {
         User applicant = application.getUser();
         Opportunity opportunity = application.getOpportunity();
         if (applicant == null || opportunity == null) {
+            log.warn("Skipping decision notification for application {}: missing applicant or opportunity",
+                    application.getApplicationId());
             return;
         }
 
         String title = opportunity.getTitle();
-        Long opportunityId = opportunity.getOpportunityId();
+        Long applicationId = application.getApplicationId();
 
         if (ApplicationStatus.APPROVED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.APPLICATION_APPROVED,
                     "Your application for \"" + title + "\" was approved.",
-                    "/my-applications", opportunityId);
+                    "/my-applications", applicationId);
         } else if (ApplicationStatus.REJECTED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.APPLICATION_REJECTED,
                     "Your application for \"" + title + "\" was not successful this round.",
-                    "/my-applications", opportunityId);
+                    "/my-applications", applicationId);
         } else if (ApplicationStatus.DOCUMENTS_REQUESTED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.DOCUMENTS_REQUESTED,
                     "Additional documents requested for \"" + title + "\".",
-                    "/my-applications", opportunityId);
+                    "/my-applications", applicationId);
+        } else if (ApplicationStatus.UNDER_REVIEW.equals(status)) {
+            notificationService.notifyUser(applicant, NotificationType.APPLICATION_UNDER_REVIEW,
+                    "Your application for \"" + title + "\" is now under review.",
+                    "/my-applications", applicationId);
+        } else if (ApplicationStatus.WAITLISTED.equals(status)) {
+            notificationService.notifyUser(applicant, NotificationType.APPLICATION_WAITLISTED,
+                    "Your application for \"" + title + "\" was waitlisted.",
+                    "/my-applications", applicationId);
         }
     }
 }

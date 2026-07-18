@@ -104,19 +104,20 @@
                 </div>
             </div>
 
-            <div class="row g-3 g-md-4"
-                 th:if="${(opportunities != null and !opportunities.isEmpty())
-                       or (upcomingDeadlines != null and !upcomingDeadlines.isEmpty())
-                       or (notifRecent != null and !notifRecent.isEmpty())
-                       or (recentApplications != null and !recentApplications.isEmpty())}">
-                <div class="col-12 col-lg-7"
-                     th:if="${opportunities != null and !opportunities.isEmpty()}">
+            <div th:if="${loadFailed}" class="alert alert-warning rounded-3 py-2 small mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                Some dashboard data could not be loaded. Refresh the page or try again shortly.
+            </div>
+
+            <div class="row g-3 g-md-4">
+                <div class="col-12 col-lg-7">
                     <section class="sz-dashboard-panel h-100">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-briefcase text-primary me-1"></i> My opportunities</h2>
                             <a th:href="@{/opportunities/create}" class="small text-decoration-none fw-medium">Add new</a>
                         </div>
-                        <div class="sz-dashboard-panel__body sz-dashboard-panel__body--flush">
+                        <div class="sz-dashboard-panel__body sz-dashboard-panel__body--flush"
+                             th:if="${opportunities != null and !opportunities.isEmpty()}">
                             <div class="sz-pro-table">
                                 <div class="table-responsive">
                                     <table class="table align-middle mb-0">
@@ -147,18 +148,20 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="sz-dashboard-panel__body"
+                             th:if="${opportunities == null or opportunities.isEmpty()}">
+                            <p class="text-secondary small mb-2">You have not published any opportunities yet.</p>
+                            <a th:href="@{/opportunities/create}" class="btn btn-primary btn-sm">Create your first opportunity</a>
+                        </div>
                     </section>
                 </div>
 
-                <div class="col-12 col-lg-5 d-flex flex-column gap-3 gap-md-4"
-                     th:if="${(upcomingDeadlines != null and !upcomingDeadlines.isEmpty())
-                           or (notifRecent != null and !notifRecent.isEmpty())
-                           or (recentApplications != null and !recentApplications.isEmpty())}">
-                    <section class="sz-dashboard-panel" th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
+                <div class="col-12 col-lg-5 d-flex flex-column gap-3 gap-md-4">
+                    <section class="sz-dashboard-panel">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-calendar-event text-warning me-1"></i> Upcoming deadlines</h2>
                         </div>
-                        <div class="sz-dashboard-panel__body">
+                        <div class="sz-dashboard-panel__body" th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
                             <div class="sz-list-row" th:each="opp : ${upcomingDeadlines}">
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="small fw-semibold text-truncate" th:text="${opp.title}">Title</div>
@@ -166,14 +169,17 @@
                                 <span class="sz-deadline small" th:attr="data-deadline=${opp.deadline}">Deadline</span>
                             </div>
                         </div>
+                        <div class="sz-dashboard-panel__body" th:if="${upcomingDeadlines == null or upcomingDeadlines.isEmpty()}">
+                            <p class="text-secondary small mb-0">No upcoming deadlines on your listings yet.</p>
+                        </div>
                     </section>
 
-                    <section class="sz-dashboard-panel" th:if="${notifRecent != null and !notifRecent.isEmpty()}">
+                    <section class="sz-dashboard-panel">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-bell text-warning me-1"></i> Notifications</h2>
                             <a th:href="@{/notifications}" class="small text-decoration-none fw-medium">View all</a>
                         </div>
-                        <div class="sz-dashboard-panel__body">
+                        <div class="sz-dashboard-panel__body" th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                             <a th:each="n : ${notifRecent}"
                                th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
                                class="sz-list-row text-decoration-none text-reset align-items-start">
@@ -185,14 +191,17 @@
                                 </div>
                             </a>
                         </div>
+                        <div class="sz-dashboard-panel__body" th:if="${notifRecent == null or notifRecent.isEmpty()}">
+                            <p class="text-secondary small mb-0">No notifications yet. New applications will appear here.</p>
+                        </div>
                     </section>
 
-                    <section class="sz-dashboard-panel" th:if="${recentApplications != null and !recentApplications.isEmpty()}">
+                    <section class="sz-dashboard-panel">
                         <div class="sz-dashboard-panel__head">
                             <h2><i class="bi bi-people text-info me-1"></i> Recent applicants</h2>
                             <a th:href="@{/provider/applications}" class="small text-decoration-none fw-medium">Review all</a>
                         </div>
-                        <div class="sz-dashboard-panel__body">
+                        <div class="sz-dashboard-panel__body" th:if="${recentApplications != null and !recentApplications.isEmpty()}">
                             <div class="sz-list-row" th:each="app : ${recentApplications}">
                                 <div class="flex-grow-1 min-w-0">
                                     <div class="small fw-semibold text-truncate"
@@ -202,6 +211,11 @@
                                 </div>
                                 <span th:replace="~{fragments/components :: status-badge(${app.applicationStatus})}"></span>
                             </div>
+                        </div>
+                        <div class="sz-dashboard-panel__body" th:if="${recentApplications == null or recentApplications.isEmpty()}">
+                            <p class="text-secondary small mb-0">No applicants yet —
+                                <a th:href="@{/opportunities/create}" class="fw-semibold">publish an opportunity</a>
+                                to start receiving applications.</p>
                         </div>
                     </section>
                 </div>

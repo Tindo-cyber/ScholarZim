@@ -70,6 +70,8 @@ public interface ApplicationRepository
 
     boolean existsByUserAndOpportunity(User user, Opportunity opportunity);
 
+    java.util.Optional<Application> findByUserAndOpportunity(User user, Opportunity opportunity);
+
     long countByApplicationStatus(String applicationStatus);
 
     @Query("""

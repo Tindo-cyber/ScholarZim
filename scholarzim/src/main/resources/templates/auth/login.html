@@ -99,6 +99,13 @@
                 <div class="alert alert-success rounded-3 py-2 small" th:if="${successMessage}">
                     <i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span>
                 </div>
+                <div class="alert alert-danger rounded-3 py-2 small" th:if="${errorMessage}">
+                    <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${errorMessage}"></span>
+                </div>
+                <div class="alert alert-info rounded-3 py-2 small" th:if="${showVerifyMessage}">
+                    <i class="bi bi-envelope-check me-2"></i>
+                    Check your email to verify your account before signing in.
+                </div>
 
                 <form action="/login" method="post">
                     <input type="hidden" th:replace="~{fragments/layout :: csrf}">
@@ -137,6 +144,11 @@
                     <a th:if="${loginRole == 'provider'}" th:href="@{/register/provider}" class="fw-semibold small">Apply as provider</a>
                 </div>
 
+                <div class="alert alert-secondary rounded-3 py-2 small" th:if="${demoLoginEnabled}">
+                    <i class="bi bi-shield-lock me-1"></i>
+                    Platform admins sign in with the same form using
+                    <code>admin@scholarzim.co.zw</code> — you will be redirected to the admin dashboard.
+                </div>
                 <div class="sz-demo-hint" th:if="${demoLoginEnabled}">
                     <strong><i class="bi bi-info-circle me-1"></i>Demo accounts</strong>
                     <div class="small mt-1">

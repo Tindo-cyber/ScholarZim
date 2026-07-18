@@ -10,12 +10,15 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 
 public interface OpportunityRepository
         extends JpaRepository<Opportunity, Long> {
 
     List<Opportunity> findByProvider(User provider);
+
+    Optional<Opportunity> findFirstByTitleOrderByCreatedAtDesc(String title);
 
     @Query("""
             SELECT o.provider.userId, COUNT(o)

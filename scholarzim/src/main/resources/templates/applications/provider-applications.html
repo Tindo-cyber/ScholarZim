@@ -13,11 +13,26 @@
 
             <div th:replace="~{fragments/components :: page-header('Applications review', 'Review and decide on student applications for your opportunities.')}"></div>
 
-            <th:block th:if="${applications.isEmpty()}">
+            <div th:if="${errorMessage}" class="alert alert-danger rounded-3 py-2 small mb-3" role="alert">
+                <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${errorMessage}"></span>
+            </div>
+
+            <div th:if="${loadFailed}"
+                 th:replace="~{fragments/components :: error-state(
+                     'server-error',
+                     ${userHomeUrl},
+                     '/provider/applications',
+                     'Unable to load applications',
+                     null,
+                     null,
+                     null,
+                     false)}"></div>
+
+            <th:block th:if="${!loadFailed and applications.isEmpty()}">
                 <div th:replace="~{fragments/components :: empty-state('bi-inbox', 'No applications yet', 'Applications will appear here once students apply to your opportunities.', null, null)}"></div>
             </th:block>
 
-            <div th:if="${!applications.isEmpty()}" class="card sz-section-card shadow-sm">
+            <div th:if="${!loadFailed and !applications.isEmpty()}" class="card sz-section-card shadow-sm">
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
