@@ -48,6 +48,7 @@ public class DemoDataSeeder implements CommandLineRunner {
     private final ApplicationRepository applicationRepository;
     private final NotificationRepository notificationRepository;
     private final ProviderProfileRepository providerProfileRepository;
+    private final SavedScholarshipRepository savedScholarshipRepository;
     private final FileStorageService fileStorageService;
     private final PasswordEncoder passwordEncoder;
 
@@ -62,6 +63,7 @@ public class DemoDataSeeder implements CommandLineRunner {
             ApplicationRepository applicationRepository,
             NotificationRepository notificationRepository,
             ProviderProfileRepository providerProfileRepository,
+            SavedScholarshipRepository savedScholarshipRepository,
             FileStorageService fileStorageService,
             PasswordEncoder passwordEncoder) {
 
@@ -73,6 +75,7 @@ public class DemoDataSeeder implements CommandLineRunner {
         this.applicationRepository = applicationRepository;
         this.notificationRepository = notificationRepository;
         this.providerProfileRepository = providerProfileRepository;
+        this.savedScholarshipRepository = savedScholarshipRepository;
         this.fileStorageService = fileStorageService;
         this.passwordEncoder = passwordEncoder;
     }
@@ -278,6 +281,27 @@ public class DemoDataSeeder implements CommandLineRunner {
         ensureProviderNewApplicationNotification(first.getProvider(), tanaka, tanakaSubmitted);
         ensureProviderNewApplicationNotification(third.getProvider(), tanaka, tanakaRecent);
         ensureProviderNewApplicationNotification(second.getProvider(), rudo, rudoSubmitted);
+
+        ensureSaved(tanaka, first, LocalDateTime.now().minusDays(4));
+        ensureSaved(tanaka, second, LocalDateTime.now().minusDays(9));
+        ensureSaved(tanaka, third, LocalDateTime.now().minusDays(1));
+        ensureSaved(rudo, first, LocalDateTime.now().minusDays(14));
+        ensureSaved(rudo, third, LocalDateTime.now().minusDays(6));
+    }
+
+    private void ensureSaved(User user, Opportunity opportunity, LocalDateTime savedAt) {
+        if (opportunity == null || opportunity.getOpportunityId() == null) {
+            return;
+        }
+        if (savedScholarshipRepository.findByUserAndOpportunityOpportunityId(user, opportunity.getOpportunityId())
+                .isPresent()) {
+            return;
+        }
+        SavedScholarship saved = new SavedScholarship();
+        saved.setUser(user);
+        saved.setOpportunity(opportunity);
+        saved.setSavedAt(savedAt);
+        savedScholarshipRepository.save(saved);
     }
 
     private void ensureProviderNewApplicationNotification(User provider, User applicant, Application app) {

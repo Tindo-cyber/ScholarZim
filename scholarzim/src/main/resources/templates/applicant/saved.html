@@ -3,9 +3,9 @@
       th:replace="~{fragments/dashboard-layout :: page(
           'Saved Scholarships',
           'saved',
-          'dashboard',
-          'applications',
-          'dashboard',
+          'saved',
+          '',
+          '',
           ~{:: #saved-content}
       )}">
 <body>
@@ -21,11 +21,22 @@
                 'Saved scholarships',
                 'Bookmarks you can return to when you are ready to apply.')}"></div>
 
-            <th:block th:if="${saved.isEmpty()}">
+            <div th:if="${loadFailed}"
+                 th:replace="~{fragments/components :: error-state(
+                     'server-error',
+                     ${userHomeUrl},
+                     '/applicant/saved',
+                     'Unable to load saved scholarships',
+                     null,
+                     null,
+                     null,
+                     false)}"></div>
+
+            <th:block th:if="${!loadFailed and saved.isEmpty()}">
                 <div th:replace="~{fragments/components :: empty-state('bi-bookmark', 'Nothing saved yet', 'Browse opportunities and bookmark scholarships to review later.', @{/opportunities}, 'Browse opportunities')}"></div>
             </th:block>
 
-            <div class="sz-opp-grid" th:if="${!saved.isEmpty()}">
+            <div class="sz-opp-grid" th:if="${!loadFailed and !saved.isEmpty()}">
                 <th:block th:each="opp : ${saved}">
                     <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=true, removeId=${opp.opportunityId}, matchScore=null, eligibilityText=null)}"></div>
                 </th:block>

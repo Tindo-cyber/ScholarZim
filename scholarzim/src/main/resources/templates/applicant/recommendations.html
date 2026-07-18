@@ -4,8 +4,8 @@
           'ScholarFit AI',
           'recommendations',
           'recommendations',
-          'applications',
-          'dashboard',
+          '',
+          '',
           ~{:: #recommendations-content}
       )}">
 <body>
@@ -19,6 +19,11 @@
         null, null,
         'ScholarFit AI')}"></nav>
 
+    <div th:if="${loadFailed}" class="alert alert-warning rounded-3 py-2 small mb-3" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>
+        Some recommendation data could not be loaded. Refresh the page or try again shortly.
+    </div>
+
     <section class="sz-scholarfit-hero">
         <div class="sz-scholarfit-hero__copy">
             <span class="sz-scholarfit-hero__badge"><i class="bi bi-stars"></i> ScholarFit AI</span>
@@ -28,14 +33,16 @@
                 why you qualify — or what to fix to improve your fit.
             </p>
         </div>
-        <div class="sz-scholarfit-hero__stats" th:if="${hasProfile and !opportunities.isEmpty()}">
+        <div class="sz-scholarfit-hero__stats">
             <div class="sz-scholarfit-hero__stat">
-                <span class="sz-scholarfit-hero__stat-value" th:text="${opportunities.size()}">0</span>
+                <span class="sz-scholarfit-hero__stat-value"
+                      th:text="${opportunities != null ? opportunities.size() : 0}">0</span>
                 <span class="sz-scholarfit-hero__stat-label">Matches found</span>
             </div>
-            <div class="sz-scholarfit-hero__stat" th:if="${!opportunities.isEmpty()}">
+            <div class="sz-scholarfit-hero__stat">
                 <span class="sz-scholarfit-hero__stat-value"
-                      th:text="${opportunities[0].matchScore} + '%'">0%</span>
+                      th:text="${opportunities != null and !opportunities.isEmpty()
+                          ? opportunities[0].matchScore + '%' : '0%'}">0%</span>
                 <span class="sz-scholarfit-hero__stat-label">Top match</span>
             </div>
         </div>
@@ -48,13 +55,13 @@
         to unlock ScholarFit AI recommendations.
     </div>
 
-    <p th:if="${hasProfile and opportunities.isEmpty()}"
+    <p th:if="${hasProfile and (opportunities == null or opportunities.isEmpty()) and !loadFailed}"
        class="text-secondary small mb-0 py-3">
         No ScholarFit matches yet. New opportunities are added regularly —
         <a th:href="@{/opportunities}" class="fw-semibold">browse the catalogue</a>.
     </p>
 
-    <div th:if="${hasProfile and !opportunities.isEmpty()}" class="sz-scholarfit-grid">
+    <div th:if="${hasProfile and opportunities != null and !opportunities.isEmpty()}" class="sz-scholarfit-grid">
         <th:block th:each="scored : ${opportunities}">
             <div th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}"></div>
         </th:block>
