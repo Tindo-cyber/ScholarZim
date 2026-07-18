@@ -139,13 +139,18 @@
 
                 <div class="sz-demo-hint" th:if="${demoLoginEnabled}">
                     <strong><i class="bi bi-info-circle me-1"></i>Demo accounts</strong>
-                    <span th:if="${loginRole == 'student'}">
-                        Student: <code>tanaka.moyo@student.co.zw</code>
-                    </span>
-                    <span th:if="${loginRole == 'provider'}">
-                        Provider: <code>scholarships@uk.gov.zw</code>
-                    </span>
-                    · Password: <code>Password123!</code>
+                    <div class="small mt-1">
+                        <div th:if="${loginRole == 'student'}">
+                            Student: <code>tanaka.moyo@student.co.zw</code>
+                        </div>
+                        <div th:if="${loginRole == 'provider'}">
+                            Provider: <code>scholarships@uk.gov.zw</code>
+                        </div>
+                        <div>
+                            Admin: <code>admin@scholarzim.co.zw</code>
+                        </div>
+                        <div>Password (all): <code>Password123!</code></div>
+                    </div>
                 </div>
             </div>
 
