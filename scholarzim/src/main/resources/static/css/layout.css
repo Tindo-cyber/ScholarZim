@@ -507,8 +507,9 @@
 }
 
 .sz-notif-dropdown {
-    min-width: 320px;
-    max-width: 360px;
+    min-width: min(320px, calc(100vw - 1.5rem));
+    max-width: min(360px, calc(100vw - 1.5rem));
+    width: min(360px, calc(100vw - 1.5rem));
     border: 1px solid var(--sz-border);
     animation: sz-menu-in 0.18s ease;
 }

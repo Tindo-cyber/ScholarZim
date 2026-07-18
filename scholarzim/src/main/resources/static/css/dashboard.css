@@ -681,6 +681,22 @@ body:has(.sz-shell)::after {
     }
 }
 
+@media (max-width: 575.98px) {
+    .sz-dash-hero {
+        padding: 1.15rem;
+        gap: 1rem;
+        border-radius: 16px;
+    }
+
+    .sz-dash-hero__highlights {
+        grid-template-columns: 1fr;
+    }
+
+    .sz-premium-card {
+        padding: 1rem;
+    }
+}
+
 .sz-dash-hero__date {
     font-size: 0.8125rem;
     font-weight: 500;

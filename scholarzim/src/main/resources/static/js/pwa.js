@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    var ASSET_VERSION = 'v57';
+    var ASSET_VERSION = 'v58';
 
     var shouldPurge = document.documentElement.getAttribute('data-sz-purge-cache') === 'true';
 

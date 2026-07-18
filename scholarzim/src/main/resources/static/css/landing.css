@@ -2815,7 +2815,7 @@ body.sz-landing .sz-page-header h1 {
 
 .sz-home-featured-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
     gap: 1.25rem;
 }
 
@@ -3096,6 +3096,12 @@ body.sz-landing .sz-page-header h1 {
         border-left: none;
         border-top: 1px solid #e2e8f0;
         max-width: none;
+        width: 100%;
+    }
+
+    .sz-home-search__btn {
+        width: 100%;
+        justify-content: center;
     }
 
     .sz-home-float-card--1,
@@ -3113,6 +3119,17 @@ body.sz-landing .sz-page-header h1 {
 
     .sz-home-hero__visual {
         min-height: auto;
+    }
+
+    .sz-home-newsletter__form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .sz-home-newsletter__form .form-control,
+    .sz-home-newsletter__form .btn {
+        max-width: none;
+        width: 100%;
     }
 }
 
