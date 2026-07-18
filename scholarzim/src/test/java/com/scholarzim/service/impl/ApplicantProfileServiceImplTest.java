@@ -144,16 +144,16 @@ class ApplicantProfileServiceImplTest {
         application.setUser(applicant);
         application.setOpportunity(opportunity);
 
-        when(applicationRepository.findById(10L)).thenReturn(Optional.of(application));
+        when(applicationRepository.findByIdWithDetails(10L)).thenReturn(Optional.of(application));
         when(userRepository.findById(4L)).thenReturn(Optional.of(applicant));
         when(profileRepository.findByUser(applicant)).thenReturn(Optional.of(profile));
-        when(userRepository.findByEmail("provider@test.com")).thenReturn(Optional.of(provider));
+        when(userRepository.findByEmailWithRole("provider@test.com")).thenReturn(Optional.of(provider));
 
         var file = service.loadResultsCertificateForApplication(10L, "provider@test.com");
         assertEquals("results.pdf", file.displayName());
         assertTrue(file.resource().exists());
 
-        when(userRepository.findByEmail("other@test.com")).thenReturn(Optional.of(stranger));
+        when(userRepository.findByEmailWithRole("other@test.com")).thenReturn(Optional.of(stranger));
         assertThrows(AccessDeniedException.class,
                 () -> service.loadResultsCertificateForApplication(10L, "other@test.com"));
     }
@@ -168,10 +168,10 @@ class ApplicantProfileServiceImplTest {
         application.setApplicationId(11L);
         application.setUser(applicant);
 
-        when(applicationRepository.findById(11L)).thenReturn(Optional.of(application));
+        when(applicationRepository.findByIdWithDetails(11L)).thenReturn(Optional.of(application));
         when(userRepository.findById(7L)).thenReturn(Optional.of(applicant));
         when(profileRepository.findByUser(applicant)).thenReturn(Optional.of(profile));
-        when(userRepository.findByEmail("audit@test.com")).thenReturn(Optional.of(applicant));
+        when(userRepository.findByEmailWithRole("audit@test.com")).thenReturn(Optional.of(applicant));
 
         service.loadResultsCertificateForApplication(11L, "audit@test.com");
 
