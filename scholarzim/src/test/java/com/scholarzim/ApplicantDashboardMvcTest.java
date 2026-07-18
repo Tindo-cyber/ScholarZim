@@ -2,6 +2,9 @@ package com.scholarzim;
 
 import com.scholarzim.support.MvcIntegrationTestBase;
 import com.scholarzim.support.MvcTestSupport;
+import com.scholarzim.entity.ApplicantProfile;
+import com.scholarzim.entity.Opportunity;
+import com.scholarzim.entity.User;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.test.context.support.WithMockUser;
 
@@ -20,7 +23,11 @@ class ApplicantDashboardMvcTest extends MvcIntegrationTestBase {
     @WithMockUser(roles = "APPLICANT")
     void dashboardRendersPremiumLayout() throws Exception {
         String email = "dash-" + UUID.randomUUID() + "@student.co.zw";
-        data.saveApplicant(email);
+        ApplicantProfile profile = data.saveApplicantWithResultsCertificate(email);
+        User applicant = profile.getUser();
+        User provider = data.saveProvider("provider-" + UUID.randomUUID() + "@test.com");
+        Opportunity opportunity = data.saveOpportunity(provider);
+        data.saveApplication(applicant, opportunity);
 
         mockMvc.perform(get("/applicant/dashboard").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
