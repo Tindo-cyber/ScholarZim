@@ -65,7 +65,6 @@ public class ApplicationController {
             model.addAttribute("currentPage", result.currentPage());
         } catch (RuntimeException ex) {
             log.warn("Failed to load applications for {}", authentication.getName(), ex);
-            model.addAttribute("loadFailed", true);
             model.addAttribute("applications", Collections.emptyList());
             model.addAttribute("filteredTotal", 0);
             model.addAttribute("totalAll", 0);
@@ -165,7 +164,6 @@ public class ApplicationController {
             log.warn("Provider applications list failed for {}: {}",
                     authentication.getName(), ex.getMessage());
             model.addAttribute("applications", Collections.emptyList());
-            model.addAttribute("loadFailed", true);
         }
         return "applications/provider-applications";
     }

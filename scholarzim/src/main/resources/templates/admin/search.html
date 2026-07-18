@@ -35,26 +35,11 @@
                 <p class="form-text mb-0 mt-2">Enter at least 2 characters. Up to 10 results per category.</p>
             </form>
 
-            <div th:if="${query.isBlank()}"
-                 th:replace="~{fragments/components :: empty-state(
-                     'bi-search', 'Search the platform',
-                     'Look up users, scholarships, and applications from one place.',
-                     null, null)}"></div>
-
             <div th:if="${!query.isBlank() and query.length() < 2}"
                  class="alert alert-warning d-flex align-items-center gap-2">
                 <i class="bi bi-info-circle"></i>
                 <span>Type at least 2 characters to search.</span>
             </div>
-
-            <th:block th:if="${!query.isBlank() and query.length() >= 2 and results.empty}">
-                <div th:replace="~{fragments/components :: empty-state(
-                    'bi-search',
-                    'No results',
-                    'Nothing matched your query. Try a different name, email, or scholarship title.',
-                    @{/admin/search},
-                    'Clear search')}"></div>
-            </th:block>
 
             <div th:if="${!query.isBlank() and query.length() >= 2 and !results.empty}">
                 <p class="text-secondary small mb-4">

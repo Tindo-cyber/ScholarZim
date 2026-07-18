@@ -162,7 +162,8 @@
 
     <!-- Featured Scholarships -->
     <section class="sz-home-section sz-home-section--alt" id="featured-scholarships"
-             aria-labelledby="featured-title">
+             aria-labelledby="featured-title"
+             th:if="${featured != null and !featured.isEmpty()}">
         <div class="container sz-container">
             <div class="sz-home-section__head sz-reveal">
                 <div>
@@ -174,16 +175,10 @@
                     View all <i class="bi bi-arrow-right ms-1" aria-hidden="true"></i>
                 </a>
             </div>
-            <div class="sz-home-featured-grid" th:if="${featured != null and !featured.isEmpty()}">
+            <div class="sz-home-featured-grid">
                 <th:block th:each="opp : ${featured}">
                     <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=false, removeId=null, matchScore=null, eligibilityText=null)}"></div>
                 </th:block>
-            </div>
-            <div class="sz-home-featured-empty sz-reveal text-center py-4"
-                 th:if="${featured == null or featured.isEmpty()}">
-                <p class="text-secondary mb-3">No featured scholarships are open right now.</p>
-                <a th:href="@{/scholarships}" class="btn btn-primary btn-sm sz-btn-landing-primary me-2">Browse scholarships</a>
-                <a th:href="@{/register/provider}" class="btn btn-outline-primary btn-sm">Publish an opportunity</a>
             </div>
         </div>
     </section>

@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Slf4j
@@ -39,20 +38,18 @@ public class ProviderController {
     public String dashboard(@NonNull Authentication auth, Model model) {
 
         String email = auth.getName();
-        AtomicBoolean loadFailed = new AtomicBoolean(false);
 
         String providerName = SoftLoad.of(log, "Provider name", "Provider",
-                () -> userRepository.findByEmail(email).map(User::getFullName).orElse(email),
-                loadFailed);
+                () -> userRepository.findByEmail(email).map(User::getFullName).orElse(email));
 
         ProviderDashboardDTO stats = SoftLoad.of(log, "Provider dashboard stats",
-                new ProviderDashboardDTO(), () -> providerService.getDashboardStats(email), loadFailed);
+                new ProviderDashboardDTO(), () -> providerService.getDashboardStats(email));
 
         List<Opportunity> opportunities = SoftLoad.of(log, "Provider opportunities",
-                Collections.emptyList(), () -> providerService.getMyOpportunities(email), loadFailed);
+                Collections.emptyList(), () -> providerService.getMyOpportunities(email));
 
         List<Application> recentApplications = SoftLoad.of(log, "Provider recent applications",
-                Collections.emptyList(), () -> providerService.getRecentApplications(email, 8), loadFailed);
+                Collections.emptyList(), () -> providerService.getRecentApplications(email, 8));
 
         model.addAttribute("providerName", providerName);
         model.addAttribute("stats", stats);
@@ -66,7 +63,6 @@ public class ProviderController {
                 .sorted(Comparator.comparing(Opportunity::getDeadline))
                 .limit(5)
                 .toList());
-        model.addAttribute("loadFailed", loadFailed.get());
 
         return "provider/dashboard";
     }

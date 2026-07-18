@@ -19,11 +19,6 @@
         null, null,
         'ScholarFit')}"></nav>
 
-    <div th:if="${loadFailed}" class="alert alert-warning rounded-3 py-2 small mb-3" role="alert">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        Some recommendation data could not be loaded. Refresh the page or try again shortly.
-    </div>
-
     <section class="sz-scholarfit-hero">
         <div class="sz-scholarfit-hero__copy">
             <span class="sz-scholarfit-hero__badge"><i class="bi bi-stars"></i> ScholarFit</span>
@@ -54,12 +49,6 @@
         <a th:href="@{/applicant/profile}" class="alert-link fw-semibold">academic profile</a>
         to unlock ScholarFit recommendations.
     </div>
-
-    <p th:if="${hasProfile and (opportunities == null or opportunities.isEmpty()) and !loadFailed}"
-       class="text-secondary small mb-0 py-3">
-        No ScholarFit matches yet. New opportunities are added regularly —
-        <a th:href="@{/opportunities}" class="fw-semibold">browse the catalogue</a>.
-    </p>
 
     <div th:if="${hasProfile and opportunities != null and !opportunities.isEmpty()}" class="sz-scholarfit-grid">
         <th:block th:each="scored : ${opportunities}">

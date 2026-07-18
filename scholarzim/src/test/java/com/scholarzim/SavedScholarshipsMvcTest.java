@@ -42,13 +42,14 @@ class SavedScholarshipsMvcTest extends MvcIntegrationTestBase {
     }
 
     @Test
-    void savedPageShowsEmptyStateWhenNone() throws Exception {
+    void savedPageHidesEmptyWidgetWhenNone() throws Exception {
         String email = "saved-empty-" + UUID.randomUUID() + "@student.co.zw";
         data.saveApplicant(email);
 
         mockMvc.perform(get("/applicant/saved").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Nothing saved yet")))
+                .andExpect(content().string(containsString("Saved scholarships")))
+                .andExpect(content().string(not(containsString("Nothing saved yet"))))
                 .andExpect(content().string(not(containsString("Unable to load saved scholarships"))));
     }
 }

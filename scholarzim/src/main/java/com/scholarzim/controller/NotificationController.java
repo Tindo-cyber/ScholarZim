@@ -64,7 +64,6 @@ public class NotificationController {
             model.addAttribute("totalPages", 0);
             model.addAttribute("currentPage", 0);
             model.addAttribute("unreadCount", 0L);
-            model.addAttribute("loadFailed", true);
         }
 
         return "notifications/list";

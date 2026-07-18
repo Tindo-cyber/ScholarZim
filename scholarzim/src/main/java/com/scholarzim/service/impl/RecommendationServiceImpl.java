@@ -10,6 +10,7 @@ import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.RecommendationService;
 import com.scholarzim.service.scholarfit.ScholarFitEngine;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.Comparator;
@@ -38,6 +39,7 @@ public class RecommendationServiceImpl implements RecommendationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<ScoredOpportunityDTO> recommendForApplicant(String email) {
 
         ApplicantProfile profile = profileService.getProfileByEmail(email);

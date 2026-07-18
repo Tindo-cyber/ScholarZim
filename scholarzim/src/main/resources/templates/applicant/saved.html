@@ -20,15 +20,6 @@
                 'Saved scholarships',
                 'Bookmarks you can return to when you are ready to apply.')}"></div>
 
-            <th:block th:if="${saved == null or saved.isEmpty()}">
-                <div class="sz-empty text-center py-5">
-                    <div class="sz-empty-icon mb-3"><i class="bi bi-bookmark" aria-hidden="true"></i></div>
-                    <h2 class="h5 fw-bold mb-2">Nothing saved yet</h2>
-                    <p class="text-secondary mb-3">Browse opportunities and bookmark scholarships to review later.</p>
-                    <a class="btn btn-primary" th:href="@{/opportunities}">Browse opportunities</a>
-                </div>
-            </th:block>
-
             <div class="sz-opp-grid" th:if="${saved != null and !saved.isEmpty()}">
                 <th:block th:each="opp : ${saved}">
                     <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=true, removeId=${opp.opportunityId}, matchScore=null, eligibilityText=null)}"></div>

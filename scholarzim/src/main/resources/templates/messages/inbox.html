@@ -39,16 +39,7 @@
                 </form>
             </div>
 
-            <th:block th:if="${messages.isEmpty()}">
-                <div th:replace="~{fragments/components :: empty-state(
-                    'bi-chat-dots',
-                    'No messages yet',
-                    'When providers update your applications or ScholarZim sends alerts, they will appear here.',
-                    @{/opportunities},
-                    'Browse scholarships')}"></div>
-            </th:block>
-
-            <div th:if="${!messages.isEmpty()}" class="sz-messages-layout">
+            <div th:if="${messages != null and !messages.isEmpty()}" class="sz-messages-layout">
                 <aside class="sz-messages-sidebar">
                     <div class="fw-semibold mb-2">Inbox</div>
                     <div class="sz-messages-sidebar__stat">

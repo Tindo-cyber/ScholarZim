@@ -33,14 +33,6 @@
                     <button class="btn btn-primary w-100" type="submit">Filter</button>
                 </div>
             </form>
-            <th:block th:if="${auditPage.content.isEmpty()}">
-                <div th:replace="~{fragments/components :: empty-state(
-                    'bi-journal-x',
-                    'No audit entries',
-                    'Try adjusting your search or action filter.',
-                    @{/admin/audit-log},
-                    'Clear filters')}"></div>
-            </th:block>
             <div class="table-responsive card sz-section-card shadow-sm" th:if="${!auditPage.content.isEmpty()}">
                 <table class="table table-hover mb-0">
                     <thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Details</th></tr></thead>

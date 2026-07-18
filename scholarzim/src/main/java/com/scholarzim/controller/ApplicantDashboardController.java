@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @Slf4j
@@ -51,20 +50,19 @@ public class ApplicantDashboardController {
     public String dashboard(@NonNull Authentication auth, Model model) {
 
         String email = auth.getName();
-        AtomicBoolean loadFailed = new AtomicBoolean(false);
 
         SoftLoad.of(log, "Applicant display name", null, () -> {
             userRepository.findByEmail(email)
                     .ifPresent(u -> model.addAttribute("userFullName", u.getFullName()));
             return null;
-        }, loadFailed);
+        });
 
         model.addAttribute("greeting", GreetingUtil.timeBasedGreeting());
         model.addAttribute("stats", SoftLoad.of(log, "Applicant dashboard stats",
-                new ApplicantDashboardDTO(), () -> dashboardService.getDashboardStats(email), loadFailed));
+                new ApplicantDashboardDTO(), () -> dashboardService.getDashboardStats(email)));
 
         List<ScoredOpportunityDTO> recommendations = SoftLoad.of(log, "Recommendations",
-                Collections.emptyList(), () -> recommendationService.recommendForApplicant(email), loadFailed);
+                Collections.emptyList(), () -> recommendationService.recommendForApplicant(email));
         model.addAttribute("recommendations", recommendations.stream().limit(4).toList());
         model.addAttribute("upcomingDeadlines", recommendations.stream()
                 .filter(s -> s.getOpportunity() != null && s.getOpportunity().getDeadline() != null)
@@ -78,35 +76,7 @@ public class ApplicantDashboardController {
                         .sorted(Comparator.comparing(Application::getSubmittedAt,
                                 Comparator.nullsLast(Comparator.reverseOrder())))
                         .limit(6)
-                        .toList(),
-                loadFailed));
-        model.addAttribute("loadFailed", loadFailed.get());
-        // #region agent log
-        var statsAttr = model.getAttribute("stats");
-        int recCount = recommendations != null ? recommendations.size() : -1;
-        Object recent = model.getAttribute("recentApplications");
-        int appCount = recent instanceof java.util.Collection<?> c ? c.size() : -1;
-        long savedCount = 0L;
-        long submittedApps = 0L;
-        if (statsAttr instanceof ApplicantDashboardDTO dto) {
-            savedCount = dto.getSavedCount();
-            submittedApps = dto.getApplicationsSubmitted();
-        }
-        String name = email != null ? email : "";
-        boolean demoApplicant = "tanaka.moyo@student.co.zw".equalsIgnoreCase(name)
-                || "rudo.chikomo@student.co.zw".equalsIgnoreCase(name)
-                || "simba.ndlovu@student.co.zw".equalsIgnoreCase(name);
-        com.scholarzim.debug.AgentDebugLog.log("B", "ApplicantDashboardController.dashboard", "dashboard_loaded",
-                java.util.Map.of(
-                        "loadFailed", loadFailed.get(),
-                        "recommendationCount", recCount,
-                        "recentApplicationCount", appCount,
-                        "statsSavedCount", savedCount,
-                        "statsApplicationsSubmitted", submittedApps,
-                        "isDemoApplicant", demoApplicant));
-        com.scholarzim.debug.AgentDebugLog.log("E", "ApplicantDashboardController.dashboard", "account_type",
-                java.util.Map.of("isDemoApplicant", demoApplicant, "loadFailed", loadFailed.get()));
-        // #endregion
+                        .toList()));
 
         return "applicant/dashboard";
     }
@@ -115,14 +85,12 @@ public class ApplicantDashboardController {
     public String recommendations(@NonNull Authentication auth, Model model) {
 
         String email = auth.getName();
-        AtomicBoolean loadFailed = new AtomicBoolean(false);
         boolean hasProfile = SoftLoad.of(log, "Profile check", false,
-                () -> profileService.hasProfile(email), loadFailed);
+                () -> profileService.hasProfile(email));
         List<ScoredOpportunityDTO> opportunities = SoftLoad.of(log, "Recommendations page",
-                Collections.emptyList(), () -> recommendationService.recommendForApplicant(email), loadFailed);
+                Collections.emptyList(), () -> recommendationService.recommendForApplicant(email));
         model.addAttribute("hasProfile", hasProfile);
         model.addAttribute("opportunities", opportunities);
-        model.addAttribute("loadFailed", loadFailed.get());
         return "applicant/recommendations";
     }
 }

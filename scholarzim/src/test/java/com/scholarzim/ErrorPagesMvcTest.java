@@ -57,15 +57,16 @@ class ErrorPagesMvcTest extends MvcIntegrationTestBase {
 
     @Test
     @WithMockUser(roles = "APPLICANT")
-    void emptyApplicationsUsesNoDataComponent() throws Exception {
+    void emptyApplicationsHidesEmptyWidget() throws Exception {
         String email = "err-empty-" + UUID.randomUUID() + "@student.co.zw";
         data.saveApplicant(email);
 
         mockMvc.perform(get("/my-applications").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("sz-error-state__art--no-data")))
-                .andExpect(content().string(containsString("No applications found")))
-                .andExpect(content().string(containsString("Return home")));
+                .andExpect(content().string(containsString("Application tracker")))
+                .andExpect(content().string(not(containsString("sz-error-state__art--no-data"))))
+                .andExpect(content().string(not(containsString("No applications found"))))
+                .andExpect(content().string(not(containsString("Unable to load your applications"))));
     }
 
     @Test

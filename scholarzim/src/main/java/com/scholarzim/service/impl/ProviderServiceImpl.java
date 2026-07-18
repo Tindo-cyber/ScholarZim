@@ -4,12 +4,12 @@ import com.scholarzim.dto.ProviderDashboardDTO;
 import com.scholarzim.entity.Application;
 import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.User;
-import com.scholarzim.exception.ResourceNotFoundException;
 import com.scholarzim.repository.ApplicationRepository;
 import com.scholarzim.repository.OpportunityRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.ProviderService;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -32,14 +32,15 @@ public class ProviderServiceImpl implements ProviderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProviderDashboardDTO getDashboardStats(String providerEmail) {
-
-        User provider = userRepository.findByEmail(providerEmail)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Provider account not found."));
-        List<Opportunity> opportunities = opportunityRepository.findByProvider(provider);
-
         ProviderDashboardDTO dto = new ProviderDashboardDTO();
+        User provider = userRepository.findByEmail(providerEmail).orElse(null);
+        if (provider == null) {
+            return dto;
+        }
+
+        List<Opportunity> opportunities = opportunityRepository.findByProvider(provider);
         dto.setTotalOpportunities(opportunities.size());
         dto.setActiveOpportunities(opportunities.stream()
                 .filter(o -> "ACTIVE".equalsIgnoreCase(o.getStatus()))
@@ -61,14 +62,15 @@ public class ProviderServiceImpl implements ProviderService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Opportunity> getMyOpportunities(String providerEmail) {
-        User provider = userRepository.findByEmail(providerEmail)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Provider account not found."));
-        return opportunityRepository.findByProvider(provider);
+        return userRepository.findByEmail(providerEmail)
+                .map(opportunityRepository::findByProvider)
+                .orElse(List.of());
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Application> getRecentApplications(String providerEmail, int limit) {
         List<Opportunity> opportunities = getMyOpportunities(providerEmail);
         if (opportunities.isEmpty()) {

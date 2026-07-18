@@ -32,7 +32,6 @@ public class MessagesController {
             log.warn("Messages inbox failed for {}: {}", email, ex.getMessage());
             model.addAttribute("messages", List.of());
             model.addAttribute("unreadCount", 0L);
-            model.addAttribute("loadFailed", true);
         }
         return "messages/inbox";
     }

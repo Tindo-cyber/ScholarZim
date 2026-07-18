@@ -32,7 +32,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
@@ -66,35 +65,32 @@ public class AdminController {
             @RequestParam(defaultValue = "0") int providerPage,
             Model model) {
 
-        AtomicBoolean loadFailed = new AtomicBoolean(false);
-
         model.addAttribute("stats", soft("dashboard stats", new AdminDashboardDTO(),
-                analyticsService::getDashboardStats, loadFailed));
+                analyticsService::getDashboardStats));
         model.addAttribute("recentActivity", soft("recent activity", List.<AuditActivityDTO>of(),
-                () -> analyticsService.getRecentActivity(8), loadFailed));
+                () -> analyticsService.getRecentActivity(8)));
         model.addAttribute("applicants", soft("applicants list",
                 emptyPage(applicantPage),
-                () -> adminUserService.listApplicants(applicantPage, PAGE_SIZE), loadFailed));
+                () -> adminUserService.listApplicants(applicantPage, PAGE_SIZE)));
         model.addAttribute("providers", soft("providers list",
                 emptyPage(providerPage),
-                () -> adminUserService.listProviders(providerPage, PAGE_SIZE), loadFailed));
+                () -> adminUserService.listProviders(providerPage, PAGE_SIZE)));
         model.addAttribute("pendingProviders", soft("pending providers",
                 List.<AdminUserViewDTO>of(),
-                adminUserService::listPendingProviders, loadFailed));
+                adminUserService::listPendingProviders));
         model.addAttribute("applicantPage", applicantPage);
         model.addAttribute("providerPage", providerPage);
 
         int months = 6;
         model.addAttribute("monthlyCounts", soft("monthly counts",
                 zeroSeries(months),
-                () -> analyticsService.getMonthlyApplicationCounts(months), loadFailed));
+                () -> analyticsService.getMonthlyApplicationCounts(months)));
         model.addAttribute("monthLabels", ChartMonths.labelsForLastMonths(months));
 
         model.addAttribute("topProviders", soft("top providers", new ChartData(),
-                () -> analyticsService.getTopProviders(5), loadFailed));
+                () -> analyticsService.getTopProviders(5)));
         model.addAttribute("mostAppliedOpportunities", soft("most applied opportunities", new ChartData(),
-                () -> analyticsService.getMostAppliedOpportunities(5), loadFailed));
-        model.addAttribute("loadFailed", loadFailed.get());
+                () -> analyticsService.getMostAppliedOpportunities(5)));
 
         return "admin/dashboard";
     }
@@ -297,10 +293,6 @@ public class AdminController {
 
     private <T> T soft(String label, T fallback, Supplier<T> supplier) {
         return SoftLoad.of(log, "Admin " + label, fallback, supplier);
-    }
-
-    private <T> T soft(String label, T fallback, Supplier<T> supplier, AtomicBoolean failed) {
-        return SoftLoad.of(log, "Admin " + label, fallback, supplier, failed);
     }
 
     private static <T> PageResult<T> emptyPage(int page) {

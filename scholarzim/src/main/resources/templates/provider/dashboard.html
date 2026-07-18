@@ -104,11 +104,6 @@
                 </div>
             </div>
 
-            <div th:if="${loadFailed}" class="alert alert-warning rounded-3 py-2 small mb-3" role="alert">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                Some dashboard data could not be loaded. Refresh the page or try again shortly.
-            </div>
-
             <div class="row g-3 g-md-4">
                 <div class="col-12 col-lg-7" th:if="${opportunities != null and !opportunities.isEmpty()}">
                     <section class="sz-dashboard-panel h-100">

@@ -123,19 +123,6 @@
                     </span>
                 </div>
 
-                <th:block th:if="${notifications.isEmpty() and totalAll == 0}">
-                    <div th:replace="~{fragments/components :: empty-state(
-                        'bi-bell', 'You are all caught up',
-                        'Important updates will appear here as your ScholarZim journey progresses.',
-                        null, null)}"></div>
-                </th:block>
-                <th:block th:if="${notifications.isEmpty() and totalAll > 0}">
-                    <div th:replace="~{fragments/components :: empty-state(
-                        'bi-search', 'No matching notifications',
-                        'Try a different category, search term, or read-status filter.',
-                        @{/notifications}, 'Clear filters')}"></div>
-                </th:block>
-
                 <div th:if="${!notifications.isEmpty()}" class="sz-notification-cards">
                     <a th:each="n, iter : ${notifications}"
                        th:href="@{/notifications/{id}/open(id=${n.notificationId})}"

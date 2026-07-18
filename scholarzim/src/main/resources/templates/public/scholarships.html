@@ -55,16 +55,6 @@
             </div>
         </div>
 
-        <div th:if="${opportunities.isEmpty()}" class="sz-empty">
-            <div class="sz-empty-icon"><i class="bi bi-search"></i></div>
-            <h3 class="h5 fw-bold">No scholarships found</h3>
-            <p class="text-secondary mb-3">
-                No active scholarships match your filters. Try clearing filters or check back soon.
-            </p>
-            <a th:href="@{/scholarships}" class="btn btn-outline-primary btn-sm me-2">Reset filters</a>
-            <a th:href="@{/register}" class="btn btn-primary btn-sm sz-btn-landing-primary">Create student account</a>
-        </div>
-
         <div class="sz-opp-grid" th:if="${!opportunities.isEmpty()}">
             <th:block th:each="opp : ${opportunities}">
                 <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=false, removeId=null, matchScore=null, eligibilityText=null)}"></div>

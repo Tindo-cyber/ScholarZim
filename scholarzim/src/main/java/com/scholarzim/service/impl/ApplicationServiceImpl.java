@@ -77,6 +77,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Application> getApplicationsByUser(String email) {
         return userRepository.findByEmail(email)
                 .map(applicationRepository::findByUserWithOpportunity)
@@ -133,14 +134,17 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Application> getApplicationsForProvider(String providerEmail) {
-
-        User provider = findUserByEmail(providerEmail);
-        List<Opportunity> opportunities = opportunityRepository.findByProvider(provider);
-        if (opportunities.isEmpty()) {
-            return List.of();
-        }
-        return applicationRepository.findByOpportunityInWithDetails(opportunities);
+        return userRepository.findByEmail(providerEmail)
+                .map(provider -> {
+                    List<Opportunity> opportunities = opportunityRepository.findByProvider(provider);
+                    if (opportunities.isEmpty()) {
+                        return List.<Application>of();
+                    }
+                    return applicationRepository.findByOpportunityInWithDetails(opportunities);
+                })
+                .orElse(List.of());
     }
 
     @Override

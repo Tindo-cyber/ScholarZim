@@ -87,11 +87,13 @@ public class NotificationServiceImpl implements NotificationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Notification> allForUser(String email) {
         return allForUser(email, null);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Notification> allForUser(String email, String typeFilter) {
         User user = userRepository.findByEmail(email).orElse(null);
         if (user == null) {

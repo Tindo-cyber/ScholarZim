@@ -87,10 +87,6 @@ public class DemoDataSeeder implements CommandLineRunner {
         if (!seedEnabled) {
             log.info("Demo data seeding is disabled (scholarzim.demo.seed=false). "
                     + "No demo logins are created — register a new account or set SCHOLARZIM_DEMO_SEED=true.");
-            // #region agent log
-            com.scholarzim.debug.AgentDebugLog.log("A", "DemoDataSeeder.run", "seed_disabled",
-                    java.util.Map.of("seedEnabled", false));
-            // #endregion
             return;
         }
 
@@ -152,15 +148,6 @@ public class DemoDataSeeder implements CommandLineRunner {
 
         log.info("Demo data ready (seed accounts available when scholarzim.demo.seed=true).");
         logDemoAccounts();
-        // #region agent log
-        long oppCount = opportunityRepository.count();
-        long savedCount = savedScholarshipRepository.count();
-        com.scholarzim.debug.AgentDebugLog.log("A", "DemoDataSeeder.run", "seed_completed",
-                java.util.Map.of(
-                        "seedEnabled", true,
-                        "opportunityCount", oppCount,
-                        "savedCount", savedCount));
-        // #endregion
     }
 
     private void seedScholarshipCatalogue(
@@ -321,7 +308,11 @@ public class DemoDataSeeder implements CommandLineRunner {
         if (provider == null || app == null || app.getApplicationId() == null) {
             return;
         }
-        if (!notificationRepository.findByUserOrderByCreatedAtDesc(provider).isEmpty()) {
+        Long relatedId = app.getApplicationId();
+        boolean alreadyNotified = notificationRepository.findByUserOrderByCreatedAtDesc(provider).stream()
+                .anyMatch(n -> relatedId.equals(n.getRelatedId())
+                        && NotificationType.NEW_APPLICATION.equals(n.getType()));
+        if (alreadyNotified) {
             return;
         }
         Opportunity opp = app.getOpportunity();

@@ -147,12 +147,6 @@
                         <div class="sz-chart-wrap" th:if="${!statusBreakdown.labels.isEmpty()}">
                             <canvas id="statusChart"></canvas>
                         </div>
-                        <th:block th:if="${statusBreakdown.labels.isEmpty()}">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-pie-chart', 'No applications yet',
-                                'Status distribution will appear after the first submissions.',
-                                null, null)}"></div>
-                        </th:block>
                     </div>
                 </section>
             </div>
@@ -181,11 +175,6 @@
                         <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!topProviders.labels.isEmpty()}">
                             <canvas id="providersChart"></canvas>
                         </div>
-                        <th:block th:if="${topProviders.labels.isEmpty()}">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-building', 'No provider data',
-                                'Rankings appear once students apply.', null, null)}"></div>
-                        </th:block>
                     </div>
                 </section>
             </div>
@@ -212,12 +201,6 @@
                                       th:text="${#temporals.format(item.createdAt, 'dd MMM HH:mm')}">time</time>
                             </li>
                         </ul>
-                        <div th:if="${recentActivity.isEmpty()}" class="p-4">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-clock-history', 'No activity yet',
-                                'Audit events will appear as users interact with the platform.',
-                                null, null)}"></div>
-                        </div>
                     </div>
                 </section>
             </div>
@@ -241,12 +224,6 @@
                         <div class="p-3 border-top small text-secondary">
                             <span th:text="${stats.pendingApplications}">0</span> applications awaiting provider decision
                         </div>
-                        <div th:if="${pendingProviders.isEmpty()}" class="p-4">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-check-circle', 'All caught up',
-                                'No provider registrations are waiting for approval.',
-                                @{/admin/dashboard}, 'Go to dashboard')}"></div>
-                        </div>
                     </div>
                 </section>
             </div>
@@ -264,12 +241,6 @@
                         <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!mostViewedOpportunities.labels.isEmpty()}">
                             <canvas id="viewedChart"></canvas>
                         </div>
-                        <th:block th:if="${mostViewedOpportunities.labels.isEmpty()}">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-eye', 'No engagement data',
-                                'Popularity rankings appear after students browse and apply.',
-                                null, null)}"></div>
-                        </th:block>
                     </div>
                 </section>
             </div>
@@ -292,12 +263,6 @@
                                       th:text="${user.roleLabel}">Student</span>
                             </li>
                         </ul>
-                        <div th:if="${recentUsers.isEmpty()}" class="p-4">
-                            <div th:replace="~{fragments/components :: empty-state(
-                                'bi-person-plus', 'No registrations yet',
-                                'New sign-ups will appear here.',
-                                null, null)}"></div>
-                        </div>
                     </div>
                 </section>
             </div>

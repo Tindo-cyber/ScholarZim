@@ -21,19 +21,6 @@
 
     <div th:replace="~{fragments/components :: page-header('Application tracker', 'Follow every scholarship application through each stage — from submission to award.')}"></div>
 
-    <div th:if="${loadFailed}"
-         th:replace="~{fragments/components :: error-state(
-             'server-error',
-             ${userHomeUrl},
-             '/my-applications',
-             'Unable to load your applications',
-             null,
-             null,
-             null,
-             false)}"></div>
-
-    <th:block th:unless="${loadFailed}">
-
         <div class="row g-3 mb-4" th:if="${totalAll > 0}">
             <div class="col-6 col-md-3">
                 <div th:replace="~{fragments/components :: stat-card('bi-file-earmark-text', ${totalAll}, 'Total applications', 'bg-primary-subtle text-primary')}"></div>
@@ -84,22 +71,6 @@
             </div>
         </form>
 
-        <div th:if="${totalAll == 0}"
-             th:replace="~{fragments/components :: empty-state(
-                 'bi-file-earmark-text',
-                 'No applications found.',
-                 'You have not submitted any scholarship applications yet.',
-                 '/opportunities',
-                 'Browse Scholarships')}"></div>
-
-        <div th:if="${totalAll > 0 and filteredTotal == 0}"
-             th:replace="~{fragments/components :: empty-state(
-                 'bi-funnel',
-                 'No applications found.',
-                 'No applications match your current filters. Try adjusting your search or status filter.',
-                 '/my-applications',
-                 'Clear filters')}"></div>
-
         <div th:if="${filteredTotal > 0}" class="sz-app-tracker">
             <th:block th:each="trackerApp : ${applications}">
                 <div th:replace="~{fragments/components :: application-tracker-card(app=${trackerApp})}"></div>
@@ -112,8 +83,6 @@
                  ${totalPages},
                  ${q},
                  ${statusFilter})}"></nav>
-
-    </th:block>
 
         </div>
     </div>
