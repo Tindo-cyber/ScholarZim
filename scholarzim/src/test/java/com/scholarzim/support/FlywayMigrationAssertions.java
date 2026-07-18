@@ -22,6 +22,10 @@ public final class FlywayMigrationAssertions {
         Set<String> applied = new HashSet<>(versions);
         assertTrue(applied.containsAll(Set.of("1", "2", "3", "4", "5", "6", "7", "8", "9", "10")),
                 () -> "Expected V1–V10 to be applied, but found: " + applied);
+        assertEquals("10", versions.get(versions.size() - 1));
+
+        // Core milestones from earlier migrations
+        assertMigrationsAppliedThroughV7(jdbc);
 
         Integer providerUserIndex = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM INFORMATION_SCHEMA.STATISTICS "
@@ -40,7 +44,6 @@ public final class FlywayMigrationAssertions {
         Set<String> applied = new HashSet<>(versions);
         assertTrue(applied.containsAll(Set.of("1", "2", "3", "4", "5", "6", "7")),
                 () -> "Expected V1–V7 to be applied, but found: " + applied);
-        assertEquals("7", versions.get(versions.size() - 1));
 
         Integer resultsColumn = jdbc.queryForObject(
                 "SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS "
@@ -74,9 +77,9 @@ public final class FlywayMigrationAssertions {
                 "uk_users_email index should exist after V7");
     }
 
-    /** @deprecated use {@link #assertMigrationsAppliedThroughV7(JdbcTemplate)} */
+    /** @deprecated use {@link #assertMigrationsAppliedThroughV10(JdbcTemplate)} */
     @Deprecated
     public static void assertMigrationsAppliedThroughV5(JdbcTemplate jdbc) {
-        assertMigrationsAppliedThroughV7(jdbc);
+        assertMigrationsAppliedThroughV10(jdbc);
     }
 }

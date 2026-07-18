@@ -15,9 +15,10 @@ public class FlywayItContextInitializer
         }
         HikariDataSource dataSource = FlywayItSupport.createDataSource();
         try {
+            FlywayItSupport.resetDatabase(dataSource);
             FlywayItSupport.runBaseline(dataSource);
         } catch (Exception ex) {
-            throw new IllegalStateException("Failed to apply Flyway IT baseline schema", ex);
+            throw new IllegalStateException("Failed to prepare Flyway IT baseline schema", ex);
         } finally {
             dataSource.close();
         }

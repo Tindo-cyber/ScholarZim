@@ -3,7 +3,6 @@ package com.scholarzim;
 import com.scholarzim.support.FlywayItSupport;
 import com.scholarzim.support.FlywayMigrationAssertions;
 import com.zaxxer.hikari.HikariDataSource;
-import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -15,14 +14,9 @@ class FlywayV10MigrationIT {
     void migrationsApplyThroughV10() throws Exception {
         HikariDataSource dataSource = FlywayItSupport.createDataSource();
         try {
+            FlywayItSupport.resetDatabase(dataSource);
             FlywayItSupport.runBaseline(dataSource);
-
-            Flyway.configure()
-                    .dataSource(dataSource)
-                    .locations("classpath:db/migration")
-                    .baselineOnMigrate(true)
-                    .load()
-                    .migrate();
+            FlywayItSupport.repairAndMigrate(dataSource);
 
             FlywayMigrationAssertions.assertMigrationsAppliedThroughV10(new JdbcTemplate(dataSource));
         } finally {

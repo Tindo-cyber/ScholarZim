@@ -47,4 +47,4 @@ jobs:
           MYSQL_URL: jdbc:mysql://127.0.0.1:3306/scholarzim?useSSL=false&allowPublicKeyRetrieval=true
           MYSQL_USER: root
           MYSQL_PASSWORD: root
-        run: mvn -B test -Dtest=FlywayMigrationIT,FlywaySpringBootIT -Dspring.profiles.active=flyway-it
+        run: mvn -B test -Dtest=FlywayMigrationIT,FlywaySpringBootIT,FlywayV10MigrationIT -Dspring.profiles.active=flyway-it

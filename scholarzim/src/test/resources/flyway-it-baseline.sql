@@ -1,10 +1,12 @@
--- Minimal pre-Flyway baseline (simulates Hibernate-created core schema)
+-- Minimal pre-Flyway baseline (simulates Hibernate-created core schema before Flyway).
+-- Must include every V1 table that later migrations reference (e.g. V7 indexes notifications).
 
 CREATE TABLE IF NOT EXISTS roles (
     role_id     BIGINT       NOT NULL AUTO_INCREMENT,
     role_name   VARCHAR(50)  NOT NULL,
     description VARCHAR(255) NULL,
-    PRIMARY KEY (role_id)
+    PRIMARY KEY (role_id),
+    UNIQUE KEY uk_role_name (role_name)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS users (
@@ -62,6 +64,31 @@ CREATE TABLE IF NOT EXISTS applications (
     document_path       VARCHAR(255) NULL,
     rejection_reason    VARCHAR(500) NULL,
     PRIMARY KEY (application_id),
+    UNIQUE KEY uk_applications_user_opportunity (user_id, opportunity_id),
     CONSTRAINT fk_application_user FOREIGN KEY (user_id) REFERENCES users (user_id),
     CONSTRAINT fk_application_opportunity FOREIGN KEY (opportunity_id) REFERENCES opportunities (opportunity_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS notifications (
+    notification_id BIGINT       NOT NULL AUTO_INCREMENT,
+    user_id         BIGINT       NULL,
+    type            VARCHAR(50)  NULL,
+    message         VARCHAR(500) NULL,
+    link            VARCHAR(255) NULL,
+    related_id      BIGINT       NULL,
+    is_read         BIT(1)       NOT NULL DEFAULT 0,
+    created_at      DATETIME(6)  NULL,
+    PRIMARY KEY (notification_id),
+    CONSTRAINT fk_notification_user FOREIGN KEY (user_id) REFERENCES users (user_id)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS audit_log (
+    audit_id     BIGINT       NOT NULL AUTO_INCREMENT,
+    actor_email  VARCHAR(255) NOT NULL,
+    action       VARCHAR(50)  NOT NULL,
+    entity_type  VARCHAR(50)  NOT NULL,
+    entity_id    BIGINT       NULL,
+    details      TEXT         NULL,
+    created_at   DATETIME(6)  NULL,
+    PRIMARY KEY (audit_id)
 ) ENGINE=InnoDB;
