@@ -154,7 +154,7 @@ public class ApplicantProfileServiceImpl implements ApplicantProfileService {
             @NonNull Long applicationId,
             String requesterEmail) {
 
-        Application application = applicationRepository.findById(applicationId)
+        Application application = applicationRepository.findByIdWithDetails(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found."));
 
         if (application.getUser() == null) {
@@ -166,7 +166,7 @@ public class ApplicantProfileServiceImpl implements ApplicantProfileService {
             throw new ResourceNotFoundException("No results certificate on file for this applicant.");
         }
 
-        User requester = userRepository.findByEmail(requesterEmail)
+        User requester = userRepository.findByEmailWithRole(requesterEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         return loadResultsCertificateInternal(profile, requester, application.getUser().getUserId(), application);

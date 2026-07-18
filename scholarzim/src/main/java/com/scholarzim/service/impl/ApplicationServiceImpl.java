@@ -145,6 +145,22 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     @Transactional(readOnly = true)
+    public Application getApplicationForProvider(@NonNull Long applicationId, String providerEmail) {
+
+        User provider = findUserByEmail(providerEmail);
+        Application application = applicationRepository.findByIdWithDetails(applicationId)
+                .orElseThrow(() -> new ResourceNotFoundException("Application not found."));
+
+        Opportunity opportunity = application.getOpportunity();
+        if (opportunity == null || opportunity.getProvider() == null
+                || !opportunity.getProvider().getUserId().equals(provider.getUserId())) {
+            throw new AccessDeniedException("You are not allowed to view this application.");
+        }
+        return application;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public StoredFileResource loadApplicationDocument(@NonNull Long applicationId, String requesterEmail) {
 
         Application application = applicationRepository.findById(applicationId)

@@ -15,7 +15,7 @@
                 <i class="bi bi-arrow-left"></i> Back to applications
             </a>
 
-            <div class="sz-review-grid">
+            <div class="sz-review-grid" th:if="${application != null}">
                 <aside class="sz-review-sidebar">
                     <div class="card sz-section-card mb-0">
                         <div class="card-body p-4">
@@ -25,11 +25,14 @@
                                     <i class="bi bi-person-fill"></i>
                                 </div>
                                 <div>
-                                    <p class="fw-bold mb-0" th:text="${application.user.fullName}">Name</p>
-                                    <p class="small text-secondary mb-0" th:text="${application.user.email}">email</p>
+                                    <p class="fw-bold mb-0"
+                                       th:text="${application.user != null ? application.user.fullName : 'Applicant'}">Name</p>
+                                    <p class="small text-secondary mb-0"
+                                       th:text="${application.user != null ? application.user.email : '—'}">email</p>
                                 </div>
                             </div>
-                            <p class="small mb-2" th:if="${application.user.phone}">
+                            <p class="small mb-2"
+                               th:if="${application.user != null and application.user.phone != null}">
                                 <i class="bi bi-telephone me-1"></i>
                                 <span th:text="${application.user.phone}">phone</span>
                             </p>
@@ -43,7 +46,8 @@
 
                     <div class="card sz-section-card">
                         <div class="card-body p-4">
-                            <h2 class="h6 fw-bold mb-2" th:text="${application.opportunity.title}">Opp</h2>
+                            <h2 class="h6 fw-bold mb-2"
+                                th:text="${application.opportunity != null ? application.opportunity.title : 'Opportunity'}">Opp</h2>
                             <div class="mb-3">
                                 <span th:replace="~{fragments/components :: status-badge(${application.applicationStatus})}"></span>
                             </div>
@@ -107,6 +111,12 @@
                             </a>
                         </div>
                     </div>
+                    <div class="card sz-section-card mb-4" th:if="${applicantProfile == null}">
+                        <div class="card-body p-4">
+                            <h2 class="h6 fw-bold mb-2">Academic profile</h2>
+                            <p class="small text-secondary mb-0">This applicant has not completed an academic profile yet.</p>
+                        </div>
+                    </div>
 
                     <div class="card sz-section-card mb-4">
                         <div class="card-body p-4">
@@ -138,6 +148,11 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div th:if="${application == null}" class="alert alert-warning">
+                Application could not be loaded.
+                <a th:href="@{/provider/applications}" class="alert-link">Back to applications</a>
             </div>
 
 </th:block>

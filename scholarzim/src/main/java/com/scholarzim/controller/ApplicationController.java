@@ -171,13 +171,9 @@ public class ApplicationController {
     public String providerReview(@PathVariable Long id, @NonNull Authentication authentication, Model model) {
 
         try {
-            var apps = applicationService.getApplicationsForProvider(authentication.getName());
-            var app = apps.stream().filter(a -> a.getApplicationId().equals(id)).findFirst()
-                    .orElse(null);
-            if (app == null) {
-                return "redirect:/provider/applications";
-            }
+            var app = applicationService.getApplicationForProvider(id, authentication.getName());
             model.addAttribute("application", app);
+            model.addAttribute("applicantProfile", null);
             if (app.getUser() != null) {
                 try {
                     model.addAttribute("applicantProfile",
@@ -188,16 +184,16 @@ public class ApplicationController {
             }
             return "applications/provider-review";
         } catch (Exception ex) {
-            log.warn("Provider review page failed for {}: {}", authentication.getName(), ex.getMessage());
+            log.warn("Provider review page failed for {} app {}: {}",
+                    authentication.getName(), id, ex.getMessage());
             return "redirect:/provider/applications";
         }
     }
 
     @PostMapping("/provider/applications/{id}/approve")
     public String approve(@PathVariable Long id, @NonNull Authentication authentication, RedirectAttributes redirect) {
-        applicationService.updateStatus(id, "APPROVED", authentication.getName());
-        redirect.addFlashAttribute("successMessage", "Application approved.");
-        return "redirect:/provider/applications";
+        return providerStatusAction(id, "APPROVED", null, authentication, redirect,
+                "Application approved.", "/provider/applications");
     }
 
     @PostMapping("/provider/applications/{id}/reject")
@@ -207,22 +203,40 @@ public class ApplicationController {
             @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
-        applicationService.updateStatus(id, "REJECTED", rejectionReason, authentication.getName());
-        redirect.addFlashAttribute("successMessage", "Application rejected.");
-        return "redirect:/provider/applications";
+        return providerStatusAction(id, "REJECTED", rejectionReason, authentication, redirect,
+                "Application rejected.", "/provider/applications");
     }
 
     @PostMapping("/provider/applications/{id}/review")
     public String markUnderReview(@PathVariable Long id, @NonNull Authentication authentication, RedirectAttributes redirect) {
-        applicationService.updateStatus(id, "UNDER_REVIEW", authentication.getName());
-        redirect.addFlashAttribute("successMessage", "Marked as under review.");
-        return "redirect:/provider/applications/" + id;
+        return providerStatusAction(id, "UNDER_REVIEW", null, authentication, redirect,
+                "Marked as under review.", "/provider/applications/" + id);
     }
 
     @PostMapping("/provider/applications/{id}/request-docs")
     public String requestDocs(@PathVariable Long id, @NonNull Authentication authentication, RedirectAttributes redirect) {
-        applicationService.updateStatus(id, "DOCUMENTS_REQUESTED", authentication.getName());
-        redirect.addFlashAttribute("successMessage", "Document request sent to applicant.");
-        return "redirect:/provider/applications/" + id;
+        return providerStatusAction(id, "DOCUMENTS_REQUESTED", null, authentication, redirect,
+                "Document request sent to applicant.", "/provider/applications/" + id);
+    }
+
+    private String providerStatusAction(
+            Long id,
+            String status,
+            String rejectionReason,
+            Authentication authentication,
+            RedirectAttributes redirect,
+            String successMessage,
+            String redirectTo) {
+
+        try {
+            applicationService.updateStatus(id, status, rejectionReason, authentication.getName());
+            redirect.addFlashAttribute("successMessage", successMessage);
+        } catch (Exception ex) {
+            log.warn("Provider status update failed for app {} by {}: {}",
+                    id, authentication.getName(), ex.getMessage());
+            redirect.addFlashAttribute("errorMessage",
+                    ex.getMessage() != null ? ex.getMessage() : "Could not update application status.");
+        }
+        return "redirect:" + redirectTo;
     }
 }

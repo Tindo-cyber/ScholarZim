@@ -11,11 +11,9 @@
 <body>
 <th:block id="dashboard-content">
 
-    <div class="sz-page-shell sz-applicant-dashboard" id="szApplicantDashboard" data-page="dashboard">
-        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-dashboard}"></div>
+    <div class="sz-page-shell is-loaded sz-applicant-dashboard" id="szApplicantDashboard" data-page="dashboard">
         <div class="sz-page-shell__content sz-dash-content">
 
-            <!-- Top: greeting + highlight cards -->
             <header class="sz-dash-hero">
                 <div class="sz-dash-hero__intro">
                     <p class="sz-dash-hero__date"
@@ -32,18 +30,24 @@
                     <p class="sz-dash-hero__subtitle"
                        th:if="${stats.profileCompletion < 100}">
                         Complete your profile to unlock AI-powered scholarship recommendations.
+                        <a th:href="@{/applicant/profile}" class="fw-semibold">Update profile</a>
                     </p>
                 </div>
 
-                <div class="sz-dash-hero__highlights">
-                    <div th:replace="~{fragments/components :: premium-highlight-card(
-                        'bi-person-check',
-                        'sz-tone-primary',
-                        'Profile Completion',
-                        ${stats.profileCompletion} + '%',
-                        ${stats.profileCompletion >= 100 ? 'Ready for personalised matches' : 'Finish your academic profile'},
-                        '/applicant/profile',
-                        'Continue')}"></div>
+                <div class="sz-dash-hero__highlights"
+                     th:if="${stats.profileCompletion < 100
+                          or (notifUnreadCount != null and notifUnreadCount > 0)
+                          or stats.upcomingDeadlinesCount > 0}">
+                    <th:block th:if="${stats.profileCompletion < 100}">
+                        <div th:replace="~{fragments/components :: premium-highlight-card(
+                            'bi-person-check',
+                            'sz-tone-primary',
+                            'Profile Completion',
+                            ${stats.profileCompletion} + '%',
+                            'Finish your academic profile',
+                            '/applicant/profile',
+                            'Continue')}"></div>
+                    </th:block>
 
                     <th:block th:if="${notifUnreadCount != null and notifUnreadCount > 0}">
                         <div th:replace="~{fragments/components :: premium-highlight-card(
@@ -69,43 +73,43 @@
                 </div>
             </header>
 
-            <!-- Row 1: key metrics -->
-            <section class="sz-dash-section" aria-label="Key metrics">
+            <section class="sz-dash-section" aria-label="Key metrics"
+                     th:if="${stats.eligibleScholarships > 0
+                          or stats.applicationsSubmitted > 0
+                          or stats.savedCount > 0}">
                 <div class="sz-dash-grid sz-dash-grid--4">
-                    <div th:replace="~{fragments/components :: premium-metric-card(
-                        '/applicant/recommendations',
-                        'bi-stars',
-                        'sz-tone-primary',
-                        'Eligible Scholarships',
-                        ${stats.eligibleScholarships},
-                        'Matched to your profile')}"></div>
-                    <div th:replace="~{fragments/components :: premium-metric-card(
-                        '/my-applications',
-                        'bi-send-check',
-                        'sz-tone-accent',
-                        'Applications Submitted',
-                        ${stats.applicationsSubmitted},
-                        'Track your progress')}"></div>
-                    <div th:replace="~{fragments/components :: premium-metric-card(
-                        '/applicant/saved',
-                        'bi-bookmark-heart',
-                        'sz-tone-warning',
-                        'Saved Scholarships',
-                        ${stats.savedCount},
-                        'Bookmarks for later')}"></div>
-                    <div th:replace="~{fragments/components :: premium-metric-card(
-                        '/applicant/profile',
-                        'bi-pie-chart',
-                        'sz-tone-success',
-                        'Profile Completion',
-                        ${stats.profileCompletion} + '%',
-                        'Unlock better matches')}"></div>
+                    <th:block th:if="${stats.eligibleScholarships > 0}">
+                        <div th:replace="~{fragments/components :: premium-metric-card(
+                            '/applicant/recommendations',
+                            'bi-stars',
+                            'sz-tone-primary',
+                            'Eligible Scholarships',
+                            ${stats.eligibleScholarships},
+                            'Matched to your profile')}"></div>
+                    </th:block>
+                    <th:block th:if="${stats.applicationsSubmitted > 0}">
+                        <div th:replace="~{fragments/components :: premium-metric-card(
+                            '/my-applications',
+                            'bi-send-check',
+                            'sz-tone-accent',
+                            'Applications Submitted',
+                            ${stats.applicationsSubmitted},
+                            'Track your progress')}"></div>
+                    </th:block>
+                    <th:block th:if="${stats.savedCount > 0}">
+                        <div th:replace="~{fragments/components :: premium-metric-card(
+                            '/applicant/saved',
+                            'bi-bookmark-heart',
+                            'sz-tone-warning',
+                            'Saved Scholarships',
+                            ${stats.savedCount},
+                            'Bookmarks for later')}"></div>
+                    </th:block>
                 </div>
             </section>
 
-            <!-- ScholarFit: only when incomplete profile CTA or real matches -->
             <section class="sz-dash-section" aria-label="AI recommended scholarships"
-                     th:if="${!stats.hasProfile or (recommendations != null and !recommendations.isEmpty())}">
+                     th:if="${recommendations != null and !recommendations.isEmpty()}">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-robot',
                     'ScholarFit AI Matches',
@@ -114,13 +118,7 @@
                     ~{:: #rec-body}
                 )}">
                     <th:block id="rec-body">
-                        <div th:if="${!stats.hasProfile}" class="sz-dash-inline-alert">
-                            <i class="bi bi-exclamation-circle"></i>
-                            <span>Complete your <a th:href="@{/applicant/profile}">profile</a> to unlock AI recommendations.</span>
-                        </div>
-
-                        <div class="sz-scholarfit-grid sz-scholarfit-grid--compact"
-                             th:if="${stats.hasProfile and recommendations != null and !recommendations.isEmpty()}">
+                        <div class="sz-scholarfit-grid sz-scholarfit-grid--compact">
                             <th:block th:each="scored : ${recommendations}">
                                 <div th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}"></div>
                             </th:block>
@@ -129,7 +127,6 @@
                 </div>
             </section>
 
-            <!-- Application timeline: only when there is activity -->
             <section class="sz-dash-section" aria-label="Application timeline"
                      th:if="${recentApplications != null and !recentApplications.isEmpty()}">
                 <div th:replace="~{fragments/components :: premium-panel(
@@ -159,7 +156,6 @@
                 </div>
             </section>
 
-            <!-- Notifications: only when present -->
             <section class="sz-dash-section" aria-label="Recent notifications"
                      th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                 <div th:replace="~{fragments/components :: premium-panel(
@@ -192,7 +188,6 @@
                 </div>
             </section>
 
-            <!-- Deadlines: only when present -->
             <section class="sz-dash-section" aria-label="Upcoming deadlines calendar"
                      th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
                 <div th:replace="~{fragments/components :: premium-panel(
@@ -227,6 +222,23 @@
                             </ul>
                         </div>
                     </th:block>
+                </div>
+            </section>
+
+            <section class="sz-dash-section" aria-label="Getting started"
+                     th:if="${(recommendations == null or recommendations.isEmpty())
+                          and (recentApplications == null or recentApplications.isEmpty())
+                          and stats.applicationsSubmitted == 0}">
+                <div class="sz-dash-inline-alert">
+                    <i class="bi bi-compass"></i>
+                    <span>
+                        Ready to begin?
+                        <a th:href="@{/opportunities}" class="fw-semibold">Browse scholarships</a>
+                        <th:block th:if="${stats.profileCompletion < 100}">
+                            or <a th:href="@{/applicant/profile}" class="fw-semibold">finish your profile</a>
+                        </th:block>
+                        for better matches.
+                    </span>
                 </div>
             </section>
 

@@ -35,6 +35,15 @@ public interface ApplicationRepository
     List<Application> findByOpportunityInWithDetails(@Param("opportunities") Collection<Opportunity> opportunities);
 
     @Query("""
+            SELECT a FROM Application a
+            JOIN FETCH a.user
+            JOIN FETCH a.opportunity o
+            JOIN FETCH o.provider
+            WHERE a.applicationId = :id
+            """)
+    java.util.Optional<Application> findByIdWithDetails(@Param("id") Long id);
+
+    @Query("""
             SELECT a.user.userId, COUNT(a)
             FROM Application a
             WHERE a.user.userId IN :userIds

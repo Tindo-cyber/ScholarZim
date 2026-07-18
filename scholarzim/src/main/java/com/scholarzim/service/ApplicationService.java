@@ -20,6 +20,9 @@ public interface ApplicationService {
 
     List<com.scholarzim.entity.Application> getApplicationsForProvider(String providerEmail);
 
+    com.scholarzim.entity.Application getApplicationForProvider(
+            @NonNull Long applicationId, String providerEmail);
+
     void updateStatus(@NonNull Long applicationId, String status, String providerEmail);
 
     void updateStatus(@NonNull Long applicationId, String status, String rejectionReason, String providerEmail);

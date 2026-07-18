@@ -11,8 +11,7 @@
 <body>
 <th:block id="recommendations-content">
 
-    <div class="sz-page-shell" id="szRecommendationsPage" data-page="scholarships">
-        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-scholarship-grid}"></div>
+    <div class="sz-page-shell is-loaded" id="szRecommendationsPage" data-page="scholarships">
         <div class="sz-page-shell__content">
 
     <nav th:replace="~{fragments/components :: breadcrumbs(
@@ -49,11 +48,11 @@
         to unlock ScholarFit AI recommendations.
     </div>
 
-    <div th:if="${hasProfile and opportunities.isEmpty()}"
-         th:replace="~{fragments/components :: empty-state(
-             'bi-stars', 'No matches yet',
-             'ScholarFit AI could not find eligible scholarships yet. Update your profile or check back when new opportunities are posted.',
-             @{/applicant/profile}, 'Edit profile')}"></div>
+    <p th:if="${hasProfile and opportunities.isEmpty()}"
+       class="text-secondary small mb-0 py-3">
+        No ScholarFit matches yet. New opportunities are added regularly —
+        <a th:href="@{/opportunities}" class="fw-semibold">browse the catalogue</a>.
+    </p>
 
     <div th:if="${hasProfile and !opportunities.isEmpty()}" class="sz-scholarfit-grid">
         <th:block th:each="scored : ${opportunities}">
