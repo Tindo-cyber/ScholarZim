@@ -20,7 +20,7 @@ class RecommendationServiceImplTest {
         profile.setFieldOfStudy("Computer Science");
         profile.setCountry("Zimbabwe");
         profile.setProvince("Harare");
-        profile.setAcademicResults("GPA 3.5 with distinction in core subjects");
+        profile.setAcademicResults("A-Level 14 points with distinction in core subjects");
         profile.setResultsCertificatePath("/uploads/cert.pdf");
 
         Opportunity opportunity = new Opportunity();

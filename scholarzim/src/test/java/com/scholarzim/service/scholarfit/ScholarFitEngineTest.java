@@ -22,7 +22,7 @@ class ScholarFitEngineTest {
         assertThat(scored.getMatchScore()).isGreaterThanOrEqualTo(75);
         assertThat(scored.getBreakdown().getConfidenceLevel()).isEqualTo("HIGH");
         assertThat(scored.getBreakdown().getReasons())
-                .anyMatch(r -> r.getKey().equals("gpa") && r.isSatisfied())
+                .anyMatch(r -> r.getKey().equals("academicResults") && r.isSatisfied())
                 .anyMatch(r -> r.getKey().equals("degree") && r.isSatisfied())
                 .anyMatch(r -> r.getKey().equals("deadline") && r.isSatisfied());
         assertThat(scored.getBreakdown().getMissingRequirements()).isEmpty();
@@ -54,7 +54,7 @@ class ScholarFitEngineTest {
         profile.setFieldOfStudy("Computer Science");
         profile.setCountry("Zimbabwe");
         profile.setProvince("Harare");
-        profile.setAcademicResults("GPA 3.6 — Distinction in Mathematics and Computer Science");
+        profile.setAcademicResults("A-Level 15 points (Maths A, Physics B, Computer Science A)");
         profile.setResultsCertificatePath("/uploads/results.pdf");
         return profile;
     }

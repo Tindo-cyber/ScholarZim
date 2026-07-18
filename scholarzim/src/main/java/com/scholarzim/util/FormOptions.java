@@ -31,6 +31,7 @@ public final class FormOptions {
     );
 
     public static final List<String> TERTIARY_LEVELS = List.of(
+            "High School (O-Level)",
             "High School (A-Level)",
             "Certificate",
             "Diploma",

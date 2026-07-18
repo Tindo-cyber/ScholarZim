@@ -65,9 +65,8 @@ public class AdminBootstrap implements CommandLineRunner {
         admin.setEmailVerified(true);
         userRepository.save(admin);
 
-        log.info("{} admin login {} / {} (password reset to demo value)",
+        log.info("{} demo admin account {} (password reset to demo value)",
                 created ? "Created" : "Refreshed",
-                ADMIN_EMAIL,
-                ADMIN_PASSWORD);
+                ADMIN_EMAIL);
     }
 }

@@ -36,6 +36,11 @@ public class ScholarFitEngine {
             "PhD", Set.of("Postgraduate", "Masters")
     );
 
+    private static final Pattern POINTS_PATTERN = Pattern.compile(
+            "(\\d{1,2})\\s*points?",
+            Pattern.CASE_INSENSITIVE);
+
+    /** Optional fallback for international profiles that still mention GPA. */
     private static final Pattern GPA_PATTERN = Pattern.compile(
             "(?:gpa|grade point average)\\s*[:=]?\\s*(\\d+(?:\\.\\d+)?)",
             Pattern.CASE_INSENSITIVE);
@@ -72,12 +77,12 @@ public class ScholarFitEngine {
 
         boolean qualifies = hasQualifyingAcademicRecord(profile);
         reasons.add(new MatchReasonDTO(
-                "gpa",
-                "Your GPA qualifies",
+                "academicResults",
+                "Your results look competitive",
                 qualifies));
 
         if (!qualifies) {
-            missing.add("Add your academic results or GPA summary to your profile");
+            missing.add("Add O/A-Level points, subject grades, or degree class to your profile");
             return 0;
         }
         return 20;
@@ -259,21 +264,35 @@ public class ScholarFitEngine {
         String results = profile.getAcademicResults().trim();
         String lower = results.toLowerCase();
 
-        if (lower.contains("distinction") || lower.contains("first class") || lower.contains("cum laude")) {
+        if (lower.contains("distinction") || lower.contains("first class")
+                || lower.contains("upper second") || lower.contains("cum laude")) {
             return true;
         }
 
-        Matcher matcher = GPA_PATTERN.matcher(results);
-        if (matcher.find()) {
+        Matcher points = POINTS_PATTERN.matcher(results);
+        if (points.find()) {
             try {
-                return Double.parseDouble(matcher.group(1)) >= 2.0;
+                return Integer.parseInt(points.group(1)) >= 6;
             } catch (NumberFormatException ignored) {
                 // fall through
             }
         }
 
-        if (lower.matches(".*\\b(a\\+?|b\\+?|pass|credit|merit)\\b.*")) {
+        Matcher gpa = GPA_PATTERN.matcher(results);
+        if (gpa.find()) {
+            try {
+                return Double.parseDouble(gpa.group(1)) >= 2.0;
+            } catch (NumberFormatException ignored) {
+                // fall through
+            }
+        }
+
+        if (lower.matches(".*\\b(a\\+?|b\\+?|pass|credit|merit|honours?)\\b.*")) {
             return true;
+        }
+
+        if (lower.contains("o-level") || lower.contains("a-level") || lower.contains("zimsec")) {
+            return results.length() >= 8;
         }
 
         if (results.matches(".*\\b([6-9]\\d|100)\\s*%.*")) {

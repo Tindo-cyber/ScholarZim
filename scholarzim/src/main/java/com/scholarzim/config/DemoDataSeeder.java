@@ -126,7 +126,7 @@ public class DemoDataSeeder implements CommandLineRunner {
                         + "building solutions for rural Zimbabwe.");
         saveProfile(rudo, "Masters", "National University of Science and Technology (NUST)",
                 "Engineering", "Zimbabwe", "Bulawayo",
-                "BEng Mechanical Engineering — First Class Honours (GPA 3.8)",
+                "BEng Mechanical Engineering — First Class Honours",
                 "Mechanical engineer researching renewable energy systems for "
                         + "off-grid communities in Matabeleland.");
         saveProfileWithoutCertificate(simba, "Undergraduate", "Midlands State University",
@@ -143,7 +143,7 @@ public class DemoDataSeeder implements CommandLineRunner {
 
         ensureDemoStudentActivity(tanaka, rudo, simba);
 
-        log.info("Demo data ready. Login with any account using password: {}", DEMO_PASSWORD);
+        log.info("Demo data ready (seed accounts available when scholarzim.demo.seed=true).");
         logDemoAccounts();
     }
 

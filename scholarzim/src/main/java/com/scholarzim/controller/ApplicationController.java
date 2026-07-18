@@ -205,7 +205,8 @@ public class ApplicationController {
     @PostMapping("/provider/applications/{id}/approve")
     public String approve(@PathVariable Long id, @NonNull Authentication authentication, RedirectAttributes redirect) {
         return providerStatusAction(id, "APPROVED", null, authentication, redirect,
-                "Application approved.", "/provider/applications");
+                "Approved. Applicant contact details are now available.",
+                "/provider/applications/" + id);
     }
 
     @PostMapping("/provider/applications/{id}/reject")

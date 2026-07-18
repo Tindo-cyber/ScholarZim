@@ -22,7 +22,7 @@ public class ApplicantProfileRequest {
 
     private String province;
 
-    @NotBlank(message = "Academic results summary is required")
+    @NotBlank(message = "Exam results summary is required")
     private String academicResults;
 
     private String biography;

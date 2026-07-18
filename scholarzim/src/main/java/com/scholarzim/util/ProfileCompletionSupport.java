@@ -69,7 +69,7 @@ public final class ProfileCompletionSupport {
                 item("educationLevel", "Education level", "Select your current study level", profile, ApplicantProfile::getEducationLevel),
                 item("institution", "Institution", "Add your school or university", profile, ApplicantProfile::getInstitutionName),
                 item("fieldOfStudy", "Field of study", "Tell us what you are studying", profile, ApplicantProfile::getFieldOfStudy),
-                item("academicResults", "Academic results", "Summarise your grades or points", profile, ApplicantProfile::getAcademicResults),
+                item("academicResults", "Exam results", "Add O/A-Level points or grades", profile, ApplicantProfile::getAcademicResults),
                 item("country", "Country", "Where you are based", profile, ApplicantProfile::getCountry),
                 item("biography", "Biography", "Share your goals and achievements", profile, ApplicantProfile::getBiography));
     }

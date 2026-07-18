@@ -98,11 +98,13 @@
                                 </div>
 
                                 <div class="col-12 col-md-6">
-                                    <label class="form-label fw-semibold">Academic results summary *</label>
+                                    <label class="form-label fw-semibold">Exam results summary *</label>
                                     <input type="text" class="form-control" th:field="*{academicResults}"
-                                           placeholder="e.g. A-Level 15 points, GPA 3.8"
+                                           placeholder="e.g. O-Level 8 As; A-Level 15 points (Maths A, Physics B)"
                                            th:classappend="${#fields.hasErrors('academicResults')} ? 'is-invalid'">
-                                    <div class="form-text">Short summary as it appears on your certificate.</div>
+                                    <div class="form-text">
+                                        ZIMSEC/Cambridge points, subject grades, or class of degree — as on your certificate.
+                                    </div>
                                     <div class="invalid-feedback" th:errors="*{academicResults}"></div>
                                 </div>
 
