@@ -53,7 +53,11 @@ class AuthMvcTest {
                 .andExpect(content().string(containsString("id=\"main-content\"")))
                 .andExpect(content().string(containsString("sz-home-v4")))
                 .andExpect(content().string(containsString("id=\"categories\"")))
+                .andExpect(content().string(containsString("id=\"about\"")))
                 .andExpect(content().string(containsString("id=\"how-it-works\"")))
+                .andExpect(content().string(containsString("id=\"features\"")))
+                .andExpect(content().string(containsString("id=\"providers\"")))
+                .andExpect(content().string(containsString("id=\"contact\"")))
                 .andExpect(content().string(containsString("id=\"success-stories\"")))
                 .andExpect(content().string(containsString("id=\"newsletter\"")))
                 .andExpect(content().string(containsString("sz-count-up")))
@@ -61,19 +65,24 @@ class AuthMvcTest {
     }
 
     @Test
-    void providerLoginPageShowsProviderCopy() throws Exception {
-        mockMvc.perform(get("/login").param("role", "provider"))
+    void loginPageIsUniversalForAllRoles() throws Exception {
+        mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/login"))
-                .andExpect(content().string(containsString("Provider sign in")));
+                .andExpect(content().string(containsString("Sign in to ScholarZim")))
+                .andExpect(content().string(containsString("Register as student")))
+                .andExpect(content().string(containsString("Apply as provider")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Student sign in"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("Provider sign in"))))
+                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("sz-auth-public-tabs"))));
     }
 
     @Test
-    void studentLoginPageShowsStudentCopy() throws Exception {
-        mockMvc.perform(get("/login").param("role", "student"))
+    void loginIgnoresLegacyRoleQueryParam() throws Exception {
+        mockMvc.perform(get("/login").param("role", "provider"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/login"))
-                .andExpect(content().string(containsString("Student sign in")));
+                .andExpect(content().string(containsString("Sign in to ScholarZim")));
     }
 
     @Test
@@ -102,7 +111,7 @@ class AuthMvcTest {
 
     @Test
     void loginPageShowsPendingInfo() throws Exception {
-        mockMvc.perform(get("/login").param("role", "provider").param("pending", "1"))
+        mockMvc.perform(get("/login").param("pending", "1"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("pending admin review")));
     }

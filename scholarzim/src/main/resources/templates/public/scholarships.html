@@ -8,7 +8,8 @@
 
 <main id="main-content" tabindex="-1" class="sz-landing-main py-4 py-md-5">
     <div class="container sz-container">
-        <div class="sz-page-shell is-loaded" id="szPublicScholarshipsPage" data-page="scholarships">
+        <div class="sz-page-shell" id="szPublicScholarshipsPage" data-page="scholarships">
+            <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-scholarship-grid}"></div>
             <div class="sz-page-shell__content">
         <div th:replace="~{fragments/components :: page-header('Browse scholarships', 'Search and filter active opportunities. Register to apply.')}"></div>
         <p class="text-secondary mb-4">

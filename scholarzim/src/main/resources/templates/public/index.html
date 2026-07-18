@@ -9,7 +9,7 @@
 <main id="main-content" tabindex="-1" class="sz-landing-main">
 
     <!-- Hero -->
-    <section class="sz-home-hero" aria-labelledby="hero-title">
+    <section class="sz-home-hero" id="search" aria-labelledby="hero-title">
         <div class="sz-home-hero__decor" aria-hidden="true">
             <span class="sz-home-hero__orb sz-home-hero__orb--1"></span>
             <span class="sz-home-hero__orb sz-home-hero__orb--2"></span>
@@ -305,6 +305,87 @@
         </div>
     </section>
 
+    <!-- About -->
+    <section class="sz-home-section" id="about" aria-labelledby="about-title">
+        <div class="container sz-container">
+            <div class="row align-items-center g-4 g-lg-5">
+                <div class="col-lg-6 sz-reveal">
+                    <span class="sz-home-section__eyebrow">About ScholarZim</span>
+                    <h2 id="about-title" class="sz-home-section__title">Built for Zimbabwean students and funders</h2>
+                    <p class="sz-home-section__lead mb-3">
+                        ScholarZim connects learners from primary school through postgraduate study with verified
+                        scholarships, bursaries, and funding opportunities across Zimbabwe and abroad.
+                    </p>
+                    <p class="text-secondary mb-0">
+                        Students build a clear academic profile, get ScholarFit matches, and track applications in one place.
+                        Providers publish listings, review applicants, and reach students who actually qualify.
+                    </p>
+                </div>
+                <div class="col-lg-6 sz-reveal">
+                    <ul class="sz-home-about-list list-unstyled mb-0">
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Free for students to search and apply</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Verified provider organisations</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>ZIMSEC-style exam results, not GPA-first</li>
+                        <li><i class="bi bi-check-circle-fill text-success me-2"></i>Mobile-friendly from Form school to university</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="sz-home-section sz-home-section--alt" id="features" aria-labelledby="features-title">
+        <div class="container sz-container">
+            <div class="text-center mb-5 sz-reveal">
+                <span class="sz-home-section__eyebrow">Platform</span>
+                <h2 id="features-title" class="sz-home-section__title">Everything you need in one place</h2>
+                <p class="sz-home-section__lead mx-auto">Search, match, apply, and manage funding without scattered emails.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4 sz-reveal">
+                    <div class="sz-home-feature">
+                        <span class="sz-home-feature__icon"><i class="bi bi-search"></i></span>
+                        <h3 class="h6 fw-bold">Smart search</h3>
+                        <p class="small text-secondary mb-0">Filter by level, field, funding type, and deadline across verified listings.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 sz-reveal">
+                    <div class="sz-home-feature">
+                        <span class="sz-home-feature__icon"><i class="bi bi-stars"></i></span>
+                        <h3 class="h6 fw-bold">ScholarFit AI</h3>
+                        <p class="small text-secondary mb-0">See match scores and clear reasons based on your exam results and profile.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 sz-reveal">
+                    <div class="sz-home-feature">
+                        <span class="sz-home-feature__icon"><i class="bi bi-kanban"></i></span>
+                        <h3 class="h6 fw-bold">Application tracker</h3>
+                        <p class="small text-secondary mb-0">Follow every submission from submitted to approved — with notifications.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Providers CTA -->
+    <section class="sz-home-section" id="providers" aria-labelledby="providers-title">
+        <div class="container sz-container">
+            <div class="sz-home-providers-cta sz-reveal">
+                <div>
+                    <span class="sz-home-section__eyebrow">For organisations</span>
+                    <h2 id="providers-title" class="sz-home-section__title mb-2">Publish scholarships with confidence</h2>
+                    <p class="sz-home-section__lead mb-0">
+                        Universities, trusts, and NGOs can list opportunities, review applications, and reach students nationwide.
+                    </p>
+                </div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a th:href="@{/register/provider}" class="btn btn-primary sz-btn-landing-primary">Register as a provider</a>
+                    <a th:href="@{/login}" class="btn sz-btn-landing-outline">Sign in</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Testimonials -->
     <section class="sz-home-section sz-home-section--alt" id="testimonials" aria-labelledby="testimonials-title">
         <div class="container sz-container">
@@ -406,6 +487,29 @@
                                 <div class="accordion-body sz-landing-muted">Yes. ScholarZim works on mobile browsers and can be installed as a progressive web app.</div>
                             </div>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section class="sz-home-section sz-home-section--alt" id="contact" aria-labelledby="contact-title">
+        <div class="container sz-container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center sz-reveal">
+                    <span class="sz-home-section__eyebrow">Contact</span>
+                    <h2 id="contact-title" class="sz-home-section__title">Talk to the ScholarZim team</h2>
+                    <p class="sz-home-section__lead mb-4">
+                        Questions about student accounts, provider verification, or partnerships? Reach us directly.
+                    </p>
+                    <div class="d-flex flex-wrap justify-content-center gap-3 gap-md-4">
+                        <a class="sz-home-contact-link" href="mailto:hello@scholarzim.com">
+                            <i class="bi bi-envelope me-2"></i>hello@scholarzim.com
+                        </a>
+                        <a class="sz-home-contact-link" href="tel:+263771234567">
+                            <i class="bi bi-telephone me-2"></i>+263 77 123 4567
+                        </a>
                     </div>
                 </div>
             </div>
