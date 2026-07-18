@@ -154,7 +154,8 @@ public class NotificationServiceImpl implements NotificationService {
 
         if (notification == null
                 || notification.getUser() == null
-                || !email.equals(notification.getUser().getEmail())) {
+                || notification.getUser().getEmail() == null
+                || !notification.getUser().getEmail().equalsIgnoreCase(email)) {
             return "/dashboard";
         }
 

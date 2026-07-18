@@ -14,7 +14,7 @@ public final class SoftLoad {
         try {
             return supplier.get();
         } catch (Exception ex) {
-            log.warn("{} failed: {}", label, ex.getMessage());
+            log.warn("{} failed: {}", label, ex.toString(), ex);
             return fallback;
         }
     }

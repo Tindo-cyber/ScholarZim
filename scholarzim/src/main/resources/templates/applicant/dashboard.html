@@ -29,7 +29,7 @@
                     </p>
                     <p class="sz-dash-hero__subtitle"
                        th:if="${stats.profileCompletion < 100}">
-                        Complete your profile to unlock ScholarFit scholarship recommendations.
+                        Complete your profile to get ScholarFit scholarship recommendations.
                     </p>
                 </div>
 
@@ -92,14 +92,14 @@
                         'sz-tone-success',
                         'Profile Completion',
                         ${stats.profileCompletion} + '%',
-                        'Unlock better matches')}"></div>
+                        'Improve your matches')}"></div>
                 </div>
             </section>
 
             <section class="sz-dash-section" aria-label="ScholarFit recommended scholarships"
                      th:if="${!stats.hasProfile or (recommendations != null and !recommendations.isEmpty())}">
                 <div th:replace="~{fragments/components :: premium-panel(
-                    'bi-robot',
+                    'bi-stars',
                     'ScholarFit Matches',
                     '/applicant/recommendations',
                     'See all matches',
@@ -108,7 +108,7 @@
                     <th:block id="rec-body">
                         <div th:if="${!stats.hasProfile}" class="sz-dash-inline-alert">
                             <i class="bi bi-exclamation-circle"></i>
-                            <span>Complete your <a th:href="@{/applicant/profile}">profile</a> to unlock ScholarFit recommendations.</span>
+                            <span>Complete your <a th:href="@{/applicant/profile}">profile</a> to get ScholarFit recommendations.</span>
                         </div>
 
                         <div class="sz-scholarfit-grid sz-scholarfit-grid--compact"
@@ -196,12 +196,15 @@
                             <div class="sz-dash-calendar" id="szDashCalendar" aria-label="Deadline calendar"></div>
                             <div class="sz-dash-calendar-events" id="szDashCalendarEvents" hidden>
                                 <span th:each="item : ${upcomingDeadlines}"
+                                      th:if="${item.opportunity != null}"
                                       class="sz-dash-calendar__event"
                                       th:attr="data-date=${item.opportunity.deadline},
                                                data-title=${item.opportunity.title}"></span>
                             </div>
                             <ul class="sz-dash-deadline-list">
-                                <li class="sz-dash-deadline-list__item" th:each="item : ${upcomingDeadlines}">
+                                <li class="sz-dash-deadline-list__item"
+                                    th:each="item : ${upcomingDeadlines}"
+                                    th:if="${item.opportunity != null}">
                                     <div class="sz-dash-deadline-list__date"
                                          th:text="${item.opportunity.deadline != null
                                             ? #temporals.format(item.opportunity.deadline, 'dd MMM') : '—'}">Date</div>

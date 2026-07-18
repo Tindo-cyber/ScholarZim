@@ -51,11 +51,11 @@ public class ApplicantDashboardController {
 
         String email = auth.getName();
 
-        SoftLoad.of(log, "Applicant display name", null, () -> {
-            userRepository.findByEmail(email)
-                    .ifPresent(u -> model.addAttribute("userFullName", u.getFullName()));
-            return null;
-        });
+        String displayName = SoftLoad.of(log, "Applicant display name", null, () ->
+                userRepository.findByEmail(email).map(u -> u.getFullName()).orElse(null));
+        if (displayName != null && !displayName.isBlank()) {
+            model.addAttribute("userFullName", displayName);
+        }
 
         model.addAttribute("greeting", GreetingUtil.timeBasedGreeting());
         model.addAttribute("stats", SoftLoad.of(log, "Applicant dashboard stats",

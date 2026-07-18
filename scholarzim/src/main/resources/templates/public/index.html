@@ -25,7 +25,7 @@
                     </h1>
                     <p class="sz-home-hero__lead sz-reveal">
                         Discover verified scholarships from trusted universities and organisations.
-                        ScholarFit matches you to opportunities you actually qualify for.
+                        ScholarFit ranks opportunities that fit your education level, field, and goals.
                     </p>
 
                     <form class="sz-home-search sz-reveal"
@@ -69,8 +69,8 @@
                                  loading="eager"
                                  fetchpriority="high"
                                  decoding="async">
-                            <div class="sz-home-hero__badge sz-home-hero__badge--ai">
-                                <i class="bi bi-robot"></i>
+                            <div class="sz-home-hero__badge">
+                                <i class="bi bi-stars" aria-hidden="true"></i>
                                 <span>ScholarFit</span>
                             </div>
                         </div>
@@ -87,7 +87,6 @@
                                     <strong th:text="${#strings.abbreviate(opp.title, 32)}">Scholarship</strong>
                                     <small th:text="${opp.fundingType != null ? opp.fundingType : 'Verified'}">Funding</small>
                                 </span>
-                                <span class="sz-home-float-card__match" th:if="${stat.index == 0}">95%</span>
                             </a>
                         </th:block>
                     </div>
@@ -253,43 +252,43 @@
         </div>
     </section>
 
-    <!-- Student Success Stories -->
+    <!-- What you can do -->
     <section class="sz-home-section" id="success-stories" aria-labelledby="stories-title">
         <div class="container sz-container">
             <div class="text-center mb-5 sz-reveal">
-                <span class="sz-home-section__eyebrow">Real outcomes</span>
-                <h2 id="stories-title" class="sz-home-section__title">Student success stories</h2>
-                <p class="sz-home-section__lead mx-auto">Zimbabwean students who found funding through ScholarZim.</p>
+                <span class="sz-home-section__eyebrow">On the platform</span>
+                <h2 id="stories-title" class="sz-home-section__title">What students and providers do here</h2>
+                <p class="sz-home-section__lead mx-auto">Practical tools for finding funding and managing applications in one place.</p>
             </div>
             <div class="sz-home-stories">
                 <article class="sz-home-story sz-reveal">
-                    <div class="sz-home-story__avatar">TM</div>
-                    <div class="sz-home-story__badge">Awarded</div>
-                    <h3 class="sz-home-story__title">Engineering scholarship secured</h3>
-                    <p class="sz-home-story__text">Tanaka matched at 92% with ScholarFit and received a full STEM bursary before the deadline.</p>
+                    <div class="sz-home-story__avatar"><i class="bi bi-person-vcard" aria-hidden="true"></i></div>
+                    <div class="sz-home-story__badge">Students</div>
+                    <h3 class="sz-home-story__title">Build a complete profile</h3>
+                    <p class="sz-home-story__text">Add your education level, field, results, and documents so ScholarFit can rank suitable scholarships.</p>
                     <div class="sz-home-story__meta">
-                        <span><i class="bi bi-geo-alt"></i> Harare</span>
-                        <span><i class="bi bi-mortarboard"></i> Undergraduate</span>
+                        <span><i class="bi bi-bookmark"></i> Save &amp; apply</span>
+                        <span><i class="bi bi-bell"></i> Deadline alerts</span>
                     </div>
                 </article>
                 <article class="sz-home-story sz-reveal sz-reveal--delay">
-                    <div class="sz-home-story__avatar">RN</div>
-                    <div class="sz-home-story__badge">Awarded</div>
-                    <h3 class="sz-home-story__title">Three applications, one acceptance</h3>
-                    <p class="sz-home-story__text">Rudo applied to three scholarships in a week and tracked every status update from her dashboard.</p>
+                    <div class="sz-home-story__avatar"><i class="bi bi-diagram-3" aria-hidden="true"></i></div>
+                    <div class="sz-home-story__badge">Applications</div>
+                    <h3 class="sz-home-story__title">Track every submission</h3>
+                    <p class="sz-home-story__text">Follow status from submitted through review so you always know what needs attention next.</p>
                     <div class="sz-home-story__meta">
-                        <span><i class="bi bi-geo-alt"></i> Bulawayo</span>
-                        <span><i class="bi bi-mortarboard"></i> Form 6</span>
+                        <span><i class="bi bi-file-earmark-text"></i> Documents</span>
+                        <span><i class="bi bi-chat-dots"></i> Updates</span>
                     </div>
                 </article>
                 <article class="sz-home-story sz-reveal sz-reveal--delay-2">
-                    <div class="sz-home-story__avatar">SM</div>
-                    <div class="sz-home-story__badge">In review</div>
-                    <h3 class="sz-home-story__title">Masters funding abroad</h3>
-                    <p class="sz-home-story__text">Simba discovered an international postgraduate award he never would have found through social media alone.</p>
+                    <div class="sz-home-story__avatar"><i class="bi bi-building" aria-hidden="true"></i></div>
+                    <div class="sz-home-story__badge">Providers</div>
+                    <h3 class="sz-home-story__title">Publish and review</h3>
+                    <p class="sz-home-story__text">List verified opportunities, receive applications, and decide on candidates from one dashboard.</p>
                     <div class="sz-home-story__meta">
-                        <span><i class="bi bi-geo-alt"></i> Mutare</span>
-                        <span><i class="bi bi-mortarboard"></i> Masters</span>
+                        <span><i class="bi bi-inbox"></i> Inbox</span>
+                        <span><i class="bi bi-shield-check"></i> Verified listings</span>
                     </div>
                 </article>
             </div>
@@ -309,7 +308,7 @@
                     </p>
                     <p class="text-secondary mb-0">
                         Students build a clear academic profile, get ScholarFit matches, and track applications in one place.
-                        Providers publish listings, review applicants, and reach students who actually qualify.
+                        Providers publish listings, review applicants, and reach students who meet their criteria.
                     </p>
                 </div>
                 <div class="col-lg-6 sz-reveal">
@@ -336,7 +335,7 @@
                 <div class="col-md-4 sz-reveal">
                     <div class="sz-home-feature">
                         <span class="sz-home-feature__icon"><i class="bi bi-search"></i></span>
-                        <h3 class="h6 fw-bold">Smart search</h3>
+                        <h3 class="h6 fw-bold">Focused search</h3>
                         <p class="small text-secondary mb-0">Filter by level, field, funding type, and deadline across verified listings.</p>
                     </div>
                 </div>

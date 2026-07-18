@@ -121,9 +121,10 @@ public class ApplicationServiceImpl implements ApplicationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Application getApplicationForUser(@NonNull Long applicationId, String email) {
 
-        Application app = applicationRepository.findById(applicationId)
+        Application app = applicationRepository.findByIdWithDetails(applicationId)
                 .orElseThrow(() -> new ResourceNotFoundException("Application not found."));
 
         User owner = app.getUser();

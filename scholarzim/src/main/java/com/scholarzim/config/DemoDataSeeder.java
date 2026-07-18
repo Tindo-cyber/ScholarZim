@@ -224,10 +224,14 @@ public class DemoDataSeeder implements CommandLineRunner {
      */
     private void ensureDemoStudentActivity(User tanaka, User rudo, User simba) {
 
+        // Only attach demo activity to the seeded catalogue — never to live provider listings.
         List<Opportunity> active = opportunityRepository.search(
-                LocalDate.now(), null, null, null, null, null, null);
+                        LocalDate.now(), null, null, null, null, null, null)
+                .stream()
+                .filter(o -> o.getTitle() != null && DEMO_TITLES.contains(o.getTitle()))
+                .toList();
         if (active.isEmpty()) {
-            log.warn("No active opportunities available for demo student activity.");
+            log.warn("No demo-catalogue opportunities available for demo student activity.");
             return;
         }
 
@@ -451,8 +455,10 @@ public class DemoDataSeeder implements CommandLineRunner {
         profile.setUser(user);
         profile.setOrganisationType(organisationType);
         profile.setRegistrationNumber(registrationNumber);
-        profile.setCertificatePath(storedPath);
-        profile.setCertificateFilename(DEMO_CERT_FILENAME);
+        if (storedPath != null) {
+            profile.setCertificatePath(storedPath);
+            profile.setCertificateFilename(DEMO_CERT_FILENAME);
+        }
         profile.setSubmittedAt(LocalDateTime.now().minusDays(30));
         profile.setReviewedAt(LocalDateTime.now().minusDays(29));
         profile.setReviewedBy("admin@scholarzim.co.zw");
@@ -467,10 +473,13 @@ public class DemoDataSeeder implements CommandLineRunner {
             if (!java.nio.file.Files.exists(path)) {
                 java.nio.file.Files.writeString(path, "%PDF-1.4 ScholarZim demo certificate stub");
             }
+            if (java.nio.file.Files.exists(path)) {
+                return storedName;
+            }
         } catch (Exception ex) {
             log.warn("Could not create demo provider certificate stub: {}", ex.getMessage());
         }
-        return storedName;
+        return null;
     }
 
     private void saveProfile(User user, String level, String institution,

@@ -78,6 +78,8 @@ public class NotificationController {
             String link = notificationService.open(id, authentication.getName());
             return "redirect:" + link;
         } catch (Exception ex) {
+            log.warn("Open notification {} failed for {}: {}",
+                    id, authentication.getName(), ex.getMessage());
             return "redirect:/notifications";
         }
     }
@@ -90,7 +92,7 @@ public class NotificationController {
         try {
             notificationService.markAllRead(authentication.getName());
         } catch (Exception ex) {
-            // Prefer returning to the list over a 500 on a mark-read failure.
+            log.warn("Mark-all-read failed for {}: {}", authentication.getName(), ex.getMessage());
         }
 
         if (referer != null && !referer.isBlank()) {
