@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 
@@ -67,6 +68,7 @@ public class SavedScholarshipServiceImpl implements SavedScholarshipService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public boolean isSaved(String email, @NonNull Long opportunityId) {
 
         User user = userRepository.findByEmail(email).orElse(null);
@@ -77,28 +79,31 @@ public class SavedScholarshipServiceImpl implements SavedScholarshipService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Opportunity> listSaved(String email) {
 
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) {
+        if (user == null || user.getUserId() == null) {
             return List.of();
         }
-        return savedRepository.findByUserWithOpportunityOrderBySavedAtDesc(user).stream()
-                .map(SavedScholarship::getOpportunity)
+        return savedRepository.findSavedOpportunitiesByUserId(user.getUserId()).stream()
+                .filter(Objects::nonNull)
                 .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Set<Long> listSavedOpportunityIds(String email) {
 
         User user = userRepository.findByEmail(email).orElse(null);
-        if (user == null) {
+        if (user == null || user.getUserId() == null) {
             return Set.of();
         }
-        return new HashSet<>(savedRepository.findOpportunityIdsByUser(user));
+        return new HashSet<>(savedRepository.findOpportunityIdsByUserId(user.getUserId()));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public long countSaved(String email) {
 
         User user = userRepository.findByEmail(email).orElse(null);

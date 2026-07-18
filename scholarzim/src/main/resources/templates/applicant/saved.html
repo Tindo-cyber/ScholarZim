@@ -21,18 +21,7 @@
                 'Saved scholarships',
                 'Bookmarks you can return to when you are ready to apply.')}"></div>
 
-            <div th:if="${loadFailed == true}"
-                 th:replace="~{fragments/components :: error-state(
-                     'server-error',
-                     ${userHomeUrl},
-                     '/applicant/saved',
-                     'Unable to load saved scholarships',
-                     null,
-                     null,
-                     null,
-                     false)}"></div>
-
-            <th:block th:if="${loadFailed != true and saved != null and saved.isEmpty()}">
+            <th:block th:if="${saved == null or saved.isEmpty()}">
                 <div class="sz-empty text-center py-5">
                     <div class="sz-empty-icon mb-3"><i class="bi bi-bookmark" aria-hidden="true"></i></div>
                     <h2 class="h5 fw-bold mb-2">Nothing saved yet</h2>
@@ -41,7 +30,7 @@
                 </div>
             </th:block>
 
-            <div class="sz-opp-grid" th:if="${loadFailed != true and saved != null and !saved.isEmpty()}">
+            <div class="sz-opp-grid" th:if="${saved != null and !saved.isEmpty()}">
                 <th:block th:each="opp : ${saved}">
                     <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=true, removeId=${opp.opportunityId}, matchScore=null, eligibilityText=null)}"></div>
                 </th:block>

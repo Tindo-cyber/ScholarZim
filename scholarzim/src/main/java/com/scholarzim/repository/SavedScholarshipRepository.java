@@ -1,5 +1,6 @@
 package com.scholarzim.repository;
 
+import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.SavedScholarship;
 import com.scholarzim.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -21,6 +22,20 @@ public interface SavedScholarshipRepository extends JpaRepository<SavedScholarsh
             ORDER BY s.savedAt DESC
             """)
     List<SavedScholarship> findByUserWithOpportunityOrderBySavedAtDesc(@Param("user") User user);
+
+    @Query("""
+            SELECT o FROM SavedScholarship s
+            JOIN s.opportunity o
+            WHERE s.user.userId = :userId
+            ORDER BY s.savedAt DESC
+            """)
+    List<Opportunity> findSavedOpportunitiesByUserId(@Param("userId") Long userId);
+
+    @Query("""
+            SELECT s.opportunity.opportunityId FROM SavedScholarship s
+            WHERE s.user.userId = :userId
+            """)
+    List<Long> findOpportunityIdsByUserId(@Param("userId") Long userId);
 
     Optional<SavedScholarship> findByUserAndOpportunityOpportunityId(User user, Long opportunityId);
 
