@@ -24,7 +24,7 @@ class PolishUxMvcTest extends MvcIntegrationTestBase {
                 .andExpect(content().string(containsString("szConfirmModal")))
                 .andExpect(content().string(containsString("sz-breadcrumbs")))
                 .andExpect(content().string(containsString("polish.css")))
-                .andExpect(content().string(containsString("app.js?v=55")));
+                .andExpect(content().string(containsString("app.js?v=56")));
     }
 
     @Test

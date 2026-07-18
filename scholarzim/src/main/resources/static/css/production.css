@@ -88,23 +88,14 @@
     margin-bottom: var(--sz-space-4);
 }
 
-/* Public page shell — visible without JS (progressive enhancement) */
+/* Page content always visible — no skeleton placeholder UI */
 .sz-page-shell__content {
     opacity: 1;
     transform: none;
 }
 
-.sz-page-shell:not(.is-loaded) .sz-page-shell__skeleton {
-    display: none;
-}
-
-.js .sz-page-shell:not(.is-loaded) .sz-page-shell__content {
-    opacity: 0;
-    transform: translateY(10px);
-}
-
-.js .sz-page-shell:not(.is-loaded) .sz-page-shell__skeleton {
-    display: block;
+.sz-page-shell__skeleton {
+    display: none !important;
 }
 
 /* FAQ accordion a11y polish */

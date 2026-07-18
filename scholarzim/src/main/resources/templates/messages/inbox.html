@@ -12,8 +12,7 @@
 <body>
 <th:block id="messages-content">
 
-    <div class="sz-page-shell" id="szMessagesPage" data-page="messages">
-        <div class="sz-page-shell__skeleton" th:replace="~{fragments/components :: skeleton-messages}"></div>
+    <div class="sz-page-shell is-loaded" id="szMessagesPage" data-page="messages">
         <div class="sz-page-shell__content">
 
             <th:block sec:authorize="hasRole('APPLICANT')">
