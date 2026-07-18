@@ -37,7 +37,7 @@
 }
 
 [data-bs-theme="dark"] .sz-topbar-btn {
-    color: var(--sz-muted);
+    color: #e2e8f0;
 }
 
 [data-bs-theme="dark"] .sz-topbar-btn:hover,
@@ -273,8 +273,21 @@
     background: var(--sz-surface-hover);
 }
 
+/* Light hamburger on dark surfaces (do not invert — Bootstrap dark already uses a light icon) */
+[data-bs-theme="dark"] .navbar-toggler,
+[data-bs-theme="dark"] .sz-landing-nav__toggle {
+    border: 1px solid rgba(226, 232, 240, 0.35);
+    color: #e2e8f0;
+}
+
+[data-bs-theme="dark"] .navbar-toggler:focus,
+[data-bs-theme="dark"] .sz-landing-nav__toggle:focus {
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.28);
+}
+
 [data-bs-theme="dark"] .navbar-toggler-icon {
-    filter: invert(0.9);
+    filter: none;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba(226, 232, 240, 0.95)' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
 }
 
 /* ── Landing / public ── */
