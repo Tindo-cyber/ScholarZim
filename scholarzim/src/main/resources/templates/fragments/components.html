@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<!--
+  Reusable UI fragments — visual language from tokens.css + design-system.css
+  Cards: .sz-scholarship-card / .sz-stat-card / .sz-premium-* (16px radius)
+  Type: .sz-page-header, .sz-type-h1…h5, .sz-text-sm / .sz-text-muted
+  Icons: .sz-icon-sm|md|lg, .sz-icon-btn
+  Layout: .sz-stack-*, .sz-row-*, .sz-grid, .sz-content-pad
+-->
 <body>
 
 <div th:fragment="scholarship-card(opportunity, showApply, withApplyBtn, removeId, matchScore, eligibilityText)"

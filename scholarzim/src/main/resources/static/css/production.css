@@ -1,92 +1,4 @@
-/* Production polish — forms, typography, branding consistency */
-
-/* Typography utilities */
-.sz-text-xs { font-size: var(--sz-text-xs); }
-.sz-text-sm { font-size: var(--sz-text-sm); }
-.sz-text-muted { color: var(--sz-muted); }
-
-/* Auth forms — unified density */
-.sz-auth-public .form-label {
-    font-size: var(--sz-text-sm);
-    font-weight: 600;
-    margin-bottom: var(--sz-space-2);
-    color: var(--sz-text);
-}
-
-.sz-auth-public .form-control,
-.sz-auth-public .form-select,
-.sz-auth-public .input-group-text {
-    font-size: var(--sz-text-sm);
-    min-height: 2.5rem;
-    color: #0f172a;
-    background-color: #ffffff;
-    border-color: #cbd5e1;
-}
-
-.sz-auth-public .form-control::placeholder {
-    color: #64748b;
-    opacity: 1;
-}
-
-[data-bs-theme="dark"] .sz-auth-public .form-control,
-[data-bs-theme="dark"] .sz-auth-public .form-select,
-[data-bs-theme="dark"] .sz-auth-public .input-group-text {
-    color: #f1f5f9;
-    background-color: #1e293b;
-    border-color: #475569;
-}
-
-[data-bs-theme="dark"] .sz-auth-public .form-control::placeholder {
-    color: #94a3b8;
-}
-
-.sz-auth-public .input-group-sm > .form-control,
-.sz-auth-public .input-group-sm > .input-group-text {
-    min-height: 2.5rem;
-}
-
-.sz-auth-public .btn[type="submit"] {
-    min-height: 2.75rem;
-    font-weight: 700;
-}
-
-/* Form validation — premium feedback */
-.was-validated .form-control:invalid,
-.was-validated .form-select:invalid,
-.form-control.is-invalid,
-.form-select.is-invalid {
-    border-color: var(--sz-danger);
-    background-image: none;
-    padding-right: 0.875rem;
-}
-
-.invalid-feedback {
-    font-size: var(--sz-text-xs);
-    font-weight: 500;
-    margin-top: var(--sz-space-1);
-}
-
-.form-text {
-    font-size: var(--sz-text-xs);
-    color: var(--sz-muted);
-}
-
-/* Dashboard forms */
-.sz-form-section {
-    margin-bottom: var(--sz-space-6);
-    padding-bottom: var(--sz-space-5);
-    border-bottom: 1px solid var(--sz-border);
-}
-
-.sz-form-section-title {
-    font-family: var(--sz-font-display);
-    font-size: var(--sz-text-sm);
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    text-transform: uppercase;
-    color: var(--sz-muted);
-    margin-bottom: var(--sz-space-4);
-}
+/* Production polish — page-specific extras (primitives live in design-system.css) */
 
 /* Page content always visible — no skeleton placeholder UI */
 .sz-page-shell__content {
@@ -98,12 +10,13 @@
     display: none !important;
 }
 
-/* FAQ accordion a11y polish */
+/* FAQ accordion */
 .sz-faq-accordion .accordion-button {
     font-family: var(--sz-font-display);
-    font-weight: 700;
+    font-weight: var(--sz-weight-bold);
     font-size: var(--sz-text-base);
     padding: var(--sz-space-4) var(--sz-space-5);
+    border-radius: var(--sz-radius-card);
 }
 
 .sz-faq-accordion .accordion-button:not(.collapsed) {
@@ -114,6 +27,11 @@
 .sz-faq-accordion .accordion-body {
     padding: var(--sz-space-4) var(--sz-space-5);
     line-height: var(--sz-leading-normal);
+}
+
+.sz-faq-accordion .accordion-item {
+    border-radius: var(--sz-radius-card);
+    overflow: hidden;
 }
 
 /* Footer — disabled placeholder links */
@@ -130,10 +48,10 @@
     cursor: default;
 }
 
-/* Filter card on public browse */
+/* Filter card labels */
 .sz-filter-card .form-label {
     font-size: var(--sz-text-xs);
-    font-weight: 700;
+    font-weight: var(--sz-weight-bold);
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--sz-muted);

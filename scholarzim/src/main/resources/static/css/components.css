@@ -39,49 +39,34 @@
 }
 
 .sz-action-card {
-    border-radius: var(--sz-radius);
+    border-radius: var(--sz-radius-card);
     text-decoration: none;
     color: inherit;
-    border: 1px solid var(--bs-border-color-translucent);
-    background: var(--bs-body-bg);
-    box-shadow: var(--sz-shadow);
-    transition: transform .2s ease, box-shadow .2s ease;
+    border: 1px solid var(--sz-border);
+    background: var(--sz-card);
+    box-shadow: var(--sz-shadow-card);
+    transition: box-shadow var(--sz-duration) var(--sz-ease), border-color var(--sz-duration) var(--sz-ease);
 }
 
 .sz-action-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--sz-shadow-hover);
-    border-color: var(--sz-green) !important;
+    transform: none;
+    box-shadow: var(--sz-shadow-md);
+    border-color: var(--sz-primary);
     color: inherit;
 }
 
 .sz-action-icon {
-    width: 46px;
-    height: 46px;
+    width: 48px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: .75rem;
-    font-size: 1.3rem;
+    border-radius: var(--sz-radius-lg);
+    font-size: var(--sz-icon-lg);
 }
 
 /* Dashboard welcome banner */
-.sz-page-header {
-    margin-bottom: 1.5rem;
-}
-
-.sz-page-header h1 {
-    font-size: clamp(1.375rem, 2.5vw, 1.75rem);
-    font-weight: 700;
-    letter-spacing: -.025em;
-    margin-bottom: .375rem;
-    color: var(--sz-text);
-}
-
-.sz-page-header .sz-landing-section__eyebrow {
-    display: inline-block;
-    margin-bottom: .5rem;
-}
+/* .sz-page-header — canonical styles in design-system.css */
 
 .sz-hero {
     border: 1px solid var(--sz-border);
@@ -205,9 +190,9 @@
 .sz-opp-card {
     position: relative;
     border: 1px solid var(--sz-border);
-    border-radius: 16px;
+    border-radius: var(--sz-radius-card);
     background: var(--sz-card);
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.06);
+    box-shadow: var(--sz-shadow-card);
     overflow: hidden;
     display: flex;
     flex-direction: column;
@@ -230,8 +215,8 @@
 
 .sz-scholarship-card:hover,
 .sz-opp-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.1);
+    transform: none;
+    box-shadow: var(--sz-shadow-md);
     border-color: rgba(22, 163, 74, 0.22);
 }
 
@@ -251,9 +236,9 @@
 }
 
 .sz-scholarship-card__logo {
-    width: 52px;
-    height: 52px;
-    border-radius: 14px;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--sz-radius-lg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -303,12 +288,13 @@
 }
 
 .sz-scholarship-card__icon-btn {
-    width: 36px;
-    height: 36px;
+    width: var(--sz-icon-btn-lg);
+    height: var(--sz-icon-btn-lg);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     border: 1px solid var(--sz-border);
+    font-size: var(--sz-icon-md);
     border-radius: 10px;
     background: var(--sz-surface-muted);
     color: var(--sz-muted);
@@ -495,13 +481,13 @@
 }
 
 .sz-scholarship-card__btn {
-    border-radius: 10px;
-    font-weight: 600;
-    font-size: 0.8125rem;
+    border-radius: var(--sz-radius-control);
+    font-weight: var(--sz-weight-semibold);
+    font-size: var(--sz-text-sm);
 }
 
 .sz-scholarship-card__btn--apply {
-    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
+    box-shadow: var(--sz-shadow-primary-hover);
 }
 
 @media (max-width: 575.98px) {
@@ -711,8 +697,8 @@
     max-width: 420px;
     background: var(--sz-card);
     border: 1px solid var(--sz-border);
-    border-radius: var(--sz-radius-lg);
-    padding: 2rem;
+    border-radius: var(--sz-radius-card);
+    padding: var(--sz-space-8);
     box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08);
     position: relative;
     z-index: 1;

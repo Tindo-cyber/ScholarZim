@@ -163,7 +163,7 @@ body:has(.sz-shell)::after {
 /* Section panels */
 .sz-dashboard-panel {
     border: 1px solid var(--sz-border);
-    border-radius: var(--sz-radius-lg);
+    border-radius: var(--sz-radius-card);
     box-shadow: var(--sz-shadow-card);
     background: var(--sz-card);
     height: 100%;

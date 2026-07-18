@@ -1,7 +1,7 @@
-/* ScholarZim v2 — Enterprise SaaS design tokens */
+/* ScholarZim design system — single source of visual truth */
 
 :root {
-    /* Brand */
+    /* ── Brand ── */
     --sz-primary: #16A34A;
     --sz-primary-dark: #15803D;
     --sz-secondary: #22C55E;
@@ -24,8 +24,6 @@
     --sz-gold-soft: #FFFBEB;
     --sz-sidebar: #FFFFFF;
     --sz-sidebar-hover: #F1F5F9;
-
-    /* Surfaces */
     --sz-main-bg: #F4F6F9;
     --sz-surface-hover: #f8fafc;
     --sz-surface-muted: #f1f5f9;
@@ -38,7 +36,7 @@
     --sz-topbar-bg: #ffffff;
     --sz-topbar-border: var(--sz-border);
 
-    /* Surface aliases (legacy glass token names — solid only) */
+    /* Surface aliases (legacy glass names — solid only) */
     --sz-glass-header: #ffffff;
     --sz-glass-blur: 0;
     --sz-glass-saturate: 100%;
@@ -48,73 +46,106 @@
     --sz-glass-border-outer: var(--sz-border);
     --sz-glass-highlight: #ffffff;
 
-    /* Legacy aliases */
+    /* Legacy brand aliases */
     --sz-green: var(--sz-primary);
     --sz-green-dark: var(--sz-primary-dark);
     --sz-gold: var(--sz-warning);
     --sz-blue: var(--sz-accent);
 
-    /* 8-point grid */
-    --sz-space-1: 0.25rem;
-    --sz-space-2: 0.5rem;
-    --sz-space-3: 0.75rem;
-    --sz-space-4: 1rem;
-    --sz-space-5: 1.25rem;
-    --sz-space-6: 1.5rem;
-    --sz-space-8: 2rem;
-    --sz-space-10: 2.5rem;
-    --sz-space-12: 3rem;
-    --sz-space-page: 1.5rem;
-    --sz-space-section: 2rem;
-    --sz-space-block: 1.5rem;
-    --sz-space-grid: 1rem;
+    /* ── 8px spacing system ── */
+    --sz-space-unit: 8px;
+    --sz-space-1: 4px;   /* 0.5 unit */
+    --sz-space-2: 8px;   /* 1 unit */
+    --sz-space-3: 12px;  /* 1.5 */
+    --sz-space-4: 16px;  /* 2 */
+    --sz-space-5: 20px;  /* 2.5 */
+    --sz-space-6: 24px;  /* 3 */
+    --sz-space-8: 32px;  /* 4 */
+    --sz-space-10: 40px; /* 5 */
+    --sz-space-12: 48px; /* 6 */
+    --sz-space-page: 24px;
+    --sz-space-section: 32px;
+    --sz-space-block: 24px;
+    --sz-space-grid: 16px;
 
-    /* Radius — consistent SaaS UI */
+    /* ── Radius ── */
+    --sz-radius-sm: 8px;
     --sz-radius: 8px;
-    --sz-radius-ui: 10px;
+    --sz-radius-control: 10px; /* buttons, inputs, chips */
+    --sz-radius-ui: 10px;      /* alias */
     --sz-radius-lg: 12px;
-    --sz-radius-xl: 16px;
+    --sz-radius-card: 16px;    /* cards & panels — canonical */
+    --sz-radius-xl: 16px;      /* alias → card */
+    --sz-radius-pill: 999px;
 
-    /* Elevation — solid cards, subtle depth */
-    --sz-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.04);
+    /* ── Elevation (consistent shadow scale) ── */
+    --sz-shadow-xs: 0 1px 2px rgba(15, 23, 42, 0.04);
     --sz-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+    --sz-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 2px 8px rgba(15, 23, 42, 0.04);
     --sz-shadow-md: 0 2px 8px rgba(15, 23, 42, 0.08), 0 1px 2px rgba(15, 23, 42, 0.04);
     --sz-shadow-lg: 0 8px 24px rgba(15, 23, 42, 0.1), 0 2px 6px rgba(15, 23, 42, 0.04);
     --sz-shadow-hover: 0 4px 16px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.04);
-    --sz-shadow-glass: var(--sz-shadow);
     --sz-shadow-card: 0 0 0 1px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.05);
+    --sz-shadow-primary: 0 1px 2px rgba(22, 163, 74, 0.2);
+    --sz-shadow-primary-hover: 0 2px 8px rgba(22, 163, 74, 0.24);
+    --sz-shadow-glass: var(--sz-shadow);
 
-    /* Motion */
+    /* ── Motion ── */
     --sz-ease: cubic-bezier(0.4, 0, 0.2, 1);
     --sz-ease-out: cubic-bezier(0, 0, 0.2, 1);
     --sz-duration-fast: 0.12s;
     --sz-duration: 0.18s;
     --sz-duration-slow: 0.28s;
 
-    /* Charts (admin analytics) */
+    /* ── Typography hierarchy ── */
+    --sz-font: 'Inter', system-ui, -apple-system, sans-serif;
+    --sz-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
+    --sz-text-xs: 0.75rem;      /* 12px — captions, badges */
+    --sz-text-sm: 0.875rem;     /* 14px — labels, buttons, meta */
+    --sz-text-base: 0.9375rem;  /* 15px — body */
+    --sz-text-lg: 1.0625rem;    /* 17px — lead / card titles */
+    --sz-text-xl: 1.25rem;      /* 20px — section titles */
+    --sz-text-2xl: 1.5rem;      /* 24px — page titles */
+    --sz-text-3xl: 2rem;        /* 32px — marketing H1 */
+    --sz-leading-tight: 1.25;
+    --sz-leading-snug: 1.4;
+    --sz-leading-normal: 1.6;
+    --sz-weight-normal: 400;
+    --sz-weight-medium: 500;
+    --sz-weight-semibold: 600;
+    --sz-weight-bold: 700;
+    --sz-weight-extrabold: 800;
+
+    /* ── Controls (buttons / forms) ── */
+    --sz-control-height: 40px;
+    --sz-control-height-sm: 32px;
+    --sz-control-height-lg: 48px;
+    --sz-control-padding-x: 16px;
+    --sz-control-padding-y: 8px;
+    --sz-input-padding-x: 14px;
+    --sz-input-padding-y: 10px;
+
+    /* ── Icons ── */
+    --sz-icon-xs: 0.875rem; /* 14px */
+    --sz-icon-sm: 1rem;     /* 16px */
+    --sz-icon-md: 1.25rem;  /* 20px */
+    --sz-icon-lg: 1.5rem;   /* 24px */
+    --sz-icon-xl: 2rem;     /* 32px */
+    --sz-icon-btn: 32px;
+    --sz-icon-btn-lg: 40px;
+
+    /* Charts */
     --sz-chart-success: #22C55E;
     --sz-chart-warning: #F59E0B;
     --sz-chart-danger: #EF4444;
     --sz-chart-primary: rgba(22, 163, 74, 0.78);
     --sz-chart-accent: rgba(59, 130, 246, 0.72);
 
-    /* Focus (WCAG) */
+    /* Focus */
     --sz-focus-ring: 0 0 0 3px rgba(22, 163, 74, 0.35);
+    --sz-focus-ring-input: 0 0 0 3px rgba(34, 197, 94, 0.18);
 
-    /* Typography */
-    --sz-font: 'Inter', system-ui, -apple-system, sans-serif;
-    --sz-font-display: 'Manrope', 'Inter', system-ui, sans-serif;
-    --sz-text-xs: 0.75rem;
-    --sz-text-sm: 0.8125rem;
-    --sz-text-base: 0.9375rem;
-    --sz-text-lg: 1.0625rem;
-    --sz-text-xl: 1.3125rem;
-    --sz-text-2xl: 1.625rem;
-    --sz-text-3xl: 2rem;
-    --sz-leading-tight: 1.25;
-    --sz-leading-normal: 1.6;
-
-    /* Bootstrap bridge */
+    /* Bootstrap bridge — aligned to design system */
     --bs-primary: #16A34A;
     --bs-primary-rgb: 22, 163, 74;
     --bs-success: #22C55E;
@@ -122,19 +153,20 @@
     --bs-link-color: #16A34A;
     --bs-link-hover-color: #15803D;
     --bs-border-color: #E2E8F0;
-    --bs-border-radius: 12px;
-    --bs-border-radius-lg: 20px;
-    --bs-body-bg: #F8FAFC;
-    --bs-body-color: #0F172A;
-    --bs-secondary-color: #64748B;
+    --bs-border-radius: var(--sz-radius-lg);
+    --bs-border-radius-lg: var(--sz-radius-card);
+    --bs-border-radius-sm: var(--sz-radius-sm);
+    --bs-body-bg: var(--sz-bg);
+    --bs-body-color: var(--sz-text);
+    --bs-secondary-color: var(--sz-muted);
 
-    --sz-border-subtle: 1px solid #E2E8F0;
+    --sz-border-subtle: 1px solid var(--sz-border);
 }
 
 @media (min-width: 768px) {
     :root {
-        --sz-space-page: 2rem;
-        --sz-space-section: 5rem;
+        --sz-space-page: 32px;
+        --sz-space-section: 48px;
     }
 }
 
@@ -158,7 +190,6 @@
 
     --sz-sidebar: #1e293b;
     --sz-sidebar-hover: #334155;
-
     --sz-main-bg: #0b1220;
     --sz-surface-hover: #334155;
     --sz-surface-muted: #1e293b;
@@ -171,18 +202,19 @@
     --sz-topbar-bg: #0f172a;
     --sz-topbar-border: #334155;
     --sz-glass-header: #0f172a;
-
     --sz-glass-bg: var(--sz-card);
     --sz-glass-bg-strong: #1e293b;
     --sz-glass-border: var(--sz-border);
     --sz-glass-border-outer: var(--sz-border);
     --sz-glass-highlight: #334155;
 
-    --sz-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 20px rgba(0, 0, 0, 0.3);
+    --sz-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
     --sz-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
+    --sz-shadow: 0 1px 2px rgba(0, 0, 0, 0.25), 0 4px 20px rgba(0, 0, 0, 0.3);
     --sz-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
     --sz-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
     --sz-shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.4);
+    --sz-shadow-card: 0 0 0 1px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.25);
     --sz-shadow-glass: var(--sz-shadow);
 
     --sz-border-subtle: 1px solid #334155;
@@ -198,6 +230,7 @@
     --bs-link-hover-color: #22C55E;
 }
 
+/* Landing aliases map to the same system */
 body.sz-landing {
     --sz-lp-primary: var(--sz-primary);
     --sz-lp-primary-dark: var(--sz-primary-dark);
@@ -207,14 +240,14 @@ body.sz-landing {
     --sz-lp-text: var(--sz-text);
     --sz-lp-muted: var(--sz-muted);
     --sz-lp-card: var(--sz-card);
-    --sz-lp-radius: var(--sz-radius-lg);
+    --sz-lp-radius: var(--sz-radius-card);
     --sz-lp-shadow: var(--sz-shadow);
     --sz-lp-shadow-hover: var(--sz-shadow-hover);
-    --sz-landing-muted: #475569;
-    --sz-landing-panel: rgba(255, 255, 255, 0.92);
+    --sz-landing-muted: var(--sz-muted);
+    --sz-landing-panel: var(--sz-card);
 }
 
 [data-bs-theme="dark"] body.sz-landing {
-    --sz-landing-muted: #cbd5e1;
-    --sz-landing-panel: rgba(30, 41, 59, 0.92);
+    --sz-landing-muted: var(--sz-muted);
+    --sz-landing-panel: var(--sz-card);
 }

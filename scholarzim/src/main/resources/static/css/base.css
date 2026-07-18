@@ -1,96 +1,16 @@
+/* ScholarZim base — shell, motion policy, surfaces (controls live in design-system.css) */
+
 body {
     min-height: 100vh;
-    font-family: var(--sz-font);
-    font-size: 0.9375rem;
-    line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    position: relative;
+    background-color: var(--sz-bg) !important;
 }
 
-/* ── Bootstrap overrides (SaaS polish) ── */
-.btn {
-    border-radius: var(--sz-radius-ui);
-    font-weight: 600;
-    font-size: var(--sz-text-sm);
-    padding: var(--sz-space-2) var(--sz-space-4);
-    min-height: 2.25rem;
-    line-height: 1.25;
-    transition: background var(--sz-duration) var(--sz-ease),
-                border-color var(--sz-duration) var(--sz-ease),
-                box-shadow var(--sz-duration) var(--sz-ease),
-                color var(--sz-duration) var(--sz-ease);
-}
-
-.btn-sm {
-    min-height: 2rem;
-    padding: var(--sz-space-1) var(--sz-space-3);
-    font-size: var(--sz-text-xs);
-    border-radius: var(--sz-radius);
-}
-
-.btn-lg {
-    border-radius: var(--sz-radius-ui);
-    padding: var(--sz-space-3) var(--sz-space-6);
-    font-size: var(--sz-text-base);
-    min-height: 2.75rem;
-}
-
-.btn-primary {
-    background: var(--sz-primary);
-    border-color: var(--sz-primary);
-    box-shadow: 0 1px 2px rgba(22, 163, 74, 0.2);
-}
-
-.btn-primary:hover,
-.btn-primary:focus {
-    background: var(--sz-primary-dark);
-    border-color: var(--sz-primary-dark);
-    transform: none;
-    box-shadow: 0 2px 8px rgba(22, 163, 74, 0.24);
-}
-
-.btn-outline-primary {
-    border-color: rgba(22, 163, 74, 0.35);
-    color: var(--sz-primary);
-}
-
-.btn-outline-primary:hover {
-    background: rgba(22, 163, 74, 0.08);
-    border-color: var(--sz-primary);
-    color: var(--sz-primary-dark);
-}
-
-.card {
-    border: 1px solid var(--sz-border);
-    border-radius: var(--sz-radius-lg);
-    background: var(--sz-card);
-    box-shadow: var(--sz-shadow-card);
-}
-
-.form-control,
-.form-select {
-    border-radius: 10px;
-    border-color: var(--sz-border);
-    padding: 0.625rem 0.875rem;
-    font-size: 0.875rem;
-}
-
-.form-control:focus,
-.form-select:focus {
-    border-color: var(--sz-secondary);
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
-}
-
-.input-group-text {
-    border-radius: 10px 0 0 10px;
-    border-color: var(--sz-border);
-    background: var(--sz-bg);
-    color: var(--sz-muted);
-}
-
-h1, h2, h3, h4, h5, h6,
-.h1, .h2, .h3, .h4, .h5, .h6 {
-    font-family: var(--sz-font-display);
+body::before {
+    display: none !important;
+    content: none !important;
 }
 
 .min-w-0 { min-width: 0; }
@@ -99,7 +19,13 @@ h1, h2, h3, h4, h5, h6,
 .sz-main { background-color: transparent; }
 [data-bs-theme="light"] .sz-main { background: transparent !important; }
 
-/* Disable decorative motion on dashboard only — landing keeps reveal */
+.sz-main,
+.sz-content,
+.sz-shell {
+    background: transparent !important;
+}
+
+/* Disable decorative motion on dashboard — landing keeps reveal */
 body:not(.sz-landing) .sz-animate-in,
 body:not(.sz-landing) .sz-reveal {
     animation: none !important;
@@ -118,37 +44,7 @@ body:not(.sz-landing) .sz-reveal {
     transform: none;
 }
 
-.sz-opp-card:hover {
-    box-shadow: var(--sz-shadow);
-}
-
-/* Accessible focus rings */
-.btn:focus-visible,
-.form-control:focus-visible,
-.form-select:focus-visible,
-.nav-link:focus-visible,
-a.btn:focus-visible {
-    outline: none;
-    box-shadow: var(--sz-focus-ring);
-}
-
 /* Solid surfaces — blur only on overlays and menus */
-body {
-    position: relative;
-    background-color: var(--sz-bg) !important;
-}
-
-body::before {
-    display: none !important;
-    content: none !important;
-}
-
-.sz-main,
-.sz-content,
-.sz-shell {
-    background: transparent !important;
-}
-
 .modal-backdrop,
 .dropdown-menu,
 .offcanvas-backdrop,

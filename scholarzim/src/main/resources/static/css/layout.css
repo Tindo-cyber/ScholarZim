@@ -32,12 +32,12 @@
 .sz-brand-icon {
     width: 36px;
     height: 36px;
-    border-radius: 10px;
+    border-radius: var(--sz-radius-control);
     background: var(--sz-primary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-size: 1rem;
+    font-size: var(--sz-icon-sm);
     color: #fff;
 }
 
@@ -45,8 +45,8 @@
     width: 40px;
     height: 40px;
     flex-shrink: 0;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(21, 128, 61, .22);
+    border-radius: var(--sz-radius-lg);
+    box-shadow: var(--sz-shadow-primary-hover);
 }
 
 .sz-brand__name {
