@@ -779,6 +779,8 @@
             panel.classList.add("is-ready");
         });
     };
+    // Deferred app.js loads after mid-page Chart.js init — reveal canvases now.
+    window.szMarkChartsReady();
 
     /* Brief top progress bar on in-app navigation — UI stays visible */
     (function initPageLoader() {

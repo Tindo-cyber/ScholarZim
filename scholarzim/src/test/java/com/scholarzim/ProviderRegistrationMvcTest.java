@@ -67,7 +67,7 @@ class ProviderRegistrationMvcTest extends MvcIntegrationTestBase {
                         .param("confirmPassword", "Password123!")
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login?role=provider&pending=1"));
+                .andExpect(redirectedUrl("/login?pending=1"));
 
         User user = userRepository.findByEmail(email).orElseThrow();
         assertEquals("PENDING_APPROVAL", user.getAccountStatus());

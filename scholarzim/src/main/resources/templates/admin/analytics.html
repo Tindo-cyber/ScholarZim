@@ -506,6 +506,9 @@
             });
         }
 
+        document.querySelectorAll('.sz-chart-wrap').forEach(function (panel) {
+            panel.classList.add('is-ready');
+        });
         if (window.szMarkChartsReady) szMarkChartsReady();
         /*]]>*/
     </script>

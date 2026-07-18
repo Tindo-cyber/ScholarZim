@@ -54,7 +54,7 @@ class ScholarzimAuthenticationFailureHandlerTest {
 
         handler.onAuthenticationFailure(request, response, new BadCredentialsException("bad"));
 
-        verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("/login?role=student&error=credentials"));
+        verify(redirectStrategy).sendRedirect(eq(request), eq(response), contains("/login?error=credentials"));
     }
 
     @Test

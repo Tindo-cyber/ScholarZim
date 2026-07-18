@@ -254,7 +254,7 @@ public class AdminUserServiceImpl implements AdminUserService {
                 user,
                 NotificationType.PROVIDER_APPROVED,
                 "Your provider account has been approved. You can now sign in and publish scholarships.",
-                "/login?role=provider",
+                "/login",
                 userId);
 
         emailService.sendStatusUpdateEmail(

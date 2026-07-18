@@ -13,43 +13,17 @@
         <div class="sz-auth-public__inner">
 
             <div class="sz-auth-public__headline">
-                <h1 th:text="${loginRole == 'provider'} ? 'Provider sign in' : 'Find your next scholarship'">
-                    Sign in
-                </h1>
-                <p th:if="${loginRole == 'student'}">
-                    Connect with funding from primary school through postgraduate study.
-                </p>
-                <p th:if="${loginRole == 'provider'}">
-                    Publish scholarships, review applications, and manage your pipeline.
-                </p>
+                <h1>Sign in to ScholarZim</h1>
+                <p>One login for students, providers, and admins — you will be taken to the right dashboard.</p>
             </div>
-
-            <nav class="nav sz-auth-public-tabs" aria-label="Sign in as">
-                <a class="nav-link"
-                   th:classappend="${loginRole == 'student'} ? 'active'"
-                   th:href="@{/login(role='student')}"
-                   th:attr="aria-current=${loginRole == 'student'} ? 'page' : null">
-                    <i class="bi bi-mortarboard me-1"></i>Student
-                </a>
-                <a class="nav-link"
-                   th:classappend="${loginRole == 'provider'} ? 'active'"
-                   th:href="@{/login(role='provider')}"
-                   th:attr="aria-current=${loginRole == 'provider'} ? 'page' : null">
-                    <i class="bi bi-building me-1"></i>Provider
-                </a>
-            </nav>
 
             <div class="sz-auth-card">
                 <div class="text-center mb-3">
                     <div class="sz-auth-brand-icon mx-auto">
-                        <i class="bi" th:classappend="${loginRole == 'provider'} ? 'bi-building' : 'bi-mortarboard-fill'"></i>
+                        <i class="bi bi-box-arrow-in-right"></i>
                     </div>
-                    <div class="sz-auth-brand h5 mb-1"
-                         th:text="${loginRole == 'provider'} ? 'Provider sign in' : 'Student sign in'">Sign in</div>
-                    <p class="sz-auth-muted small mb-0"
-                       th:text="${loginRole == 'provider'} ? 'Use your provider work email' : 'Use your student account email'">
-                        Sign in to continue
-                    </p>
+                    <div class="sz-auth-brand h5 mb-1">Welcome back</div>
+                    <p class="sz-auth-muted small mb-0">Use the email and password for your ScholarZim account</p>
                 </div>
 
                 <div class="alert alert-info rounded-3 py-2 small" th:if="${pendingRegistration}">
@@ -109,13 +83,12 @@
 
                 <form action="/login" method="post">
                     <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                    <input type="hidden" name="role" th:value="${loginRole}">
                     <div class="mb-3">
                         <label for="username" class="form-label fw-semibold small">Email address</label>
                         <div class="input-group input-group-sm">
                             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
                             <input id="username" name="username" type="email" class="form-control"
-                                   th:placeholder="${loginRole == 'provider'} ? 'org@example.co.zw' : 'you@student.co.zw'"
+                                   placeholder="you@example.co.zw"
                                    autocomplete="username" required autofocus>
                         </div>
                     </div>
@@ -140,8 +113,9 @@
 
                 <div class="sz-auth-register-links text-center mt-3">
                     <span class="sz-auth-muted small">No account?</span>
-                    <a th:if="${loginRole == 'student'}" th:href="@{/register}" class="fw-semibold small">Register as student</a>
-                    <a th:if="${loginRole == 'provider'}" th:href="@{/register/provider}" class="fw-semibold small">Apply as provider</a>
+                    <a th:href="@{/register}" class="fw-semibold small">Register as student</a>
+                    <span class="sz-auth-muted small">·</span>
+                    <a th:href="@{/register/provider}" class="fw-semibold small">Apply as provider</a>
                 </div>
             </div>
 

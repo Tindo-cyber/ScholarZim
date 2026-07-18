@@ -39,7 +39,6 @@ public class ScholarzimAuthenticationFailureHandler extends SimpleUrlAuthenticat
             AuthenticationException exception) throws IOException {
 
         String email = request.getParameter("username");
-        String role = "student";
         String error = "credentials";
 
         if (exception instanceof DisabledException disabled) {
@@ -56,9 +55,6 @@ public class ScholarzimAuthenticationFailureHandler extends SimpleUrlAuthenticat
                 var userOpt = userRepository.findByEmailWithRole(email.trim());
                 if (userOpt.isPresent()) {
                     User user = userOpt.get();
-                    if (user.getRole() != null && "ROLE_PROVIDER".equals(user.getRole().getRoleName())) {
-                        role = "provider";
-                    }
                     if (!"unverified".equals(error)) {
                         String status = user.getAccountStatus();
                         if (!isActive(status)) {
@@ -90,7 +86,7 @@ public class ScholarzimAuthenticationFailureHandler extends SimpleUrlAuthenticat
             }
         }
 
-        String redirect = "/login?role=" + role + "&error=" + URLEncoder.encode(error, StandardCharsets.UTF_8);
+        String redirect = "/login?error=" + URLEncoder.encode(error, StandardCharsets.UTF_8);
         getRedirectStrategy().sendRedirect(request, response, redirect);
     }
 

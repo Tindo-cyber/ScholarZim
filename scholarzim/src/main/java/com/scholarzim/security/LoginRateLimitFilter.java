@@ -64,14 +64,8 @@ public class LoginRateLimitFilter implements Filter {
                     return;
                 }
             } else if ("/login".equals(path)) {
-                String role = req.getParameter("role");
-                if (role == null || role.isBlank()) {
-                    role = "student";
-                }
-                String redirect = "/login?role="
-                        + URLEncoder.encode(role, StandardCharsets.UTF_8)
-                        + "&error=rate_limit";
-                if (!consumeRedirect(authBuckets, clientKey + ":/login", loginBucket(), res, redirect)) {
+                if (!consumeRedirect(authBuckets, clientKey + ":/login", loginBucket(), res,
+                        "/login?error=rate_limit")) {
                     return;
                 }
             } else if ("/register".equals(path)) {

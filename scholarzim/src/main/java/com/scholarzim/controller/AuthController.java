@@ -121,12 +121,11 @@ public class AuthController {
             return "auth/register-provider";
         }
 
-        return "redirect:/login?role=provider&pending=1";
+        return "redirect:/login?pending=1";
     }
 
     @GetMapping("/login")
     public String loginPage(
-            @RequestParam(name = "role", required = false, defaultValue = "student") String role,
             @RequestParam(name = "pending", required = false) Boolean pending,
             @RequestParam(name = "error", required = false) String error,
             @RequestParam(name = "logout", required = false) String logout,
@@ -134,13 +133,11 @@ public class AuthController {
             @RequestParam(name = "verify", required = false) String verify,
             Model model) {
 
-        String loginRole = "provider".equalsIgnoreCase(role) ? "provider" : "student";
         boolean credentialsError = error != null
                 && (error.isBlank() || "credentials".equalsIgnoreCase(error) || "disabled".equalsIgnoreCase(error));
 
         model.addAttribute("stats", platformStatsService.getPublicStats());
         model.addAttribute("demoLoginEnabled", demoLoginEnabled);
-        model.addAttribute("loginRole", loginRole);
         model.addAttribute("pendingRegistration", Boolean.TRUE.equals(pending));
         model.addAttribute("loginError", error);
         model.addAttribute("showCredentialsError", credentialsError);
