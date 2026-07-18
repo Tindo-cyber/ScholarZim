@@ -27,11 +27,37 @@ public class SavedScholarshipController {
     @GetMapping("/applicant/saved")
     public String listSaved(@NonNull Authentication auth, Model model) {
         try {
-            model.addAttribute("saved", savedScholarshipService.listSaved(auth.getName()));
+            var saved = savedScholarshipService.listSaved(auth.getName());
+            model.addAttribute("saved", saved);
+            model.addAttribute("loadFailed", false);
+            // #region agent log
+            String name = auth.getName() != null ? auth.getName() : "";
+            boolean demoApplicant = "tanaka.moyo@student.co.zw".equalsIgnoreCase(name)
+                    || "rudo.chikomo@student.co.zw".equalsIgnoreCase(name)
+                    || "simba.ndlovu@student.co.zw".equalsIgnoreCase(name);
+            com.scholarzim.debug.AgentDebugLog.log("C", "SavedScholarshipController.listSaved", "saved_ok",
+                    java.util.Map.of(
+                            "count", saved.size(),
+                            "empty", saved.isEmpty(),
+                            "isDemoApplicant", demoApplicant));
+            // #endregion
+            // #region agent log
+            if (saved.isEmpty()) {
+                com.scholarzim.debug.AgentDebugLog.log("D", "SavedScholarshipController.listSaved",
+                        "saved_empty_shows_empty_state",
+                        java.util.Map.of("count", 0, "isDemoApplicant", demoApplicant));
+            }
+            // #endregion
         } catch (Exception ex) {
             log.warn("Saved scholarships list failed for {}: {}", auth.getName(), ex.getMessage());
             model.addAttribute("saved", Collections.emptyList());
             model.addAttribute("loadFailed", true);
+            // #region agent log
+            com.scholarzim.debug.AgentDebugLog.log("C", "SavedScholarshipController.listSaved", "saved_failed",
+                    java.util.Map.of(
+                            "exClass", ex.getClass().getName(),
+                            "exMessage", String.valueOf(ex.getMessage())));
+            // #endregion
         }
         return "applicant/saved";
     }

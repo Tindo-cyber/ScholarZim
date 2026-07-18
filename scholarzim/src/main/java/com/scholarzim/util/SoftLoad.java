@@ -28,6 +28,13 @@ public final class SoftLoad {
             if (failed != null) {
                 failed.set(true);
             }
+            // #region agent log
+            com.scholarzim.debug.AgentDebugLog.log("B", "SoftLoad.of", "softload_fallback",
+                    java.util.Map.of(
+                            "label", String.valueOf(label),
+                            "exClass", ex.getClass().getName(),
+                            "exMessage", String.valueOf(ex.getMessage())));
+            // #endregion
             return fallback;
         }
     }

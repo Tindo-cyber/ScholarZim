@@ -81,6 +81,32 @@ public class ApplicantDashboardController {
                         .toList(),
                 loadFailed));
         model.addAttribute("loadFailed", loadFailed.get());
+        // #region agent log
+        var statsAttr = model.getAttribute("stats");
+        int recCount = recommendations != null ? recommendations.size() : -1;
+        Object recent = model.getAttribute("recentApplications");
+        int appCount = recent instanceof java.util.Collection<?> c ? c.size() : -1;
+        long savedCount = 0L;
+        long submittedApps = 0L;
+        if (statsAttr instanceof ApplicantDashboardDTO dto) {
+            savedCount = dto.getSavedCount();
+            submittedApps = dto.getApplicationsSubmitted();
+        }
+        String name = email != null ? email : "";
+        boolean demoApplicant = "tanaka.moyo@student.co.zw".equalsIgnoreCase(name)
+                || "rudo.chikomo@student.co.zw".equalsIgnoreCase(name)
+                || "simba.ndlovu@student.co.zw".equalsIgnoreCase(name);
+        com.scholarzim.debug.AgentDebugLog.log("B", "ApplicantDashboardController.dashboard", "dashboard_loaded",
+                java.util.Map.of(
+                        "loadFailed", loadFailed.get(),
+                        "recommendationCount", recCount,
+                        "recentApplicationCount", appCount,
+                        "statsSavedCount", savedCount,
+                        "statsApplicationsSubmitted", submittedApps,
+                        "isDemoApplicant", demoApplicant));
+        com.scholarzim.debug.AgentDebugLog.log("E", "ApplicantDashboardController.dashboard", "account_type",
+                java.util.Map.of("isDemoApplicant", demoApplicant, "loadFailed", loadFailed.get()));
+        // #endregion
 
         return "applicant/dashboard";
     }
