@@ -33,9 +33,9 @@ class ApplicantDashboardMvcTest extends MvcIntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(view().name("applicant/dashboard"))
                 .andExpect(content().string(containsString("sz-applicant-dashboard")))
-                .andExpect(content().string(containsString("ScholarFit Matches")))
                 .andExpect(content().string(containsString("Application Timeline")))
-                .andExpect(content().string(containsString("Upcoming Deadlines Calendar")))
+                .andExpect(content().string(not(containsString("No applications yet"))))
+                .andExpect(content().string(not(containsString("No notifications yet"))))
                 .andExpect(content().string(not(containsString("sz-landing-header"))))
                 .andExpect(content().string(containsString("sz-sidebar")));
     }
