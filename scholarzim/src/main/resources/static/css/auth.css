@@ -279,6 +279,14 @@ body.sz-auth-page--provider .sz-auth-wrap::before {
     margin-bottom: 0.35rem;
 }
 
+.sz-auth-brand-mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 14px rgba(21, 128, 61, 0.22);
+}
+
 .sz-auth-register-links {
     display: flex;
     flex-wrap: wrap;

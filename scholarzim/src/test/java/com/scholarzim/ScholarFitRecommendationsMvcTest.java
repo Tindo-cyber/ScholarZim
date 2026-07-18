@@ -29,7 +29,7 @@ class ScholarFitRecommendationsMvcTest extends MvcIntegrationTestBase {
         mockMvc.perform(get("/applicant/recommendations").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("applicant/recommendations"))
-                .andExpect(content().string(containsString("ScholarFit AI")))
+                .andExpect(content().string(containsString("ScholarFit")))
                 .andExpect(content().string(containsString("sz-scholarfit-card")))
                 .andExpect(content().string(containsString("% Match")))
                 .andExpect(content().string(containsString("Why this matches you")));

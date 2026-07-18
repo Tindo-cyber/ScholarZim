@@ -948,7 +948,7 @@ body:has(.sz-shell)::after {
     margin-top: 2px;
 }
 
-/* AI recommendation cards */
+/* ScholarFit recommendation cards */
 .sz-dash-rec-grid {
     display: grid;
     gap: var(--sz-space-3);

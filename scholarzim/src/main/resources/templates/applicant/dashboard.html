@@ -35,7 +35,7 @@
                     </p>
                     <p class="sz-dash-hero__subtitle"
                        th:if="${stats.profileCompletion < 100}">
-                        Complete your profile to unlock AI-powered scholarship recommendations.
+                        Complete your profile to unlock ScholarFit scholarship recommendations.
                     </p>
                 </div>
 
@@ -102,10 +102,10 @@
                 </div>
             </section>
 
-            <section class="sz-dash-section" aria-label="AI recommended scholarships">
+            <section class="sz-dash-section" aria-label="ScholarFit recommended scholarships">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-robot',
-                    'ScholarFit AI Matches',
+                    'ScholarFit Matches',
                     '/applicant/recommendations',
                     'See all matches',
                     ~{:: #rec-body}
@@ -113,7 +113,7 @@
                     <th:block id="rec-body">
                         <div th:if="${!stats.hasProfile}" class="sz-dash-inline-alert">
                             <i class="bi bi-exclamation-circle"></i>
-                            <span>Complete your <a th:href="@{/applicant/profile}">profile</a> to unlock AI recommendations.</span>
+                            <span>Complete your <a th:href="@{/applicant/profile}">profile</a> to unlock ScholarFit recommendations.</span>
                         </div>
 
                         <div class="sz-scholarfit-grid sz-scholarfit-grid--compact"
