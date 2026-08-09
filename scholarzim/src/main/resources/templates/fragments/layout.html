@@ -241,6 +241,12 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a th:href="@{/admin/dashboard}+'#user-management'" class="nav-link sz-nav-link"
+                       th:classappend="${active == 'providers'} ? 'active'">
+                        <i class="bi bi-person-check me-2"></i>Provider applications
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a th:href="@{/admin/analytics}" class="nav-link sz-nav-link"
                        th:classappend="${active == 'analytics'} ? 'active'">
                         <i class="bi bi-graph-up-arrow me-2"></i>Analytics
