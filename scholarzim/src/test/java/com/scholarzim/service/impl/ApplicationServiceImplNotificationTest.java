@@ -10,6 +10,7 @@ import com.scholarzim.repository.OpportunityRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.AuditService;
+import com.scholarzim.service.EmailService;
 import com.scholarzim.service.FileStorageService;
 import com.scholarzim.service.NotificationService;
 import com.scholarzim.util.NotificationType;
@@ -49,7 +50,8 @@ class ApplicationServiceImplNotificationTest {
                 notificationService,
                 mock(AuditService.class),
                 new FileStorageService(uploadDir.toString()),
-                applicantProfileService);
+                applicantProfileService,
+                mock(EmailService.class));
 
         User applicant = applicant(1L, "student@test.com", "Tanaka Moyo");
         User provider = provider(2L, "provider@test.com", "UK Scholarships");

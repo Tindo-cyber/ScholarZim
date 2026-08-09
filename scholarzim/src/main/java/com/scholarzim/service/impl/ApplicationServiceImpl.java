@@ -14,6 +14,7 @@ import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.ApplicationService;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.AuditService;
+import com.scholarzim.service.EmailService;
 import com.scholarzim.service.FileStorageService;
 import com.scholarzim.service.NotificationService;
 import com.scholarzim.util.ApplicationStatus;
@@ -57,6 +58,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final AuditService auditService;
     private final FileStorageService fileStorageService;
     private final ApplicantProfileService applicantProfileService;
+    private final EmailService emailService;
 
     public ApplicationServiceImpl(
             ApplicationRepository applicationRepository,
@@ -65,7 +67,8 @@ public class ApplicationServiceImpl implements ApplicationService {
             NotificationService notificationService,
             AuditService auditService,
             FileStorageService fileStorageService,
-            ApplicantProfileService applicantProfileService) {
+            ApplicantProfileService applicantProfileService,
+            EmailService emailService) {
 
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
@@ -73,6 +76,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         this.notificationService = notificationService;
         this.auditService = auditService;
         this.fileStorageService = fileStorageService;
+        this.emailService = emailService;
         this.applicantProfileService = applicantProfileService;
     }
 
@@ -231,10 +235,15 @@ public class ApplicationServiceImpl implements ApplicationService {
     @Override
     @Transactional
     @PreAuthorize("hasRole('PROVIDER')")
-    public void updateStatus(@NonNull Long applicationId, String status, String rejectionReason, String providerEmail) {
+    public void updateStatus(@NonNull Long applicationId, String status, String reason, String providerEmail) {
 
         if (!PROVIDER_STATUSES.contains(status)) {
             throw new InvalidStatusException("Invalid application status: " + status);
+        }
+
+        boolean isDecision = ApplicationStatus.APPROVED.equals(status) || ApplicationStatus.REJECTED.equals(status);
+        if (isDecision && (reason == null || reason.isBlank())) {
+            throw new IllegalArgumentException("A reason is required when approving or rejecting an application.");
         }
 
         Application application = applicationRepository.findByIdWithDetails(applicationId)
@@ -249,15 +258,18 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
 
         application.setApplicationStatus(status);
-        if (ApplicationStatus.REJECTED.equals(status)) {
-            application.setRejectionReason(rejectionReason);
+        if (isDecision) {
+            application.setRejectionReason(reason.trim());
         }
         applicationRepository.save(application);
 
-        auditService.log(providerEmail, AuditAction.STATUS_UPDATE, "APPLICATION", applicationId,
-                "Status changed to " + status + " for \"" + opportunity.getTitle() + "\"");
+        String auditDetails = "Status changed to " + status + " for \"" + opportunity.getTitle() + "\"";
+        if (isDecision) {
+            auditDetails += " — reason: " + reason.trim();
+        }
+        auditService.log(providerEmail, AuditAction.STATUS_UPDATE, "APPLICATION", applicationId, auditDetails);
 
-        notifyApplicantOfDecision(application, status);
+        notifyApplicantOfDecision(application, status, isDecision ? reason.trim() : null);
         log.info("Application {} -> {} by {}", applicationId, status, providerEmail);
     }
 
@@ -341,7 +353,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         }
     }
 
-    private void notifyApplicantOfDecision(Application application, String status) {
+    private void notifyApplicantOfDecision(Application application, String status, String reason) {
 
         User applicant = application.getUser();
         Opportunity opportunity = application.getOpportunity();
@@ -358,10 +370,40 @@ public class ApplicationServiceImpl implements ApplicationService {
             notificationService.notifyUser(applicant, NotificationType.APPLICATION_APPROVED,
                     "Your application for \"" + title + "\" was approved.",
                     "/my-applications", applicationId);
+            emailService.sendStatusUpdateEmail(
+                    applicant.getEmail(),
+                    "ScholarZim: your application was approved",
+                    """
+                            Hi %s,
+
+                            Great news — your application for "%s" was approved.
+
+                            Reason / notes from the provider:
+                            %s
+
+                            View your application at ScholarZim under My Applications.
+
+                            — The ScholarZim Team
+                            """.formatted(applicant.getFullName(), title, reason));
         } else if (ApplicationStatus.REJECTED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.APPLICATION_REJECTED,
                     "Your application for \"" + title + "\" was not successful this round.",
                     "/my-applications", applicationId);
+            emailService.sendStatusUpdateEmail(
+                    applicant.getEmail(),
+                    "ScholarZim: update on your application",
+                    """
+                            Hi %s,
+
+                            Your application for "%s" was not successful this round.
+
+                            Reason:
+                            %s
+
+                            Don't be discouraged — keep exploring other scholarships on ScholarZim.
+
+                            — The ScholarZim Team
+                            """.formatted(applicant.getFullName(), title, reason));
         } else if (ApplicationStatus.DOCUMENTS_REQUESTED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.DOCUMENTS_REQUESTED,
                     "Additional documents requested for \"" + title + "\".",

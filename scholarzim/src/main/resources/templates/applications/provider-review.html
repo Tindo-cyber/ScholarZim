@@ -54,26 +54,36 @@
                                     <i class="bi bi-file-earmark-plus me-1"></i>Request documents
                                 </button>
                             </form>
-                            <form th:action="@{/provider/applications/{id}/approve(id=${application.applicationId})}" method="post"
-                                  data-confirm="Approve this application? The student will be notified and their contact details will unlock for you."
-                                  data-confirm-title="Approve application"
-                                  data-confirm-variant="warning">
-                                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                                <button class="btn btn-success btn-sm" type="submit">
-                                    <i class="bi bi-check-lg me-1"></i>Approve
-                                </button>
-                            </form>
                         </div>
+                        <form class="mt-3" th:action="@{/provider/applications/{id}/approve(id=${application.applicationId})}" method="post"
+                              data-confirm="Approve this application? The student will be notified and their contact details will unlock for you."
+                              data-confirm-title="Approve application"
+                              data-confirm-variant="warning">
+                            <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-8">
+                                    <label class="form-label small mb-1" for="approveReason">Reason for approval</label>
+                                    <input id="approveReason" type="text" name="reason" required
+                                           class="form-control form-control-sm"
+                                           placeholder="Why is this application being approved?">
+                                </div>
+                                <div class="col-md-4">
+                                    <button class="btn btn-success btn-sm w-100" type="submit">
+                                        <i class="bi bi-check-lg me-1"></i>Approve
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
                         <form class="mt-3" th:action="@{/provider/applications/{id}/reject(id=${application.applicationId})}" method="post"
                               data-confirm="Reject this application? The student will be notified."
                               data-confirm-title="Reject application">
                             <input type="hidden" th:replace="~{fragments/layout :: csrf}">
                             <div class="row g-2 align-items-end">
                                 <div class="col-md-8">
-                                    <label class="form-label small mb-1" for="rejectionReason">Rejection reason (optional)</label>
-                                    <input id="rejectionReason" type="text" name="rejectionReason"
+                                    <label class="form-label small mb-1" for="rejectionReason">Reason for rejection</label>
+                                    <input id="rejectionReason" type="text" name="reason" required
                                            class="form-control form-control-sm"
-                                           placeholder="Rejection reason (optional)">
+                                           placeholder="Why is this application being rejected?">
                                 </div>
                                 <div class="col-md-4">
                                     <button class="btn btn-danger btn-sm w-100" type="submit">

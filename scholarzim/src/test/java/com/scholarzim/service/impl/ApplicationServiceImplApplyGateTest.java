@@ -10,6 +10,7 @@ import com.scholarzim.repository.OpportunityRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.AuditService;
+import com.scholarzim.service.EmailService;
 import com.scholarzim.service.FileStorageService;
 import com.scholarzim.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,7 +50,8 @@ class ApplicationServiceImplApplyGateTest {
                 mock(NotificationService.class),
                 mock(AuditService.class),
                 new FileStorageService(uploadDir.toString()),
-                applicantProfileService);
+                applicantProfileService,
+                mock(EmailService.class));
     }
 
     @Test

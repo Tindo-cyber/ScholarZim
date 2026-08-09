@@ -10,6 +10,7 @@ import com.scholarzim.repository.OpportunityRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.ApplicantProfileService;
 import com.scholarzim.service.AuditService;
+import com.scholarzim.service.EmailService;
 import com.scholarzim.service.FileStorageService;
 import com.scholarzim.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,7 +49,8 @@ class ApplicationServiceImplDocumentTest {
                 mock(NotificationService.class),
                 mock(AuditService.class),
                 fileStorageService,
-                mock(ApplicantProfileService.class));
+                mock(ApplicantProfileService.class),
+                mock(EmailService.class));
     }
 
     @Test

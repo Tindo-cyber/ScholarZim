@@ -201,8 +201,13 @@ public class ApplicationController {
     }
 
     @PostMapping("/provider/applications/{id}/approve")
-    public String approve(@PathVariable Long id, @NonNull Authentication authentication, RedirectAttributes redirect) {
-        return providerStatusAction(id, "APPROVED", null, authentication, redirect,
+    public String approve(
+            @PathVariable Long id,
+            @RequestParam(required = false) String reason,
+            @NonNull Authentication authentication,
+            RedirectAttributes redirect) {
+
+        return providerStatusAction(id, "APPROVED", reason, authentication, redirect,
                 "Approved. Applicant contact details are now available.",
                 "/provider/applications/" + id);
     }
@@ -210,11 +215,11 @@ public class ApplicationController {
     @PostMapping("/provider/applications/{id}/reject")
     public String reject(
             @PathVariable Long id,
-            @RequestParam(required = false) String rejectionReason,
+            @RequestParam(required = false) String reason,
             @NonNull Authentication authentication,
             RedirectAttributes redirect) {
 
-        return providerStatusAction(id, "REJECTED", rejectionReason, authentication, redirect,
+        return providerStatusAction(id, "REJECTED", reason, authentication, redirect,
                 "Application rejected.", "/provider/applications");
     }
 
