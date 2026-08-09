@@ -10,6 +10,7 @@ import com.scholarzim.service.EmailVerificationService;
 import com.scholarzim.util.AuditAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
     private final EmailVerificationTokenRepository tokenRepository;
     private final EmailService emailService;
     private final AuditService auditService;
+    private final PasswordEncoder passwordEncoder;
     private final String baseUrl;
 
     public EmailVerificationServiceImpl(
@@ -32,12 +34,14 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
             EmailVerificationTokenRepository tokenRepository,
             EmailService emailService,
             AuditService auditService,
+            PasswordEncoder passwordEncoder,
             @Value("${scholarzim.app.base-url:http://localhost:8080}") String baseUrl) {
 
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.emailService = emailService;
         this.auditService = auditService;
+        this.passwordEncoder = passwordEncoder;
         this.baseUrl = baseUrl;
     }
 
@@ -91,5 +95,44 @@ public class EmailVerificationServiceImpl implements EmailVerificationService {
             }
             issueVerificationToken(user);
         });
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public boolean requiresPasswordSetup(String tokenValue) {
+        return tokenRepository.findByTokenAndUsedFalse(tokenValue)
+                .map(token -> token.getUser().getPasswordHash() == null)
+                .orElse(false);
+    }
+
+    @Override
+    @Transactional
+    public void verifyAndSetPassword(String tokenValue, String newPassword, String confirmPassword) {
+
+        if (newPassword == null || newPassword.isBlank()) {
+            throw new IllegalArgumentException("Password is required.");
+        }
+        if (!newPassword.equals(confirmPassword)) {
+            throw new IllegalArgumentException("Passwords do not match.");
+        }
+
+        EmailVerificationToken token = tokenRepository.findByTokenAndUsedFalse(tokenValue)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired verification link."));
+
+        if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Verification link has expired.");
+        }
+
+        User user = token.getUser();
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setEmailVerified(true);
+        userRepository.save(user);
+
+        token.setUsed(true);
+        tokenRepository.save(token);
+
+        auditService.log(user.getEmail(), AuditAction.EMAIL_VERIFIED, "USER", user.getUserId(),
+                "Email verified and password set");
+        log.info("Email verified and password set for {}", user.getEmail());
     }
 }

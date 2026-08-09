@@ -1,5 +1,6 @@
 package com.scholarzim.controller;
 
+import com.scholarzim.dto.AdminCreateUserRequest;
 import com.scholarzim.dto.AdminDashboardDTO;
 import com.scholarzim.dto.AdminUserViewDTO;
 import com.scholarzim.dto.AuditActivityDTO;
@@ -14,6 +15,7 @@ import com.scholarzim.service.AdminUserService;
 import com.scholarzim.service.AnalyticsService;
 import com.scholarzim.service.AuditLogService;
 import com.scholarzim.util.ChartMonths;
+import com.scholarzim.util.ProviderOrgType;
 import com.scholarzim.util.SoftLoad;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
@@ -25,9 +27,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.Collections;
@@ -57,6 +61,33 @@ public class AdminController {
         this.adminUserService = adminUserService;
         this.auditLogService = auditLogService;
         this.adminSearchService = adminSearchService;
+    }
+
+    @GetMapping("/admin/users/create")
+    public String createUserPage(Model model) {
+        model.addAttribute("createUserRequest", new AdminCreateUserRequest());
+        model.addAttribute("organisationTypes", ProviderOrgType.ALL);
+        return "admin/create-user";
+    }
+
+    @PostMapping("/admin/users/create")
+    public String createUser(
+            @ModelAttribute("createUserRequest") AdminCreateUserRequest request,
+            @RequestParam(value = "certificate", required = false) MultipartFile certificate,
+            @NonNull Authentication authentication,
+            RedirectAttributes redirect,
+            Model model) {
+
+        try {
+            adminUserService.createUser(request, certificate, authentication.getName());
+            redirect.addFlashAttribute("successMessage",
+                    "Account created. A confirmation email has been sent to " + request.getEmail() + ".");
+            return "redirect:/admin/dashboard#user-management";
+        } catch (AdminOperationException operationError) {
+            model.addAttribute("errorMessage", operationError.getMessage());
+            model.addAttribute("organisationTypes", ProviderOrgType.ALL);
+            return "admin/create-user";
+        }
     }
 
     @GetMapping("/admin/dashboard")

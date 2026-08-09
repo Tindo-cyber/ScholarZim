@@ -26,4 +26,8 @@ public final class MvcTestSupport {
     public static RequestPostProcessor asAdmin(String email) {
         return SecurityMockMvcRequestPostProcessors.user(email).roles("ADMIN");
     }
+
+    public static RequestPostProcessor asSuperAdmin(String email) {
+        return SecurityMockMvcRequestPostProcessors.user(email).roles("ADMIN", "SUPER_ADMIN");
+    }
 }

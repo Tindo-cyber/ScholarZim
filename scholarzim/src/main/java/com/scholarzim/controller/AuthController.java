@@ -148,13 +148,39 @@ public class AuthController {
     }
 
     @GetMapping("/verify-email/{token}")
-    public String verifyEmail(@PathVariable String token, RedirectAttributes redirect) {
+    public String verifyEmail(@PathVariable String token, Model model, RedirectAttributes redirect) {
+
+        if (emailVerificationService.requiresPasswordSetup(token)) {
+            model.addAttribute("token", token);
+            return "auth/complete-admin-setup";
+        }
+
         try {
             emailVerificationService.verify(token);
             redirect.addFlashAttribute("successMessage", "Email verified. You can sign in now.");
         } catch (IllegalArgumentException ex) {
             redirect.addFlashAttribute("errorMessage", passwordResetErrorMessage(ex));
         }
+        return "redirect:/login";
+    }
+
+    @PostMapping("/verify-email/{token}")
+    public String completeAdminSetup(
+            @PathVariable String token,
+            @RequestParam String password,
+            @RequestParam String confirmPassword,
+            Model model,
+            RedirectAttributes redirect) {
+
+        try {
+            emailVerificationService.verifyAndSetPassword(token, password, confirmPassword);
+        } catch (IllegalArgumentException ex) {
+            model.addAttribute("token", token);
+            model.addAttribute("errorMessage", passwordResetErrorMessage(ex));
+            return "auth/complete-admin-setup";
+        }
+
+        redirect.addFlashAttribute("successMessage", "Password set. You can sign in now.");
         return "redirect:/login";
     }
 

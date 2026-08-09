@@ -7,11 +7,13 @@ import com.scholarzim.exception.AdminOperationException;
 import com.scholarzim.repository.*;
 import com.scholarzim.service.AuditService;
 import com.scholarzim.service.EmailService;
+import com.scholarzim.service.EmailVerificationService;
 import com.scholarzim.service.FileStorageService;
 import com.scholarzim.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.nio.file.Files;
 import java.time.LocalDateTime;
@@ -42,6 +44,7 @@ class AdminUserServiceImplVerificationTest {
         fileStorageService = new FileStorageService(uploadDir.toString());
         service = new AdminUserServiceImpl(
                 userRepository,
+                mock(RoleRepository.class),
                 mock(ApplicantProfileRepository.class),
                 providerProfileRepository,
                 mock(ApplicationRepository.class),
@@ -50,7 +53,9 @@ class AdminUserServiceImplVerificationTest {
                 mock(AuditService.class),
                 fileStorageService,
                 mock(NotificationService.class),
-                mock(EmailService.class));
+                mock(EmailService.class),
+                mock(EmailVerificationService.class),
+                mock(PasswordEncoder.class));
     }
 
     @Test

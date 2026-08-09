@@ -10,4 +10,9 @@ public interface EmailVerificationService {
     void verify(String token);
 
     void resend(String email);
+
+    /** True when the account behind this (unconsumed) token has no password set yet — see verifyAndSetPassword. */
+    boolean requiresPasswordSetup(String token);
+
+    void verifyAndSetPassword(String token, String newPassword, String confirmPassword);
 }

@@ -1,5 +1,6 @@
 package com.scholarzim.service.impl;
 
+import com.scholarzim.dto.AdminCreateUserRequest;
 import com.scholarzim.dto.AdminUserViewDTO;
 import com.scholarzim.dto.PageResult;
 import com.scholarzim.dto.StoredFileResource;
@@ -7,6 +8,7 @@ import com.scholarzim.entity.ApplicantProfile;
 import com.scholarzim.entity.Application;
 import com.scholarzim.entity.Opportunity;
 import com.scholarzim.entity.ProviderProfile;
+import com.scholarzim.entity.Role;
 import com.scholarzim.entity.User;
 import com.scholarzim.exception.AdminOperationException;
 import com.scholarzim.exception.ResourceNotFoundException;
@@ -14,11 +16,13 @@ import com.scholarzim.repository.*;
 import com.scholarzim.service.AdminUserService;
 import com.scholarzim.service.AuditService;
 import com.scholarzim.service.EmailService;
+import com.scholarzim.service.EmailVerificationService;
 import com.scholarzim.service.FileStorageService;
 import com.scholarzim.service.NotificationService;
 import com.scholarzim.util.AuditAction;
 import com.scholarzim.util.NotificationType;
 import com.scholarzim.util.ProviderOrgType;
+import com.scholarzim.util.RoleNames;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -27,8 +31,10 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -48,6 +54,7 @@ import java.util.stream.Collectors;
 public class AdminUserServiceImpl implements AdminUserService {
 
     private final UserRepository userRepository;
+    private final RoleRepository roleRepository;
     private final ApplicantProfileRepository profileRepository;
     private final ProviderProfileRepository providerProfileRepository;
     private final ApplicationRepository applicationRepository;
@@ -57,9 +64,12 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final FileStorageService fileStorageService;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final EmailVerificationService emailVerificationService;
+    private final PasswordEncoder passwordEncoder;
 
     public AdminUserServiceImpl(
             UserRepository userRepository,
+            RoleRepository roleRepository,
             ApplicantProfileRepository profileRepository,
             ProviderProfileRepository providerProfileRepository,
             ApplicationRepository applicationRepository,
@@ -68,9 +78,12 @@ public class AdminUserServiceImpl implements AdminUserService {
             AuditService auditService,
             FileStorageService fileStorageService,
             NotificationService notificationService,
-            EmailService emailService) {
+            EmailService emailService,
+            EmailVerificationService emailVerificationService,
+            PasswordEncoder passwordEncoder) {
 
         this.userRepository = userRepository;
+        this.roleRepository = roleRepository;
         this.profileRepository = profileRepository;
         this.providerProfileRepository = providerProfileRepository;
         this.applicationRepository = applicationRepository;
@@ -80,6 +93,98 @@ public class AdminUserServiceImpl implements AdminUserService {
         this.fileStorageService = fileStorageService;
         this.notificationService = notificationService;
         this.emailService = emailService;
+        this.emailVerificationService = emailVerificationService;
+        this.passwordEncoder = passwordEncoder;
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasRole('ADMIN') and (#request.role != T(com.scholarzim.util.RoleNames).ADMIN or hasRole('SUPER_ADMIN'))")
+    public void createUser(AdminCreateUserRequest request, MultipartFile certificate, String adminEmail) {
+
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new AdminOperationException("Email already exists.");
+        }
+
+        String roleName = request.getRole();
+        if (!List.of(RoleNames.ADMIN, RoleNames.PROVIDER, RoleNames.APPLICANT).contains(roleName)) {
+            throw new AdminOperationException("Select a valid role.");
+        }
+
+        boolean isAdminRole = RoleNames.ADMIN.equals(roleName);
+        boolean isProviderRole = RoleNames.PROVIDER.equals(roleName);
+
+        String passwordHash = null;
+        if (!isAdminRole) {
+            if (request.getPassword() == null || request.getPassword().isBlank()) {
+                throw new AdminOperationException("Password is required for this role.");
+            }
+            if (!request.getPassword().equals(request.getConfirmPassword())) {
+                throw new AdminOperationException("Passwords do not match.");
+            }
+            passwordHash = passwordEncoder.encode(request.getPassword());
+        }
+
+        if (isProviderRole) {
+            if (!ProviderOrgType.isValid(request.getOrganisationType())) {
+                throw new AdminOperationException("Select a valid organisation type for provider accounts.");
+            }
+            if (request.getRegistrationNumber() == null || request.getRegistrationNumber().isBlank()) {
+                throw new AdminOperationException("Registration number is required for provider accounts.");
+            }
+            if (certificate == null || certificate.isEmpty()) {
+                throw new AdminOperationException("Registration certificate (PDF) is required for provider accounts.");
+            }
+        }
+
+        Role role = roleRepository.findByRoleName(roleName)
+                .orElseThrow(() -> new AdminOperationException("Role not configured: " + roleName));
+
+        String storedCertificatePath = null;
+        try {
+            User user = new User();
+            user.setFullName(request.getFullName());
+            user.setEmail(request.getEmail());
+            user.setPhone(request.getPhone());
+            user.setPasswordHash(passwordHash);
+            user.setRole(role);
+            user.setAccountStatus("ACTIVE");
+            user.setEmailVerified(false);
+
+            User saved = userRepository.save(user);
+
+            if (isProviderRole) {
+                storedCertificatePath = fileStorageService.storePdf(certificate, "provider-verification");
+
+                ProviderProfile profile = new ProviderProfile();
+                profile.setUser(saved);
+                profile.setOrganisationType(request.getOrganisationType());
+                profile.setRegistrationNumber(request.getRegistrationNumber().trim());
+                profile.setCertificatePath(storedCertificatePath);
+                profile.setCertificateFilename(
+                        certificate.getOriginalFilename() != null
+                                ? certificate.getOriginalFilename()
+                                : "registration-certificate.pdf");
+                profile.setSubmittedAt(LocalDateTime.now());
+                profile.setReviewedAt(LocalDateTime.now());
+                profile.setReviewedBy(adminEmail);
+                providerProfileRepository.save(profile);
+            }
+
+            auditService.log(adminEmail, AuditAction.ADMIN_CREATED_USER, "USER", saved.getUserId(),
+                    "Admin " + adminEmail + " created " + roleName + " account: "
+                            + saved.getFullName() + " (" + saved.getEmail() + ")");
+
+            emailVerificationService.issueVerificationToken(saved);
+
+            log.info("Admin-created user: id={} role={} by={}", saved.getUserId(), roleName, adminEmail);
+        } catch (IllegalArgumentException ex) {
+            fileStorageService.deleteIfExists(storedCertificatePath);
+            throw new AdminOperationException(ex.getMessage());
+        } catch (IOException ex) {
+            fileStorageService.deleteIfExists(storedCertificatePath);
+            throw new AdminOperationException("Could not save registration certificate. Please try again.");
+        }
     }
 
     @Override
