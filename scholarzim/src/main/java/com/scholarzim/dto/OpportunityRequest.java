@@ -23,6 +23,7 @@ public class OpportunityRequest {
 
     private String fundingType;
 
+    /** Where the provider organisation is based; defaults to Zimbabwe unless the provider says otherwise. */
     private String country;
 
     @NotNull(message = "Deadline is required")

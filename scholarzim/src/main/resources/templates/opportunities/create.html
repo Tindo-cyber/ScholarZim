@@ -73,14 +73,23 @@
                             </div>
 
                             <div class="col-12 col-md-6">
-                                <label class="form-label">Host country</label>
-                                <input type="text" class="form-control" th:field="*{country}"
-                                       list="oppCountryList"
-                                       placeholder="Select or type a country">
-                                <datalist id="oppCountryList">
-                                    <option th:each="c : ${countries}" th:value="${c}"></option>
-                                </datalist>
-                                <div class="form-text">Defaults to Zimbabwe. Type another country if the scholarship is hosted abroad.</div>
+                                <label class="form-label">Provider location</label>
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="checkbox" id="oppOutsideZimbabwe"
+                                           data-toggle-target="#oppCountryGroup" data-toggle-reset="Zimbabwe">
+                                    <label class="form-check-label" for="oppOutsideZimbabwe">
+                                        This provider is based outside Zimbabwe
+                                    </label>
+                                </div>
+                                <div id="oppCountryGroup" class="d-none">
+                                    <input type="text" class="form-control" th:field="*{country}"
+                                           list="oppCountryList"
+                                           placeholder="Select or type the provider's country">
+                                    <datalist id="oppCountryList">
+                                        <option th:each="c : ${countries}" th:value="${c}"></option>
+                                    </datalist>
+                                    <div class="form-text">Where this provider organisation is based.</div>
+                                </div>
                             </div>
 
                             <div class="col-12 col-md-6">

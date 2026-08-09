@@ -33,6 +33,26 @@
         }
     });
 
+    /* Reveal a target section when a checkbox is checked (data-toggle-target="#id"),
+       resetting its input to data-toggle-reset when hidden again so hidden fields
+       still submit a sane default. */
+    document.addEventListener("change", function (e) {
+        if (!(e.target instanceof HTMLInputElement) || e.target.type !== "checkbox") return;
+        var targetSelector = e.target.getAttribute("data-toggle-target");
+        if (!targetSelector) return;
+        var target = document.querySelector(targetSelector);
+        if (!target) return;
+
+        target.classList.toggle("d-none", !e.target.checked);
+        if (!e.target.checked) {
+            var resetValue = target.getAttribute("data-toggle-reset");
+            var input = target.querySelector("input, select, textarea");
+            if (input && resetValue !== null) {
+                input.value = resetValue;
+            }
+        }
+    });
+
     if (toggle) {
         toggle.addEventListener("click", function () {
             const isDark = root.getAttribute("data-bs-theme") === "dark";
