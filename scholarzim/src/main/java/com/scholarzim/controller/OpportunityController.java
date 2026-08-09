@@ -37,6 +37,8 @@ public class OpportunityController {
         OpportunityRequest request = new OpportunityRequest();
         request.setCountry(FormOptions.DEFAULT_COUNTRY);
         model.addAttribute("opportunityRequest", request);
+        model.addAttribute("targetFieldSuggestions", opportunityService.getDistinctTargetFields());
+        model.addAttribute("awardingBodySuggestions", opportunityService.getProviderNames());
         return "opportunities/create";
     }
 

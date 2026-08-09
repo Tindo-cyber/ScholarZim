@@ -56,6 +56,13 @@ public interface OpportunityRepository
             """)
     List<String> findDistinctProviderNames();
 
+    @Query("""
+            SELECT DISTINCT o.targetField FROM Opportunity o
+            WHERE o.targetField IS NOT NULL AND o.targetField <> ''
+            ORDER BY o.targetField
+            """)
+    List<String> findDistinctTargetFields();
+
     long countByStatus(String status);
 
     List<Opportunity> findByStatusAndDeadlineBetween(

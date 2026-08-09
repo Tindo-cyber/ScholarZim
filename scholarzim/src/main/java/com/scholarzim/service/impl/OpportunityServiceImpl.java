@@ -153,6 +153,12 @@ public class OpportunityServiceImpl implements OpportunityService {
     }
 
     @Override
+    @Cacheable("targetFields")
+    public List<String> getDistinctTargetFields() {
+        return opportunityRepository.findDistinctTargetFields();
+    }
+
+    @Override
     public Optional<Opportunity> findById(@NonNull Long id) {
         return opportunityRepository.findById(id);
     }

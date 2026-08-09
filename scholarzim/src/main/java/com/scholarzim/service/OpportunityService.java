@@ -26,5 +26,7 @@ public interface OpportunityService {
 
     List<String> getProviderNames();
 
+    List<String> getDistinctTargetFields();
+
     java.util.Optional<Opportunity> findById(@NonNull Long id);
 }

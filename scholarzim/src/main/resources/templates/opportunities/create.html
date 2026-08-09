@@ -110,12 +110,12 @@
                                        placeholder="Select or type a field of study"
                                        th:classappend="${#fields.hasErrors('targetField')} ? 'is-invalid'">
                                 <datalist id="oppFieldList">
-                                    <option th:each="field : ${fieldsOfStudy}" th:value="${field}"></option>
+                                    <option th:each="field : ${targetFieldSuggestions}" th:value="${field}"></option>
                                 </datalist>
                                 <div class="invalid-feedback"
                                      th:if="${#fields.hasErrors('targetField')}"
                                      th:errors="*{targetField}"></div>
-                                <div class="form-text">Choose from the list or enter a custom subject (e.g. Primary General).</div>
+                                <div class="form-text">Suggestions are pulled from existing scholarships — type a new subject if yours isn't listed.</div>
                             </div>
 
                             <div class="col-12 col-md-6">
@@ -125,7 +125,7 @@
                                        list="oppInstitutionList"
                                        placeholder="Select or type a university / organisation">
                                 <datalist id="oppInstitutionList">
-                                    <option th:each="inst : ${institutions}" th:value="${inst}"></option>
+                                    <option th:each="inst : ${awardingBodySuggestions}" th:value="${inst}"></option>
                                 </datalist>
                                 <div class="form-text">Defaults to your organisation name. Type a custom name if needed.</div>
                             </div>
