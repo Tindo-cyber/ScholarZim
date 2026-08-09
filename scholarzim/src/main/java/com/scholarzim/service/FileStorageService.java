@@ -75,7 +75,7 @@ public class FileStorageService {
 
     private String detectType(MultipartFile file) throws IOException {
         try (var in = file.getInputStream()) {
-            return tika.detect(in);
+            return tika.detect(in, file.getOriginalFilename());
         }
     }
 
