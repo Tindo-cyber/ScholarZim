@@ -37,4 +37,7 @@ public class User {
 
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = true;
+
+    @Column(name = "is_super_admin", nullable = false)
+    private boolean superAdmin = false;
 }

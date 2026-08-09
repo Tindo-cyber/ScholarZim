@@ -63,6 +63,7 @@ public class AdminBootstrap implements CommandLineRunner {
         admin.setRole(adminRole);
         admin.setAccountStatus("ACTIVE");
         admin.setEmailVerified(true);
+        admin.setSuperAdmin(true);
         userRepository.save(admin);
 
         log.info("{} demo admin account {} (password reset to demo value)",
