@@ -17,22 +17,28 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 
+/**
+ * Ordered ahead of Spring Security's filter chain (default order -100) so that POST /login
+ * — handled entirely inside Spring Security's UsernamePasswordAuthenticationFilter, which
+ * commits a response without delegating further down the servlet filter chain — still passes
+ * through this rate limiter instead of bypassing it.
+ */
 @Component
-@Order(1)
+@Order(-200)
 public class LoginRateLimitFilter implements Filter {
 
     private static final long MAX_TRACKED_CLIENTS = 50_000;
 
     private final Cache<String, Bucket> authBuckets = Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofMinutes(10))
-            .maximumSize(MAX_TRACKED_CLIENTS)
-            .build();
-    private final Cache<String, Bucket> providerRegisterBuckets = Caffeine.newBuilder()
             .expireAfterAccess(Duration.ofHours(2))
             .maximumSize(MAX_TRACKED_CLIENTS)
             .build();
+    private final Cache<String, Bucket> providerRegisterBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofHours(6))
+            .maximumSize(MAX_TRACKED_CLIENTS)
+            .build();
     private final Cache<String, Bucket> apiBuckets = Caffeine.newBuilder()
-            .expireAfterAccess(Duration.ofMinutes(10))
+            .expireAfterAccess(Duration.ofMinutes(30))
             .maximumSize(MAX_TRACKED_CLIENTS)
             .build();
     private final int limitPerMinute;
