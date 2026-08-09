@@ -16,6 +16,7 @@ import com.scholarzim.service.RegistrationException;
 import com.scholarzim.util.AuditAction;
 import com.scholarzim.util.NotificationType;
 import com.scholarzim.util.ProviderOrgType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,7 @@ public class ProviderRegistrationServiceImpl implements ProviderRegistrationServ
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final EmailService emailService;
+    private final String baseUrl;
 
     public ProviderRegistrationServiceImpl(
             UserRepository userRepository,
@@ -45,7 +47,8 @@ public class ProviderRegistrationServiceImpl implements ProviderRegistrationServ
             FileStorageService fileStorageService,
             AuditService auditService,
             NotificationService notificationService,
-            EmailService emailService) {
+            EmailService emailService,
+            @Value("${scholarzim.app.base-url:http://localhost:8080}") String baseUrl) {
 
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -55,6 +58,7 @@ public class ProviderRegistrationServiceImpl implements ProviderRegistrationServ
         this.auditService = auditService;
         this.notificationService = notificationService;
         this.emailService = emailService;
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -142,6 +146,20 @@ public class ProviderRegistrationServiceImpl implements ProviderRegistrationServ
                     message,
                     "/admin/dashboard#user-management",
                     applicant.getUserId());
+
+            emailService.sendStatusUpdateEmail(
+                    admin.getEmail(),
+                    "ScholarZim: new provider application awaiting review",
+                    """
+                            Hi %s,
+
+                            A new provider has applied and is awaiting approval: %s.
+
+                            Review pending providers here:
+                            %s/admin/dashboard#user-management
+
+                            — The ScholarZim Team
+                            """.formatted(admin.getFullName(), applicant.getFullName(), baseUrl));
         }
     }
 }
