@@ -77,6 +77,18 @@ body:has(.sz-shell)::after {
     flex: 0 1 auto;
     padding-top: var(--sz-space-4);
     padding-bottom: var(--sz-space-6);
+    position: relative;
+    /* Corner-anchored blob wash — main content only (sidebar/cards stay opaque on top). */
+    background-image:
+        radial-gradient(circle at 100% 0%, rgba(22, 163, 74, 0.12), transparent 42%),
+        radial-gradient(circle at 0% 100%, rgba(8, 145, 178, 0.1), transparent 40%);
+    background-repeat: no-repeat;
+}
+
+[data-bs-theme="dark"] .sz-content {
+    background-image:
+        radial-gradient(circle at 100% 0%, rgba(34, 197, 94, 0.14), transparent 42%),
+        radial-gradient(circle at 0% 100%, rgba(8, 145, 178, 0.12), transparent 40%);
 }
 
 /* Desktop: sidebar in document flow, main fills remaining width */
