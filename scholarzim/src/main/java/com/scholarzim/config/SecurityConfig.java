@@ -1,5 +1,6 @@
 package com.scholarzim.config;
 
+import com.scholarzim.security.CspNonceHeaderWriter;
 import com.scholarzim.security.RoleBasedAuthenticationSuccessHandler;
 import com.scholarzim.security.ScholarzimAuthenticationFailureHandler;
 import org.springframework.context.annotation.Bean;
@@ -91,8 +92,7 @@ public class SecurityConfig {
                 )
                 .headers(headers -> headers
                         .frameOptions(frame -> frame.sameOrigin())
-                        .contentSecurityPolicy(csp -> csp
-                                .policyDirectives("default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'"))
+                        .addHeaderWriter(new CspNonceHeaderWriter())
                 );
 
         return http.build();

@@ -1,5 +1,6 @@
 package com.scholarzim.service;
 
+import org.apache.tika.Tika;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -23,6 +24,8 @@ public class FileStorageService {
             "image/png",
             "image/webp");
 
+    private final Tika tika = new Tika();
+
     private final Path root;
 
     public FileStorageService(@Value("${scholarzim.upload.dir:uploads}") String uploadDir) {
@@ -40,8 +43,8 @@ public class FileStorageService {
             return null;
         }
 
-        String contentType = file.getContentType();
-        if (contentType == null || !ALLOWED.contains(contentType)) {
+        String detectedType = detectType(file);
+        if (!ALLOWED.contains(detectedType)) {
             throw new IllegalArgumentException("Only PDF and image files are allowed.");
         }
 
@@ -58,8 +61,8 @@ public class FileStorageService {
             throw new IllegalArgumentException("Registration certificate (PDF) is required.");
         }
 
-        String contentType = file.getContentType();
-        if (!"application/pdf".equals(contentType)) {
+        String detectedType = detectType(file);
+        if (!"application/pdf".equals(detectedType)) {
             throw new IllegalArgumentException("Registration certificate must be a PDF file.");
         }
 
@@ -68,6 +71,12 @@ public class FileStorageService {
         }
 
         return writeFile(file, prefix, ".pdf");
+    }
+
+    private String detectType(MultipartFile file) throws IOException {
+        try (var in = file.getInputStream()) {
+            return tika.detect(in);
+        }
     }
 
     public void deleteIfExists(String filename) {

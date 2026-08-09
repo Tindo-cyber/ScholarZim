@@ -15,14 +15,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <title th:text="${title} ? ${title} + ' | ScholarZim' : 'ScholarZim'">ScholarZim</title>
     <link th:if="${lcpPreloadImage}" rel="preload" th:href="@{${lcpPreloadImage}}" as="image" type="image/webp" fetchpriority="high">
-    <script>
-        (function () {
-            var t = localStorage.getItem('sz-theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', t);
-            var meta = document.querySelector('meta[name="theme-color"]');
-            if (meta) meta.setAttribute('content', t === 'dark' ? '#0f172a' : '#16A34A');
-        })();
-    </script>
+    <script th:src="@{/js/theme-init.js(v=61)}"></script>
     <script th:replace="~{fragments/layout :: cache-purge}"></script>
     <link rel="manifest" th:href="@{/manifest.json}">
     <link rel="apple-touch-icon" th:href="@{/icons/icon-192.png(v=61)}">

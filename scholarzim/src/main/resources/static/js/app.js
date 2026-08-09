@@ -26,6 +26,13 @@
 
     syncIcon();
 
+    /* Auto-submit forms when a file input marked .sz-auto-submit changes */
+    document.addEventListener("change", function (e) {
+        if (e.target instanceof HTMLInputElement && e.target.classList.contains("sz-auto-submit") && e.target.form) {
+            e.target.form.submit();
+        }
+    });
+
     if (toggle) {
         toggle.addEventListener("click", function () {
             const isDark = root.getAttribute("data-bs-theme") === "dark";

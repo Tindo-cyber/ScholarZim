@@ -11,9 +11,9 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
 
@@ -21,9 +21,20 @@ import io.github.bucket4j.Bucket;
 @Order(1)
 public class LoginRateLimitFilter implements Filter {
 
-    private final Map<String, Bucket> authBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> providerRegisterBuckets = new ConcurrentHashMap<>();
-    private final Map<String, Bucket> apiBuckets = new ConcurrentHashMap<>();
+    private static final long MAX_TRACKED_CLIENTS = 50_000;
+
+    private final Cache<String, Bucket> authBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(MAX_TRACKED_CLIENTS)
+            .build();
+    private final Cache<String, Bucket> providerRegisterBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofHours(2))
+            .maximumSize(MAX_TRACKED_CLIENTS)
+            .build();
+    private final Cache<String, Bucket> apiBuckets = Caffeine.newBuilder()
+            .expireAfterAccess(Duration.ofMinutes(10))
+            .maximumSize(MAX_TRACKED_CLIENTS)
+            .build();
     private final int limitPerMinute;
     private final int providerRegisterPerHour;
     private final int forgotPasswordPerHour;
@@ -84,13 +95,13 @@ public class LoginRateLimitFilter implements Filter {
     }
 
     private boolean consumeRedirect(
-            Map<String, Bucket> store,
+            Cache<String, Bucket> store,
             String key,
             Bucket prototype,
             HttpServletResponse res,
             String redirectUrl) throws IOException {
 
-        Bucket bucket = store.computeIfAbsent(key, k -> prototype);
+        Bucket bucket = store.get(key, k -> prototype);
         if (!bucket.tryConsume(1)) {
             res.sendRedirect(redirectUrl);
             return false;
@@ -99,12 +110,12 @@ public class LoginRateLimitFilter implements Filter {
     }
 
     private boolean consumeApi(
-            Map<String, Bucket> store,
+            Cache<String, Bucket> store,
             String key,
             Bucket prototype,
             HttpServletResponse res) throws IOException {
 
-        Bucket bucket = store.computeIfAbsent(key, k -> prototype);
+        Bucket bucket = store.get(key, k -> prototype);
         if (!bucket.tryConsume(1)) {
             res.sendError(429, "API rate limit exceeded. Please slow down.");
             return false;

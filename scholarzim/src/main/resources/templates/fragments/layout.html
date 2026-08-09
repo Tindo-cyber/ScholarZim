@@ -5,22 +5,7 @@
       th:attr="data-sz-purge-cache=${@environment.getProperty('scholarzim.assets.cache-purge', 'false')}">
 
 <!-- Purge legacy service-worker caches before styles load (dev only) -->
-<script th:fragment="cache-purge">
-(function () {
-    var purge = document.documentElement.getAttribute("data-sz-purge-cache") === "true";
-    if (!purge) return;
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function (regs) {
-            regs.forEach(function (r) { r.unregister(); });
-        });
-    }
-    if ('caches' in window) {
-        caches.keys().then(function (keys) {
-            keys.forEach(function (k) { caches.delete(k); });
-        });
-    }
-})();
-</script>
+<script th:fragment="cache-purge" th:src="@{/js/cache-purge.js(v=61)}"></script>
 
 <!-- ============ STYLES ============ -->
 <!-- App shell styles only — landing.css is public pages only -->
@@ -73,14 +58,7 @@
     <meta name="color-scheme" content="light dark">
     <meta name="theme-color" content="#16A34A" id="szThemeColor">
     <link rel="icon" type="image/png" th:href="@{/icons/icon-192.png(v=61)}">
-    <script>
-        (function () {
-            var t = localStorage.getItem('sz-theme') || 'light';
-            document.documentElement.setAttribute('data-bs-theme', t);
-            var meta = document.querySelector('meta[name="theme-color"]');
-            if (meta) meta.setAttribute('content', t === 'dark' ? '#0f172a' : '#16A34A');
-        })();
-    </script>
+    <script th:src="@{/js/theme-init.js(v=61)}"></script>
     <script th:replace="~{fragments/layout :: cache-purge}"></script>
     <style>
         .sz-content, .sz-auth-public { opacity: 1 !important; visibility: visible !important; }

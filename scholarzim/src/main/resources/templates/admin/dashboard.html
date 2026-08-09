@@ -512,7 +512,7 @@
             </div>
 
             <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-            <script th:inline="javascript">
+            <script th:inline="javascript" th:attr="nonce=${cspNonce}">
                 /*<![CDATA[*/
                 const approved = [[${stats.approvedApplications}]];
                 const rejected = [[${stats.rejectedApplications}]];

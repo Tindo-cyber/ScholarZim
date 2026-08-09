@@ -33,13 +33,13 @@ Method-level security (`@PreAuthorize`) is enabled for selected provider service
 
 ## Input validation
 
-- PDF uploads validated by content type and size (≤ 5 MB) for certificates.
+- Uploads (PDF and image) are content-sniffed with Apache Tika (`FileStorageService`) — the actual file bytes are inspected, not the client-supplied `Content-Type` header, and size is capped at 5 MB.
 - Bean Validation on registration and profile forms.
 - CSRF protection on MVC forms and session-authenticated `/api/applicant/**`; ignored only for public GET `/api/public/**`.
 
 ## Rate limiting
 
-In-memory Bucket4j filters (`LoginRateLimitFilter`):
+In-memory Bucket4j filters (`LoginRateLimitFilter`), keyed per client IP and backed by Caffeine caches (`expireAfterAccess` + `maximumSize`) so idle client buckets are evicted instead of growing unbounded over a long-running deployment:
 
 - Login / register: 10 requests per minute per IP
 - Provider registration: 5 per hour per IP
@@ -67,6 +67,8 @@ Admin can review entries at `/admin/dashboard` → audit log section.
 ## HTTP headers
 
 Content-Security-Policy and `X-Frame-Options: SAMEORIGIN` configured in `SecurityConfig`.
+
+`script-src` does **not** allow `'unsafe-inline'`. The five inline `<script>` blocks that previously required it were externalized to `/js/*.js` (theme init, cache-purge, account-security, the profile-document auto-submit handler). The two admin chart templates (`admin/analytics.html`, `admin/dashboard.html`) still render small `th:inline="javascript"` blocks because they inject per-request chart data — those carry a per-request nonce instead: `CspNonceHeaderWriter` mints a random nonce and writes it into both the CSP header and a request attribute, and `CspNonceModelAdvice` exposes it to Thymeleaf as `${cspNonce}`, which the templates stamp onto the script tag via `th:attr="nonce=${cspNonce}"`. `style-src` still allows `'unsafe-inline'` (inline `style="..."` attributes and `<style>` blocks are used across a number of templates; nonce-ing or extracting all of them was out of scope for this pass — future work).
 
 Production (`application-prod.properties`): secure session cookies when served over HTTPS.
 

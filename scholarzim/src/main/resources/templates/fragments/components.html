@@ -827,10 +827,9 @@
                     <form th:action="@{${doc.uploadPath}}" method="post" enctype="multipart/form-data"
                           class="sz-profile-document__upload">
                         <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                        <input type="file" class="sz-profile-document__input"
+                        <input type="file" class="sz-profile-document__input sz-auto-submit"
                                th:id="${'upload-' + doc.key}"
-                               name="file" accept="application/pdf,image/*,.pdf"
-                               onchange="this.form.submit()">
+                               name="file" accept="application/pdf,image/*,.pdf">
                         <label th:for="${'upload-' + doc.key}" class="btn btn-sm btn-primary">
                             <i class="bi bi-cloud-arrow-up me-1" aria-hidden="true"></i>Upload
                         </label>
