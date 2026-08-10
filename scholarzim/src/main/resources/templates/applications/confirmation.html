@@ -23,14 +23,14 @@
                 <h1 class="h3 fw-bold mb-2">Application submitted</h1>
                 <p class="text-secondary mb-3">
                     Your application for
-                    <strong th:text="${application.opportunity.title}">Scholarship</strong>
+                    <strong th:text="${applicationDetail.opportunity.title}">Scholarship</strong>
                     has been received. The provider will review it and you will be notified of any updates.
                 </p>
                 <p class="sz-confirm-card__ref mb-4">
-                    Reference #<span th:text="${application.applicationId}">0</span>
-                    <span th:if="${application.submittedAt != null}">
+                    Reference #<span th:text="${applicationDetail.applicationId}">0</span>
+                    <span th:if="${applicationDetail.submittedAt != null}">
                         · Submitted
-                        <span th:text="${#temporals.format(application.submittedAt, 'dd MMM yyyy · HH:mm')}"></span>
+                        <span th:text="${#temporals.format(applicationDetail.submittedAt, 'dd MMM yyyy · HH:mm')}"></span>
                     </span>
                 </p>
                 <div class="d-flex flex-wrap gap-2 justify-content-center">

@@ -135,7 +135,7 @@ public class ApplicationController {
             @NonNull Authentication authentication,
             Model model) {
 
-        model.addAttribute("application",
+        model.addAttribute("applicationDetail",
                 applicationService.getApplicationForUser(applicationId, authentication.getName()));
         return "applications/confirmation";
     }
@@ -177,8 +177,9 @@ public class ApplicationController {
 
         try {
             var app = applicationService.getApplicationForProvider(id, authentication.getName());
-            model.addAttribute("application", app);
+            model.addAttribute("applicationDetail", app);
             model.addAttribute("applicantProfile", null);
+            model.addAttribute("profileLoadFailed", false);
             if (app.getUser() != null) {
                 try {
                     model.addAttribute("applicantProfile",
