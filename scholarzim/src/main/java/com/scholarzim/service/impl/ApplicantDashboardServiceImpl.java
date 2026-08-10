@@ -9,6 +9,7 @@ import com.scholarzim.service.ApplicationService;
 import com.scholarzim.service.OpportunityService;
 import com.scholarzim.service.RecommendationService;
 import com.scholarzim.service.SavedScholarshipService;
+import com.scholarzim.util.ApplicationPageSupport;
 import com.scholarzim.util.ProfileCompletionSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -93,12 +94,7 @@ public class ApplicantDashboardServiceImpl implements ApplicantDashboardService 
 
     private long countPending(List<Application> applications) {
         return applications.stream()
-                .filter(a -> {
-                    String s = a.getApplicationStatus();
-                    return "PENDING".equals(s) || "SUBMITTED".equals(s)
-                            || "UNDER_REVIEW".equals(s) || "DOCUMENTS_REQUESTED".equals(s)
-                            || "WAITLISTED".equals(s);
-                })
+                .filter(a -> ApplicationPageSupport.PENDING_STATUSES.contains(a.getApplicationStatus()))
                 .count();
     }
 

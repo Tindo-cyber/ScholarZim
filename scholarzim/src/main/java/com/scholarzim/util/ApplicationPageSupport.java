@@ -12,7 +12,10 @@ public final class ApplicationPageSupport {
 
     public static final int PAGE_SIZE = 10;
 
-    private static final Set<String> PENDING_STATUSES = Set.of(
+    /** Canonical "still in progress" statuses — the single source of truth other
+     *  application counts (e.g. dashboard tiles) should reuse instead of
+     *  redefining, so a status added here can't silently drift out of sync. */
+    public static final Set<String> PENDING_STATUSES = Set.of(
             "PENDING", "SUBMITTED", "UNDER_REVIEW", "DOCUMENTS_REQUESTED",
             "WAITLISTED", "SHORTLISTED", "INTERVIEW");
 
