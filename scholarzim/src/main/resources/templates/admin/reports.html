@@ -14,8 +14,10 @@
             <div th:replace="~{fragments/components :: dashboard-chrome(
                 @{/admin/dashboard}, 'Dashboard',
                 null, null,
+                'DATA EXPORTS',
                 'Reports',
-                'Export platform data for compliance, analysis, and viva evidence.')}"></div>
+                'Export platform data for compliance, analysis, and viva evidence.',
+                null)}"></div>
             <div th:replace="~{fragments/components :: report-export-grid}"></div>
             <section class="sz-dashboard-panel">
                 <div class="sz-dashboard-panel__head">

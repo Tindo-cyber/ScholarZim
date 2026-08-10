@@ -11,7 +11,13 @@
 <body>
 <th:block id="security-content">
 
-            <div th:replace="~{fragments/components :: page-header('Settings', 'Manage security, privacy, and account preferences.')}"></div>
+            <div th:replace="~{fragments/components :: dashboard-chrome(
+                @{/applicant/dashboard}, 'Dashboard',
+                null, null,
+                'ACCOUNT CONTROL',
+                'Settings',
+                'Manage your account preferences, security, and application settings.',
+                null)}"></div>
 
             <div class="row g-3 g-md-4">
                 <div class="col-12 col-lg-6">

@@ -18,7 +18,7 @@ class AnalyticsMvcTest extends MvcIntegrationTestBase {
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/analytics"))
                 .andExpect(content().string(containsString("sz-analytics-hub")))
-                .andExpect(content().string(containsString("Analytics dashboard")))
+                .andExpect(content().string(containsString("Analytics")))
                 .andExpect(content().string(containsString("Monthly platform growth")))
                 .andExpect(content().string(containsString("Application trends")))
                 .andExpect(content().string(containsString("Pending approvals")))

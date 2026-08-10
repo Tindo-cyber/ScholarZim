@@ -14,8 +14,10 @@
             <div th:replace="~{fragments/components :: dashboard-chrome(
                 @{/admin/dashboard}, 'Dashboard',
                 null, null,
-                'Global search',
-                'Find students, providers, scholarships, and applications across the platform')}"></div>
+                'FIND ANYTHING',
+                'Global Search',
+                'Find students, providers, scholarships, and applications across the platform.',
+                null)}"></div>
 
             <form class="sz-admin-search-form mb-4" method="get" th:action="@{/admin/search}">
                 <div class="input-group input-group-lg">

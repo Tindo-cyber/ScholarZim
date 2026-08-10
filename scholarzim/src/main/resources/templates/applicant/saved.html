@@ -17,8 +17,10 @@
             <div th:replace="~{fragments/components :: dashboard-chrome(
                 @{/applicant/dashboard}, 'Dashboard',
                 null, null,
-                'Saved scholarships',
-                'Bookmarks you can return to when you are ready to apply.')}"></div>
+                'YOUR SHORTLIST',
+                'Saved Opportunities',
+                'Keep track of scholarships and opportunities you may want to apply for.',
+                null)}"></div>
 
             <div class="sz-opp-grid" th:if="${saved != null and !saved.isEmpty()}">
                 <th:block th:each="opp : ${saved}">

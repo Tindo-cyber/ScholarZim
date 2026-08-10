@@ -19,7 +19,11 @@
         null, null,
         'Applications')}"></nav>
 
-    <div th:replace="~{fragments/components :: page-header('Application tracker', 'Follow every scholarship application through each stage — from submission to award.')}"></div>
+    <div th:replace="~{fragments/components :: page-hero(
+        'APPLICATION TRACKER',
+        'My Applications',
+        'Track the progress of your scholarship applications and upcoming deadlines.',
+        null, null, null, null)}"></div>
 
         <div class="row g-3 mb-4" th:if="${totalAll > 0}">
             <div class="col-6 col-md-3">

@@ -12,7 +12,13 @@
 <body>
 <th:block id="admin-create-user-content">
 
-            <div th:replace="~{fragments/components :: page-header('Create user', 'Create a provider, applicant, or admin account directly, bypassing self-registration.')}"></div>
+            <div th:replace="~{fragments/components :: dashboard-chrome(
+                @{/admin/dashboard}, 'Dashboard',
+                null, null,
+                'USER MANAGEMENT',
+                'Create User',
+                'Create a provider, applicant, or admin account directly, bypassing self-registration.',
+                null)}"></div>
 
             <div th:if="${errorMessage}" class="alert alert-danger rounded-3 py-2 small mb-3" role="alert">
                 <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${errorMessage}"></span>

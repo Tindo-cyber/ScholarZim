@@ -35,7 +35,7 @@ class SavedScholarshipsMvcTest extends MvcIntegrationTestBase {
         mockMvc.perform(get("/applicant/saved").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("applicant/saved"))
-                .andExpect(content().string(containsString("Saved scholarships")))
+                .andExpect(content().string(containsString("Saved Opportunities")))
                 .andExpect(content().string(containsString(opportunity.getTitle())))
                 .andExpect(content().string(not(containsString("Unable to load saved scholarships"))))
                 .andExpect(content().string(not(containsString("Nothing saved yet"))));
@@ -48,7 +48,7 @@ class SavedScholarshipsMvcTest extends MvcIntegrationTestBase {
 
         mockMvc.perform(get("/applicant/saved").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Saved scholarships")))
+                .andExpect(content().string(containsString("Saved Opportunities")))
                 .andExpect(content().string(not(containsString("Nothing saved yet"))))
                 .andExpect(content().string(not(containsString("Unable to load saved scholarships"))));
     }

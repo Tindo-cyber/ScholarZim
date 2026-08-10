@@ -11,7 +11,13 @@
 <body>
 <th:block id="create-opportunity-content">
 
-            <div th:replace="~{fragments/components :: page-header('Create opportunity', 'Publish a new scholarship for students to discover and apply.')}"></div>
+            <div th:replace="~{fragments/components :: dashboard-chrome(
+                @{/provider/dashboard}, 'Dashboard',
+                null, null,
+                'CREATE OPPORTUNITY',
+                'Create Opportunity',
+                'Publish a scholarship or funding opportunity and help students discover it.',
+                null)}"></div>
 
             <div class="card sz-section-card">
                 <div class="card-body p-4">

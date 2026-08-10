@@ -63,7 +63,7 @@ class ErrorPagesMvcTest extends MvcIntegrationTestBase {
 
         mockMvc.perform(get("/my-applications").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Application tracker")))
+                .andExpect(content().string(containsString("My Applications")))
                 .andExpect(content().string(not(containsString("sz-error-state__art--no-data"))))
                 .andExpect(content().string(not(containsString("No applications found"))))
                 .andExpect(content().string(not(containsString("Unable to load your applications"))));

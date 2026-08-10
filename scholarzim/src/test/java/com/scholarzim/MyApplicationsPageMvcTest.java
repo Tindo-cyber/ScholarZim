@@ -18,7 +18,7 @@ class MyApplicationsPageMvcTest extends MvcIntegrationTestBase {
         mockMvc.perform(get("/my-applications").with(MvcTestSupport.asApplicant(email)))
                 .andExpect(status().isOk())
                 .andExpect(view().name("applications/my-applications"))
-                .andExpect(content().string(containsString("Application tracker")))
+                .andExpect(content().string(containsString("My Applications")))
                 .andExpect(content().string(not(containsString("No applications found."))))
                 .andExpect(content().string(not(containsString("Unable to load your applications"))))
                 .andExpect(content().string(not(containsString("Funding for every stage"))))

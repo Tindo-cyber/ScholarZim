@@ -10,6 +10,19 @@
           ~{:: #messages-content}
       )}">
 <body>
+
+<!-- Sibling of #messages-content (not nested inside it) so it renders once,
+     via the explicit ~{:: #messagesHeroRight} references below. -->
+<th:block id="messagesHeroRight">
+    <form th:if="${unreadCount > 0}"
+          th:action="@{/notifications/read-all}" method="post" class="m-0">
+        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+        <button class="btn sz-page-hero__cta" type="submit">
+            <i class="bi bi-check2-all me-1"></i>Mark all read
+        </button>
+    </form>
+</th:block>
+
 <th:block id="messages-content">
 
     <div class="sz-page-shell is-loaded" id="szMessagesPage" data-page="messages">
@@ -28,16 +41,27 @@
                     'Messages')}"></nav>
             </th:block>
 
-            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-                <div th:replace="~{fragments/components :: page-header('Messages', 'Notification inbox — updates from providers and the ScholarZim platform.')}"></div>
-                <form th:if="${unreadCount > 0}"
-                      th:action="@{/notifications/read-all}" method="post" class="m-0">
-                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                    <button class="btn btn-sm btn-outline-primary" type="submit">
-                        <i class="bi bi-check2-all me-1"></i>Mark all read
-                    </button>
-                </form>
-            </div>
+            <th:block sec:authorize="hasRole('APPLICANT')">
+                <div th:replace="~{fragments/components :: page-hero(
+                    'STAY CONNECTED',
+                    'Messages',
+                    'Communicate with scholarship providers and manage your conversations.',
+                    null, ~{:: #messagesHeroRight}, null, null)}"></div>
+            </th:block>
+            <th:block sec:authorize="hasRole('PROVIDER')">
+                <div th:replace="~{fragments/components :: page-hero(
+                    'STAY CONNECTED',
+                    'Messages',
+                    'Communicate with students and manage your conversations.',
+                    null, ~{:: #messagesHeroRight}, null, null)}"></div>
+            </th:block>
+            <th:block sec:authorize="hasRole('ADMIN')">
+                <div th:replace="~{fragments/components :: page-hero(
+                    'STAY CONNECTED',
+                    'Messages',
+                    'Review platform messages and manage conversations.',
+                    null, ~{:: #messagesHeroRight}, null, null)}"></div>
+            </th:block>
 
             <div th:if="${messages != null and !messages.isEmpty()}" class="sz-messages-layout">
                 <aside class="sz-messages-sidebar">
