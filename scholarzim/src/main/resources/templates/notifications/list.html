@@ -10,6 +10,26 @@
           ~{:: #notifications-content}
       )}">
 <body>
+
+<!-- Sibling of #notifications-content (not nested inside it) so it is only
+     rendered once, via the explicit ~{:: #notifHeroRight} reference below —
+     not a second time as part of the main content block. -->
+<th:block id="notifHeroRight">
+    <span class="sz-page-hero__chip"
+          th:classappend="${unreadCount == 0} ? 'sz-page-hero__chip--clear'">
+        <span class="sz-notification-center__unread-dot" aria-hidden="true"></span>
+        <strong th:text="${unreadCount}">0</strong>
+        <span th:text="${unreadCount == 1 ? 'unread update' : 'unread updates'}">unread updates</span>
+    </span>
+    <form th:if="${unreadCount > 0}"
+          th:action="@{/notifications/read-all}" method="post" class="m-0">
+        <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+        <button class="btn sz-page-hero__cta" type="submit">
+            <i class="bi bi-check2-all me-1" aria-hidden="true"></i>Mark all read
+        </button>
+    </form>
+</th:block>
+
 <th:block id="notifications-content">
 
     <div class="sz-page-shell is-loaded" id="szNotificationsPage" data-page="notifications">
@@ -28,33 +48,17 @@
             @{/applicant/dashboard}, 'Dashboard', null, null, 'Notifications')}"></nav>
     </th:block>
 
-    <section class="sz-notification-center" aria-labelledby="notification-center-title">
-        <header class="sz-notification-center__hero">
-            <div>
-                <span class="sz-notification-center__eyebrow">
-                    <i class="bi bi-bell-fill" aria-hidden="true"></i>
-                    Stay informed
-                </span>
-                <h1 id="notification-center-title">Notification Center</h1>
-                <p>Track important application, scholarship, message, and account updates.</p>
-            </div>
-            <div class="sz-notification-center__hero-actions">
-                <span class="sz-notification-center__unread"
-                      th:classappend="${unreadCount == 0} ? 'sz-notification-center__unread--clear'">
-                    <span class="sz-notification-center__unread-dot" aria-hidden="true"></span>
-                    <strong th:text="${unreadCount}">0</strong>
-                    <span th:text="${unreadCount == 1 ? 'unread update' : 'unread updates'}">unread updates</span>
-                </span>
-                <form th:if="${unreadCount > 0}"
-                      th:action="@{/notifications/read-all}" method="post" class="m-0">
-                    <input type="hidden" th:replace="~{fragments/layout :: csrf}">
-                    <button class="btn btn-primary sz-notification-center__read-all" type="submit">
-                        <i class="bi bi-check2-all me-1" aria-hidden="true"></i>Mark all read
-                    </button>
-                </form>
-            </div>
-        </header>
+    <div th:replace="~{fragments/components :: page-hero(
+        'Stay informed',
+        'Notification Center',
+        'Track important application, scholarship, message, and account updates.',
+        'bi-bell-fill',
+        ~{:: #notifHeroRight},
+        null,
+        null
+    )}"></div>
 
+    <section class="sz-notification-center" aria-label="Notification Center">
         <div class="sz-notification-center__layout">
             <aside class="sz-notification-categories" aria-label="Notification categories">
                 <a th:href="@{/notifications(q=${q},read=${readFilter})}"

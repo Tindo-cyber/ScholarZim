@@ -1357,7 +1357,10 @@
     --sz-notification-slate: #64748b;
 }
 
-.sz-notification-center__hero {
+/* Standard ScholarZim page hero — shared by every major authenticated page.
+   See fragments/components.html :: page-hero(...). Notification Center is the
+   visual source of truth; do not create page-specific variants of this block. */
+.sz-page-hero {
     position: relative;
     display: flex;
     align-items: center;
@@ -1374,7 +1377,7 @@
     box-shadow: 0 16px 38px rgba(21, 128, 61, 0.18);
 }
 
-.sz-notification-center__hero::after {
+.sz-page-hero::after {
     content: "";
     position: absolute;
     width: 180px;
@@ -1385,7 +1388,13 @@
     border-radius: 50%;
 }
 
-.sz-notification-center__eyebrow {
+.sz-page-hero__intro {
+    position: relative;
+    z-index: 1;
+    min-width: 0;
+}
+
+.sz-page-hero__eyebrow {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
@@ -1397,21 +1406,22 @@
     color: rgba(255, 255, 255, 0.84);
 }
 
-.sz-notification-center__hero h1 {
+.sz-page-hero h1 {
     margin: 0;
     font-size: clamp(1.45rem, 3vw, 2rem);
     font-weight: 800;
     letter-spacing: -0.025em;
+    color: #fff;
 }
 
-.sz-notification-center__hero p {
+.sz-page-hero p {
     max-width: 42rem;
     margin: 0.4rem 0 0;
     color: rgba(255, 255, 255, 0.82);
     font-size: 0.9rem;
 }
 
-.sz-notification-center__hero-actions {
+.sz-page-hero__side {
     position: relative;
     z-index: 1;
     display: flex;
@@ -1420,7 +1430,21 @@
     flex-shrink: 0;
 }
 
-.sz-notification-center__unread {
+.sz-page-hero__cta {
+    color: #14532d;
+    background: #fff;
+    border-color: #fff;
+    white-space: nowrap;
+}
+
+.sz-page-hero__cta:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.16);
+    border-color: rgba(255, 255, 255, 0.7);
+}
+
+/* Generic pill chip for page-hero right-side content (stat pairs, status readouts) */
+.sz-page-hero__chip {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
@@ -1442,22 +1466,9 @@
     animation: sz-notification-pulse 2s ease-in-out infinite;
 }
 
-.sz-notification-center__unread--clear .sz-notification-center__unread-dot {
+.sz-page-hero__chip--clear .sz-notification-center__unread-dot {
     background: #86efac;
     animation: none;
-}
-
-.sz-notification-center__read-all {
-    color: #14532d;
-    background: #fff;
-    border-color: #fff;
-    white-space: nowrap;
-}
-
-.sz-notification-center__read-all:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.7);
 }
 
 /* Category filters render as a horizontal bar above the stream — not a second
@@ -1843,13 +1854,13 @@
 }
 
 @media (max-width: 767.98px) {
-    .sz-notification-center__hero,
-    .sz-notification-center__hero-actions {
+    .sz-page-hero,
+    .sz-page-hero__side {
         align-items: flex-start;
         flex-direction: column;
     }
 
-    .sz-notification-center__hero-actions {
+    .sz-page-hero__side {
         width: 100%;
     }
 
@@ -1867,15 +1878,16 @@
 }
 
 @media (max-width: 575.98px) {
-    .sz-notification-center__hero {
+    .sz-page-hero {
         padding: 1.25rem;
     }
 
-    .sz-notification-center__hero-actions {
+    .sz-page-hero__side {
         gap: 0.65rem;
+        width: 100%;
     }
 
-    .sz-notification-center__read-all {
+    .sz-page-hero__cta {
         width: 100%;
     }
 
@@ -2630,21 +2642,6 @@
    ScholarFit — recommendation cards
    ══════════════════════════════════════════════════════════════ */
 
-.sz-scholarfit-hero {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: var(--sz-space-4, 1rem);
-    padding: var(--sz-space-5, 1.25rem) var(--sz-space-6, 1.5rem);
-    margin-bottom: var(--sz-space-5, 1.25rem);
-    border-radius: 16px;
-    border: 1px solid rgba(22, 163, 74, 0.2);
-    background: linear-gradient(135deg, rgba(22, 163, 74, 0.08), rgba(59, 130, 246, 0.05));
-    box-shadow: var(--sz-shadow-card);
-}
-
-.sz-scholarfit-hero__badge,
 .sz-scholarfit-card__ai-badge {
     display: inline-flex;
     align-items: center;
@@ -2658,22 +2655,6 @@
     border: 1px solid rgba(22, 163, 74, 0.2);
     border-radius: 999px;
     padding: 6px 12px;
-}
-
-.sz-scholarfit-hero__title {
-    font-family: var(--sz-font-display, 'Manrope', sans-serif);
-    font-size: clamp(1.35rem, 2.5vw, 1.75rem);
-    font-weight: 800;
-    margin: 10px 0 6px;
-    letter-spacing: -0.02em;
-}
-
-.sz-scholarfit-hero__subtitle {
-    margin: 0;
-    color: var(--sz-muted);
-    max-width: 52ch;
-    line-height: 1.55;
-    font-size: 0.9375rem;
 }
 
 .sz-scholarfit-hero__stats {

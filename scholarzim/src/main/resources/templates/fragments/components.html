@@ -302,10 +302,35 @@
     <p class="text-secondary mb-0" th:if="${subtitle}" th:text="${subtitle}">Subtitle</p>
 </div>
 
-<!-- Dashboard page chrome: optional mid breadcrumb + header -->
-<th:block th:fragment="dashboard-chrome(homeUrl, homeLabel, midUrl, midLabel, title, subtitle)">
+<!-- Standard ScholarZim page hero — the single reusable header block for every
+     major authenticated page (Notification Center is the visual reference).
+     rightContent takes a fragment expression, e.g. ~{:: #someId}, for page-specific
+     supplementary content (a stat pair, an unread badge, action buttons); leave it
+     null for simple pages. actionUrl/actionLabel render a single filled CTA button
+     when a fragment slot is overkill. -->
+<header th:fragment="page-hero(eyebrow, title, description, icon, rightContent, actionUrl, actionLabel)"
+        class="sz-page-hero">
+    <div class="sz-page-hero__intro">
+        <span class="sz-page-hero__eyebrow" th:if="${eyebrow != null and !#strings.isEmpty(eyebrow)}">
+            <i class="bi" th:if="${icon != null}" th:classappend="${icon}" aria-hidden="true"></i>
+            <span th:text="${eyebrow}">Eyebrow</span>
+        </span>
+        <h1 th:text="${title}">Title</h1>
+        <p th:if="${description != null and !#strings.isEmpty(description)}" th:text="${description}">Description</p>
+    </div>
+    <div class="sz-page-hero__side" th:if="${rightContent != null or (actionUrl != null and actionLabel != null)}">
+        <th:block th:if="${rightContent != null}" th:insert="${rightContent}"></th:block>
+        <a th:if="${actionUrl != null and actionLabel != null}"
+           th:href="@{${actionUrl}}"
+           class="btn sz-page-hero__cta"
+           th:text="${actionLabel}">Action</a>
+    </div>
+</header>
+
+<!-- Dashboard page chrome: breadcrumb + standard page hero -->
+<th:block th:fragment="dashboard-chrome(homeUrl, homeLabel, midUrl, midLabel, eyebrow, title, description, rightContent)">
     <nav th:replace="~{fragments/components :: breadcrumbs(${homeUrl}, ${homeLabel}, ${midUrl}, ${midLabel}, ${title})}"></nav>
-    <div th:replace="~{fragments/components :: page-header(${title}, ${subtitle})}"></div>
+    <div th:replace="~{fragments/components :: page-hero(${eyebrow}, ${title}, ${description}, null, ${rightContent}, null, null)}"></div>
 </th:block>
 
 <!-- Error state components — never surface raw exception text -->
