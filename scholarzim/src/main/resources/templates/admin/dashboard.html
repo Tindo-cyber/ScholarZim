@@ -9,32 +9,36 @@
           ~{:: #admin-dashboard-content}
       )}">
 <body>
+
+<!-- Sibling of #admin-dashboard-content (not nested inside it) so it renders
+     once, via the explicit ~{:: #adminDashboardHeroRight} reference. -->
+<th:block id="adminDashboardHeroRight">
+    <span class="sz-page-hero__chip">
+        <strong th:text="${stats.totalUsers}">0</strong>
+        <span>users</span>
+    </span>
+    <span class="sz-page-hero__chip">
+        <strong th:text="${stats.activeOpportunities}">0</strong>
+        <span>active opportunities</span>
+    </span>
+    <span class="sz-page-hero__chip">
+        <strong th:text="${stats.pendingApplications}">0</strong>
+        <span>pending</span>
+    </span>
+</th:block>
+
 <th:block id="admin-dashboard-content">
 
-            <div class="sz-dashboard-header">
-                <div>
-                    <p class="sz-dashboard-header__meta"
-                       th:text="${#temporals.format(#temporals.createNow(), 'EEEE, d MMMM yyyy')}">Today</p>
-                    <h1 class="sz-dashboard-header__title">Platform overview</h1>
-                    <p class="text-secondary mb-0">
-                        <span th:text="${stats.totalUsers}">0</span> users ·
-                        <span th:text="${stats.activeOpportunities}">0</span> active opportunities ·
-                        <span th:text="${stats.pendingApplications}">0</span> pending applications
-                    </p>
-                </div>
-                <div class="sz-dashboard-header__actions d-none d-md-flex">
-                    <a th:href="@{/admin/analytics}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-graph-up-arrow me-1"></i>Analytics
-                    </a>
-                    <a th:href="@{/admin/reports}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-file-earmark-bar-graph me-1"></i>Reports
-                    </a>
-                    <a th:href="@{/admin/audit-log}" class="btn btn-outline-secondary btn-sm">
-                        <i class="bi bi-journal-text me-1"></i>Audit log
-                    </a>
-                    <a href="#user-management" class="btn btn-primary btn-sm">Manage users</a>
-                </div>
-            </div>
+            <nav th:replace="~{fragments/components :: breadcrumbs(
+                @{/admin/dashboard}, 'Dashboard',
+                null, null,
+                'Overview')}"></nav>
+
+            <div th:replace="~{fragments/components :: page-hero(
+                'ADMIN OVERVIEW',
+                'Dashboard',
+                'Monitor platform health, manage users, and keep scholarships moving.',
+                null, ~{:: #adminDashboardHeroRight}, null, null)}"></div>
 
             <div class="sz-dashboard-quick-actions">
                 <a href="#user-management" class="btn btn-primary"><i class="bi bi-people"></i> Users</a>

@@ -559,37 +559,6 @@
 
 
 /* Dashboard page structure */
-.sz-dashboard-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: var(--sz-space-4) var(--sz-space-6);
-    padding-bottom: var(--sz-space-5);
-    border-bottom: var(--sz-border-subtle);
-    margin-bottom: var(--sz-space-6);
-}
-.sz-dashboard-header__title {
-    font-family: var(--sz-font-display);
-    font-size: var(--sz-text-2xl);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    margin: 0 0 var(--sz-space-2);
-    color: var(--sz-text);
-    line-height: var(--sz-leading-tight);
-}
-.sz-dashboard-header__meta {
-    font-size: var(--sz-text-sm);
-    font-weight: 500;
-    color: var(--sz-muted);
-    margin: 0 0 var(--sz-space-2);
-}
-.sz-dashboard-header__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sz-space-2);
-    align-items: center;
-}
 .sz-profile-banner {
     border: var(--sz-border-subtle);
     border-radius: var(--sz-radius-ui);

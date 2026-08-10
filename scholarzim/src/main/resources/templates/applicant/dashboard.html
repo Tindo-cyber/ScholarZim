@@ -14,15 +14,26 @@
     <div class="sz-page-shell is-loaded sz-applicant-dashboard" id="szApplicantDashboard" data-page="dashboard">
         <div class="sz-page-shell__content sz-dash-content">
 
-            <header class="sz-dash-hero">
+            <nav th:replace="~{fragments/components :: breadcrumbs(
+                @{/applicant/dashboard}, 'Dashboard',
+                null, null,
+                'Overview')}"></nav>
+
+            <div th:replace="~{fragments/components :: page-hero(
+                'YOUR SCHOLARSHIP JOURNEY',
+                'Dashboard',
+                'Track your applications, discover opportunities, and stay on top of important updates.',
+                null, null, null, null)}"></div>
+
+            <header class="sz-dash-hero sz-dash-hero--compact">
                 <div class="sz-dash-hero__intro">
                     <p class="sz-dash-hero__date"
                        th:text="${#temporals.format(#temporals.createNow(), 'EEEE, d MMMM yyyy')}">Today</p>
-                    <h1 class="sz-dash-hero__title">
+                    <h2 class="sz-dash-hero__title">
                         <span th:text="${greeting}">Good Evening</span>,
                         <span class="sz-dash-hero__name"
                               th:text="${userFullName != null ? userFullName : 'there'}">Student</span>
-                    </h1>
+                    </h2>
                     <p class="sz-dash-hero__subtitle"
                        th:if="${stats.profileCompletion >= 100}">
                         Your profile is complete — explore matches and track your applications.

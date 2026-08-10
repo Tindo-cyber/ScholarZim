@@ -295,10 +295,6 @@ body:has(.sz-shell)::after {
 }
 
 @media (max-width: 575.98px) {
-    .sz-dashboard-header__title {
-        font-size: 1.25rem;
-    }
-
     .sz-stat-value {
         font-size: 1.25rem;
     }
@@ -691,6 +687,16 @@ body:has(.sz-shell)::after {
         align-items: center;
         gap: var(--sz-space-6);
     }
+}
+
+/* Secondary/subordinate hero used below the standard page-hero (e.g. the
+   personalised greeting + highlight cards on the applicant dashboard) */
+.sz-dash-hero--compact {
+    padding: var(--sz-space-5);
+}
+
+.sz-dash-hero--compact .sz-dash-hero__title {
+    font-size: clamp(1.15rem, 2vw, 1.5rem);
 }
 
 @media (max-width: 575.98px) {

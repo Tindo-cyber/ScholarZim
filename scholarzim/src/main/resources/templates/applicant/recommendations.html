@@ -9,6 +9,25 @@
           ~{:: #recommendations-content}
       )}">
 <body>
+
+<!-- Sibling of #recommendations-content (not nested inside it) so it renders
+     once, via the explicit ~{:: #recommendationsHeroRight} reference. -->
+<th:block id="recommendationsHeroRight">
+    <div class="sz-scholarfit-hero__stats">
+        <div class="sz-scholarfit-hero__stat">
+            <span class="sz-scholarfit-hero__stat-value"
+                  th:text="${opportunities != null ? opportunities.size() : 0}">0</span>
+            <span class="sz-scholarfit-hero__stat-label">Matches found</span>
+        </div>
+        <div class="sz-scholarfit-hero__stat">
+            <span class="sz-scholarfit-hero__stat-value"
+                  th:text="${opportunities != null and !opportunities.isEmpty()
+                      ? opportunities[0].matchScore + '%' : '0%'}">0%</span>
+            <span class="sz-scholarfit-hero__stat-label">Top match</span>
+        </div>
+    </div>
+</th:block>
+
 <th:block id="recommendations-content">
 
     <div class="sz-page-shell is-loaded" id="szRecommendationsPage" data-page="scholarships">
@@ -19,29 +38,13 @@
         null, null,
         'ScholarFit')}"></nav>
 
-    <section class="sz-scholarfit-hero">
-        <div class="sz-scholarfit-hero__copy">
-            <span class="sz-scholarfit-hero__badge"><i class="bi bi-stars"></i> ScholarFit</span>
-            <h1 class="sz-scholarfit-hero__title">Your personalised scholarship matches</h1>
-            <p class="sz-scholarfit-hero__subtitle">
-                Every recommendation includes a match score, confidence rating, and clear reasons
-                why you qualify — or what to fix to improve your fit.
-            </p>
-        </div>
-        <div class="sz-scholarfit-hero__stats">
-            <div class="sz-scholarfit-hero__stat">
-                <span class="sz-scholarfit-hero__stat-value"
-                      th:text="${opportunities != null ? opportunities.size() : 0}">0</span>
-                <span class="sz-scholarfit-hero__stat-label">Matches found</span>
-            </div>
-            <div class="sz-scholarfit-hero__stat">
-                <span class="sz-scholarfit-hero__stat-value"
-                      th:text="${opportunities != null and !opportunities.isEmpty()
-                          ? opportunities[0].matchScore + '%' : '0%'}">0%</span>
-                <span class="sz-scholarfit-hero__stat-label">Top match</span>
-            </div>
-        </div>
-    </section>
+    <div th:replace="~{fragments/components :: page-hero(
+        'PERSONALISED FOR YOU',
+        'Recommendations',
+        'Discover scholarship opportunities matched to your academic profile and interests.',
+        'bi-stars',
+        ~{:: #recommendationsHeroRight},
+        null, null)}"></div>
 
     <div th:if="${!hasProfile}" class="alert alert-warning rounded-4">
         <i class="bi bi-exclamation-triangle me-2"></i>

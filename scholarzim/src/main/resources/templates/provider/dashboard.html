@@ -9,6 +9,22 @@
           ~{:: #provider-dashboard-content}
       )}">
 <body>
+
+<!-- Sibling of #provider-dashboard-content (not nested inside it) so it
+     renders once, via the explicit ~{:: #providerDashboardHeroRight} reference. -->
+<th:block id="providerDashboardHeroRight">
+    <th:block th:if="${stats != null}">
+        <span class="sz-page-hero__chip">
+            <strong th:text="${stats.activeOpportunities}">0</strong>
+            <span>active listings</span>
+        </span>
+        <span class="sz-page-hero__chip">
+            <strong th:text="${stats.applicationsReceived}">0</strong>
+            <span>applications</span>
+        </span>
+    </th:block>
+</th:block>
+
 <th:block id="provider-dashboard-content">
 
             <nav th:replace="~{fragments/components :: breadcrumbs(
@@ -16,19 +32,11 @@
                 null, null,
                 'Overview')}"></nav>
 
-            <div class="sz-dashboard-header">
-                <div>
-                    <p class="sz-dashboard-header__meta"
-                       th:text="${#temporals.format(#temporals.createNow(), 'EEEE, d MMMM yyyy')}">Today</p>
-                    <h1 class="sz-dashboard-header__title"
-                        th:text="${providerName != null ? providerName : 'Provider dashboard'}">Provider</h1>
-                    <p class="text-secondary mb-0">Publish opportunities and review student applications.</p>
-                </div>
-                <div class="sz-dashboard-header__actions d-none d-sm-flex">
-                    <a th:href="@{/opportunities/create}" class="btn btn-primary btn-sm">New opportunity</a>
-                    <a th:href="@{/provider/applications}" class="btn btn-outline-secondary btn-sm">Review applications</a>
-                </div>
-            </div>
+            <div th:replace="~{fragments/components :: page-hero(
+                'PROVIDER OVERVIEW',
+                'Dashboard',
+                'Manage your scholarship opportunities, applications, and student engagement.',
+                null, ~{:: #providerDashboardHeroRight}, null, null)}"></div>
 
             <div class="sz-dashboard-quick-actions">
                 <a th:href="@{/opportunities/create}" class="btn btn-primary">
