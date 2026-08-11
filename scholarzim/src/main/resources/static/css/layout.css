@@ -307,28 +307,6 @@
     }
 }
 
-.sz-sidebar-collapse-btn {
-    width: 2rem;
-    height: 2rem;
-    padding: 0;
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--sz-muted);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-}
-
-.sz-sidebar-collapse-btn:hover,
-.sz-sidebar-collapse-btn:focus-visible {
-    background: var(--sz-sidebar-hover);
-    color: var(--sz-primary);
-    transform: scale(1.05);
-}
-
 .sz-nav-link {
     display: flex;
     align-items: center;
