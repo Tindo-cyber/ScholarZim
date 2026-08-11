@@ -58,6 +58,7 @@ public class ApplicantDashboardController {
         }
 
         model.addAttribute("greeting", GreetingUtil.timeBasedGreeting());
+        model.addAttribute("todayLabel", GreetingUtil.todayLabel());
         model.addAttribute("stats", SoftLoad.of(log, "Applicant dashboard stats",
                 new ApplicantDashboardDTO(), () -> dashboardService.getDashboardStats(email)));
 

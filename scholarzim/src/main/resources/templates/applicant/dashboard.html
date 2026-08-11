@@ -27,8 +27,7 @@
 
             <header class="sz-dash-hero sz-dash-hero--compact">
                 <div class="sz-dash-hero__intro">
-                    <p class="sz-dash-hero__date"
-                       th:text="${#temporals.format(#temporals.createNow(), 'EEEE, d MMMM yyyy')}">Today</p>
+                    <p class="sz-dash-hero__date" th:text="${todayLabel}">Today</p>
                     <h2 class="sz-dash-hero__title">
                         <span th:text="${greeting}">Good Evening</span>,
                         <span class="sz-dash-hero__name"
