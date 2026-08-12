@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
       th:replace="~{fragments/dashboard-layout :: page(
           'Settings',
           'security',
@@ -11,13 +12,33 @@
 <body>
 <th:block id="security-content">
 
-            <div th:replace="~{fragments/components :: dashboard-chrome(
-                @{/applicant/dashboard}, 'Dashboard',
-                null, null,
-                'ACCOUNT CONTROL',
-                'Settings',
-                'Manage your account preferences, security, and application settings.',
-                null)}"></div>
+            <th:block sec:authorize="hasRole('ADMIN')">
+                <div th:replace="~{fragments/components :: dashboard-chrome(
+                    @{/admin/dashboard}, 'Dashboard',
+                    null, null,
+                    'ACCOUNT CONTROL',
+                    'Settings',
+                    'Manage your account preferences, security, and application settings.',
+                    null)}"></div>
+            </th:block>
+            <th:block sec:authorize="hasRole('PROVIDER')">
+                <div th:replace="~{fragments/components :: dashboard-chrome(
+                    @{/provider/dashboard}, 'Dashboard',
+                    null, null,
+                    'ACCOUNT CONTROL',
+                    'Settings',
+                    'Manage your account preferences, security, and application settings.',
+                    null)}"></div>
+            </th:block>
+            <th:block sec:authorize="hasRole('APPLICANT')">
+                <div th:replace="~{fragments/components :: dashboard-chrome(
+                    @{/applicant/dashboard}, 'Dashboard',
+                    null, null,
+                    'ACCOUNT CONTROL',
+                    'Settings',
+                    'Manage your account preferences, security, and application settings.',
+                    null)}"></div>
+            </th:block>
 
             <div class="row g-3 g-md-4">
                 <div class="col-12 col-lg-6">
@@ -41,9 +62,15 @@
                             <h2><i class="bi bi-person-vcard text-primary me-1"></i> Profile &amp; data</h2>
                         </div>
                         <div class="sz-settings-panel__body">
-                            <p class="text-secondary small mb-3">Update your academic profile or download your data.</p>
+                            <p class="text-secondary small mb-3" sec:authorize="hasRole('APPLICANT')">
+                                Update your academic profile or download your data.
+                            </p>
+                            <p class="text-secondary small mb-3" sec:authorize="!hasRole('APPLICANT')">
+                                Download a copy of your account data.
+                            </p>
                             <div class="d-flex flex-wrap gap-2">
-                                <a class="btn btn-outline-primary btn-sm" th:href="@{/applicant/profile}">
+                                <a class="btn btn-outline-primary btn-sm" sec:authorize="hasRole('APPLICANT')"
+                                   th:href="@{/applicant/profile}">
                                     <i class="bi bi-pencil me-1"></i>Edit profile
                                 </a>
                                 <a class="btn btn-outline-secondary btn-sm" th:href="@{/account/export-data}">
