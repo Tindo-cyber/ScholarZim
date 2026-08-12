@@ -106,8 +106,7 @@
                 </div>
             </section>
 
-            <section class="sz-dash-section" aria-label="ScholarFit recommended scholarships"
-                     th:if="${!stats.hasProfile or (recommendations != null and !recommendations.isEmpty())}">
+            <section class="sz-dash-section" aria-label="ScholarFit recommended scholarships">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-stars',
                     'ScholarFit Matches',
@@ -127,12 +126,20 @@
                                 <div th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}"></div>
                             </th:block>
                         </div>
+
+                        <th:block th:if="${stats.hasProfile and (recommendations == null or recommendations.isEmpty())}">
+                            <div th:replace="~{fragments/components :: empty-state(
+                                 'bi-stars',
+                                 'No matches yet',
+                                 'We could not find scholarships matching your profile right now. Check back as new opportunities are added.',
+                                 '/opportunities',
+                                 'Browse all scholarships')}"></div>
+                        </th:block>
                     </th:block>
                 </div>
             </section>
 
-            <section class="sz-dash-section" aria-label="Application timeline"
-                     th:if="${recentApplications != null and !recentApplications.isEmpty()}">
+            <section class="sz-dash-section" aria-label="Application timeline">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-diagram-3',
                     'Application Timeline',
@@ -141,7 +148,7 @@
                     ~{:: #timeline-body}
                 )}">
                     <th:block id="timeline-body">
-                        <div class="sz-dash-timeline">
+                        <div class="sz-dash-timeline" th:if="${recentApplications != null and !recentApplications.isEmpty()}">
                             <article class="sz-dash-timeline__item" th:each="app : ${recentApplications}">
                                 <div class="sz-dash-timeline__dot" aria-hidden="true"></div>
                                 <div class="sz-dash-timeline__card">
@@ -156,12 +163,19 @@
                                 </div>
                             </article>
                         </div>
+                        <th:block th:if="${recentApplications == null or recentApplications.isEmpty()}">
+                            <div th:replace="~{fragments/components :: empty-state(
+                                 'bi-send-check',
+                                 'No applications yet',
+                                 'Once you apply to a scholarship, you will be able to track its progress here.',
+                                 '/applicant/recommendations',
+                                 'Find scholarships to apply to')}"></div>
+                        </th:block>
                     </th:block>
                 </div>
             </section>
 
-            <section class="sz-dash-section" aria-label="Recent notifications"
-                     th:if="${notifRecent != null and !notifRecent.isEmpty()}">
+            <section class="sz-dash-section" aria-label="Recent notifications">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-bell',
                     'Recent Notifications',
@@ -170,7 +184,14 @@
                     ~{:: #notif-body}
                 )}">
                     <th:block id="notif-body">
-                        <div class="sz-dash-notif-list">
+                        <th:block th:if="${notifRecent == null or notifRecent.isEmpty()}">
+                            <div th:replace="~{fragments/components :: empty-state(
+                                 'bi-bell',
+                                 'No notifications yet',
+                                 'Updates about your applications, matches, and account will show up here.',
+                                 null, null)}"></div>
+                        </th:block>
+                        <div class="sz-dash-notif-list" th:if="${notifRecent != null and !notifRecent.isEmpty()}">
                             <a th:each="n : ${notifRecent}"
                                th:href="@{/notifications/{id}/open(id=${n.notificationId})}"
                                class="sz-dash-notif-item"
@@ -192,8 +213,7 @@
                 </div>
             </section>
 
-            <section class="sz-dash-section" aria-label="Upcoming deadlines calendar"
-                     th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
+            <section class="sz-dash-section" aria-label="Upcoming deadlines calendar">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-calendar3',
                     'Upcoming Deadlines Calendar',
@@ -202,7 +222,15 @@
                     ~{:: #calendar-body}
                 )}">
                     <th:block id="calendar-body">
-                        <div class="sz-dash-calendar-wrap">
+                        <th:block th:if="${upcomingDeadlines == null or upcomingDeadlines.isEmpty()}">
+                            <div th:replace="~{fragments/components :: empty-state(
+                                 'bi-calendar3',
+                                 'No upcoming deadlines',
+                                 'Scholarship deadlines matched to your profile will appear here as they come up.',
+                                 '/applicant/recommendations',
+                                 'See recommended scholarships')}"></div>
+                        </th:block>
+                        <div class="sz-dash-calendar-wrap" th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
                             <div class="sz-dash-calendar" id="szDashCalendar" aria-label="Deadline calendar"></div>
                             <div class="sz-dash-calendar-events" id="szDashCalendarEvents" hidden>
                                 <span th:each="item : ${upcomingDeadlines}"

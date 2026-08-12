@@ -27,6 +27,14 @@
                     <div th:replace="~{fragments/components :: scholarship-card(opportunity=${opp}, showApply=true, withApplyBtn=true, removeId=${opp.opportunityId}, matchScore=null, eligibilityText=null)}"></div>
                 </th:block>
             </div>
+            <th:block th:if="${saved == null or saved.isEmpty()}">
+                <div th:replace="~{fragments/components :: empty-state(
+                     'bi-bookmark-heart',
+                     'No saved scholarships yet',
+                     'Bookmark scholarships you are interested in and they will show up here so you can find them again easily.',
+                     '/opportunities',
+                     'Browse scholarships')}"></div>
+            </th:block>
 
         </div>
     </div>

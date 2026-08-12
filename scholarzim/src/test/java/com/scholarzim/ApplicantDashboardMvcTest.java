@@ -35,7 +35,9 @@ class ApplicantDashboardMvcTest extends MvcIntegrationTestBase {
                 .andExpect(content().string(containsString("sz-applicant-dashboard")))
                 .andExpect(content().string(containsString("Application Timeline")))
                 .andExpect(content().string(not(containsString("No applications yet"))))
-                .andExpect(content().string(not(containsString("No notifications yet"))))
+                // This test seeds an application but no notifications, so the
+                // new friendly empty-state is expected to render here.
+                .andExpect(content().string(containsString("No notifications yet")))
                 .andExpect(content().string(not(containsString("sz-landing-header"))))
                 .andExpect(content().string(containsString("sz-sidebar")));
     }
