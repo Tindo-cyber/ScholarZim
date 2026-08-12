@@ -415,16 +415,19 @@
                class="btn btn-primary"
                th:href="@{${primaryUrl}}"
                th:text="${primaryLabel}">Continue</a>
-            <button type="button"
+            <button th:if="${resolvedType != 'no-data'}"
+                    type="button"
                     class="btn btn-outline-primary sz-error-state__retry"
                     th:attr="data-retry-url=${resolvedRetry}">
                 <i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Retry
             </button>
-            <a class="btn btn-outline-secondary"
+            <a th:if="${resolvedType != 'no-data'}"
+               class="btn btn-outline-secondary"
                th:href="@{${resolvedHome}}">
                 <i class="bi bi-house me-1" aria-hidden="true"></i>Return home
             </a>
-            <a class="btn btn-link sz-error-state__support"
+            <a th:if="${resolvedType != 'no-data'}"
+               class="btn btn-link sz-error-state__support"
                th:href="${supportUrl != null ? supportUrl : 'mailto:support@scholarzim.co.zw?subject=ScholarZim%20Support'}">
                 <i class="bi bi-life-preserver me-1" aria-hidden="true"></i>
                 <span>Contact support</span>
