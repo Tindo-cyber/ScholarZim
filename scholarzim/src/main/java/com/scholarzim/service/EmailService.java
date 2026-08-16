@@ -9,4 +9,6 @@ public interface EmailService {
     void sendStatusUpdateEmail(String to, String subject, String body);
 
     void sendEmailVerification(String to, String name, String verifyLink);
+
+    void sendApplicationSubmittedEmail(String to, String studentName, String scholarshipName, Long applicationId);
 }

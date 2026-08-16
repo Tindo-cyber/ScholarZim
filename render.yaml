@@ -27,3 +27,11 @@ services:
         sync: false
       - key: SCHOLARZIM_MAIL_FROM
         value: noreply@scholarzim.com
+      # Resend transactional email (Render blocks outbound SMTP, so this is the real send path —
+      # set these in the Render dashboard; values are placeholders here since sync: false)
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        sync: false
+      - key: RESEND_FROM_NAME
+        value: ScholarZim

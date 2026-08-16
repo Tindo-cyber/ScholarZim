@@ -329,6 +329,8 @@ public class ApplicationServiceImpl implements ApplicationService {
                 "Your application for \"" + title + "\" was submitted successfully.",
                 "/my-applications",
                 applicationId);
+        emailService.sendApplicationSubmittedEmail(
+                applicant.getEmail(), applicant.getFullName(), title, applicationId);
 
         User provider = opportunity.getProvider();
         if (provider != null) {

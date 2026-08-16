@@ -6,14 +6,21 @@ import com.scholarzim.service.EmailService;
 import com.scholarzim.util.AuditAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 
+/**
+ * SMTP-backed EmailService, used everywhere except prod (local dev/demo route through
+ * the Mailhog container; prod uses {@link ResendEmailServiceImpl} instead, since Render's
+ * free tier blocks outbound SMTP — see ResendEmailServiceImpl for details).
+ */
 @Slf4j
 @Service
+@Profile("!prod")
 public class EmailServiceImpl implements EmailService {
 
     private static final String SYSTEM_ACTOR = "system@scholarzim.co.zw";
@@ -106,6 +113,26 @@ public class EmailServiceImpl implements EmailService {
 
                 — The ScholarZim Team
                 """.formatted(name, verifyLink));
+        sendWithRetry(message);
+    }
+
+    @Override
+    @Async
+    public void sendApplicationSubmittedEmail(String to, String studentName, String scholarshipName, Long applicationId) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom(fromAddress);
+        message.setTo(to);
+        message.setSubject("ScholarZim: application received");
+        message.setText("""
+                Hi %s,
+
+                We've received your application for "%s" (reference #%d).
+
+                The provider will review it and you'll be notified of any updates.
+                You can track its status anytime under My Applications on ScholarZim.
+
+                — The ScholarZim Team
+                """.formatted(studentName, scholarshipName, applicationId));
         sendWithRetry(message);
     }
 
