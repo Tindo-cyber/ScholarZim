@@ -25,3 +25,6 @@ rec.html
 rec2.html
 debug-*.log
 debug-7aba56.log
+
+# Database dumps/backups (may contain real local data)
+**/database/backups/
