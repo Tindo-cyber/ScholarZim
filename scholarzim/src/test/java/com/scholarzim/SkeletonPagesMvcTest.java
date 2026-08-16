@@ -70,19 +70,6 @@ class SkeletonPagesMvcTest extends MvcIntegrationTestBase {
     }
 
     @Test
-    @WithMockUser(roles = "APPLICANT")
-    void messagesRendersContentWithoutSkeleton() throws Exception {
-        String email = "skel-msg-" + UUID.randomUUID() + "@student.co.zw";
-        data.saveApplicant(email);
-
-        mockMvc.perform(get("/messages").with(MvcTestSupport.asApplicant(email)))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("data-page=\"messages\"")))
-                .andExpect(content().string(not(containsString("sz-page-shell__skeleton"))))
-                .andExpect(content().string(not(containsString("spinner-border"))));
-    }
-
-    @Test
     void publicScholarshipsRendersContentWithoutSkeleton() throws Exception {
         mockMvc.perform(get("/scholarships"))
                 .andExpect(status().isOk())

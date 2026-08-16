@@ -2398,23 +2398,6 @@
     border-radius: 10px;
 }
 
-/* Messages skeleton */
-.sz-skeleton-messages__layout {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    gap: 1rem;
-}
-
-.sz-skeleton-stat-row {
-    height: 28px;
-    margin-top: 0.5rem;
-    border-radius: 8px;
-}
-
-.sz-skeleton-message {
-    height: 64px;
-}
-
 /* Navigation overlay skeleton */
 .sz-skeleton-nav-overlay {
     width: 100%;
@@ -2435,7 +2418,6 @@
 
 @media (max-width: 991.98px) {
     .sz-skeleton-notifications__layout,
-    .sz-skeleton-messages__layout,
     .sz-skeleton-profile__grid {
         grid-template-columns: 1fr;
     }
@@ -2491,85 +2473,6 @@
 /* Legacy page loader — hidden (replaced by nav progress + skeletons) */
 .sz-page-loader {
     display: none !important;
-}
-
-/* Messages inbox */
-.sz-messages-layout {
-    display: grid;
-    gap: 1rem;
-}
-
-@media (min-width: 768px) {
-    .sz-messages-layout {
-        grid-template-columns: 16rem 1fr;
-        align-items: start;
-    }
-}
-
-.sz-messages-sidebar {
-    border-radius: var(--sz-radius-lg, 1.25rem);
-    padding: 1rem;
-    border: 1px solid var(--sz-glass-border-outer);
-}
-
-.sz-messages-sidebar__stat {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: .5rem 0;
-    font-size: .875rem;
-}
-
-.sz-messages-thread {
-    border-radius: var(--sz-radius-lg, 1.25rem);
-    border: 1px solid var(--sz-glass-border-outer);
-    min-height: 20rem;
-    max-height: min(70vh, 36rem);
-    overflow-y: auto;
-    padding: 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: .75rem;
-}
-
-.sz-message-bubble {
-    max-width: min(100%, 36rem);
-    padding: .75rem 1rem;
-    border-radius: 1rem;
-    font-size: .9375rem;
-    line-height: 1.45;
-}
-
-.sz-message-bubble--in {
-    align-self: flex-start;
-    background: var(--sz-glass-bg-strong);
-    border: 1px solid var(--sz-glass-border-outer);
-    border-bottom-left-radius: .25rem;
-}
-
-.sz-message-bubble--unread {
-    border-color: var(--sz-primary);
-    box-shadow: 0 0 0 1px rgba(22, 163, 74, 0.15);
-}
-
-.sz-message-bubble__meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem;
-    align-items: center;
-    margin-top: .5rem;
-    font-size: .75rem;
-    color: var(--sz-text-muted);
-}
-
-.sz-message-bubble__link {
-    font-weight: 600;
-    color: var(--sz-primary);
-    text-decoration: none;
-}
-
-.sz-message-bubble__link:hover {
-    text-decoration: underline;
 }
 
 /* Application confirmation */

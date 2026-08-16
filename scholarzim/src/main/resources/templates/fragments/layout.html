@@ -156,12 +156,6 @@
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a th:href="@{/messages}" class="nav-link sz-nav-link"
-                       th:classappend="${active == 'messages'} ? 'active'">
-                        <i class="bi bi-chat-dots me-2"></i>Messages
-                    </a>
-                </li>
-                <li class="nav-item">
                     <a th:href="@{/notifications}" class="nav-link sz-nav-link"
                        th:classappend="${active == 'notifications'} ? 'active'"
                        title="Notifications">
@@ -204,12 +198,6 @@
                     <a th:href="@{/provider/applications}" class="nav-link sz-nav-link"
                        th:classappend="${active == 'applications'} ? 'active'">
                         <i class="bi bi-inbox me-2"></i>Review Applications
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a th:href="@{/messages}" class="nav-link sz-nav-link"
-                       th:classappend="${active == 'messages'} ? 'active'">
-                        <i class="bi bi-chat-dots me-2"></i>Messages
                     </a>
                 </li>
                 <li class="nav-item">
@@ -397,7 +385,6 @@
                     <th:block sec:authorize="hasRole('PROVIDER')">
                         <li><a class="dropdown-item" th:href="@{/opportunities/create}"><i class="bi bi-plus-circle me-2"></i>New opportunity</a></li>
                         <li><a class="dropdown-item" th:href="@{/provider/applications}"><i class="bi bi-inbox me-2"></i>Review applications</a></li>
-                        <li><a class="dropdown-item" th:href="@{/messages}"><i class="bi bi-chat-dots me-2"></i>Messages</a></li>
                     </th:block>
                     <th:block sec:authorize="hasRole('ADMIN')">
                         <li><a class="dropdown-item" th:href="@{/admin/search}"><i class="bi bi-search me-2"></i>Global search</a></li>
@@ -461,7 +448,6 @@
                         </a>
                     </th:block>
                     <div class="dropdown-divider my-0"></div>
-                    <a class="dropdown-item text-center small" th:href="@{/messages}">Messages</a>
                     <a class="dropdown-item text-center small" th:href="@{/notifications}">View all notifications</a>
                 </div>
             </div>
@@ -612,9 +598,6 @@
     </a>
     <a th:href="@{/provider/applications}" th:classappend="${active == 'applications'} ? 'active'">
         <i class="bi bi-inbox"></i><span>Review</span>
-    </a>
-    <a th:href="@{/messages}" th:classappend="${active == 'messages'} ? 'active'">
-        <i class="bi bi-chat-dots"></i><span>Messages</span>
     </a>
 </nav>
 
