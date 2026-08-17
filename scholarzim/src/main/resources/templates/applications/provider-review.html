@@ -108,7 +108,7 @@
                             </div>
                         </div>
 
-                        <div th:if="${applicationDetail.applicationStatus == 'APPROVED' or applicationDetail.applicationStatus == 'AWARDED'}"
+                        <div th:if="${applicationDetail.applicationStatus == 'APPROVED'}"
                              class="sz-applicant-contact rounded-3 border p-3 bg-success-subtle">
                             <p class="small fw-bold mb-2 text-success-emphasis">
                                 <i class="bi bi-unlock me-1"></i>Contact details
@@ -128,7 +128,7 @@
                                 No contact details on file for this applicant.
                             </p>
                         </div>
-                        <p th:unless="${applicationDetail.applicationStatus == 'APPROVED' or applicationDetail.applicationStatus == 'AWARDED'}"
+                        <p th:unless="${applicationDetail.applicationStatus == 'APPROVED'}"
                            class="small text-secondary mb-0">
                             <i class="bi bi-lock me-1"></i>
                             Contact details unlock after you approve this applicant.

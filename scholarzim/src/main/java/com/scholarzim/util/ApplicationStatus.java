@@ -15,7 +15,6 @@ public final class ApplicationStatus {
     public static final String SHORTLISTED = "SHORTLISTED";
     public static final String INTERVIEW = "INTERVIEW";
     public static final String APPROVED = "APPROVED";
-    public static final String AWARDED = "AWARDED";
     public static final String REJECTED = "REJECTED";
     public static final String WAITLISTED = "WAITLISTED";
     public static final String PENDING = "PENDING"; // legacy
@@ -29,7 +28,6 @@ public final class ApplicationStatus {
         LABELS.put(SHORTLISTED, "Shortlisted");
         LABELS.put(INTERVIEW, "Interview");
         LABELS.put(APPROVED, "Approved");
-        LABELS.put(AWARDED, "Awarded");
         LABELS.put(REJECTED, "Rejected");
         LABELS.put(WAITLISTED, "Waitlisted");
         LABELS.put(PENDING, "Pending");

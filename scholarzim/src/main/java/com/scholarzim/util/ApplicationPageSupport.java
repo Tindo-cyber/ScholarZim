@@ -109,9 +109,6 @@ public final class ApplicationPageSupport {
         if ("PENDING".equalsIgnoreCase(statusFilter)) {
             return PENDING_STATUSES.contains(status);
         }
-        if ("AWARDED".equalsIgnoreCase(statusFilter)) {
-            return "APPROVED".equals(status) || "AWARDED".equals(status);
-        }
         if ("SHORTLISTED".equalsIgnoreCase(statusFilter)) {
             return "SHORTLISTED".equals(status) || "WAITLISTED".equals(status);
         }

@@ -12,7 +12,7 @@ public final class NotificationCenterSupport {
 
     public static final int PAGE_SIZE = 10;
     public static final List<String> CATEGORIES =
-            List.of("APPLICATIONS", "SCHOLARSHIPS", "MESSAGES", "SYSTEM");
+            List.of("APPLICATIONS", "SCHOLARSHIPS", "SYSTEM");
 
     private NotificationCenterSupport() {
     }
@@ -80,9 +80,6 @@ public final class NotificationCenterSupport {
                 || normalized.startsWith("SCHOLARSHIP_")) {
             return "SCHOLARSHIPS";
         }
-        if (normalized.startsWith("MESSAGE_") || normalized.startsWith("NEW_MESSAGE")) {
-            return "MESSAGES";
-        }
         return "SYSTEM";
     }
 
@@ -90,7 +87,6 @@ public final class NotificationCenterSupport {
         return switch (normalize(category)) {
             case "APPLICATIONS" -> "Applications";
             case "SCHOLARSHIPS" -> "Scholarships";
-            case "MESSAGES" -> "Messages";
             default -> "System";
         };
     }
@@ -99,7 +95,6 @@ public final class NotificationCenterSupport {
         return switch (normalize(category)) {
             case "APPLICATIONS" -> "bi-file-earmark-check";
             case "SCHOLARSHIPS" -> "bi-mortarboard";
-            case "MESSAGES" -> "bi-chat-dots";
             default -> "bi-gear";
         };
     }
@@ -108,7 +103,6 @@ public final class NotificationCenterSupport {
         return switch (normalize(category)) {
             case "APPLICATIONS" -> "applications";
             case "SCHOLARSHIPS" -> "scholarships";
-            case "MESSAGES" -> "messages";
             default -> "system";
         };
     }

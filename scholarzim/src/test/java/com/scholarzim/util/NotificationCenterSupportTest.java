@@ -18,8 +18,6 @@ class NotificationCenterSupportTest {
                 .isEqualTo("APPLICATIONS");
         assertThat(NotificationCenterSupport.category(NotificationType.NEW_OPPORTUNITY))
                 .isEqualTo("SCHOLARSHIPS");
-        assertThat(NotificationCenterSupport.category(NotificationType.MESSAGE_RECEIVED))
-                .isEqualTo("MESSAGES");
         assertThat(NotificationCenterSupport.category(NotificationType.PROFILE_INCOMPLETE))
                 .isEqualTo("SYSTEM");
     }
@@ -28,17 +26,17 @@ class NotificationCenterSupportTest {
     void filtersByCategorySearchAndReadStatus() {
         Notification application = notification(
                 NotificationType.APPLICATION_APPROVED, "Your application was awarded", false);
-        Notification message = notification(
-                NotificationType.MESSAGE_RECEIVED, "New reply from the university", false);
+        Notification scholarship = notification(
+                NotificationType.NEW_OPPORTUNITY, "New match from the university", false);
 
         var result = NotificationCenterSupport.buildPage(
-                List.of(application, message), "university", "MESSAGES", "UNREAD", 0);
+                List.of(application, scholarship), "university", "SCHOLARSHIPS", "UNREAD", 0);
 
         assertThat(result.filteredTotal()).isEqualTo(1);
         assertThat(result.filteredUnread()).isEqualTo(1);
-        assertThat(result.notifications()).containsExactly(message);
+        assertThat(result.notifications()).containsExactly(scholarship);
         assertThat(result.categoryCounts().get("APPLICATIONS")).isEqualTo(1);
-        assertThat(result.categoryCounts().get("MESSAGES")).isEqualTo(1);
+        assertThat(result.categoryCounts().get("SCHOLARSHIPS")).isEqualTo(1);
     }
 
     @Test

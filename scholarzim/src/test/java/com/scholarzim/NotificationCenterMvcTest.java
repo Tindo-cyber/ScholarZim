@@ -30,9 +30,9 @@ class NotificationCenterMvcTest extends MvcIntegrationTestBase {
         var applicant = data.saveApplicant(email);
         notificationService.notifyUser(
                 applicant,
-                NotificationType.MESSAGE_RECEIVED,
-                "New reply from Midlands State University",
-                "/messages",
+                NotificationType.DEADLINE_REMINDER,
+                "Midlands State University deadline is approaching",
+                "/opportunities/42",
                 42L);
 
         mockMvc.perform(get("/notifications").with(MvcTestSupport.asApplicant(email)))
@@ -41,11 +41,10 @@ class NotificationCenterMvcTest extends MvcIntegrationTestBase {
                 .andExpect(content().string(containsString("Notification Center")))
                 .andExpect(content().string(containsString("Applications")))
                 .andExpect(content().string(containsString("Scholarships")))
-                .andExpect(content().string(containsString("Messages")))
                 .andExpect(content().string(containsString("System")))
                 .andExpect(content().string(containsString("Search notifications")))
                 .andExpect(content().string(containsString("Mark all read")))
-                .andExpect(content().string(containsString("New reply from Midlands State University")))
+                .andExpect(content().string(containsString("Midlands State University deadline is approaching")))
                 .andExpect(content().string(containsString("sz-notification-card--unread")))
                 .andExpect(content().string(not(containsString("Something went wrong"))));
     }
@@ -63,9 +62,9 @@ class NotificationCenterMvcTest extends MvcIntegrationTestBase {
                 9L);
         notificationService.notifyUser(
                 applicant,
-                NotificationType.MESSAGE_RECEIVED,
-                "A provider sent you a message",
-                "/messages",
+                NotificationType.PROFILE_INCOMPLETE,
+                "Complete your profile to see better matches",
+                "/applicant/profile",
                 10L);
 
         mockMvc.perform(get("/notifications")

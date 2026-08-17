@@ -21,7 +21,6 @@ public final class NotificationType {
     public static final String PROVIDER_APPLICATION = "PROVIDER_APPLICATION";
     public static final String PROVIDER_APPROVED = "PROVIDER_APPROVED";
     public static final String PROVIDER_REJECTED = "PROVIDER_REJECTED";
-    public static final String MESSAGE_RECEIVED = "MESSAGE_RECEIVED";
 
     public static final List<String> ALL = List.of(
             APPLICATION_SUBMITTED,
@@ -34,7 +33,6 @@ public final class NotificationType {
             DEADLINE_REMINDER,
             NEW_OPPORTUNITY,
             PROFILE_INCOMPLETE,
-            MESSAGE_RECEIVED,
             PROVIDER_APPLICATION,
             PROVIDER_APPROVED,
             PROVIDER_REJECTED);

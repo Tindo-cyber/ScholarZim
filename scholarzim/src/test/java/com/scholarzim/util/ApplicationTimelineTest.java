@@ -19,7 +19,6 @@ class ApplicationTimelineTest {
         assertThat(ApplicationTimeline.currentStageIndex("WAITLISTED")).isEqualTo(2);
         assertThat(ApplicationTimeline.currentStageIndex("INTERVIEW")).isEqualTo(3);
         assertThat(ApplicationTimeline.currentStageIndex("APPROVED")).isEqualTo(4);
-        assertThat(ApplicationTimeline.currentStageIndex("AWARDED")).isEqualTo(4);
     }
 
     @Test
@@ -57,7 +56,7 @@ class ApplicationTimelineTest {
     }
 
     @Test
-    void filtersAwardedStatusInPageSupport() {
+    void filtersApprovedStatusInPageSupport() {
         var opportunity = new Opportunity();
         opportunity.setTitle("STEM Award");
         opportunity.setProviderName("UZ");
@@ -66,7 +65,7 @@ class ApplicationTimelineTest {
         approved.setOpportunity(opportunity);
         approved.setApplicationStatus("APPROVED");
 
-        var result = ApplicationPageSupport.buildPage(java.util.List.of(approved), "", "AWARDED", 0);
+        var result = ApplicationPageSupport.buildPage(java.util.List.of(approved), "", "APPROVED", 0);
 
         assertThat(result.filteredTotal()).isEqualTo(1);
     }

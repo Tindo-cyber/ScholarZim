@@ -1353,7 +1353,6 @@
 .sz-notification-center {
     --sz-notification-blue: #2563eb;
     --sz-notification-purple: #7c3aed;
-    --sz-notification-teal: #0891b2;
     --sz-notification-slate: #64748b;
 }
 
@@ -1549,12 +1548,6 @@
 .sz-notification-card__icon--scholarships {
     color: var(--sz-notification-purple);
     background: rgba(124, 58, 237, 0.11);
-}
-
-.sz-notification-category__icon--messages,
-.sz-notification-card__icon--messages {
-    color: var(--sz-notification-teal);
-    background: rgba(8, 145, 178, 0.11);
 }
 
 .sz-notification-category__text {

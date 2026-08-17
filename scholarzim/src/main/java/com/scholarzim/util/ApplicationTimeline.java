@@ -32,7 +32,7 @@ public final class ApplicationTimeline {
             case ApplicationStatus.UNDER_REVIEW, ApplicationStatus.DOCUMENTS_REQUESTED -> 1;
             case ApplicationStatus.WAITLISTED, ApplicationStatus.SHORTLISTED -> 2;
             case ApplicationStatus.INTERVIEW -> 3;
-            case ApplicationStatus.APPROVED, ApplicationStatus.AWARDED -> 4;
+            case ApplicationStatus.APPROVED -> 4;
             case ApplicationStatus.REJECTED -> 1;
             default -> 0;
         };
@@ -101,7 +101,7 @@ public final class ApplicationTimeline {
     public static String trackerBadgeClass(String status) {
         String normalized = normalize(status);
         return switch (normalized) {
-            case ApplicationStatus.APPROVED, ApplicationStatus.AWARDED -> "sz-app-badge--awarded";
+            case ApplicationStatus.APPROVED -> "sz-app-badge--awarded";
             case ApplicationStatus.REJECTED -> "sz-app-badge--rejected";
             case ApplicationStatus.INTERVIEW -> "sz-app-badge--interview";
             case ApplicationStatus.WAITLISTED, ApplicationStatus.SHORTLISTED -> "sz-app-badge--shortlisted";
@@ -114,7 +114,7 @@ public final class ApplicationTimeline {
     public static String trackerLabel(String status) {
         String normalized = normalize(status);
         return switch (normalized) {
-            case ApplicationStatus.APPROVED, ApplicationStatus.AWARDED -> "Awarded";
+            case ApplicationStatus.APPROVED -> "Awarded";
             case ApplicationStatus.WAITLISTED, ApplicationStatus.SHORTLISTED -> "Shortlisted";
             case ApplicationStatus.INTERVIEW -> "Interview";
             case ApplicationStatus.UNDER_REVIEW -> "Under review";
