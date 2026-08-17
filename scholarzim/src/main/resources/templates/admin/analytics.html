@@ -95,6 +95,30 @@
             </div>
         </div>
 
+        <ul class="nav nav-tabs sz-admin-top-tabs mb-3" role="tablist">
+            <li class="nav-item">
+                <button id="an-tab-growth-btn" class="nav-link active" data-bs-toggle="tab"
+                        data-bs-target="#an-tab-growth" type="button" role="tab">
+                    <i class="bi bi-graph-up-arrow me-1"></i>Growth &amp; trends
+                </button>
+            </li>
+            <li class="nav-item">
+                <button id="an-tab-scholarships-btn" class="nav-link" data-bs-toggle="tab"
+                        data-bs-target="#an-tab-scholarships" type="button" role="tab">
+                    <i class="bi bi-award me-1"></i>Scholarships &amp; providers
+                </button>
+            </li>
+            <li class="nav-item">
+                <button id="an-tab-activity-btn" class="nav-link" data-bs-toggle="tab"
+                        data-bs-target="#an-tab-activity" type="button" role="tab">
+                    <i class="bi bi-clock-history me-1"></i>Activity
+                </button>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+        <div class="tab-pane fade show active" id="an-tab-growth" role="tabpanel">
+
         <!-- Monthly growth -->
         <div class="row g-3 g-md-4 mb-4">
             <div class="col-12 col-xxl-8">
@@ -154,6 +178,9 @@
             </div>
         </div>
 
+        </div>
+        <div class="tab-pane fade" id="an-tab-scholarships" role="tabpanel">
+
         <!-- Scholarships pie + top providers -->
         <div class="row g-3 g-md-4 mb-4">
             <div class="col-12 col-md-6">
@@ -181,6 +208,48 @@
                 </section>
             </div>
         </div>
+
+        <!-- Most viewed + recent users -->
+        <div class="row g-3 g-md-4 mb-4">
+            <div class="col-12 col-lg-6">
+                <section class="sz-analytics-widget h-100">
+                    <header class="sz-analytics-widget__head">
+                        <h2><i class="bi bi-eye text-primary"></i> Most viewed scholarships</h2>
+                        <span class="small text-secondary">By applications &amp; saves</span>
+                    </header>
+                    <div class="sz-analytics-widget__body">
+                        <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!mostViewedOpportunities.labels.isEmpty()}">
+                            <canvas id="viewedChart"></canvas>
+                        </div>
+                    </div>
+                </section>
+            </div>
+            <div class="col-12 col-lg-6">
+                <section class="sz-analytics-widget h-100">
+                    <header class="sz-analytics-widget__head">
+                        <h2><i class="bi bi-person-plus text-success"></i> Recent users</h2>
+                    </header>
+                    <div class="sz-analytics-widget__body p-0">
+                        <ul class="sz-analytics-users list-unstyled mb-0" th:if="${!recentUsers.isEmpty()}">
+                            <li class="sz-analytics-users__item" th:each="user : ${recentUsers}">
+                                <span class="sz-analytics-users__avatar" aria-hidden="true"
+                                      th:text="${#strings.toUpperCase(#strings.substring(user.email, 0, 1))}">U</span>
+                                <div class="min-w-0 flex-grow-1">
+                                    <div class="fw-semibold text-truncate" th:text="${user.displayName}">Name</div>
+                                    <div class="small text-secondary text-truncate" th:text="${user.email}">email</div>
+                                </div>
+                                <span class="badge rounded-pill"
+                                      th:classappend="${user.roleLabel == 'Provider'} ? 'text-bg-warning' : 'text-bg-primary'"
+                                      th:text="${user.roleLabel}">Student</span>
+                            </li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        </div>
+        <div class="tab-pane fade" id="an-tab-activity" role="tabpanel">
 
         <!-- Activity + pending approvals -->
         <div class="row g-3 g-md-4 mb-4">
@@ -231,45 +300,6 @@
             </div>
         </div>
 
-        <!-- Most viewed + recent users -->
-        <div class="row g-3 g-md-4 mb-4">
-            <div class="col-12 col-lg-6">
-                <section class="sz-analytics-widget h-100">
-                    <header class="sz-analytics-widget__head">
-                        <h2><i class="bi bi-eye text-primary"></i> Most viewed scholarships</h2>
-                        <span class="small text-secondary">By applications &amp; saves</span>
-                    </header>
-                    <div class="sz-analytics-widget__body">
-                        <div class="sz-chart-wrap sz-chart-wrap--wide" th:if="${!mostViewedOpportunities.labels.isEmpty()}">
-                            <canvas id="viewedChart"></canvas>
-                        </div>
-                    </div>
-                </section>
-            </div>
-            <div class="col-12 col-lg-6">
-                <section class="sz-analytics-widget h-100">
-                    <header class="sz-analytics-widget__head">
-                        <h2><i class="bi bi-person-plus text-success"></i> Recent users</h2>
-                    </header>
-                    <div class="sz-analytics-widget__body p-0">
-                        <ul class="sz-analytics-users list-unstyled mb-0" th:if="${!recentUsers.isEmpty()}">
-                            <li class="sz-analytics-users__item" th:each="user : ${recentUsers}">
-                                <span class="sz-analytics-users__avatar" aria-hidden="true"
-                                      th:text="${#strings.toUpperCase(#strings.substring(user.email, 0, 1))}">U</span>
-                                <div class="min-w-0 flex-grow-1">
-                                    <div class="fw-semibold text-truncate" th:text="${user.displayName}">Name</div>
-                                    <div class="small text-secondary text-truncate" th:text="${user.email}">email</div>
-                                </div>
-                                <span class="badge rounded-pill"
-                                      th:classappend="${user.roleLabel == 'Provider'} ? 'text-bg-warning' : 'text-bg-primary'"
-                                      th:text="${user.roleLabel}">Student</span>
-                            </li>
-                        </ul>
-                    </div>
-                </section>
-            </div>
-        </div>
-
         <!-- Insights footer -->
         <section class="sz-analytics-widget">
             <header class="sz-analytics-widget__head">
@@ -301,6 +331,9 @@
                 </div>
             </div>
         </section>
+
+        </div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -442,41 +475,59 @@
             options: doughnutOptions()
         });
 
-        new Chart(document.getElementById('scholarshipChart'), {
-            type: 'pie',
-            data: {
-                labels: scholarshipLabels,
-                datasets: [{ data: scholarshipData, backgroundColor: [chartSuccess, chartDanger], borderWidth: 0 }]
-            },
-            options: doughnutOptions()
-        });
-
-        if (providerLabels.length) {
-            new Chart(document.getElementById('providersChart'), {
-                type: 'bar',
-                data: {
-                    labels: providerLabels,
-                    datasets: [{ label: 'Applications', data: providerData, backgroundColor: chartAccent, borderRadius: 8 }]
-                },
-                options: horizontalBarOptions(chartAccent)
-            });
-        }
-
-        if (viewedLabels.length) {
-            new Chart(document.getElementById('viewedChart'), {
-                type: 'bar',
-                data: {
-                    labels: viewedLabels,
-                    datasets: [{ label: 'Engagement', data: viewedData, backgroundColor: chartPrimary, borderRadius: 8 }]
-                },
-                options: horizontalBarOptions(chartPrimary)
-            });
-        }
-
-        document.querySelectorAll('.sz-chart-wrap').forEach(function (panel) {
+        document.querySelectorAll('#an-tab-growth .sz-chart-wrap').forEach(function (panel) {
             panel.classList.add('is-ready');
         });
         if (window.szMarkChartsReady) szMarkChartsReady();
+
+        // The "Scholarships & providers" tab starts hidden, and Chart.js can't size a
+        // canvas inside a display:none container -- so these three only build once that
+        // tab is actually shown, not on page load like the Growth & trends charts above.
+        let scholarshipsChartsInitialized = false;
+        function initScholarshipsTabCharts() {
+            if (scholarshipsChartsInitialized) return;
+            scholarshipsChartsInitialized = true;
+
+            new Chart(document.getElementById('scholarshipChart'), {
+                type: 'pie',
+                data: {
+                    labels: scholarshipLabels,
+                    datasets: [{ data: scholarshipData, backgroundColor: [chartSuccess, chartDanger], borderWidth: 0 }]
+                },
+                options: doughnutOptions()
+            });
+
+            if (providerLabels.length) {
+                new Chart(document.getElementById('providersChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: providerLabels,
+                        datasets: [{ label: 'Applications', data: providerData, backgroundColor: chartAccent, borderRadius: 8 }]
+                    },
+                    options: horizontalBarOptions(chartAccent)
+                });
+            }
+
+            if (viewedLabels.length) {
+                new Chart(document.getElementById('viewedChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: viewedLabels,
+                        datasets: [{ label: 'Engagement', data: viewedData, backgroundColor: chartPrimary, borderRadius: 8 }]
+                    },
+                    options: horizontalBarOptions(chartPrimary)
+                });
+            }
+
+            document.querySelectorAll('#an-tab-scholarships .sz-chart-wrap').forEach(function (panel) {
+                panel.classList.add('is-ready');
+            });
+        }
+
+        const scholarshipsTabBtn = document.getElementById('an-tab-scholarships-btn');
+        if (scholarshipsTabBtn) {
+            scholarshipsTabBtn.addEventListener('shown.bs.tab', initScholarshipsTabCharts);
+        }
         /*]]>*/
     </script>
 

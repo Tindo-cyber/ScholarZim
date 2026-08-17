@@ -563,6 +563,19 @@
                     });
                 });
 
+                // Links elsewhere in the app (post-approve/reject redirects, the Analytics
+                // page's "Review" links) point at /admin/dashboard#user-management, which
+                // now lives inside a hidden-by-default tab -- activate it on load so the
+                // browser doesn't land on an invisible target. Deferred to DOMContentLoaded
+                // because bootstrap.bundle.min.js loads with `defer` and hasn't attached its
+                // tab click-handling yet when this inline script runs during HTML parsing.
+                document.addEventListener('DOMContentLoaded', function () {
+                    if (window.location.hash === '#user-management') {
+                        const usersTabBtn = document.getElementById('admin-tab-users-btn');
+                        if (usersTabBtn) usersTabBtn.click();
+                    }
+                });
+
                 const approved = [[${stats.approvedApplications}]];
                 const rejected = [[${stats.rejectedApplications}]];
                 const pending = [[${stats.pendingApplications}]];
