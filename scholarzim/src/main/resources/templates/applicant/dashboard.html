@@ -120,10 +120,10 @@
                             <span>Complete your <a th:href="@{/applicant/profile}">profile</a> to get ScholarFit recommendations.</span>
                         </div>
 
-                        <div class="sz-scholarfit-grid sz-scholarfit-grid--compact"
+                        <div class="sz-scholarfit-compact-list"
                              th:if="${stats.hasProfile and recommendations != null and !recommendations.isEmpty()}">
                             <th:block th:each="scored : ${recommendations}">
-                                <div th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}"></div>
+                                <div th:replace="~{fragments/components :: scholarfit-recommendation-card-compact(scored=${scored})}"></div>
                             </th:block>
                         </div>
 
@@ -213,10 +213,10 @@
                 </div>
             </section>
 
-            <section class="sz-dash-section" aria-label="Upcoming deadlines calendar">
+            <section class="sz-dash-section" aria-label="Upcoming deadlines">
                 <div th:replace="~{fragments/components :: premium-panel(
                     'bi-calendar3',
-                    'Upcoming Deadlines Calendar',
+                    'Upcoming Deadlines',
                     '/applicant/recommendations',
                     'All deadlines',
                     ~{:: #calendar-body}
@@ -230,32 +230,22 @@
                                  '/applicant/recommendations',
                                  'See recommended scholarships')}"></div>
                         </th:block>
-                        <div class="sz-dash-calendar-wrap" th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
-                            <div class="sz-dash-calendar" id="szDashCalendar" aria-label="Deadline calendar"></div>
-                            <div class="sz-dash-calendar-events" id="szDashCalendarEvents" hidden>
-                                <span th:each="item : ${upcomingDeadlines}"
-                                      th:if="${item.opportunity != null}"
-                                      class="sz-dash-calendar__event"
-                                      th:attr="data-date=${item.opportunity.deadline},
-                                               data-title=${item.opportunity.title}"></span>
-                            </div>
-                            <ul class="sz-dash-deadline-list">
-                                <li class="sz-dash-deadline-list__item"
-                                    th:each="item : ${upcomingDeadlines}"
-                                    th:if="${item.opportunity != null}">
-                                    <div class="sz-dash-deadline-list__date"
-                                         th:text="${item.opportunity.deadline != null
-                                            ? #temporals.format(item.opportunity.deadline, 'dd MMM') : '—'}">Date</div>
-                                    <div class="sz-dash-deadline-list__info">
-                                        <span class="sz-dash-deadline-list__title"
-                                              th:text="${item.opportunity.title}">Title</span>
-                                        <span class="sz-deadline small"
-                                              th:if="${item.opportunity.deadline != null}"
-                                              th:attr="data-deadline=${item.opportunity.deadline}">Deadline</span>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
+                        <ul class="sz-dash-deadline-list" th:if="${upcomingDeadlines != null and !upcomingDeadlines.isEmpty()}">
+                            <li class="sz-dash-deadline-list__item"
+                                th:each="item : ${upcomingDeadlines}"
+                                th:if="${item.opportunity != null}">
+                                <div class="sz-dash-deadline-list__date"
+                                     th:text="${item.opportunity.deadline != null
+                                        ? #temporals.format(item.opportunity.deadline, 'dd MMM') : '—'}">Date</div>
+                                <div class="sz-dash-deadline-list__info">
+                                    <span class="sz-dash-deadline-list__title"
+                                          th:text="${item.opportunity.title}">Title</span>
+                                    <span class="sz-deadline small"
+                                          th:if="${item.opportunity.deadline != null}"
+                                          th:attr="data-deadline=${item.opportunity.deadline}">Deadline</span>
+                                </div>
+                            </li>
+                        </ul>
                     </th:block>
                 </div>
             </section>

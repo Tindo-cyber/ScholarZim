@@ -297,6 +297,30 @@
      th:replace="~{fragments/components :: scholarfit-recommendation-card(scored=${scored})}">
 </div>
 
+<!-- Condensed ScholarFit preview for the dashboard -- full reasons/missing-requirements/actions
+     live on the dedicated Recommendations page, not duplicated here. -->
+<a th:fragment="scholarfit-recommendation-card-compact(scored)"
+   class="sz-scholarfit-card-compact"
+   th:with="opp=${scored.opportunity}, match=${scored.matchScore}"
+   th:href="@{/scholarships/{id}(id=${opp.opportunityId})}">
+
+    <div class="sz-scholarfit-card-compact__match">
+        <span th:text="${match}">95</span><small>%</small>
+    </div>
+
+    <div class="sz-scholarfit-card-compact__body min-w-0">
+        <h3 class="sz-scholarfit-card-compact__title" th:text="${opp.title}">Title</h3>
+        <p class="sz-scholarfit-card-compact__meta">
+            <span th:text="${opp.providerName}">Provider</span>
+            <span th:if="${opp.deadline != null}">
+                · Closes <span th:text="${#temporals.format(opp.deadline, 'dd MMM')}">date</span>
+            </span>
+        </p>
+    </div>
+
+    <i class="bi bi-chevron-right sz-scholarfit-card-compact__chevron" aria-hidden="true"></i>
+</a>
+
 <div th:fragment="page-header(title, subtitle)" class="sz-page-header">
     <h1 th:text="${title}">Title</h1>
     <p class="text-secondary mb-0" th:if="${subtitle}" th:text="${subtitle}">Subtitle</p>

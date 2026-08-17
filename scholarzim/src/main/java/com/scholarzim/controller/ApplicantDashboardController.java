@@ -68,7 +68,7 @@ public class ApplicantDashboardController {
         model.addAttribute("upcomingDeadlines", recommendations.stream()
                 .filter(s -> s.getOpportunity() != null && s.getOpportunity().getDeadline() != null)
                 .sorted(Comparator.comparing(s -> s.getOpportunity().getDeadline()))
-                .limit(8)
+                .limit(4)
                 .toList());
 
         model.addAttribute("recentApplications", SoftLoad.of(log, "Recent applications",

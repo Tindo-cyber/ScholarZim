@@ -2590,14 +2590,75 @@
     grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
 }
 
-.sz-scholarfit-grid--compact {
-    grid-template-columns: 1fr;
+.sz-scholarfit-compact-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sz-space-2, 0.5rem);
 }
 
-@media (min-width: 1200px) {
-    .sz-scholarfit-grid--compact {
-        grid-template-columns: repeat(2, 1fr);
-    }
+.sz-scholarfit-card-compact {
+    display: flex;
+    align-items: center;
+    gap: var(--sz-space-3, 0.75rem);
+    padding: var(--sz-space-3, 0.75rem);
+    border-radius: 12px;
+    border: 1px solid var(--sz-border);
+    background: var(--sz-card);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.sz-scholarfit-card-compact:hover {
+    border-color: var(--sz-primary);
+    background: var(--sz-surface-muted);
+    color: inherit;
+}
+
+.sz-scholarfit-card-compact__match {
+    flex-shrink: 0;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+    gap: 1px;
+    font-weight: 700;
+    background: rgba(22, 163, 74, 0.12);
+    color: var(--sz-primary);
+}
+
+.sz-scholarfit-card-compact__match span {
+    font-size: 0.9375rem;
+}
+
+.sz-scholarfit-card-compact__match small {
+    font-size: 0.625rem;
+}
+
+.sz-scholarfit-card-compact__title {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--sz-text);
+    margin: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sz-scholarfit-card-compact__meta {
+    font-size: 0.75rem;
+    color: var(--sz-muted);
+    margin: 2px 0 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sz-scholarfit-card-compact__chevron {
+    flex-shrink: 0;
+    color: var(--sz-muted);
 }
 
 .sz-scholarfit-card {
