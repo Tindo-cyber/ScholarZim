@@ -40,4 +40,13 @@ public class User {
 
     @Column(name = "is_super_admin", nullable = false)
     private boolean superAdmin = false;
+
+    @Column(name = "email_notify_applications", nullable = false)
+    private boolean emailNotifyApplications = true;
+
+    @Column(name = "email_notify_scholarships", nullable = false)
+    private boolean emailNotifyScholarships = true;
+
+    @Column(name = "email_notify_system", nullable = false)
+    private boolean emailNotifySystem = true;
 }

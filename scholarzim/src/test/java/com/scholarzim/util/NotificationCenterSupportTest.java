@@ -1,6 +1,7 @@
 package com.scholarzim.util;
 
 import com.scholarzim.entity.Notification;
+import com.scholarzim.entity.User;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -20,6 +21,23 @@ class NotificationCenterSupportTest {
                 .isEqualTo("SCHOLARSHIPS");
         assertThat(NotificationCenterSupport.category(NotificationType.PROFILE_INCOMPLETE))
                 .isEqualTo("SYSTEM");
+    }
+
+    @Test
+    void emailAllowedForTypeChecksTheMatchingPreferenceFlag() {
+        User user = new User();
+        user.setEmailNotifyApplications(false);
+        user.setEmailNotifyScholarships(true);
+        user.setEmailNotifySystem(false);
+
+        assertThat(NotificationCenterSupport.emailAllowedForType(user, NotificationType.APPLICATION_SUBMITTED))
+                .isFalse();
+        assertThat(NotificationCenterSupport.emailAllowedForType(user, NotificationType.DEADLINE_REMINDER))
+                .isTrue();
+        assertThat(NotificationCenterSupport.emailAllowedForType(user, NotificationType.PROFILE_INCOMPLETE))
+                .isFalse();
+        assertThat(NotificationCenterSupport.emailAllowedForType(null, NotificationType.PROFILE_INCOMPLETE))
+                .isFalse();
     }
 
     @Test

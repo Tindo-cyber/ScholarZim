@@ -19,6 +19,7 @@ import com.scholarzim.service.FileStorageService;
 import com.scholarzim.service.NotificationService;
 import com.scholarzim.util.ApplicationStatus;
 import com.scholarzim.util.AuditAction;
+import com.scholarzim.util.NotificationCenterSupport;
 import com.scholarzim.util.NotificationType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
@@ -372,6 +373,7 @@ public class ApplicationServiceImpl implements ApplicationService {
             notificationService.notifyUser(applicant, NotificationType.APPLICATION_APPROVED,
                     "Your application for \"" + title + "\" was approved.",
                     "/my-applications", applicationId);
+            if (NotificationCenterSupport.emailAllowedForType(applicant, NotificationType.APPLICATION_APPROVED)) {
             emailService.sendStatusUpdateEmail(
                     applicant.getEmail(),
                     "ScholarZim: your application was approved",
@@ -387,10 +389,12 @@ public class ApplicationServiceImpl implements ApplicationService {
 
                             — The ScholarZim Team
                             """.formatted(applicant.getFullName(), title, reason));
+            }
         } else if (ApplicationStatus.REJECTED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.APPLICATION_REJECTED,
                     "Your application for \"" + title + "\" was not successful this round.",
                     "/my-applications", applicationId);
+            if (NotificationCenterSupport.emailAllowedForType(applicant, NotificationType.APPLICATION_REJECTED)) {
             emailService.sendStatusUpdateEmail(
                     applicant.getEmail(),
                     "ScholarZim: update on your application",
@@ -406,6 +410,7 @@ public class ApplicationServiceImpl implements ApplicationService {
 
                             — The ScholarZim Team
                             """.formatted(applicant.getFullName(), title, reason));
+            }
         } else if (ApplicationStatus.DOCUMENTS_REQUESTED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.DOCUMENTS_REQUESTED,
                     "Additional documents requested for \"" + title + "\".",

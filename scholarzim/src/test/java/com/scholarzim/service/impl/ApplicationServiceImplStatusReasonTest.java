@@ -118,6 +118,19 @@ class ApplicationServiceImplStatusReasonTest {
     }
 
     @Test
+    void approvingSkipsEmailWhenApplicantOptedOut() {
+        Application application = applicationFor(6L);
+        application.getUser().setEmailNotifyApplications(false);
+        when(applicationRepository.findByIdWithDetails(6L)).thenReturn(Optional.of(application));
+        when(userRepository.findByEmail("provider@test.com"))
+                .thenReturn(Optional.of(application.getOpportunity().getProvider()));
+
+        service.updateStatus(6L, "APPROVED", "Strong academic record", "provider@test.com");
+
+        verify(emailService, never()).sendStatusUpdateEmail(anyString(), anyString(), anyString());
+    }
+
+    @Test
     void markingUnderReviewDoesNotRequireReason() {
         Application application = applicationFor(5L);
         when(applicationRepository.findByIdWithDetails(5L)).thenReturn(Optional.of(application));

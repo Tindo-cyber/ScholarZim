@@ -1,6 +1,7 @@
 package com.scholarzim.util;
 
 import com.scholarzim.entity.Notification;
+import com.scholarzim.entity.User;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -66,6 +67,17 @@ public final class NotificationCenterSupport {
                 safePage,
                 filtered.stream().filter(Notification::isUnread).count(),
                 counts);
+    }
+
+    public static boolean emailAllowedForType(User user, String type) {
+        if (user == null) {
+            return false;
+        }
+        return switch (category(type)) {
+            case "APPLICATIONS" -> user.isEmailNotifyApplications();
+            case "SCHOLARSHIPS" -> user.isEmailNotifyScholarships();
+            default -> user.isEmailNotifySystem();
+        };
     }
 
     public static String category(String type) {

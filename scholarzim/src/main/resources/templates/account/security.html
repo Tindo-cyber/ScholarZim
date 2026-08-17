@@ -83,6 +83,51 @@
                 <div class="col-12">
                     <section class="sz-settings-panel">
                         <div class="sz-settings-panel__head">
+                            <h2><i class="bi bi-bell text-primary me-1"></i> Email notifications</h2>
+                        </div>
+                        <div class="sz-settings-panel__body">
+                            <p class="text-secondary small mb-3">
+                                Choose which updates ScholarZim emails you. In-app notifications (the bell icon) always continue regardless of these settings.
+                            </p>
+                            <form th:action="@{/account/notification-preferences}" method="post">
+                                <input type="hidden" th:replace="~{fragments/layout :: csrf}">
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                           id="emailNotifyApplications" name="emailNotifyApplications"
+                                           th:checked="${emailNotifyApplications}">
+                                    <label class="form-check-label" for="emailNotifyApplications">
+                                        <strong>Applications</strong>
+                                        <span class="text-secondary small d-block">Submission confirmations, document requests, decisions</span>
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                           id="emailNotifyScholarships" name="emailNotifyScholarships"
+                                           th:checked="${emailNotifyScholarships}">
+                                    <label class="form-check-label" for="emailNotifyScholarships">
+                                        <strong>Scholarships</strong>
+                                        <span class="text-secondary small d-block">Deadline reminders and new matches</span>
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" role="switch"
+                                           id="emailNotifySystem" name="emailNotifySystem"
+                                           th:checked="${emailNotifySystem}">
+                                    <label class="form-check-label" for="emailNotifySystem">
+                                        <strong>System</strong>
+                                        <span class="text-secondary small d-block">Account and platform alerts, such as an incomplete profile reminder</span>
+                                    </label>
+                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    <i class="bi bi-check2 me-1"></i>Save preferences
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+                </div>
+                <div class="col-12">
+                    <section class="sz-settings-panel">
+                        <div class="sz-settings-panel__head">
                             <h2><i class="bi bi-palette text-primary me-1"></i> Appearance</h2>
                         </div>
                         <div class="sz-settings-panel__body d-flex flex-wrap align-items-center justify-content-between gap-3">

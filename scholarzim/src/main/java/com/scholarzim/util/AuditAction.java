@@ -24,4 +24,5 @@ public final class AuditAction {
     public static final String APPROVE_PROVIDER = "APPROVE_PROVIDER";
     public static final String PROFILE_UPDATE = "PROFILE_UPDATE";
     public static final String ADMIN_CREATED_USER = "ADMIN_CREATED_USER";
+    public static final String NOTIFICATION_PREFERENCES_UPDATE = "NOTIFICATION_PREFERENCES_UPDATE";
 }

@@ -6,6 +6,7 @@ import com.scholarzim.repository.NotificationRepository;
 import com.scholarzim.repository.UserRepository;
 import com.scholarzim.service.EmailService;
 import com.scholarzim.service.NotificationService;
+import com.scholarzim.util.NotificationCenterSupport;
 import com.scholarzim.util.NotificationType;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -20,9 +21,11 @@ import java.util.Set;
 @Service
 public class NotificationServiceImpl implements NotificationService {
 
+    // APPLICATION_APPROVED/REJECTED are deliberately excluded: ApplicationServiceImpl
+    // already sends a detailed, purpose-written email for those two decisions, so
+    // including them here would fire this generic "ScholarZim update" email as a
+    // second, redundant message for the same event.
     private static final Set<String> EMAIL_TYPES = Set.of(
-            NotificationType.APPLICATION_APPROVED,
-            NotificationType.APPLICATION_REJECTED,
             NotificationType.APPLICATION_SUBMITTED,
             NotificationType.DOCUMENTS_REQUESTED,
             NotificationType.DEADLINE_REMINDER,
@@ -61,7 +64,8 @@ public class NotificationServiceImpl implements NotificationService {
 
         notificationRepository.save(notification);
 
-        if (recipient.getEmail() != null && type != null && EMAIL_TYPES.contains(type)) {
+        if (recipient.getEmail() != null && type != null && EMAIL_TYPES.contains(type)
+                && NotificationCenterSupport.emailAllowedForType(recipient, type)) {
             emailService.sendStatusUpdateEmail(
                     recipient.getEmail(),
                     "ScholarZim update",
