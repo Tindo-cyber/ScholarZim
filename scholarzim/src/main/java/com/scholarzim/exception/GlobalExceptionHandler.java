@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import org.thymeleaf.exceptions.TemplateInputException;
 import org.thymeleaf.exceptions.TemplateProcessingException;
@@ -100,6 +101,17 @@ public class GlobalExceptionHandler {
         log.warn("Admin operation rejected: {}", ex.getMessage());
         redirect.addFlashAttribute("errorMessage", ex.getMessage());
         return "redirect:/admin/dashboard";
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public String handleMaxUploadSizeExceeded(
+            HttpServletRequest request,
+            RedirectAttributes redirect) {
+
+        log.warn("Upload rejected: file exceeds the configured size limit");
+        redirect.addFlashAttribute("errorMessage", "File must be smaller than 5 MB.");
+        String referer = request.getHeader("Referer");
+        return "redirect:" + (referer != null && !referer.isBlank() ? referer : "/");
     }
 
     @ExceptionHandler(Exception.class)

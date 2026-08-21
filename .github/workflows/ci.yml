@@ -18,6 +18,11 @@ jobs:
       - name: Run tests
         working-directory: scholarzim
         run: mvn -B clean test
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-coverage-report
+          path: scholarzim/target/site/jacoco/
 
   flyway-smoke:
     runs-on: ubuntu-latest
