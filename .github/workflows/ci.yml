@@ -6,6 +6,25 @@ on:
   pull_request:
 
 jobs:
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Type-check
+        working-directory: frontend
+        run: npm run typecheck
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -16,13 +35,13 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Run tests
-        working-directory: scholarzim
+        working-directory: backend
         run: mvn -B clean test
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
           name: jacoco-coverage-report
-          path: scholarzim/target/site/jacoco/
+          path: backend/target/site/jacoco/
 
   flyway-smoke:
     runs-on: ubuntu-latest
@@ -47,7 +66,7 @@ jobs:
           java-version: '21'
           cache: maven
       - name: Flyway migration smoke test
-        working-directory: scholarzim
+        working-directory: backend
         env:
           MYSQL_URL: jdbc:mysql://127.0.0.1:3306/scholarzim?useSSL=false&allowPublicKeyRetrieval=true
           MYSQL_USER: root

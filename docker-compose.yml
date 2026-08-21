@@ -34,7 +34,11 @@ services:
       - scholarzim
 
   app:
-    build: .
+    # Root context + root Dockerfile: builds the React app in frontend/ and
+    # bakes it into the Spring jar, so one container serves API and UI.
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "127.0.0.1:${APP_HOST_PORT:-8080}:8080"
@@ -50,9 +54,9 @@ services:
       SCHOLARZIM_DEMO_SEED: ${SCHOLARZIM_DEMO_SEED:-true}
     volumes:
       # Bind-mounted (not a named volume) so the files already sitting in
-      # ./uploads locally are used as-is and stay visible/backed-up on the
-      # host — nothing to migrate, nothing hidden inside a Docker volume.
-      - ./uploads:/app/uploads
+      # ./backend/uploads locally are used as-is and stay visible/backed-up on
+      # the host — nothing to migrate, nothing hidden inside a Docker volume.
+      - ./backend/uploads:/app/uploads
     depends_on:
       mysql:
         condition: service_healthy

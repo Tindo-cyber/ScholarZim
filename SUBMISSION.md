@@ -7,60 +7,71 @@ ScholarZim is a scholarship and academic opportunity management platform for Zim
 ## Quick demo (viva)
 
 ```bash
-cd scholarzim
+cd ScholarZim
 docker compose up --build
 ```
 
-Open http://localhost:8080 and follow [scholarzim/docs/demo-script.md](scholarzim/docs/demo-script.md).
+Open http://localhost:8080 and follow [backend/docs/demo-script.md](backend/docs/demo-script.md).
 
 **Demo password:** `Password123!` (all seeded accounts)
 
 ## Run locally (development)
 
 ```bash
-cd scholarzim
-docker compose up -d          # MySQL + Mailhog
+cd ScholarZim
+docker compose up -d mysql mailhog
+cd backend
 mvn spring-boot:run -Dspring-boot.run.profiles=demo
+```
+
+For React development with hot reload (backend must be running on 8080):
+
+```bash
+cd frontend
+npm install
+npm run dev                   # http://localhost:5173/app
 ```
 
 ## Run tests
 
 ```bash
-cd scholarzim
+cd ScholarZim/backend
 mvn clean test
 ```
 
-Expect 71 tests, BUILD SUCCESS.
+Expect 181 tests, BUILD SUCCESS.
 
 ## Documentation index
 
 | Document | Path |
 |----------|------|
-| Architecture | [scholarzim/docs/architecture.md](scholarzim/docs/architecture.md) |
-| Demo script | [scholarzim/docs/demo-script.md](scholarzim/docs/demo-script.md) |
-| Security | [scholarzim/docs/security.md](scholarzim/docs/security.md) |
-| User guide | [scholarzim/docs/user-guide.md](scholarzim/docs/user-guide.md) |
-| Evaluation | [scholarzim/docs/evaluation.md](scholarzim/docs/evaluation.md) |
-| Manual QA | [scholarzim/docs/manual-qa-checklist.md](scholarzim/docs/manual-qa-checklist.md) |
-| Deployment | [scholarzim/DEPLOYMENT.md](scholarzim/DEPLOYMENT.md) |
+| Architecture | [backend/docs/architecture.md](backend/docs/architecture.md) |
+| Demo script | [backend/docs/demo-script.md](backend/docs/demo-script.md) |
+| Security | [backend/docs/security.md](backend/docs/security.md) |
+| User guide | [backend/docs/user-guide.md](backend/docs/user-guide.md) |
+| Evaluation | [backend/docs/evaluation.md](backend/docs/evaluation.md) |
+| Manual QA | [backend/docs/manual-qa-checklist.md](backend/docs/manual-qa-checklist.md) |
+| Deployment | [backend/DEPLOYMENT.md](backend/DEPLOYMENT.md) |
 
 ## Technology stack
 
-Java 21 · Spring Boot 3.5 · Thymeleaf · MySQL 8 · Flyway · Spring Security · Maven
+Java 21 · Spring Boot 3.5 · Thymeleaf · React 19 · TypeScript · Vite · MySQL 8 · Flyway · Spring Security · Maven
 
 ## Repository layout
 
 ```
 ScholarZim/
-├── scholarzim/          # Main application (canonical)
-├── scholarzim-web/      # Deprecated Next.js frontend
-├── .github/workflows/   # CI (tests + Flyway smoke)
+├── backend/             # Spring Boot API + Thymeleaf pages
+├── frontend/            # React + TypeScript + Vite
+├── Dockerfile           # React build → Maven package → JRE runtime
+├── docker-compose.yml   # Local stack (app + MySQL + MailHog)
+├── .github/workflows/   # CI (frontend build + tests + Flyway smoke)
 └── SUBMISSION.md        # This file
 ```
 
 ## Production
 
-See [scholarzim/DEPLOYMENT.md](scholarzim/DEPLOYMENT.md). Use `spring.profiles.active=prod` with environment variables for database and mail.
+See [backend/DEPLOYMENT.md](backend/DEPLOYMENT.md). Use `spring.profiles.active=prod` with environment variables for database and mail.
 
 ## Author notes
 

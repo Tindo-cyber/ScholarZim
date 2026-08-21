@@ -1,13 +1,32 @@
 # Root Dockerfile for platforms (Render) that build from the repo root.
-# Canonical app lives in scholarzim/
+# Builds the React app first, drops its output into the Spring static resources,
+# then packages a single jar that serves both the API and the UI.
+
+# ── 1. React frontend ──────────────────────────────────────────────────────
+FROM node:22-alpine AS frontend
+WORKDIR /build/frontend
+COPY frontend/package.json frontend/package-lock.json* ./
+# npm ci needs a lockfile; fall back to install so a fresh clone still builds.
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+COPY frontend/ ./
+# vite.config.ts writes to ../backend/src/main/resources/static/app,
+# which resolves to /build/backend/... inside this stage.
+RUN npm run build
+
+# ── 2. Spring backend ──────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
-COPY scholarzim/.mvn/ .mvn/
-COPY scholarzim/mvnw scholarzim/pom.xml ./
+COPY backend/.mvn/ .mvn/
+COPY backend/mvnw backend/pom.xml ./
 RUN chmod +x mvnw
-COPY scholarzim/src ./src
+# Warm the dependency cache before the sources land, so a code-only change
+# does not re-download the world on every rebuild.
+RUN ./mvnw -B dependency:go-offline
+COPY backend/src ./src
+COPY --from=frontend /build/backend/src/main/resources/static/app ./src/main/resources/static/app
 RUN ./mvnw -B -DskipTests package
 
+# ── 3. Runtime ─────────────────────────────────────────────────────────────
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar

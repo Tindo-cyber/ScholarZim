@@ -68,4 +68,13 @@ mvn clean test
 
 Java 21 · Spring Boot 3.5 · Thymeleaf · MySQL 8 · Flyway · Spring Security · OpenAPI
 
-The UI is served entirely by this module. The former Next.js app in `../scholarzim-web/` is **deprecated**.
+## UI
+
+This module serves two UIs on the same origin during the React migration:
+
+- **Thymeleaf** — the existing pages, still owning `/`, `/login`, `/dashboard`, etc.
+- **React** — everything under `/app`, built from `../frontend/` into
+  `src/main/resources/static/app/` (generated output, not committed).
+
+Because both are same-origin, the session cookie authenticates React's API
+calls directly. See the root [README](../README.md) for the migration notes.

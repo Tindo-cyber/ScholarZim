@@ -7,13 +7,18 @@
 **/target/
 **/uploads/
 
-# Node / Next.js
+# Node / Vite
 **/node_modules/
-**/.next/
+**/dist/
+**/.vite/
 **/.env
 **/.env.local
 **/.env.prod
-**/tsconfig.tsbuildinfo
+**/*.tsbuildinfo
+
+# Vite build output, generated into the backend's static resources by
+# `npm run build` (and by the Docker frontend stage). Never commit it.
+backend/src/main/resources/static/app/
 
 # OS
 .DS_Store

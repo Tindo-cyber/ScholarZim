@@ -10,6 +10,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 
 
 @Configuration
@@ -49,9 +50,15 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/icons/**",
+                                // React shell + bundle. The SPA is public; the data
+                                // behind it stays guarded by the /api/** rules below.
+                                "/app/**",
                                 "/manifest.json",
                                 "/sw.js",
                                 "/api/public/**",
+                                // Returns authenticated=false when anonymous, so it must
+                                // resolve rather than 401 — the SPA calls it on every load.
+                                "/api/me",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
@@ -77,7 +84,12 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 // Public JSON is GET-only; session-authenticated applicant APIs keep CSRF.
-                .csrf(csrf -> csrf.ignoringRequestMatchers("/api/public/**"))
+                // The token is stored in a JS-readable cookie so the React app can echo
+                // it back as X-XSRF-TOKEN. Thymeleaf forms are unaffected — they still
+                // render the token through CsrfModelAdvice regardless of where it lives.
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        .ignoringRequestMatchers("/api/public/**"))
                 .formLogin(form -> form
                         .loginPage("/login")
                         .successHandler(successHandler)
