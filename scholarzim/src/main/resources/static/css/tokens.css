@@ -37,18 +37,13 @@
     --sz-topbar-border: var(--sz-border);
 
     /* Surface aliases (legacy glass names — solid only) */
-    --sz-glass-header: #ffffff;
-    --sz-glass-blur: 0;
-    --sz-glass-saturate: 100%;
     --sz-glass-bg: var(--sz-card);
     --sz-glass-bg-strong: #ffffff;
     --sz-glass-border: var(--sz-border);
     --sz-glass-border-outer: var(--sz-border);
-    --sz-glass-highlight: #ffffff;
 
     /* Legacy brand aliases */
     --sz-green: var(--sz-primary);
-    --sz-green-dark: var(--sz-primary-dark);
     --sz-gold: var(--sz-warning);
     --sz-blue: var(--sz-accent);
 
@@ -201,12 +196,10 @@
     --sz-analytics-track: #334155;
     --sz-topbar-bg: #0f172a;
     --sz-topbar-border: #334155;
-    --sz-glass-header: #0f172a;
     --sz-glass-bg: var(--sz-card);
     --sz-glass-bg-strong: #1e293b;
     --sz-glass-border: var(--sz-border);
     --sz-glass-border-outer: var(--sz-border);
-    --sz-glass-highlight: #334155;
 
     --sz-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
     --sz-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);

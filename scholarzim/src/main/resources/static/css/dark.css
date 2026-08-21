@@ -461,3 +461,100 @@
 [data-bs-theme="dark"] code {
     color: #86efac;
 }
+
+/* ── Status badges, chips & icons — these hardcode light-mode hex values in
+   dashboard.css/components.css instead of tokens, so without explicit
+   overrides they render as low-contrast smudges on dark cards. ── */
+[data-bs-theme="dark"] .sz-app-badge--submitted {
+    background: rgba(59, 130, 246, 0.22);
+    color: #93c5fd;
+}
+
+[data-bs-theme="dark"] .sz-app-badge--review {
+    background: rgba(245, 158, 11, 0.22);
+    color: #fbbf24;
+}
+
+[data-bs-theme="dark"] .sz-app-badge--shortlisted {
+    background: rgba(139, 92, 246, 0.22);
+    color: #c4b5fd;
+}
+
+[data-bs-theme="dark"] .sz-app-badge--interview {
+    background: rgba(99, 102, 241, 0.22);
+    color: #a5b4fc;
+}
+
+[data-bs-theme="dark"] .sz-app-badge--awarded {
+    background: rgba(22, 163, 74, 0.22);
+    color: #4ade80;
+}
+
+[data-bs-theme="dark"] .sz-app-badge--rejected {
+    background: rgba(239, 68, 68, 0.22);
+    color: #f87171;
+}
+
+[data-bs-theme="dark"] .sz-app-timeline__step--complete .sz-app-timeline__marker {
+    background: rgba(22, 163, 74, 0.2);
+    border-color: #4ade80;
+    color: #4ade80;
+}
+
+[data-bs-theme="dark"] .sz-app-timeline__step--current .sz-app-timeline__label {
+    color: #4ade80;
+}
+
+[data-bs-theme="dark"] .sz-app-timeline__step--rejected .sz-app-timeline__label {
+    color: #f87171;
+}
+
+[data-bs-theme="dark"] .sz-app-timeline__step--complete .sz-app-timeline__connector {
+    background: #4ade80;
+}
+
+[data-bs-theme="dark"] .sz-app-timeline__step--current .sz-app-timeline__connector {
+    background: linear-gradient(90deg, #4ade80 0%, var(--sz-border) 100%);
+}
+
+[data-bs-theme="dark"] .sz-app-tracker__rejection {
+    background: rgba(239, 68, 68, 0.16);
+    color: #f87171;
+}
+
+[data-bs-theme="dark"] .sz-badge--funding {
+    color: #fbbf24;
+}
+
+[data-bs-theme="dark"] .sz-deadline--urgent {
+    color: #f87171;
+}
+
+[data-bs-theme="dark"] .sz-deadline--soon {
+    color: #fbbf24;
+}
+
+[data-bs-theme="dark"] .sz-profile-document__icon {
+    background: rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+}
+
+[data-bs-theme="dark"] .sz-scholarfit-confidence--high {
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.22);
+}
+
+[data-bs-theme="dark"] .sz-scholarfit-confidence--medium {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.22);
+}
+
+[data-bs-theme="dark"] .sz-scholarfit-confidence--low {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.2);
+}
+
+[data-bs-theme="dark"] .sz-scholarfit-card__missing-title,
+[data-bs-theme="dark"] .sz-scholarfit-missing li {
+    color: #fbbf24;
+}

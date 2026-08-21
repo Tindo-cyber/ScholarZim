@@ -1,6 +1,8 @@
 package com.scholarzim.controller;
 
 import com.scholarzim.util.FormOptions;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.boot.info.BuildProperties;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
 
@@ -9,6 +11,22 @@ import java.util.List;
 
 @ControllerAdvice
 public class GlobalModelAttributes {
+
+    private final ObjectProvider<BuildProperties> buildProperties;
+
+    public GlobalModelAttributes(ObjectProvider<BuildProperties> buildProperties) {
+        this.buildProperties = buildProperties;
+    }
+
+    // Cache-busts static assets (css/js query string) with the build timestamp instead
+    // of a hand-maintained version number that's easy to forget to bump on deploy.
+    // BuildProperties only exists once packaged (mvn package generates
+    // META-INF/build-info.properties), so local `spring-boot:run` falls back to "dev".
+    @ModelAttribute("assetVersion")
+    public String assetVersion() {
+        BuildProperties props = buildProperties.getIfAvailable();
+        return props != null ? String.valueOf(props.getTime().toEpochMilli()) : "dev";
+    }
 
     @ModelAttribute("educationLevels")
     public List<String> educationLevels() {
