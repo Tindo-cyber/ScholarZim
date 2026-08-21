@@ -73,11 +73,20 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             throw new IllegalArgumentException("Passwords do not match.");
         }
 
-        PasswordResetToken token = tokenRepository.findByTokenAndUsedFalse(tokenValue)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid or expired reset link."));
+        PasswordResetToken token = tokenRepository.findByToken(tokenValue)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid reset link."));
+
+        // A newer "forgot password" request invalidates every earlier unused token for
+        // that user (see requestReset), so an old email's link reads as "used" long
+        // before its 1-hour clock runs out — tell the user that distinctly from a link
+        // that genuinely timed out, so they know to use their most recent email instead.
+        if (token.isUsed()) {
+            throw new IllegalArgumentException(
+                    "This link was replaced by a newer password reset request. Use the most recent email, or request a new one.");
+        }
 
         if (token.getExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Reset link has expired.");
+            throw new IllegalArgumentException("Reset link has expired. Request a new one.");
         }
 
         User user = token.getUser();

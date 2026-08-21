@@ -22,14 +22,24 @@
                     </div>
                     <div class="mb-3">
                         <label for="adminSetupPassword" class="form-label">New password</label>
-                        <input id="adminSetupPassword" type="password" class="form-control" name="password"
-                               autocomplete="new-password">
+                        <div class="input-group">
+                            <input id="adminSetupPassword" type="password" class="form-control" name="password"
+                                   autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary sz-password-toggle" aria-label="Show password">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
                         <div class="form-text">At least 8 characters with a letter and number.</div>
                     </div>
                     <div class="mb-3">
                         <label for="adminSetupConfirmPassword" class="form-label">Confirm password</label>
-                        <input id="adminSetupConfirmPassword" type="password" class="form-control" name="confirmPassword"
-                               autocomplete="new-password">
+                        <div class="input-group">
+                            <input id="adminSetupConfirmPassword" type="password" class="form-control" name="confirmPassword"
+                                   autocomplete="new-password">
+                            <button type="button" class="btn btn-outline-secondary sz-password-toggle" aria-label="Show password">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                        </div>
                     </div>
                     <div class="d-grid mt-4">
                         <button class="btn btn-primary sz-btn-landing-primary" type="submit">Set password and sign in</button>

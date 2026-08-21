@@ -94,18 +94,28 @@
                     </div>
                     <div class="mb-3">
                         <label for="provPassword" class="form-label">Password</label>
-                        <input id="provPassword" type="password" class="form-control" th:field="*{password}"
-                               autocomplete="new-password"
-                               th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
-                        <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        <div class="input-group">
+                            <input id="provPassword" type="password" class="form-control" th:field="*{password}"
+                                   autocomplete="new-password"
+                                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid'">
+                            <button type="button" class="btn btn-outline-secondary sz-password-toggle" aria-label="Show password">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                        </div>
                     </div>
                     <div class="mb-3">
                         <label for="provConfirmPassword" class="form-label">Confirm password</label>
-                        <input id="provConfirmPassword" type="password" class="form-control" th:field="*{confirmPassword}"
-                               autocomplete="new-password"
-                               th:classappend="${#fields.hasErrors('confirmPassword') or #fields.hasErrors('passwordConfirmed')} ? 'is-invalid'">
-                        <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
-                        <div class="invalid-feedback" th:if="${#fields.hasErrors('passwordConfirmed')}" th:errors="*{passwordConfirmed}"></div>
+                        <div class="input-group">
+                            <input id="provConfirmPassword" type="password" class="form-control" th:field="*{confirmPassword}"
+                                   autocomplete="new-password"
+                                   th:classappend="${#fields.hasErrors('confirmPassword') or #fields.hasErrors('passwordConfirmed')} ? 'is-invalid'">
+                            <button type="button" class="btn btn-outline-secondary sz-password-toggle" aria-label="Show password">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </button>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('passwordConfirmed')}" th:errors="*{passwordConfirmed}"></div>
+                        </div>
                     </div>
                     <div class="d-grid mt-3">
                         <button class="btn btn-primary sz-btn-landing-primary" type="submit">

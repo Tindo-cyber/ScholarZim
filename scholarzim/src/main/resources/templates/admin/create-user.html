@@ -64,15 +64,25 @@
 
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Password</label>
-                                <input type="password" class="form-control" th:field="*{password}"
-                                       autocomplete="new-password">
+                                <div class="input-group">
+                                    <input type="password" class="form-control" th:field="*{password}"
+                                           autocomplete="new-password">
+                                    <button type="button" class="btn btn-outline-secondary sz-password-toggle" aria-label="Show password">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                                 <div class="form-text">Leave blank for Admin accounts — the new admin sets their own password via the confirmation email.</div>
                             </div>
 
                             <div class="col-12 col-md-6">
                                 <label class="form-label">Confirm password</label>
-                                <input type="password" class="form-control" th:field="*{confirmPassword}"
-                                       autocomplete="new-password">
+                                <div class="input-group">
+                                    <input type="password" class="form-control" th:field="*{confirmPassword}"
+                                           autocomplete="new-password">
+                                    <button type="button" class="btn btn-outline-secondary sz-password-toggle" aria-label="Show password">
+                                        <i class="bi bi-eye" aria-hidden="true"></i>
+                                    </button>
+                                </div>
                             </div>
 
                             <div class="col-12 col-md-6">
