@@ -1450,8 +1450,13 @@
     padding: 0.55rem 0.75rem;
     font-size: 0.78rem;
     white-space: nowrap;
-    background: var(--sz-surface-muted);
-    border: 1px solid var(--sz-border);
+    /* .sz-page-hero always sets color:#fff for its dark gradient background —
+       var(--sz-surface-muted) is a near-white light-mode token, which put white
+       text on a near-white chip and made it unreadable. Use a translucent white
+       "glass" pill instead so it stays legible on the gradient in both themes. */
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    color: #fff;
     border-radius: 999px;
 }
 
