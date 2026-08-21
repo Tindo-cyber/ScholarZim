@@ -30,7 +30,13 @@ public class NotificationServiceImpl implements NotificationService {
             NotificationType.APPLICATION_SUBMITTED,
             NotificationType.DOCUMENTS_REQUESTED,
             NotificationType.DEADLINE_REMINDER,
-            NotificationType.PROFILE_INCOMPLETE);
+            NotificationType.PROFILE_INCOMPLETE,
+            // OpportunityServiceImpl fires this per matching applicant when a scholarship
+            // is published; account/security.html already has a user-facing "Scholarships"
+            // email toggle (emailNotifyScholarships) wired to gate it via
+            // NotificationCenterSupport.emailAllowedForType, but the type was never added
+            // here, so the toggle silently did nothing and no email was ever sent.
+            NotificationType.NEW_OPPORTUNITY);
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
