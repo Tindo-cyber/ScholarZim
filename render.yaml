@@ -26,16 +26,15 @@ services:
       - key: SCHOLARZIM_APP_BASE_URL
         sync: false
       - key: SCHOLARZIM_MAIL_FROM
-        value: noreply@scholarzim.com
+        value: noreply@scholarzim.co.zw
       # Mailgun transactional email (Render blocks outbound SMTP, so this is the real send path —
       # set the API key in the Render dashboard; sync: false keeps it out of this file)
       - key: MAILGUN_API_KEY
         sync: false
-      # Currently the Mailgun sandbox domain: only recipients authorized in the Mailgun
-      # dashboard will receive mail. Swap to a verified sending domain before real launch.
+      # scholarzim.co.zw is verified in Mailgun (DNS via Cloudflare, nameservers set by Webzim).
       - key: MAILGUN_DOMAIN
-        value: sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
+        value: scholarzim.co.zw
       - key: MAILGUN_FROM_EMAIL
-        value: postmaster@sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
+        value: noreply@scholarzim.co.zw
       - key: MAILGUN_FROM_NAME
         value: ScholarZim

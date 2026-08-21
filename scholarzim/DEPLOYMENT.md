@@ -21,17 +21,16 @@ SCHOLARZIM_DB_URL=jdbc:mysql://HOST:PORT/DATABASE?sslMode=REQUIRED&allowPublicKe
 SCHOLARZIM_DB_USER=...
 SCHOLARZIM_DB_PASSWORD=...
 SCHOLARZIM_APP_BASE_URL=https://YOUR-SERVICE.onrender.com
-SCHOLARZIM_MAIL_FROM=noreply@scholarzim.com
+SCHOLARZIM_MAIL_FROM=noreply@scholarzim.co.zw
 SCHOLARZIM_SESSION_COOKIE_SECURE=true
 # Persist uploads across deploys (see "Render uploads disk" below)
 SCHOLARZIM_UPLOAD_DIR=/var/data/uploads
 # Render blocks outbound SMTP on its free tier, so SPRING_MAIL_* below won't deliver anything
 # there — use Mailgun's HTTPS transactional-email API instead (MailgunEmailServiceImpl, prod-only).
-# Defaults to the Mailgun sandbox domain (only recipients authorized in the Mailgun dashboard
-# receive mail) — swap MAILGUN_DOMAIN/MAILGUN_FROM_EMAIL once a real domain is verified.
+# scholarzim.co.zw is verified in Mailgun.
 MAILGUN_API_KEY=...
-MAILGUN_DOMAIN=sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
-MAILGUN_FROM_EMAIL=postmaster@sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
+MAILGUN_DOMAIN=scholarzim.co.zw
+MAILGUN_FROM_EMAIL=noreply@scholarzim.co.zw
 MAILGUN_FROM_NAME=ScholarZim
 # FYP demo: populate sample scholarships and users on startup (set SCHOLARZIM_DEMO_SEED=false for real production)
 SCHOLARZIM_DEMO_SEED=true
@@ -137,13 +136,13 @@ Then push the latest code and redeploy on Render.
 
 ## Alternative: DigitalOcean Droplet + Docker + Nginx
 
-Deploy target: **https://www.scholarzim.com** (also redirect bare `scholarzim.com` → `www`).
+Deploy target: **https://www.scholarzim.co.zw** (also redirect bare `scholarzim.co.zw` → `www`).
 
 ### What you need before starting
 
 | Item | Notes |
 |------|--------|
-| Domain | `scholarzim.com` registered; you can edit DNS |
+| Domain | `scholarzim.co.zw` registered; you can edit DNS |
 | Server | Ubuntu 22.04/24.04 VPS (2 GB RAM recommended), public IP |
 | SSH access | Root or sudo user |
 | Mailgun account | For password resets / verification email (HTTP API — see `docker-compose.prod.yml`) |
@@ -155,7 +154,7 @@ Local bug-fix changes must be **committed and pushed to `main`** before you buil
 
 ## 1. DNS (at your registrar)
 
-Create these records for `scholarzim.com`:
+Create these records for `scholarzim.co.zw`:
 
 | Type | Name | Value |
 |------|------|--------|
@@ -167,8 +166,8 @@ Optional: **AAAA** for IPv6 if your VPS has it.
 Wait until both resolve:
 
 ```bash
-nslookup www.scholarzim.com
-nslookup scholarzim.com
+nslookup www.scholarzim.co.zw
+nslookup scholarzim.co.zw
 ```
 
 ---
@@ -212,11 +211,11 @@ SCHOLARZIM_DB_USER=scholarzim
 SCHOLARZIM_DB_PASSWORD=<strong-password>
 MYSQL_ROOT_PASSWORD=<strong-root-password>
 
-SCHOLARZIM_APP_BASE_URL=https://www.scholarzim.com
+SCHOLARZIM_APP_BASE_URL=https://www.scholarzim.co.zw
 
 MAILGUN_API_KEY=...
-MAILGUN_DOMAIN=...
-MAILGUN_FROM_EMAIL=noreply@scholarzim.com
+MAILGUN_DOMAIN=scholarzim.co.zw
+MAILGUN_FROM_EMAIL=noreply@scholarzim.co.zw
 MAILGUN_FROM_NAME=ScholarZim
 ```
 
@@ -240,8 +239,8 @@ Expect `"status":"UP"`. App listens on localhost only; Nginx publicly terminates
 ## 5. Nginx + HTTPS
 
 ```bash
-sudo cp deploy/nginx-scholarzim.conf /etc/nginx/sites-available/scholarzim.com
-sudo ln -sf /etc/nginx/sites-available/scholarzim.com /etc/nginx/sites-enabled/
+sudo cp deploy/nginx-scholarzim.conf /etc/nginx/sites-available/scholarzim.co.zw
+sudo ln -sf /etc/nginx/sites-available/scholarzim.co.zw /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl reload nginx
@@ -250,7 +249,7 @@ sudo systemctl reload nginx
 Issue certificates (after DNS points at this server):
 
 ```bash
-sudo certbot --nginx -d www.scholarzim.com -d scholarzim.com
+sudo certbot --nginx -d www.scholarzim.co.zw -d scholarzim.co.zw
 ```
 
 Certbot will enable TLS and renewals via `certbot.timer`.
@@ -259,8 +258,8 @@ Certbot will enable TLS and renewals via `certbot.timer`.
 
 ## 6. Go-live checks
 
-- [ ] https://www.scholarzim.com loads the landing page  
-- [ ] https://scholarzim.com redirects to www  
+- [ ] https://www.scholarzim.co.zw loads the landing page  
+- [ ] https://scholarzim.co.zw redirects to www  
 - [ ] Register / login works  
 - [ ] Password-reset email arrives (Mailgun)  
 - [ ] File uploads persist after `docker compose restart`  
@@ -290,10 +289,10 @@ SPRING_PROFILES_ACTIVE=prod
 SCHOLARZIM_DB_URL=jdbc:mysql://mysql:3306/scholarzim
 SCHOLARZIM_DB_USER=scholarzim
 SCHOLARZIM_DB_PASSWORD=...
-SCHOLARZIM_APP_BASE_URL=https://www.scholarzim.com
+SCHOLARZIM_APP_BASE_URL=https://www.scholarzim.co.zw
 MAILGUN_API_KEY=...
-MAILGUN_DOMAIN=...
-MAILGUN_FROM_EMAIL=noreply@scholarzim.com
+MAILGUN_DOMAIN=scholarzim.co.zw
+MAILGUN_FROM_EMAIL=noreply@scholarzim.co.zw
 MAILGUN_FROM_NAME=ScholarZim
 SCHOLARZIM_SESSION_COOKIE_SECURE=true
 ```
@@ -322,6 +321,6 @@ Back up the uploads volume (or `scholarzim.upload.dir`) with database backups. D
 - [ ] Secrets only in `.env.prod` / host env
 - [ ] Swagger off, actuator = health only
 - [ ] Mail verified
-- [ ] HTTPS on www.scholarzim.com
+- [ ] HTTPS on www.scholarzim.co.zw
 - [ ] Persistent uploads (`SCHOLARZIM_UPLOAD_DIR` + Render disk or Docker volume) + DB backups
 - [ ] CI green on `main`
