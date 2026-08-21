@@ -102,15 +102,37 @@ Uploaded files (CVs, verification documents, etc.) live in `backend/uploads/`
 on the host and are bind-mounted into the container, so they persist across
 rebuilds/recreates with no extra steps and are visible directly on disk.
 
-### Option B — backend on host, only MySQL/MailHog in Docker
+### Option B — backend on host (no Docker)
+
+Needs a MySQL reachable at the defaults in `application.properties`:
+`localhost:3306`, database `scholarzim`, user `root`, password `root`. A native
+MySQL install is the usual way to get that.
 
 ```bash
-docker compose up -d mysql mailhog
 cd backend
-mvn spring-boot:run -Dspring-boot.run.profiles=demo
+./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
 ```
 
-Open **http://localhost:8080**
+Open **http://localhost:8080** (Thymeleaf) and **http://localhost:8080/app** (React).
+
+Flyway applies migrations on startup, so an empty `scholarzim` schema is enough
+to begin with. Mail sends fail without MailHog on port 1025 — that is logged and
+non-fatal, so everything except email delivery still works.
+
+> **Not** `docker compose up -d mysql mailhog` followed by `mvnw spring-boot:run`.
+> Compose publishes MySQL on host port **3307** with the `scholarzim` user, while
+> the app defaults to **3306** as `root` — so the host process would not reach the
+> container. To use the containerised database from a host-run backend, override
+> the datasource explicitly:
+>
+> ```bash
+> SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3307/scholarzim?useSSL=false&allowPublicKeyRetrieval=true" \
+> SPRING_DATASOURCE_USERNAME=scholarzim \
+> SPRING_DATASOURCE_PASSWORD="$MYSQL_PASSWORD" \
+> ./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
+> ```
+>
+> In PowerShell, set each with `$env:NAME = "value"` on its own line first.
 
 ### Frontend development
 

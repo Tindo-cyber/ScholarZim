@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.thymeleaf.exceptions.TemplateInputException;
 import org.thymeleaf.exceptions.TemplateProcessingException;
 
@@ -60,6 +61,22 @@ public class GlobalExceptionHandler {
     public String handleNoSuchElement(NoSuchElementException ex, Model model, HttpServletRequest request) {
 
         log.warn("No such element: {}", ex.getMessage());
+        populateErrorModel(model, request, 404);
+        return LayoutViewUtil.errorView();
+    }
+
+    /**
+     * A missing static resource is a 404, not a server fault. Without this it falls
+     * through to the catch-all below and every broken asset link — a stale CSS or
+     * image URL, a bad /app path — reports as a 500, which misleads monitoring and
+     * tells crawlers and CDNs the server is broken rather than the URL wrong.
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public String handleNoStaticResource(
+            NoResourceFoundException ex, Model model, HttpServletRequest request) {
+
+        log.warn("Static resource not found: {}", ex.getResourcePath());
         populateErrorModel(model, request, 404);
         return LayoutViewUtil.errorView();
     }

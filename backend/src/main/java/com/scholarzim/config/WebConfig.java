@@ -6,6 +6,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
+import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.servlet.resource.PathResourceResolver;
 
@@ -69,6 +70,18 @@ public class WebConfig implements WebMvcConfigurer {
     }
 
     /**
+     * Bare /app and /app/ never reach the resolver below: ResourceHttpRequestHandler
+     * discards an empty path before running the resolver chain. Forwarding these two
+     * exact paths fixes that without a wildcard mapping, which would outrank the
+     * resource handlers and swallow every asset request.
+     */
+    @Override
+    public void addViewControllers(ViewControllerRegistry registry) {
+        registry.addViewController("/app").setViewName("forward:/app/index.html");
+        registry.addViewController("/app/").setViewName("forward:/app/index.html");
+    }
+
+    /**
      * Serves the requested file when it exists, and the SPA shell when it does not —
      * that is what makes a deep link like /app/scholarships/12 survive a refresh.
      * Requests that look like files (anything with an extension) keep 404-ing, so a
@@ -80,14 +93,36 @@ public class WebConfig implements WebMvcConfigurer {
 
         @Override
         protected Resource getResource(String resourcePath, Resource location) throws IOException {
+            // Spring normalises a bare /app (and /app/) to ".". That is a request for
+            // the shell, not a file to look up — resolving it would hand back the
+            // directory itself, which then fails on read.
+            if (resourcePath.isEmpty() || ".".equals(resourcePath) || resourcePath.endsWith("/")) {
+                return shellOrNull();
+            }
+
             Resource requested = location.createRelative(resourcePath);
             if (requested.exists() && requested.isReadable()) {
                 return requested;
             }
-            if (resourcePath.contains(".")) {
+
+            // Anything that names a file must 404 rather than receive the HTML shell
+            // under that extension's MIME type. Only the final segment counts —
+            // a dot earlier in the path (or the "." above) is not an extension.
+            if (hasExtension(resourcePath)) {
                 return null;
             }
+
+            return shellOrNull();
+        }
+
+        /** Null when the frontend has not been built — /app then 404s and Thymeleaf is unaffected. */
+        private Resource shellOrNull() {
             return shell.exists() ? shell : null;
+        }
+
+        private static boolean hasExtension(String path) {
+            int lastSlash = path.lastIndexOf('/');
+            return path.indexOf('.', lastSlash + 1) >= 0;
         }
     }
 }
