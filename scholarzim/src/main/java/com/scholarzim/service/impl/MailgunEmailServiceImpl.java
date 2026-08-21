@@ -7,54 +7,60 @@ import com.scholarzim.util.AuditAction;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 
 /**
- * SMTP-backed EmailService, used everywhere except prod (local dev/demo route through
- * the Mailhog container; prod uses {@link MailgunEmailServiceImpl} instead, since Render's
- * free tier blocks outbound SMTP — see MailgunEmailServiceImpl for details).
+ * Mailgun-backed EmailService, used in prod only.
+ * <p>
+ * Render's free tier (and most PaaS free tiers) silently blocks outbound SMTP ports
+ * (25/465/587) to prevent spam-relay abuse — the plain SMTP path in {@link EmailServiceImpl}
+ * would otherwise hang until connection timeout on every send. Mailgun's API goes over
+ * HTTPS/443, which is never blocked, so this is the reliable path for prod.
  */
 @Slf4j
 @Service
-@Profile("!prod")
-public class EmailServiceImpl implements EmailService {
+@Profile("prod")
+public class MailgunEmailServiceImpl implements EmailService {
 
     private static final String SYSTEM_ACTOR = "system@scholarzim.co.zw";
 
-    private final JavaMailSender mailSender;
+    private final RestClient mailgunClient;
     private final AuditService auditService;
     private final UserRepository userRepository;
-    private final String fromAddress;
+    private final String domain;
+    private final String from;
     private final int maxAttempts;
     private final long retryDelayMs;
 
-    public EmailServiceImpl(
-            JavaMailSender mailSender,
+    public MailgunEmailServiceImpl(
+            RestClient mailgunClient,
             AuditService auditService,
             UserRepository userRepository,
-            @Value("${scholarzim.mail.from:noreply@scholarzim.co.zw}") String fromAddress,
+            @Value("${scholarzim.mailgun.domain:}") String domain,
+            @Value("${scholarzim.mailgun.from-email:noreply@scholarzim.co.zw}") String fromEmail,
+            @Value("${scholarzim.mailgun.from-name:ScholarZim}") String fromName,
             @Value("${scholarzim.mail.retry.max-attempts:3}") int maxAttempts,
             @Value("${scholarzim.mail.retry.delay-ms:500}") long retryDelayMs) {
 
-        this.mailSender = mailSender;
+        this.mailgunClient = mailgunClient;
         this.auditService = auditService;
         this.userRepository = userRepository;
-        this.fromAddress = fromAddress;
+        this.domain = domain;
+        this.from = "%s <%s>".formatted(fromName, fromEmail);
         this.maxAttempts = Math.max(1, maxAttempts);
         this.retryDelayMs = Math.max(0, retryDelayMs);
     }
 
     @Override
     public void sendPasswordResetEmail(String to, String resetLink) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(to);
-        message.setSubject("Reset your ScholarZim password");
-        message.setText("""
+        send(to, "Reset your ScholarZim password", """
                 You requested a password reset for your ScholarZim account.
 
                 Click the link below to set a new password (valid for 1 hour):
@@ -62,17 +68,12 @@ public class EmailServiceImpl implements EmailService {
 
                 If you did not request this, ignore this email.
                 """.formatted(resetLink));
-        sendWithRetry(message);
     }
 
     @Override
     @Async
     public void sendWelcomeEmail(String to, String name) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(to);
-        message.setSubject("Welcome to ScholarZim");
-        message.setText("""
+        send(to, "Welcome to ScholarZim", """
                 Hi %s,
 
                 Welcome to ScholarZim — Zimbabwe's scholarship platform.
@@ -81,28 +82,18 @@ public class EmailServiceImpl implements EmailService {
 
                 — The ScholarZim Team
                 """.formatted(name));
-        sendWithRetry(message);
     }
 
     @Override
     @Async
     public void sendStatusUpdateEmail(String to, String subject, String body) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(to);
-        message.setSubject(subject);
-        message.setText(body);
-        sendWithRetry(message);
+        send(to, subject, body);
     }
 
     @Override
     @Async
     public void sendEmailVerification(String to, String name, String verifyLink) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(to);
-        message.setSubject("Verify your ScholarZim email");
-        message.setText("""
+        send(to, "Verify your ScholarZim email", """
                 Hi %s,
 
                 Please verify your email address to activate your ScholarZim account:
@@ -113,17 +104,12 @@ public class EmailServiceImpl implements EmailService {
 
                 — The ScholarZim Team
                 """.formatted(name, verifyLink));
-        sendWithRetry(message);
     }
 
     @Override
     @Async
     public void sendApplicationSubmittedEmail(String to, String studentName, String scholarshipName, Long applicationId) {
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setFrom(fromAddress);
-        message.setTo(to);
-        message.setSubject("ScholarZim: application received");
-        message.setText("""
+        send(to, "ScholarZim: application received", """
                 Hi %s,
 
                 We've received your application for "%s" (reference #%d).
@@ -133,27 +119,32 @@ public class EmailServiceImpl implements EmailService {
 
                 — The ScholarZim Team
                 """.formatted(studentName, scholarshipName, applicationId));
-        sendWithRetry(message);
     }
 
-    private void sendWithRetry(SimpleMailMessage message) {
-        String recipient = message.getTo() != null && message.getTo().length > 0
-                ? message.getTo()[0]
-                : "unknown";
-        String subject = message.getSubject() != null ? message.getSubject() : "(no subject)";
+    private void send(String to, String subject, String text) {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("from", from);
+        form.add("to", to);
+        form.add("subject", subject);
+        form.add("text", text);
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                mailSender.send(message);
+                mailgunClient.post()
+                        .uri("/{domain}/messages", domain)
+                        .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                        .body(form)
+                        .retrieve()
+                        .toBodilessEntity();
                 return;
-            } catch (Exception ex) {
+            } catch (RestClientException ex) {
                 if (attempt >= maxAttempts) {
-                    log.error("Email delivery failed after {} attempts to {} subject '{}': {}",
-                            maxAttempts, recipient, subject, ex.getMessage());
-                    recordDeliveryFailure(recipient, subject);
+                    log.error("Mailgun email delivery failed after {} attempts to {} subject '{}': {}",
+                            maxAttempts, to, subject, ex.getMessage());
+                    recordDeliveryFailure(to, subject);
                     return;
                 }
-                log.warn("Email attempt {}/{} failed for {}: {}", attempt, maxAttempts, recipient, ex.getMessage());
+                log.warn("Mailgun email attempt {}/{} failed for {}: {}", attempt, maxAttempts, to, ex.getMessage());
                 sleepBeforeRetry(attempt);
             }
         }

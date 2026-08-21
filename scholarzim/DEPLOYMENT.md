@@ -26,10 +26,13 @@ SCHOLARZIM_SESSION_COOKIE_SECURE=true
 # Persist uploads across deploys (see "Render uploads disk" below)
 SCHOLARZIM_UPLOAD_DIR=/var/data/uploads
 # Render blocks outbound SMTP on its free tier, so SPRING_MAIL_* below won't deliver anything
-# there — use Resend's HTTPS transactional-email API instead (ResendEmailServiceImpl, prod-only):
-RESEND_API_KEY=...
-RESEND_FROM_EMAIL=...            # must be a verified sender/domain in your Resend account
-RESEND_FROM_NAME=ScholarZim
+# there — use Mailgun's HTTPS transactional-email API instead (MailgunEmailServiceImpl, prod-only).
+# Defaults to the Mailgun sandbox domain (only recipients authorized in the Mailgun dashboard
+# receive mail) — swap MAILGUN_DOMAIN/MAILGUN_FROM_EMAIL once a real domain is verified.
+MAILGUN_API_KEY=...
+MAILGUN_DOMAIN=sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
+MAILGUN_FROM_EMAIL=postmaster@sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
+MAILGUN_FROM_NAME=ScholarZim
 # SMTP — unused on Render (outbound SMTP is blocked); only relevant on a VPS deploy that
 # permits it, see the VPS sections below.
 SPRING_MAIL_HOST=

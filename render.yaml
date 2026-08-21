@@ -27,11 +27,15 @@ services:
         sync: false
       - key: SCHOLARZIM_MAIL_FROM
         value: noreply@scholarzim.com
-      # Resend transactional email (Render blocks outbound SMTP, so this is the real send path —
-      # set these in the Render dashboard; values are placeholders here since sync: false)
-      - key: RESEND_API_KEY
+      # Mailgun transactional email (Render blocks outbound SMTP, so this is the real send path —
+      # set the API key in the Render dashboard; sync: false keeps it out of this file)
+      - key: MAILGUN_API_KEY
         sync: false
-      - key: RESEND_FROM_EMAIL
-        sync: false
-      - key: RESEND_FROM_NAME
+      # Currently the Mailgun sandbox domain: only recipients authorized in the Mailgun
+      # dashboard will receive mail. Swap to a verified sending domain before real launch.
+      - key: MAILGUN_DOMAIN
+        value: sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
+      - key: MAILGUN_FROM_EMAIL
+        value: postmaster@sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
+      - key: MAILGUN_FROM_NAME
         value: ScholarZim
