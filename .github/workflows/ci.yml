@@ -19,7 +19,7 @@ jobs:
         working-directory: scholarzim
         run: mvn -B clean test
       - name: Upload coverage report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-coverage-report
           path: scholarzim/target/site/jacoco/
