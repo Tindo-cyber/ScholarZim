@@ -55,7 +55,8 @@ class MailgunEmailServiceImplTest {
                 "noreply@scholarzim.co.zw",
                 "ScholarZim",
                 3,
-                0);
+                0,
+                "http://localhost:8080");
     }
 
     @Test

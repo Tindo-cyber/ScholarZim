@@ -51,7 +51,8 @@ class ApplicationServiceImplNotificationTest {
                 mock(AuditService.class),
                 new FileStorageService(uploadDir.toString()),
                 applicantProfileService,
-                mock(EmailService.class));
+                mock(EmailService.class),
+                "http://localhost:8080");
 
         User applicant = applicant(1L, "student@test.com", "Tanaka Moyo");
         User provider = provider(2L, "provider@test.com", "UK Scholarships");

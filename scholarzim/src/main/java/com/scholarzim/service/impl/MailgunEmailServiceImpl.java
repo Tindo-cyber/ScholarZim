@@ -38,6 +38,7 @@ public class MailgunEmailServiceImpl implements EmailService {
     private final String from;
     private final int maxAttempts;
     private final long retryDelayMs;
+    private final String baseUrl;
 
     public MailgunEmailServiceImpl(
             RestClient mailgunClient,
@@ -47,7 +48,8 @@ public class MailgunEmailServiceImpl implements EmailService {
             @Value("${scholarzim.mailgun.from-email:noreply@scholarzim.co.zw}") String fromEmail,
             @Value("${scholarzim.mailgun.from-name:ScholarZim}") String fromName,
             @Value("${scholarzim.mail.retry.max-attempts:3}") int maxAttempts,
-            @Value("${scholarzim.mail.retry.delay-ms:500}") long retryDelayMs) {
+            @Value("${scholarzim.mail.retry.delay-ms:500}") long retryDelayMs,
+            @Value("${scholarzim.app.base-url:http://localhost:8080}") String baseUrl) {
 
         this.mailgunClient = mailgunClient;
         this.auditService = auditService;
@@ -56,6 +58,7 @@ public class MailgunEmailServiceImpl implements EmailService {
         this.from = "%s <%s>".formatted(fromName, fromEmail);
         this.maxAttempts = Math.max(1, maxAttempts);
         this.retryDelayMs = Math.max(0, retryDelayMs);
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -78,10 +81,11 @@ public class MailgunEmailServiceImpl implements EmailService {
 
                 Welcome to ScholarZim — Zimbabwe's scholarship platform.
 
-                Complete your profile to unlock personalised scholarship matches.
+                Complete your profile to unlock personalised scholarship matches:
+                %s/applicant/profile
 
                 — The ScholarZim Team
-                """.formatted(name));
+                """.formatted(name, baseUrl));
     }
 
     @Override
@@ -115,10 +119,11 @@ public class MailgunEmailServiceImpl implements EmailService {
                 We've received your application for "%s" (reference #%d).
 
                 The provider will review it and you'll be notified of any updates.
-                You can track its status anytime under My Applications on ScholarZim.
+                You can track its status anytime under My Applications on ScholarZim:
+                %s/my-applications
 
                 — The ScholarZim Team
-                """.formatted(studentName, scholarshipName, applicationId));
+                """.formatted(studentName, scholarshipName, applicationId, baseUrl));
     }
 
     private void send(String to, String subject, String text) {

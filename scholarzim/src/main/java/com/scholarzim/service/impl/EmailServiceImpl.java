@@ -31,6 +31,7 @@ public class EmailServiceImpl implements EmailService {
     private final String fromAddress;
     private final int maxAttempts;
     private final long retryDelayMs;
+    private final String baseUrl;
 
     public EmailServiceImpl(
             JavaMailSender mailSender,
@@ -38,7 +39,8 @@ public class EmailServiceImpl implements EmailService {
             UserRepository userRepository,
             @Value("${scholarzim.mail.from:noreply@scholarzim.co.zw}") String fromAddress,
             @Value("${scholarzim.mail.retry.max-attempts:3}") int maxAttempts,
-            @Value("${scholarzim.mail.retry.delay-ms:500}") long retryDelayMs) {
+            @Value("${scholarzim.mail.retry.delay-ms:500}") long retryDelayMs,
+            @Value("${scholarzim.app.base-url:http://localhost:8080}") String baseUrl) {
 
         this.mailSender = mailSender;
         this.auditService = auditService;
@@ -46,6 +48,7 @@ public class EmailServiceImpl implements EmailService {
         this.fromAddress = fromAddress;
         this.maxAttempts = Math.max(1, maxAttempts);
         this.retryDelayMs = Math.max(0, retryDelayMs);
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -77,10 +80,11 @@ public class EmailServiceImpl implements EmailService {
 
                 Welcome to ScholarZim — Zimbabwe's scholarship platform.
 
-                Complete your profile to unlock personalised scholarship matches.
+                Complete your profile to unlock personalised scholarship matches:
+                %s/applicant/profile
 
                 — The ScholarZim Team
-                """.formatted(name));
+                """.formatted(name, baseUrl));
         sendWithRetry(message);
     }
 
@@ -129,10 +133,11 @@ public class EmailServiceImpl implements EmailService {
                 We've received your application for "%s" (reference #%d).
 
                 The provider will review it and you'll be notified of any updates.
-                You can track its status anytime under My Applications on ScholarZim.
+                You can track its status anytime under My Applications on ScholarZim:
+                %s/my-applications
 
                 — The ScholarZim Team
-                """.formatted(studentName, scholarshipName, applicationId));
+                """.formatted(studentName, scholarshipName, applicationId, baseUrl));
         sendWithRetry(message);
     }
 

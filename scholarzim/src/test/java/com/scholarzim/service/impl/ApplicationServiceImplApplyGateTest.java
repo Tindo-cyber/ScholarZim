@@ -51,7 +51,8 @@ class ApplicationServiceImplApplyGateTest {
                 mock(AuditService.class),
                 new FileStorageService(uploadDir.toString()),
                 applicantProfileService,
-                mock(EmailService.class));
+                mock(EmailService.class),
+                "http://localhost:8080");
     }
 
     @Test

@@ -8,6 +8,7 @@ import com.scholarzim.service.EmailService;
 import com.scholarzim.service.NotificationService;
 import com.scholarzim.util.NotificationCenterSupport;
 import com.scholarzim.util.NotificationType;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,15 +35,18 @@ public class NotificationServiceImpl implements NotificationService {
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final EmailService emailService;
+    private final String baseUrl;
 
     public NotificationServiceImpl(
             NotificationRepository notificationRepository,
             UserRepository userRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            @Value("${scholarzim.app.base-url:http://localhost:8080}") String baseUrl) {
 
         this.notificationRepository = notificationRepository;
         this.userRepository = userRepository;
         this.emailService = emailService;
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -66,10 +70,16 @@ public class NotificationServiceImpl implements NotificationService {
 
         if (recipient.getEmail() != null && type != null && EMAIL_TYPES.contains(type)
                 && NotificationCenterSupport.emailAllowedForType(recipient, type)) {
+            // "message" alone gives no way to act on the notification — link was already
+            // captured for the in-app bell (notification.setLink above) but was never
+            // carried into the email body, so append it as an absolute URL here too.
+            String body = StringUtils.hasText(link)
+                    ? message + "\n\n" + baseUrl + link
+                    : message;
             emailService.sendStatusUpdateEmail(
                     recipient.getEmail(),
                     "ScholarZim update",
-                    message);
+                    body);
         }
     }
 

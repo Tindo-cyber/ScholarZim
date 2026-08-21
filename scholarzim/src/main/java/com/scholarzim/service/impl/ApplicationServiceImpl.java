@@ -23,6 +23,7 @@ import com.scholarzim.util.NotificationCenterSupport;
 import com.scholarzim.util.NotificationType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.security.access.AccessDeniedException;
@@ -60,6 +61,7 @@ public class ApplicationServiceImpl implements ApplicationService {
     private final FileStorageService fileStorageService;
     private final ApplicantProfileService applicantProfileService;
     private final EmailService emailService;
+    private final String baseUrl;
 
     public ApplicationServiceImpl(
             ApplicationRepository applicationRepository,
@@ -69,7 +71,8 @@ public class ApplicationServiceImpl implements ApplicationService {
             AuditService auditService,
             FileStorageService fileStorageService,
             ApplicantProfileService applicantProfileService,
-            EmailService emailService) {
+            EmailService emailService,
+            @Value("${scholarzim.app.base-url:http://localhost:8080}") String baseUrl) {
 
         this.applicationRepository = applicationRepository;
         this.userRepository = userRepository;
@@ -79,6 +82,7 @@ public class ApplicationServiceImpl implements ApplicationService {
         this.fileStorageService = fileStorageService;
         this.emailService = emailService;
         this.applicantProfileService = applicantProfileService;
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -385,10 +389,11 @@ public class ApplicationServiceImpl implements ApplicationService {
                             Reason / notes from the provider:
                             %s
 
-                            View your application at ScholarZim under My Applications.
+                            View your application at ScholarZim under My Applications:
+                            %s/my-applications
 
                             — The ScholarZim Team
-                            """.formatted(applicant.getFullName(), title, reason));
+                            """.formatted(applicant.getFullName(), title, reason, baseUrl));
             }
         } else if (ApplicationStatus.REJECTED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.APPLICATION_REJECTED,
@@ -406,10 +411,11 @@ public class ApplicationServiceImpl implements ApplicationService {
                             Reason:
                             %s
 
-                            Don't be discouraged — keep exploring other scholarships on ScholarZim.
+                            Don't be discouraged — keep exploring other scholarships on ScholarZim:
+                            %s/scholarships
 
                             — The ScholarZim Team
-                            """.formatted(applicant.getFullName(), title, reason));
+                            """.formatted(applicant.getFullName(), title, reason, baseUrl));
             }
         } else if (ApplicationStatus.DOCUMENTS_REQUESTED.equals(status)) {
             notificationService.notifyUser(applicant, NotificationType.DOCUMENTS_REQUESTED,

@@ -55,7 +55,8 @@ class AdminUserServiceImplVerificationTest {
                 mock(NotificationService.class),
                 mock(EmailService.class),
                 mock(EmailVerificationService.class),
-                mock(PasswordEncoder.class));
+                mock(PasswordEncoder.class),
+                "http://localhost:8080");
     }
 
     @Test

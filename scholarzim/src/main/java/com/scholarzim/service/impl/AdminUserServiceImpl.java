@@ -24,6 +24,7 @@ import com.scholarzim.util.NotificationType;
 import com.scholarzim.util.ProviderOrgType;
 import com.scholarzim.util.RoleNames;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
@@ -69,6 +70,7 @@ public class AdminUserServiceImpl implements AdminUserService {
     private final EmailService emailService;
     private final EmailVerificationService emailVerificationService;
     private final PasswordEncoder passwordEncoder;
+    private final String baseUrl;
 
     public AdminUserServiceImpl(
             UserRepository userRepository,
@@ -83,7 +85,8 @@ public class AdminUserServiceImpl implements AdminUserService {
             NotificationService notificationService,
             EmailService emailService,
             EmailVerificationService emailVerificationService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder,
+            @Value("${scholarzim.app.base-url:http://localhost:8080}") String baseUrl) {
 
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -98,6 +101,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         this.emailService = emailService;
         this.emailVerificationService = emailVerificationService;
         this.passwordEncoder = passwordEncoder;
+        this.baseUrl = baseUrl;
     }
 
     @Override
@@ -380,10 +384,11 @@ public class AdminUserServiceImpl implements AdminUserService {
                         Hi %s,
 
                         Your provider application for %s has been approved.
-                        Sign in at ScholarZim to publish scholarships and review applications.
+                        Sign in at ScholarZim to publish scholarships and review applications:
+                        %s/login
 
                         — The ScholarZim Team
-                        """.formatted(user.getFullName(), user.getFullName()));
+                        """.formatted(user.getFullName(), user.getFullName(), baseUrl));
     }
 
     @Override

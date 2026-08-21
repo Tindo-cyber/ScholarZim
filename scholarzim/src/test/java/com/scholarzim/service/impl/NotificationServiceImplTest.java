@@ -24,7 +24,8 @@ class NotificationServiceImplTest {
         service = new NotificationServiceImpl(
                 mock(NotificationRepository.class),
                 mock(UserRepository.class),
-                emailService);
+                emailService,
+                "http://localhost:8080");
     }
 
     @Test

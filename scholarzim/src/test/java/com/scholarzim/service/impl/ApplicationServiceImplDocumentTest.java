@@ -50,7 +50,8 @@ class ApplicationServiceImplDocumentTest {
                 mock(AuditService.class),
                 fileStorageService,
                 mock(ApplicantProfileService.class),
-                mock(EmailService.class));
+                mock(EmailService.class),
+                "http://localhost:8080");
     }
 
     @Test

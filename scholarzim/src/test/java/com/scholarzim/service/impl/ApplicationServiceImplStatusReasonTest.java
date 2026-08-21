@@ -55,7 +55,8 @@ class ApplicationServiceImplStatusReasonTest {
                 auditService,
                 new FileStorageService(uploadDir.toString()),
                 mock(ApplicantProfileService.class),
-                emailService);
+                emailService,
+                "http://localhost:8080");
     }
 
     @Test

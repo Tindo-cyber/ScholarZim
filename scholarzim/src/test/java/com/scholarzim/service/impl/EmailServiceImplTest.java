@@ -41,7 +41,8 @@ class EmailServiceImplTest {
                 userRepository,
                 "noreply@scholarzim.co.zw",
                 3,
-                0);
+                0,
+                "http://localhost:8080");
     }
 
     @Test
