@@ -33,12 +33,6 @@ MAILGUN_API_KEY=...
 MAILGUN_DOMAIN=sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
 MAILGUN_FROM_EMAIL=postmaster@sandboxdaeabb4168e44044b93cb139993aecb3.mailgun.org
 MAILGUN_FROM_NAME=ScholarZim
-# SMTP — unused on Render (outbound SMTP is blocked); only relevant on a VPS deploy that
-# permits it, see the VPS sections below.
-SPRING_MAIL_HOST=
-SPRING_MAIL_PORT=587
-SPRING_MAIL_USERNAME=
-SPRING_MAIL_PASSWORD=
 # FYP demo: populate sample scholarships and users on startup (set SCHOLARZIM_DEMO_SEED=false for real production)
 SCHOLARZIM_DEMO_SEED=true
 ```
@@ -89,7 +83,7 @@ Demo accounts after seeding (password for all: `Password123!`):
 
 Do **not** deploy [`scholarzim-web/`](../scholarzim-web/DEPRECATED.md) (deprecated Next.js). Do **not** point production at local MySQL. Flyway migrates on startup (V1 creates the base schema). By default prod has `scholarzim.demo.seed=false`; for FYP demos set `SCHOLARZIM_DEMO_SEED=true` in Render (see env block above).
 
-**If health stays DOWN after deploy:** ensure `SPRING_PROFILES_ACTIVE=prod` (mail health is disabled in prod when SMTP is unset). Render's health check uses `/actuator/health` — a misconfigured mail server on `localhost` used to mark the whole app unhealthy.
+**If health stays DOWN after deploy:** ensure `SPRING_PROFILES_ACTIVE=prod` (mail health is disabled in prod since it no longer uses SMTP — see `management.health.mail.enabled=false`). Render's health check uses `/actuator/health`.
 
 **If a deploy failed on Flyway** (e.g. `Failed to open the referenced table 'users'`, or `Detected failed migration to version 10`), the DB may have a partial or failed `flyway_schema_history`. Latest builds run `flyway repair()` automatically before migrate on startup; redeploy after pulling the fix.
 
@@ -152,7 +146,7 @@ Deploy target: **https://www.scholarzim.com** (also redirect bare `scholarzim.co
 | Domain | `scholarzim.com` registered; you can edit DNS |
 | Server | Ubuntu 22.04/24.04 VPS (2 GB RAM recommended), public IP |
 | SSH access | Root or sudo user |
-| SMTP | Real mail host for password resets (Mailgun / SendGrid / SES / host mail) |
+| Mailgun account | For password resets / verification email (HTTP API — see `docker-compose.prod.yml`) |
 | DNS TTL | Prefer a low TTL (300s) while cutting over |
 
 Local bug-fix changes must be **committed and pushed to `main`** before you build on the server.
@@ -206,7 +200,7 @@ cd /opt
 sudo git clone https://github.com/Tindo-cyber/ScholarZim.git
 cd /opt/ScholarZim/scholarzim
 sudo cp .env.prod.example .env.prod
-sudo nano .env.prod   # set strong DB passwords + real SMTP
+sudo nano .env.prod   # set strong DB passwords + real Mailgun credentials
 ```
 
 Required in `.env.prod`:
@@ -219,12 +213,11 @@ SCHOLARZIM_DB_PASSWORD=<strong-password>
 MYSQL_ROOT_PASSWORD=<strong-root-password>
 
 SCHOLARZIM_APP_BASE_URL=https://www.scholarzim.com
-SCHOLARZIM_MAIL_FROM=noreply@scholarzim.com
 
-SPRING_MAIL_HOST=...
-SPRING_MAIL_PORT=587
-SPRING_MAIL_USERNAME=...
-SPRING_MAIL_PASSWORD=...
+MAILGUN_API_KEY=...
+MAILGUN_DOMAIN=...
+MAILGUN_FROM_EMAIL=noreply@scholarzim.com
+MAILGUN_FROM_NAME=ScholarZim
 ```
 
 Never commit `.env.prod`.
@@ -269,7 +262,7 @@ Certbot will enable TLS and renewals via `certbot.timer`.
 - [ ] https://www.scholarzim.com loads the landing page  
 - [ ] https://scholarzim.com redirects to www  
 - [ ] Register / login works  
-- [ ] Password-reset email arrives (SMTP)  
+- [ ] Password-reset email arrives (Mailgun)  
 - [ ] File uploads persist after `docker compose restart`  
 - [ ] `scholarzim.demo.seed` is **false** for real production, or `SCHOLARZIM_DEMO_SEED=true` only for FYP demo  
 - [ ] Swagger disabled at `/swagger-ui.html`  
@@ -298,11 +291,10 @@ SCHOLARZIM_DB_URL=jdbc:mysql://mysql:3306/scholarzim
 SCHOLARZIM_DB_USER=scholarzim
 SCHOLARZIM_DB_PASSWORD=...
 SCHOLARZIM_APP_BASE_URL=https://www.scholarzim.com
-SCHOLARZIM_MAIL_FROM=noreply@scholarzim.com
-SPRING_MAIL_HOST=...
-SPRING_MAIL_PORT=587
-SPRING_MAIL_USERNAME=...
-SPRING_MAIL_PASSWORD=...
+MAILGUN_API_KEY=...
+MAILGUN_DOMAIN=...
+MAILGUN_FROM_EMAIL=noreply@scholarzim.com
+MAILGUN_FROM_NAME=ScholarZim
 SCHOLARZIM_SESSION_COOKIE_SECURE=true
 ```
 

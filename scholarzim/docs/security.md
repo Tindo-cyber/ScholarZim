@@ -5,7 +5,7 @@
 - **Form-based login** with server-side sessions (no JWT in browser MVC flow).
 - **BCrypt** password hashing via Spring Security `PasswordEncoder`.
 - **Account states:** `ACTIVE`, `PENDING_APPROVAL`, `REJECTED`, `SUSPENDED` — non-active accounts cannot authenticate.
-- **Password reset:** UUID token, 1-hour expiry, single use; email delivery via JavaMailSender with configurable retry (`scholarzim.mail.retry.max-attempts`, default 3). Failed delivery after all retries writes `EMAIL_DELIVERY_FAILED` to the audit log. Demo stack routes mail to **Mailhog** (SMTP `:1025`, UI `:8025`).
+- **Password reset:** UUID token, 1-hour expiry, single use; email delivery via JavaMailSender in dev/demo (**Mailhog**, SMTP `:1025`, UI `:8025`) or Mailgun's HTTP API in prod, both with configurable retry (`scholarzim.mail.retry.max-attempts`, default 3). Failed delivery after all retries writes `EMAIL_DELIVERY_FAILED` to the audit log.
 ## Authorization
 
 | Path pattern | Access |

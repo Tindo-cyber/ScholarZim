@@ -43,7 +43,7 @@ flowchart TB
 | Security | Spring Security (form login, BCrypt, role-based access) |
 | Persistence | Spring Data JPA, MySQL 8, Flyway migrations |
 | API docs | springdoc OpenAPI (dev/demo only) |
-| Email | JavaMailSender (Mailhog locally, SMTP in production) |
+| Email | JavaMailSender/Mailhog locally, Mailgun HTTP API in production |
 
 ## Layered design
 
