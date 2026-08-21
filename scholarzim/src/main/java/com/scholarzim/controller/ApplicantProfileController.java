@@ -48,7 +48,12 @@ public class ApplicantProfileController {
 
         if (bindingResult.hasErrors()) {
             populateProfileModel(authentication.getName(), model, false);
+            // populateProfileModel() just re-pointed "profileRequest" at a freshly loaded
+            // object; BindingAwareModelMap silently drops the BindingResult whenever the
+            // attribute it's tied to is reassigned to a different instance, so re-add both
+            // together or Thymeleaf's #fields.hasErrors() will never see these errors.
             model.addAttribute("profileRequest", request);
+            model.addAttribute(BindingResult.MODEL_KEY_PREFIX + "profileRequest", bindingResult);
             return "applicant/profile";
         }
 
@@ -58,6 +63,7 @@ public class ApplicantProfileController {
             bindingResult.reject("certificateError", ex.getMessage());
             populateProfileModel(authentication.getName(), model, false);
             model.addAttribute("profileRequest", request);
+            model.addAttribute(BindingResult.MODEL_KEY_PREFIX + "profileRequest", bindingResult);
             return "applicant/profile";
         }
 

@@ -53,6 +53,9 @@ import java.util.stream.Collectors;
 @PreAuthorize("hasRole('ADMIN')")
 public class AdminUserServiceImpl implements AdminUserService {
 
+    private static final java.util.regex.Pattern EMAIL_PATTERN =
+            java.util.regex.Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final ApplicantProfileRepository profileRepository;
@@ -101,6 +104,14 @@ public class AdminUserServiceImpl implements AdminUserService {
     @Transactional
     @PreAuthorize("hasRole('ADMIN') and (#request.role != T(com.scholarzim.util.RoleNames).ADMIN or hasRole('SUPER_ADMIN'))")
     public void createUser(AdminCreateUserRequest request, MultipartFile certificate, String adminEmail) {
+
+        if (request.getFullName() == null || request.getFullName().isBlank()) {
+            throw new AdminOperationException("Full name is required.");
+        }
+
+        if (request.getEmail() == null || !EMAIL_PATTERN.matcher(request.getEmail()).matches()) {
+            throw new AdminOperationException("Enter a valid email address.");
+        }
 
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new AdminOperationException("Email already exists.");

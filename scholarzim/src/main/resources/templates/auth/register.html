@@ -86,9 +86,11 @@
                         <label for="regConfirmPassword" class="form-label">Confirm password</label>
                         <input id="regConfirmPassword" type="password" class="form-control" th:field="*{confirmPassword}"
                                autocomplete="new-password"
-                               th:classappend="${#fields.hasErrors('confirmPassword')} ? 'is-invalid'">
+                               th:classappend="${#fields.hasErrors('confirmPassword') or #fields.hasErrors('passwordConfirmed')} ? 'is-invalid'">
                         <div class="invalid-feedback"
                              th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+                        <div class="invalid-feedback"
+                             th:if="${#fields.hasErrors('passwordConfirmed')}" th:errors="*{passwordConfirmed}"></div>
                     </div>
 
                     <div class="d-grid mt-3">
