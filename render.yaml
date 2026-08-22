@@ -40,18 +40,18 @@ services:
         sync: false
       - key: DB_PASSWORD
         sync: false
-      # Render blocks outbound SMTP on the free tier, so a HTTP mail API is the
-      # real send path — set MAIL_MAILER=mailgun and the key in the dashboard.
+      # Render blocks outbound SMTP on the free tier, so Mailgun's HTTP API is
+      # the real send path. Set MAILGUN_DOMAIN and MAILGUN_SECRET in the
+      # dashboard (from the Mailgun control panel); MAILGUN_ENDPOINT only
+      # needs to change to api.eu.mailgun.net for an EU-region domain.
       - key: MAIL_MAILER
-        value: smtp
-      - key: MAIL_HOST
+        value: mailgun
+      - key: MAILGUN_DOMAIN
         sync: false
-      - key: MAIL_PORT
-        value: "587"
-      - key: MAIL_USERNAME
+      - key: MAILGUN_SECRET
         sync: false
-      - key: MAIL_PASSWORD
-        sync: false
+      - key: MAILGUN_ENDPOINT
+        value: api.mailgun.net
       - key: MAIL_FROM_ADDRESS
         value: noreply@scholarzim.co.zw
       - key: MAIL_FROM_NAME

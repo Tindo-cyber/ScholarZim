@@ -99,43 +99,35 @@ class ScholarFitEngine
         if (blank($profileLevel)) {
             $missing[] = 'Complete your education level on your profile';
             $reasons[] = $this->reason('degree', 'Your degree matches', false);
-            $reasons[] = $this->reason('age', 'Age requirement satisfied', false);
 
             return 0;
         }
 
-        $ageOk = false;
-        $score = 0;
-
         if (blank($oppLevel)) {
-            $ageOk = true;
-            $score = 15;
             $reasons[] = $this->reason('degree', 'Your degree matches', true);
-        } elseif (strcasecmp(trim($profileLevel), trim($oppLevel)) === 0) {
-            $ageOk = true;
-            $score = 25;
-            $reasons[] = $this->reason('degree', 'Your degree matches', true);
-        } else {
-            $related = self::RELATED_LEVELS[trim($profileLevel)] ?? [];
-            $matches = array_filter($related, static fn (string $r) => strcasecmp($r, trim($oppLevel)) === 0);
 
-            if ($matches !== []) {
-                $ageOk = true;
-                $score = 15;
-                $reasons[] = $this->reason('degree', 'Your degree matches', true);
-            } else {
-                $reasons[] = $this->reason('degree', 'Your degree matches', false);
-                $missing[] = 'Requires ' . $oppLevel . ' - your profile shows ' . $profileLevel;
-            }
+            return 15;
         }
 
-        $reasons[] = $this->reason('age', 'Age requirement satisfied', $ageOk);
+        if (strcasecmp(trim($profileLevel), trim($oppLevel)) === 0) {
+            $reasons[] = $this->reason('degree', 'Your degree matches', true);
 
-        if (! $ageOk && ! $this->containsPhrase($missing, 'education level')) {
-            $missing[] = 'Education level may not meet scholarship eligibility';
+            return 25;
         }
 
-        return $score;
+        $related = self::RELATED_LEVELS[trim($profileLevel)] ?? [];
+        $matches = array_filter($related, static fn (string $r) => strcasecmp($r, trim($oppLevel)) === 0);
+
+        if ($matches !== []) {
+            $reasons[] = $this->reason('degree', 'Your degree matches', true);
+
+            return 15;
+        }
+
+        $reasons[] = $this->reason('degree', 'Your degree matches', false);
+        $missing[] = 'Requires ' . $oppLevel . ' - your profile shows ' . $profileLevel;
+
+        return 0;
     }
 
     private function scoreField(
@@ -203,7 +195,7 @@ class ScholarFitEngine
             $locationOk = filled($profile->country);
         }
 
-        if (filled($profile->province) && strcasecmp($profile->province, 'Rural') === 0) {
+        if ($score > 0 && filled($profile->province) && strcasecmp($profile->province, 'Rural') === 0) {
             $score = min($score + 3, 15);
         }
 
@@ -338,16 +330,5 @@ class ScholarFitEngine
     private function reason(string $key, string $label, bool $met): array
     {
         return ['key' => $key, 'label' => $label, 'met' => $met];
-    }
-
-    private function containsPhrase(array $items, string $phrase): bool
-    {
-        foreach ($items as $item) {
-            if (str_contains($item, $phrase)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
