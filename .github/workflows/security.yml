@@ -1,0 +1,28 @@
+name: Security
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+
+# Replaces the CodeQL workflow the Spring app used: CodeQL has no PHP analyzer,
+# so dependency auditing is the equivalent check for this stack.
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mbstring, bcmath, intl, zip, gd
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      # Advisory only: Laravel 10 is past its security-support window, so the
+      # open framework advisories have no 10.x fix to upgrade to. Flip this to
+      # a blocking step once the app is on a supported Laravel release.
+      - name: Audit dependencies
+        continue-on-error: true
+        run: composer audit

@@ -4,37 +4,60 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
-    healthCheckPath: /actuator/health
+    healthCheckPath: /
     envVars:
-      - key: SPRING_PROFILES_ACTIVE
-        value: prod
-      - key: SCHOLARZIM_SESSION_COOKIE_SECURE
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      # Generate once with `php artisan key:generate --show` and paste it into
+      # the Render dashboard; without a stable key every deploy logs users out.
+      - key: APP_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: APP_TIMEZONE
+        value: Africa/Harare
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: warning
+      - key: SESSION_SECURE_COOKIE
         value: "true"
       # FYP demo: set to "true" in the Render dashboard to seed sample users/scholarships
       - key: SCHOLARZIM_DEMO_SEED
         value: "true"
-      # Mount a Render persistent disk at /var/data/uploads and set this to that path
-      - key: SCHOLARZIM_UPLOAD_DIR
-        value: /var/data/uploads
-      # Aiven: jdbc:mysql://HOST:PORT/defaultdb?sslMode=REQUIRED&allowPublicKeyRetrieval=true
-      - key: SCHOLARZIM_DB_URL
+      # Aiven or any managed MySQL 8
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
         sync: false
-      - key: SCHOLARZIM_DB_USER
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_DATABASE
         sync: false
-      - key: SCHOLARZIM_DB_PASSWORD
+      - key: DB_USERNAME
         sync: false
-      - key: SCHOLARZIM_APP_BASE_URL
+      - key: DB_PASSWORD
         sync: false
-      - key: SCHOLARZIM_MAIL_FROM
+      # Render blocks outbound SMTP on the free tier, so a HTTP mail API is the
+      # real send path — set MAIL_MAILER=mailgun and the key in the dashboard.
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        sync: false
+      - key: MAIL_PORT
+        value: "587"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_ADDRESS
         value: noreply@scholarzim.co.zw
-      # Mailgun transactional email (Render blocks outbound SMTP, so this is the real send path —
-      # set the API key in the Render dashboard; sync: false keeps it out of this file)
-      - key: MAILGUN_API_KEY
-        sync: false
-      # scholarzim.co.zw is verified in Mailgun (DNS via Cloudflare, nameservers set by Webzim).
-      - key: MAILGUN_DOMAIN
-        value: scholarzim.co.zw
-      - key: MAILGUN_FROM_EMAIL
-        value: noreply@scholarzim.co.zw
-      - key: MAILGUN_FROM_NAME
+      - key: MAIL_FROM_NAME
         value: ScholarZim
+      # Mount a Render persistent disk here so uploaded documents survive deploys
+    disk:
+      name: scholarzim-uploads
+      mountPath: /var/www/html/storage/app
+      sizeGB: 1

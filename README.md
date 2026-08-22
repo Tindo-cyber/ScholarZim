@@ -1,181 +1,157 @@
-# ScholarZim
+# ScholarZim (Laravel 10)
 
-A scholarship and academic opportunity management platform for Zimbabwean students and verified providers.
+Laravel 10 port of the ScholarZim scholarship platform, previously a Spring Boot
+application. The database schema, column names, and business rules are carried over
+unchanged, so the same MySQL database can back either application.
 
-## Repository layout
+## Requirements
 
-```
-ScholarZim/
-├── backend/              Spring Boot API + Thymeleaf pages
-│   ├── src/main/java/    application code (com.scholarzim)
-│   ├── src/main/resources/
-│   │   ├── templates/    Thymeleaf views (shrinking as pages move to React)
-│   │   ├── static/       shared CSS/JS/images; React build lands in static/app
-│   │   └── db/migration/ Flyway migrations
-│   ├── database/         schema + seed SQL
-│   ├── docs/             architecture, security, QA, demo script
-│   └── pom.xml
-├── frontend/             React + TypeScript + Vite
-│   ├── src/
-│   │   ├── pages/        route components
-│   │   ├── components/   shared UI
-│   │   ├── lib/          API client, hooks, formatting
-│   │   └── styles/       React-specific CSS (tokens come from backend)
-│   ├── index.html
-│   └── vite.config.ts
-├── Dockerfile            3 stages: React build → Maven package → JRE runtime
-├── docker-compose.yml    local stack (app + MySQL + MailHog)
-└── render.yaml           Render deployment
-```
+- PHP 8.1+ (developed against 8.4)
+- Composer 2
+- MySQL 8 (SQLite works for local runs and the test suite)
 
-## Stack
-
-**Backend** — Java 21, Spring Boot 3.5, Spring Security, Spring Data JPA, MySQL,
-Flyway, Caffeine cache, Bucket4j rate limiting, springdoc-openapi.
-
-**Frontend** — React 19, TypeScript, Vite, React Router.
-
-## Architecture
-
-The app is **mid-migration from Thymeleaf to React**. Both UIs run side by side:
-
-- Thymeleaf still owns `/`, `/login`, `/dashboard`, and the rest of the existing pages.
-- React owns everything under **`/app`** and grows as pages are ported.
-- Both are served by the same Spring container on the same origin, so the
-  existing session cookie authenticates React's API calls with no CORS setup
-  and no token storage. React reads the CSRF token from the `XSRF-TOKEN`
-  cookie and echoes it back as `X-XSRF-TOKEN` on writes.
-- `frontend/` builds into `backend/src/main/resources/static/app/`, which is
-  generated output and **not committed**.
-
-## Run locally
-
-### Option A — fully containerized (recommended)
-
-Requires Docker and Docker Compose. Run from the repository root:
+## Getting started
 
 ```bash
-cp .env.example .env          # first time only; defaults work as-is
-docker compose up -d --build
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve
 ```
 
-Open **http://localhost:8080** (Thymeleaf) and **http://localhost:8080/app** (React).
+Seeded accounts (all password `ChangeMe123`):
 
-This starts three services — `app` (Spring Boot, with the React bundle baked in),
-`mysql` (MySQL 8, persistent volume), `mailhog` (catches outgoing email at
-http://localhost:8025) — networked together, with the app connecting to
-`mysql:3306` internally rather than `localhost`.
+| Role     | Email                        |
+|----------|------------------------------|
+| Admin    | admin@scholarzim.co.zw       |
+| Provider | provider@scholarzim.co.zw    |
+| Student  | student@scholarzim.co.zw     |
 
-Common commands:
+## Layout of the port
+
+| Concern            | Location                                              |
+|--------------------|-------------------------------------------------------|
+| Eloquent models    | `app/Models`                                          |
+| Business services  | `app/Services`                                        |
+| ScholarFit scoring | `app/Services/ScholarFit`                             |
+| Constants/enums    | `app/Support`                                         |
+| Controllers        | `app/Http/Controllers` (Admin, Applicant, Provider, Auth, Api) |
+| Role guards        | `app/Http/Middleware/EnsureUserHasRole.php`           |
+| Response hardening | `app/Http/Middleware/SecurityHeaders.php`             |
+| Scheduled jobs     | `app/Console/Commands`, wired in `app/Console/Kernel.php` |
+| Report exports     | `app/Services/ReportService.php`, `app/Services/ExcelReportService.php` |
+| Routes             | `routes/web.php`, `routes/api.php`                    |
+| Layouts            | `resources/views/layouts` (app, public, auth)         |
+| Components         | `resources/views/components`                          |
+| Views              | `resources/views/{public,auth,applicant,provider,admin,applications,opportunities,notifications,account}` |
+| Report templates   | `resources/views/reports`                             |
+| Container config   | `docker/` (nginx, php.ini, supervisor, entrypoint)    |
+
+## Rules worth knowing
+
+- **Moderation gates publication.** A provider submits a listing as `PENDING`; it is
+  invisible to the public and unapplyable until an admin approves it. Approval is also
+  the moment applicants are notified — announcing earlier would push unreviewed listings
+  out by email.
+- **Provider accounts start inactive.** A provider can sign in and see their dashboard
+  while verification is pending, but the publishing routes require an active account
+  (`account.active` middleware).
+- **Decisions need a reason.** Approving or rejecting an application requires written
+  feedback; it is shown to the applicant verbatim.
+- **Uploads never sit in `public/`.** Files go to the private disk and are served through
+  `FileDownloadController`, so every read is authorised and sensitive reads are audited.
+- **Email preferences gate email only.** In-app notifications are always written; the
+  three category toggles decide what gets emailed.
+
+## Admin reports
+
+`/admin/reports` exports platform data as PDF (dompdf) or Excel (PhpSpreadsheet):
+
+| Export | Formats |
+|--------|---------|
+| Users | PDF, Excel |
+| Opportunities | PDF, Excel |
+| Applications | PDF, Excel |
+| Recommendations (per applicant, with match scores) | PDF |
+
+PDFs are composed from Blade views in `resources/views/reports`; the spreadsheets keep the
+same sheet names and column order the Spring exporter used, so archived files stay
+comparable. Both exporters load the full table into memory — fine at FYP scale, but they
+should be paginated or streamed before a large production dataset.
+
+## Scheduled jobs
+
+Two daily reminder jobs, driven by Laravel's scheduler:
+
+| Command | Runs | What it does |
+|---------|------|--------------|
+| `scholarzim:deadline-reminders` | 08:00 | Notifies applicants with a live application to a scholarship closing within 3 days, and anyone who saved it but has not applied |
+| `scholarzim:profile-reminders` | 09:00 | Nudges active applicants whose profile or results certificate is incomplete |
+
+Both are idempotent — one reminder per user per record — so a repeated run sends nothing
+twice. Either can be invoked directly for a demo. In production the container supervises
+`schedule:run`; locally, run it yourself:
 
 ```bash
-docker compose stop                    # stop containers, keep data
-docker compose up -d                   # start again, data intact
-docker compose up -d --build           # rebuild after a code change
-docker compose logs -f                 # all services
-docker compose logs -f app             # just the app
-docker compose logs -f mysql           # just the database
-docker compose down                    # remove containers, KEEP the data volume
+php artisan schedule:run
 ```
 
-⚠️ `docker compose down -v` additionally **deletes the `mysql_data` volume —
-all database data is lost**. Only run it if you intentionally want a clean
-slate.
+`SmsService` is called by the deadline job but logs the message rather than dispatching it;
+the delivery path is wired end to end and awaits a gateway.
 
-Inspecting the database from the host (e.g. MySQL Workbench):
-connect to `127.0.0.1:3307` (or whatever `MYSQL_HOST_PORT` is set to in
-`.env`) with the credentials from `.env`. A native/local MySQL install
-commonly already owns port 3306, which is why the container defaults to 3307
-instead.
+## ScholarFit
 
-Backup / restore (run from the repository root, with the stack up):
+`app/Services/ScholarFit/ScholarFitEngine.php` scores a profile against a listing out of
+100, with the original weights: academic record 20, education level 25, field of study 25,
+location 15, deadline 10, results certificate 5. It returns a per-dimension breakdown, the
+criteria met, and what is holding the score back — the UI renders all three.
+
+## Front end
+
+Styling comes from the BVite Bootstrap 5 admin theme in the `pfn-ui` workspace folder. Its
+compiled stylesheets and script are referenced from `public/assets/bvite/`; all Blade markup
+is written for this application on top of Bootstrap 5 conventions, with ScholarZim-specific
+structure in `public/assets/css/scholarzim.css`. The theme palette is set once via
+`data-bvite="theme-Mariner"` on `<body>` in each layout.
+
+Charts on the admin analytics page are inline SVG/CSS, so no charting library is required
+at runtime.
+
+## Tests
 
 ```bash
-# Backup
-docker compose exec mysql sh -c 'exec mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" scholarzim' > backend/database/backups/backup.sql
-
-# Restore
-docker compose exec -T mysql sh -c 'exec mysql -uroot -p"$MYSQL_ROOT_PASSWORD" scholarzim' < backend/database/backups/backup.sql
+php artisan test
 ```
 
-Uploaded files (CVs, verification documents, etc.) live in `backend/uploads/`
-on the host and are bind-mounted into the container, so they persist across
-rebuilds/recreates with no extra steps and are visible directly on disk.
+32 tests, 130 assertions.
 
-### Option B — backend on host (no Docker)
+- `SmokeTest` renders every authenticated page for each role and checks the role guards.
+- `WorkflowTest` covers the moderation gate, the apply-once rule, provider decisions, and
+  ScholarFit ranking.
+- `ReportExportTest` downloads every PDF and Excel export, asserting real file signatures
+  and that non-admins are refused.
+- `ReminderJobTest` covers both reminder jobs, including idempotency and the deadline
+  window boundary.
+- `SecurityHeadersTest` asserts the CSP and hardening headers, and that `script-src` has
+  not been relaxed.
 
-Needs a MySQL reachable at the defaults in `application.properties`:
-`localhost:3306`, database `scholarzim`, user `root`, password `root`. A native
-MySQL install is the usual way to get that.
+## Running in Docker
 
 ```bash
-cd backend
-./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
+docker compose up --build
 ```
 
-Open **http://localhost:8080** (Thymeleaf) and **http://localhost:8080/app** (React).
+Serves http://localhost:8000 with MySQL and MailHog (http://localhost:8025), seeded with
+demo data. The image runs nginx + PHP-FPM and supervises the scheduler tick.
 
-Flyway applies migrations on startup, so an empty `scholarzim` schema is enough
-to begin with. Mail sends fail without MailHog on port 1025 — that is logged and
-non-fatal, so everything except email delivery still works.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production, and [SUBMISSION.md](SUBMISSION.md)
+for the documentation index.
 
-> **Not** `docker compose up -d mysql mailhog` followed by `mvnw spring-boot:run`.
-> Compose publishes MySQL on host port **3307** with the `scholarzim` user, while
-> the app defaults to **3306** as `root` — so the host process would not reach the
-> container. To use the containerised database from a host-run backend, override
-> the datasource explicitly:
->
-> ```bash
-> SPRING_DATASOURCE_URL="jdbc:mysql://localhost:3307/scholarzim?useSSL=false&allowPublicKeyRetrieval=true" \
-> SPRING_DATASOURCE_USERNAME=scholarzim \
-> SPRING_DATASOURCE_PASSWORD="$MYSQL_PASSWORD" \
-> ./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
-> ```
->
-> In PowerShell, set each with `$env:NAME = "value"` on its own line first.
+## Notes
 
-### Frontend development
-
-With the backend running on port 8080, start Vite's dev server for hot reload:
-
-```bash
-cd frontend
-npm install          # first time only
-npm run dev
-```
-
-Open **http://localhost:5173/app**. Vite proxies `/api`, `/login`, and the
-shared assets through to Spring on 8080, so sessions and CSRF behave exactly as
-they do in production.
-
-To build the React bundle into the backend (what the Docker build does):
-
-```bash
-cd frontend
-npm run build        # outputs to backend/src/main/resources/static/app/
-```
-
-Running the backend without ever building the frontend is fine — the Thymeleaf
-pages work as normal and `/app` simply returns 404.
-
-## Quick demo accounts (demo profile)
-
-Password for all: `Password123!`
-
-| Role | Email |
-|------|-------|
-| Admin | admin@scholarzim.co.zw |
-| Applicant | tanaka.moyo@student.co.zw |
-| Provider | scholarships@uk.gov.zw |
-
-Full viva script: [backend/docs/demo-script.md](backend/docs/demo-script.md)
-
-See [SUBMISSION.md](SUBMISSION.md) for the complete submission index.
-
-See [DEPLOYMENT.md](backend/DEPLOYMENT.md) for production environment variables and launch checklist.
-
-## Profiles
-
-- **demo** — seeded demo data for viva/presentations (`mvn spring-boot:run -Dspring-boot.run.profiles=demo`)
-- **default / dev** — local development; demo seeder may run
-- **prod** — set `spring.profiles.active=prod`; demo seeder disabled; configure DB and mail via environment variables
+- Composer's audit check is disabled for this project (`audit.block-insecure=false`),
+  because every Laravel 10 release now carries a published security advisory — Laravel 10
+  is past its security-support window. Upgrading to a supported major is the real fix.
+- Analytics month bucketing is driver-aware (MySQL / SQLite / Postgres); MySQL is the
+  production target.

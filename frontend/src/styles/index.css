@@ -1,7 +1,0 @@
-/* Entry point. Brand colours, spacing, and radii come from the shared token
-   sheet at /css/tokens.css (linked in index.html) — never redefine an --sz-*
-   value in these files, or the Thymeleaf and React pages will drift apart. */
-
-@import './base.css';
-@import './layout.css';
-@import './components.css';

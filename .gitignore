@@ -1,24 +1,27 @@
+# Laravel
+/.phpunit.cache
+/node_modules
+/public/build
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+.env
+.env.backup
+.env.production
+.env.prod
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+
 # IDE
-.idea/
+/.fleet
+/.idea
+/.vscode
 *.iml
-.vscode/
-
-# Java
-**/target/
-**/uploads/
-
-# Node / Vite
-**/node_modules/
-**/dist/
-**/.vite/
-**/.env
-**/.env.local
-**/.env.prod
-**/*.tsbuildinfo
-
-# Vite build output, generated into the backend's static resources by
-# `npm run build` (and by the Docker frontend stage). Never commit it.
-backend/src/main/resources/static/app/
 
 # OS
 .DS_Store
@@ -26,10 +29,7 @@ Thumbs.db
 
 # Local dev artifacts (never commit)
 cookies.txt
-rec.html
-rec2.html
 debug-*.log
-debug-7aba56.log
 
 # Database dumps/backups (may contain real local data)
 **/database/backups/

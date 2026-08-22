@@ -1,0 +1,178 @@
+/*
+ * ScholarZim overlay on top of the BVite Bootstrap 5 theme.
+ * Only the structural pieces the theme does not ship (app shell grid, stat
+ * cards, ScholarFit widgets) live here; everything else uses stock Bootstrap
+ * utilities so the theme's own palette variables keep working.
+ */
+
+:root {
+    --sz-sidebar-width: 16.5rem;
+    --sz-radius: .75rem;
+}
+
+/* ---------- App shell ---------- */
+
+.sz-sidebar {
+    width: var(--sz-sidebar-width);
+    flex: 0 0 var(--sz-sidebar-width);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+}
+
+.sz-main {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.sz-topbar {
+    z-index: 5;
+}
+
+@media (max-width: 1199.98px) {
+    .sz-sidebar {
+        position: fixed;
+        inset: 0 auto 0 0;
+        z-index: 1045;
+        transform: translateX(-100%);
+        transition: transform .2s ease-in-out;
+        box-shadow: 0 0 2rem rgba(0, 0, 0, .15);
+    }
+
+    .sz-sidebar.show {
+        transform: translateX(0);
+    }
+}
+
+/* ---------- Cards and stats ---------- */
+
+.sz-stat-card,
+.sz-scholarship-card {
+    border-radius: var(--sz-radius);
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.sz-stat-card--link:hover,
+.sz-scholarship-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .08);
+}
+
+.sz-stat-icon {
+    width: 2.75rem;
+    height: 2.75rem;
+}
+
+.sz-empty-icon {
+    width: 4rem;
+    height: 4rem;
+}
+
+.sz-avatar {
+    background: var(--primary-color, #0066fe);
+    color: #fff;
+    font-size: .8rem;
+    letter-spacing: .02em;
+}
+
+/* Two-line description clamp on listing cards. */
+.sz-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ---------- Application timeline ---------- */
+
+.sz-timeline-step {
+    position: relative;
+}
+
+.sz-timeline-step::before {
+    content: "";
+    position: absolute;
+    top: 1rem;
+    left: -50%;
+    width: 100%;
+    height: 2px;
+    background: var(--bs-border-color);
+}
+
+.sz-timeline-step:first-child::before {
+    display: none;
+}
+
+.sz-timeline-step.is-done::before {
+    background: var(--primary-color, #0066fe);
+}
+
+.sz-timeline-dot {
+    position: relative;
+    z-index: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+/* ---------- Public site ---------- */
+
+.sz-hero {
+    background:
+        radial-gradient(circle at 15% 20%, rgba(0, 102, 254, .12), transparent 45%),
+        radial-gradient(circle at 85% 10%, rgba(0, 184, 214, .12), transparent 40%);
+}
+
+.sz-public-footer {
+    background: var(--bs-body-bg);
+}
+
+.sz-step-number {
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--primary-color, #0066fe);
+    color: #fff;
+    font-weight: 700;
+}
+
+/* ---------- Auth ---------- */
+
+.sz-auth-aside {
+    background:
+        linear-gradient(160deg, var(--primary-color, #0066fe), rgba(0, 0, 0, .65));
+}
+
+.sz-auth-tick {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex: 0 0 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, .18);
+    font-size: .8rem;
+    font-weight: 700;
+}
+
+/* ---------- Misc ---------- */
+
+.min-w-0 {
+    min-width: 0;
+}
+
+.sz-fit-reason {
+    display: flex;
+    align-items: flex-start;
+    gap: .5rem;
+}

@@ -10,9 +10,9 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: scholarzim
-      MYSQL_USER: ${SCHOLARZIM_DB_USER}
-      MYSQL_PASSWORD: ${SCHOLARZIM_DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE:-scholarzim}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
       - mysql_prod_data:/var/lib/mysql
@@ -25,8 +25,6 @@ services:
       - scholarzim
 
   app:
-    # Root context + root Dockerfile: builds the React app in frontend/ and
-    # bakes it into the Spring jar, so one container serves API and UI.
     build:
       context: .
       dockerfile: Dockerfile
@@ -34,26 +32,32 @@ services:
     ports:
       - "127.0.0.1:8080:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: prod
-      SCHOLARZIM_DB_URL: jdbc:mysql://mysql:3306/scholarzim?useSSL=false&allowPublicKeyRetrieval=true
-      SCHOLARZIM_DB_USER: ${SCHOLARZIM_DB_USER}
-      SCHOLARZIM_DB_PASSWORD: ${SCHOLARZIM_DB_PASSWORD}
-      SCHOLARZIM_APP_BASE_URL: ${SCHOLARZIM_APP_BASE_URL:-https://www.scholarzim.co.zw}
-      SCHOLARZIM_MAIL_FROM: ${SCHOLARZIM_MAIL_FROM:-noreply@scholarzim.co.zw}
-      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST}
-      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
-      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME}
-      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD}
-      MAILGUN_API_KEY: ${MAILGUN_API_KEY}
-      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN}
-      MAILGUN_FROM_EMAIL: ${MAILGUN_FROM_EMAIL}
-      MAILGUN_FROM_NAME: ${MAILGUN_FROM_NAME:-ScholarZim}
-      SCHOLARZIM_UPLOAD_DIR: /app/uploads
-      SCHOLARZIM_SESSION_COOKIE_SECURE: "true"
+      APP_NAME: ScholarZim
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL:-https://www.scholarzim.co.zw}
+      APP_TIMEZONE: Africa/Harare
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: warning
+      SESSION_SECURE_COOKIE: "true"
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-scholarzim}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:-587}
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@scholarzim.co.zw}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-ScholarZim}
       SCHOLARZIM_DEMO_SEED: "false"
-      JAVA_OPTS: ${JAVA_OPTS:--Xms256m -Xmx768m}
     volumes:
-      - upload_prod_data:/app/uploads
+      - upload_prod_data:/var/www/html/storage/app
     depends_on:
       mysql:
         condition: service_healthy

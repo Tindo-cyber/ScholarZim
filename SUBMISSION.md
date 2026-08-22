@@ -11,70 +11,92 @@ cd ScholarZim
 docker compose up --build
 ```
 
-Open http://localhost:8080 and follow [backend/docs/demo-script.md](backend/docs/demo-script.md).
+Open http://localhost:8000 and follow [docs/demo-script.md](docs/demo-script.md).
 
-**Demo password:** `Password123!` (all seeded accounts)
+**Demo password:** `ChangeMe123` (all seeded accounts)
+
+| Role     | Email                     |
+|----------|---------------------------|
+| Admin    | admin@scholarzim.co.zw    |
+| Provider | provider@scholarzim.co.zw |
+| Student  | student@scholarzim.co.zw  |
 
 ## Run locally (development)
 
 ```bash
 cd ScholarZim
-docker compose up -d mysql mailhog
-cd backend
-mvn spring-boot:run -Dspring-boot.run.profiles=demo
+composer install
+cp .env.example .env
+php artisan key:generate
+php artisan migrate --seed
+php artisan serve            # http://localhost:8000
 ```
 
-For React development with hot reload (backend must be running on 8080):
+MySQL and MailHog can be borrowed from the Docker stack rather than installed natively:
 
 ```bash
-cd frontend
-npm install
-npm run dev                   # http://localhost:5173/app
+docker compose up -d mysql mailhog
+```
+
+The daily reminder jobs run off the scheduler. In the container that tick is
+supervised automatically; locally, run it on demand:
+
+```bash
+php artisan schedule:run
+php artisan scholarzim:deadline-reminders    # or invoke a job directly
+php artisan scholarzim:profile-reminders
 ```
 
 ## Run tests
 
 ```bash
-cd ScholarZim/backend
-mvn clean test
+cd ScholarZim
+php artisan test
 ```
 
-Expect 181 tests, BUILD SUCCESS.
+Expect 29 tests / 118 assertions passing.
 
 ## Documentation index
 
 | Document | Path |
 |----------|------|
-| Architecture | [backend/docs/architecture.md](backend/docs/architecture.md) |
-| Demo script | [backend/docs/demo-script.md](backend/docs/demo-script.md) |
-| Security | [backend/docs/security.md](backend/docs/security.md) |
-| User guide | [backend/docs/user-guide.md](backend/docs/user-guide.md) |
-| Evaluation | [backend/docs/evaluation.md](backend/docs/evaluation.md) |
-| Manual QA | [backend/docs/manual-qa-checklist.md](backend/docs/manual-qa-checklist.md) |
-| Deployment | [backend/DEPLOYMENT.md](backend/DEPLOYMENT.md) |
+| Architecture | [docs/architecture.md](docs/architecture.md) |
+| Demo script | [docs/demo-script.md](docs/demo-script.md) |
+| Security | [docs/security.md](docs/security.md) |
+| User guide | [docs/user-guide.md](docs/user-guide.md) |
+| Evaluation | [docs/evaluation.md](docs/evaluation.md) |
+| Manual QA | [docs/manual-qa-checklist.md](docs/manual-qa-checklist.md) |
+| Deployment | [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) |
 
 ## Technology stack
 
-Java 21 · Spring Boot 3.5 · Thymeleaf · React 19 · TypeScript · Vite · MySQL 8 · Flyway · Spring Security · Maven
+PHP 8.1+ (developed against 8.4) · Laravel 10 · Blade · Bootstrap 5 · MySQL 8 · Eloquent migrations · PHPUnit · Composer
+
+Reports are generated with dompdf (PDF) and PhpSpreadsheet (Excel).
 
 ## Repository layout
 
 ```
 ScholarZim/
-├── backend/             # Spring Boot API + Thymeleaf pages
-├── frontend/            # React + TypeScript + Vite
-├── Dockerfile           # React build → Maven package → JRE runtime
+├── app/                 # Controllers, models, services, console commands
+├── resources/views/     # Blade templates (pages, components, emails, reports)
+├── routes/web.php       # All application routes
+├── database/            # Migrations and the demo seeder
+├── tests/               # Feature and unit tests
+├── docker/              # nginx, php-fpm, supervisor and entrypoint config
+├── Dockerfile           # Composer install → nginx + PHP-FPM runtime
 ├── docker-compose.yml   # Local stack (app + MySQL + MailHog)
-├── .github/workflows/   # CI (frontend build + tests + Flyway smoke)
+├── .github/workflows/   # CI (tests + migration smoke) and dependency audit
 └── SUBMISSION.md        # This file
 ```
 
 ## Production
 
-See [backend/DEPLOYMENT.md](backend/DEPLOYMENT.md). Use `spring.profiles.active=prod` with environment variables for database and mail.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Set `APP_ENV=production` with environment variables for database and mail; `APP_KEY` must be set explicitly so sessions survive a restart.
 
 ## Author notes
 
-- Demo data is disabled in production (`scholarzim.demo.seed=false`).
-- SMS notifications are planned future work; in-app and email notifications are functional.
-- REST API exposes public catalog and applicant endpoints; full admin/provider API is MVC-only.
+- Demo data is disabled in production (`SCHOLARZIM_DEMO_SEED=false`).
+- SMS notifications log the message rather than dispatching it — the delivery path is wired end to end and awaits a gateway. In-app and email notifications are functional.
+- REST API exposes public catalog and applicant endpoints; the full admin/provider surface is server-rendered only.
+- This codebase is a port of an earlier Spring Boot implementation. The schema, column names, and business rules carried over unchanged.

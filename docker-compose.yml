@@ -3,12 +3,12 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-scholarzim}
-      MYSQL_USER: ${MYSQL_USER:-scholarzim}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-scholarzim_dev_password}
+      MYSQL_DATABASE: ${DB_DATABASE:-scholarzim}
+      MYSQL_USER: ${DB_USERNAME:-scholarzim}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-scholarzim_dev_password}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
     # Bound to localhost only, and only useful for connecting a DB client from
-    # the host (e.g. MySQL Workbench/IntelliJ) — the app never uses this port,
+    # the host (e.g. MySQL Workbench/TablePlus) — the app never uses this port,
     # it talks to mysql:3306 over the internal Docker network. Defaults to
     # 3307 since a native MySQL install commonly already owns 3306.
     ports:
@@ -34,29 +34,36 @@ services:
       - scholarzim
 
   app:
-    # Root context + root Dockerfile: builds the React app in frontend/ and
-    # bakes it into the Spring jar, so one container serves API and UI.
     build:
       context: .
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "127.0.0.1:${APP_HOST_PORT:-8080}:8080"
+      - "127.0.0.1:${APP_HOST_PORT:-8000}:8080"
     environment:
-      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-demo}
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-scholarzim}?useSSL=false&allowPublicKeyRetrieval=true
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER:-scholarzim}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-scholarzim_dev_password}
-      SPRING_MAIL_HOST: mailhog
-      SPRING_MAIL_PORT: 1025
-      SCHOLARZIM_APP_BASE_URL: ${SCHOLARZIM_APP_BASE_URL:-http://localhost:8080}
-      SCHOLARZIM_UPLOAD_DIR: /app/uploads
+      APP_NAME: ScholarZim
+      APP_ENV: ${APP_ENV:-local}
+      APP_DEBUG: ${APP_DEBUG:-true}
+      APP_KEY: ${APP_KEY:-}
+      APP_URL: ${APP_URL:-http://localhost:8000}
+      APP_TIMEZONE: Africa/Harare
+      LOG_CHANNEL: stderr
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-scholarzim}
+      DB_USERNAME: ${DB_USERNAME:-scholarzim}
+      DB_PASSWORD: ${DB_PASSWORD:-scholarzim_dev_password}
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_FROM_ADDRESS: noreply@scholarzim.co.zw
+      MAIL_FROM_NAME: ScholarZim
       SCHOLARZIM_DEMO_SEED: ${SCHOLARZIM_DEMO_SEED:-true}
     volumes:
-      # Bind-mounted (not a named volume) so the files already sitting in
-      # ./backend/uploads locally are used as-is and stay visible/backed-up on
-      # the host — nothing to migrate, nothing hidden inside a Docker volume.
-      - ./backend/uploads:/app/uploads
+      # Bind-mounted (not a named volume) so uploaded documents stay visible
+      # and backed-up on the host rather than hidden inside a Docker volume.
+      - ./storage/app:/var/www/html/storage/app
     depends_on:
       mysql:
         condition: service_healthy

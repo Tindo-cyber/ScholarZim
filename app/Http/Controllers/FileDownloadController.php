@@ -1,0 +1,98 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\ApplicantProfile;
+use App\Models\ProviderProfile;
+use App\Services\ApplicationService;
+use App\Services\AuditService;
+use App\Services\FileStorageService;
+use App\Support\AuditAction;
+use Illuminate\Http\Request;
+
+/**
+ * Uploads live on the private disk. Every download passes through here so the
+ * requester is authorised first, and sensitive reads are audited.
+ */
+class FileDownloadController extends Controller
+{
+    public function __construct(
+        private readonly FileStorageService $fileStorage,
+        private readonly ApplicationService $applicationService,
+        private readonly AuditService $auditService,
+    ) {
+    }
+
+    /** Applicant's own document, or the provider who owns the listing. */
+    public function applicationDocument(Request $request, int $applicationId)
+    {
+        $user = $request->user();
+
+        $application = $user->isProvider()
+            ? $this->applicationService->findForProvider($applicationId, $user)
+            : $this->applicationService->findForApplicant($applicationId, $user);
+
+        abort_unless($this->fileStorage->exists($application->document_path), 404, 'No document attached.');
+
+        return response()->download(
+            $this->fileStorage->absolutePath($application->document_path),
+            $application->document_filename ?: 'application-document'
+        );
+    }
+
+    /** Results certificate attached to an application, for the reviewing provider. */
+    public function applicantResults(Request $request, int $applicationId)
+    {
+        $user = $request->user();
+        $application = $this->applicationService->findForProvider($applicationId, $user);
+
+        $profile = $application->user?->applicantProfile;
+        abort_unless($profile && $this->fileStorage->exists($profile->results_certificate_path), 404);
+
+        $this->auditService->log(
+            $user->email,
+            AuditAction::VIEW_APPLICANT_RESULTS,
+            'APPLICANT_PROFILE',
+            $profile->profile_id
+        );
+
+        return response()->download(
+            $this->fileStorage->absolutePath($profile->results_certificate_path),
+            $profile->results_certificate_filename ?: 'results-certificate'
+        );
+    }
+
+    /** Admin-only: the registration certificate a provider uploaded at signup. */
+    public function providerCertificate(Request $request, int $userId)
+    {
+        $profile = ProviderProfile::where('user_id', $userId)->firstOrFail();
+
+        abort_unless($this->fileStorage->exists($profile->certificate_path), 404);
+
+        $this->auditService->log(
+            $request->user()->email,
+            AuditAction::VIEW_PROVIDER_CERTIFICATE,
+            'PROVIDER_PROFILE',
+            $profile->profile_id
+        );
+
+        return response()->download(
+            $this->fileStorage->absolutePath($profile->certificate_path),
+            $profile->certificate_filename ?: 'registration-certificate'
+        );
+    }
+
+    /** One of the applicant's own profile documents. */
+    public function myDocument(Request $request, string $documentType)
+    {
+        $profile = ApplicantProfile::where('user_id', $request->user()->user_id)->firstOrFail();
+        $path = $profile->documentPath($documentType);
+
+        abort_unless($this->fileStorage->exists($path), 404);
+
+        return response()->download(
+            $this->fileStorage->absolutePath($path),
+            $profile->documentFilename($documentType) ?: $documentType
+        );
+    }
+}

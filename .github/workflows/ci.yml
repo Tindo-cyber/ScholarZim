@@ -6,44 +6,36 @@ on:
   pull_request:
 
 jobs:
-  frontend:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-          cache: npm
-          cache-dependency-path: frontend/package-lock.json
-      - name: Install dependencies
-        working-directory: frontend
-        run: npm ci
-      - name: Type-check
-        working-directory: frontend
-        run: npm run typecheck
-      - name: Build
-        working-directory: frontend
-        run: npm run build
-
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5
+      - uses: shivammathur/setup-php@v2
         with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
+          php-version: '8.3'
+          extensions: mbstring, bcmath, intl, zip, gd, pdo_sqlite, pdo_mysql
+          coverage: xdebug
+      - name: Cache composer packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
       - name: Run tests
-        working-directory: backend
-        run: mvn -B clean test
+        run: php artisan test --coverage-clover coverage.xml
       - name: Upload coverage report
         uses: actions/upload-artifact@v7
         with:
-          name: jacoco-coverage-report
-          path: backend/target/site/jacoco/
+          name: phpunit-coverage-report
+          path: coverage.xml
 
-  flyway-smoke:
+  migration-smoke:
     runs-on: ubuntu-latest
     services:
       mysql:
@@ -60,15 +52,26 @@ jobs:
           --health-retries=5
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-java@v5
+      - uses: shivammathur/setup-php@v2
         with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-      - name: Flyway migration smoke test
-        working-directory: backend
+          php-version: '8.3'
+          extensions: mbstring, bcmath, intl, zip, gd, pdo_mysql
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+      - name: Migrate and seed against MySQL
         env:
-          MYSQL_URL: jdbc:mysql://127.0.0.1:3306/scholarzim?useSSL=false&allowPublicKeyRetrieval=true
-          MYSQL_USER: root
-          MYSQL_PASSWORD: root
-        run: mvn -B test -Dtest=FlywayMigrationIT,FlywaySpringBootIT,FlywayV10MigrationIT -Dspring.profiles.active=flyway-it
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: scholarzim
+          DB_USERNAME: root
+          DB_PASSWORD: root
+        run: |
+          php artisan migrate --force
+          php artisan db:seed --force
+          # Rolling all the way back proves every migration has a working down().
+          php artisan migrate:rollback --force --step=100

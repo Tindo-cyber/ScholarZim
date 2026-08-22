@@ -1,42 +1,42 @@
-# Root Dockerfile for platforms (Render) that build from the repo root.
-# Builds the React app first, drops its output into the Spring static resources,
-# then packages a single jar that serves both the API and the UI.
+# Single image serving the ScholarZim Laravel app: nginx in front of PHP-FPM,
+# with the scheduler running alongside so the daily reminder jobs still fire.
 
-# ── 1. React frontend ──────────────────────────────────────────────────────
-FROM node:22-alpine AS frontend
-WORKDIR /build/frontend
-COPY frontend/package.json frontend/package-lock.json* ./
-# npm ci needs a lockfile; fall back to install so a fresh clone still builds.
-RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
-COPY frontend/ ./
-# vite.config.ts writes to ../backend/src/main/resources/static/app,
-# which resolves to /build/backend/... inside this stage.
-RUN npm run build
-
-# ── 2. Spring backend ──────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jdk AS build
+# ── 1. Composer dependencies ───────────────────────────────────────────────
+FROM composer:2 AS vendor
 WORKDIR /app
-COPY backend/.mvn/ .mvn/
-COPY backend/mvnw backend/pom.xml ./
-RUN chmod +x mvnw
-# Warm the dependency cache before the sources land, so a code-only change
-# does not re-download the world on every rebuild.
-RUN ./mvnw -B dependency:go-offline
-COPY backend/src ./src
-COPY --from=frontend /build/backend/src/main/resources/static/app ./src/main/resources/static/app
-RUN ./mvnw -B -DskipTests package
+# Install against the manifests alone first, so a code-only change does not
+# re-resolve the dependency tree on every rebuild.
+COPY composer.json composer.lock ./
+RUN composer install \
+        --no-dev --no-scripts --no-autoloader \
+        --prefer-dist --no-interaction --no-progress
+COPY . .
+RUN composer dump-autoload --optimize --no-dev
 
-# ── 3. Runtime ─────────────────────────────────────────────────────────────
-FROM eclipse-temurin:21-jre
-WORKDIR /app
-COPY --from=build /app/target/*.jar app.jar
-RUN mkdir -p /app/uploads
+# ── 2. Runtime ─────────────────────────────────────────────────────────────
+FROM php:8.3-fpm-alpine
+
+RUN apk add --no-cache nginx supervisor tzdata icu-dev libzip-dev libpng-dev oniguruma-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg 2>/dev/null || true \
+    && docker-php-ext-install -j"$(nproc)" pdo_mysql mbstring bcmath intl zip gd opcache \
+    && apk del icu-dev libzip-dev libpng-dev oniguruma-dev \
+    && apk add --no-cache icu-libs libzip libpng
+
+WORKDIR /var/www/html
+
+COPY --from=vendor /app /var/www/html
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/php.ini /usr/local/etc/php/conf.d/scholarzim.ini
+COPY docker/supervisord.conf /etc/supervisord.conf
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint
+RUN chmod +x /usr/local/bin/entrypoint
+
+# storage/ and bootstrap/cache must be writable by the FPM worker; storage/app
+# holds uploaded documents and is normally a mounted volume in production.
+RUN mkdir -p storage/framework/{cache/data,sessions,views} storage/logs storage/app \
+    && chown -R www-data:www-data storage bootstrap/cache
+
 EXPOSE 8080
-ENV SPRING_PROFILES_ACTIVE=prod
-# Render's free tier gives the whole container ~512MB total. -Xmx must leave
-# headroom for metaspace, thread stacks, and native/OS memory on top of the
-# heap, or the container gets OOM-killed mid-request under any real load —
-# SerialGC is also the better choice at this heap size (G1's default overhead
-# isn't worth it below ~1-2GB).
-ENV JAVA_OPTS="-Xms128m -Xmx350m -XX:MaxMetaspaceSize=128m -XX:+UseSerialGC"
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+
+ENTRYPOINT ["entrypoint"]
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]
