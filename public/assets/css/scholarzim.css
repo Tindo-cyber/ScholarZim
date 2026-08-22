@@ -12,6 +12,19 @@
 
 /* ---------- App shell ---------- */
 
+/*
+ * The BVite theme puts every <main> into `display: grid` with its own
+ * named grid-template-areas (brand/head/pagehead/wrapper/footer) meant for
+ * its dashboard demo shell. We build our own shell (.sz-sidebar/.sz-main
+ * below, plain Bootstrap .row/.col-* elsewhere) instead of adopting that
+ * area contract, so any <main> child without a matching grid-area name
+ * gets auto-placed into the theme's first (120px) column and collapses.
+ * Undo it back to the normal block-level default for <main>.
+ */
+main {
+    display: block;
+}
+
 .sz-sidebar {
     width: var(--sz-sidebar-width);
     flex: 0 0 var(--sz-sidebar-width);
