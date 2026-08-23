@@ -44,6 +44,7 @@
 </main>
 
 <script src="{{ asset('assets/bvite/js/bvite.js') }}" type="module"></script>
+<script src="{{ asset('assets/js/scholarzim.js') }}" defer></script>
 @stack('scripts')
 </body>
 </html>

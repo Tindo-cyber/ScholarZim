@@ -16,17 +16,10 @@
         <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
                       hint="Optional. Used only for deadline reminders." />
 
-        <div class="row">
-            <div class="col-md-6">
-                <x-form.input name="password" label="Password" type="password" required
-                              autocomplete="new-password"
-                              hint="At least 8 characters, letters and numbers." />
-            </div>
-            <div class="col-md-6">
-                <x-form.input name="password_confirmation" label="Confirm password" type="password" required
-                              autocomplete="new-password" />
-            </div>
-        </div>
+        <x-form.input name="password" label="Password" type="password" required
+                      autocomplete="new-password" :strength-check="true" />
+        <x-form.input name="password_confirmation" label="Confirm password" type="password" required
+                      autocomplete="new-password" />
 
         <div class="form-check mb-4">
             <input class="form-check-input @error('terms') is-invalid @enderror" type="checkbox"

@@ -146,6 +146,47 @@ main {
     background: var(--bs-body-bg);
 }
 
+.sz-photo-banner {
+    position: relative;
+    min-height: 22rem;
+    display: flex;
+    align-items: flex-end;
+    background: url('../img/scholarship-graduate-hero.jpg') center 20% / cover no-repeat;
+    border-radius: var(--sz-radius);
+    overflow: hidden;
+    color: #fff;
+}
+
+.sz-photo-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, rgba(4, 12, 36, .88) 0%, rgba(4, 12, 36, .4) 60%, rgba(4, 12, 36, .05) 100%);
+}
+
+.sz-photo-banner > * {
+    position: relative;
+    z-index: 1;
+}
+
+.sz-provider-cta {
+    background:
+        linear-gradient(120deg, rgba(0, 41, 122, .92), rgba(0, 74, 173, .85)),
+        url('../img/scholarship-banner-navy.jpg') center / cover no-repeat;
+}
+
+.sz-steps-photo {
+    background: url('../img/scholarship-books-badge.jpg') center / cover no-repeat;
+    border-radius: var(--sz-radius);
+    min-height: 16rem;
+}
+
+.sz-badge-coin {
+    width: 100%;
+    max-width: 12rem;
+    height: auto;
+}
+
 .sz-step-number {
     width: 2.5rem;
     height: 2.5rem;
@@ -162,7 +203,8 @@ main {
 
 .sz-auth-aside {
     background:
-        linear-gradient(160deg, var(--primary-color, #0066fe), rgba(0, 0, 0, .65));
+        linear-gradient(160deg, rgba(0, 102, 254, .82), rgba(0, 0, 0, .78)),
+        url('../img/graduate-scholarship-ribbon.jpg') center / cover no-repeat;
 }
 
 .sz-auth-tick {
@@ -176,6 +218,62 @@ main {
     background: rgba(255, 255, 255, .18);
     font-size: .8rem;
     font-weight: 700;
+}
+
+.sz-form-step {
+    width: 1.75rem;
+    height: 1.75rem;
+    flex: 0 0 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--bs-secondary-bg-subtle);
+    color: var(--bs-secondary-color);
+    font-size: .8rem;
+    font-weight: 700;
+    transition: background-color .15s ease, color .15s ease;
+}
+
+.sz-form-step.is-active {
+    background: var(--bs-primary);
+    color: #fff;
+}
+
+.sz-form-step.is-done {
+    background: var(--bs-primary-bg-subtle);
+    color: var(--bs-primary);
+}
+
+.sz-pw-checklist li {
+    display: flex;
+    align-items: center;
+    gap: .375rem;
+    line-height: 1.6;
+}
+
+.sz-file-drop {
+    position: relative;
+    border: 1px dashed var(--bs-border-color);
+    border-radius: var(--sz-radius);
+    padding: 1.25rem;
+    text-align: center;
+    transition: border-color .15s ease, background-color .15s ease;
+}
+
+.sz-file-drop:hover,
+.sz-file-drop:focus-within {
+    border-color: var(--bs-primary);
+    background: var(--bs-primary-bg-subtle);
+}
+
+.sz-file-drop input[type="file"] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
 }
 
 /* ---------- Misc ---------- */

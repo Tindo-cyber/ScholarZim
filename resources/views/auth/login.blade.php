@@ -24,7 +24,14 @@
         </div>
 
         <button class="btn btn-primary btn-lg w-100 mb-3" type="submit">Sign in</button>
+
+        <p class="d-flex align-items-center justify-content-center gap-2 small text-secondary mb-0">
+            <x-icon name="lock" :size="14" />
+            Your credentials are never shared with scholarship providers.
+        </p>
     </form>
+
+    <hr class="my-4">
 
     <p class="text-secondary text-center mb-0">
         New to ScholarZim?

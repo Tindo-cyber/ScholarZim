@@ -14,8 +14,7 @@
         @csrf
 
         <x-form.input name="password" label="New password" type="password" required
-                      autocomplete="new-password" autofocus
-                      hint="At least 8 characters, including letters and numbers." />
+                      autocomplete="new-password" autofocus :strength-check="true" />
         <x-form.input name="password_confirmation" label="Confirm new password" type="password" required
                       autocomplete="new-password" />
 

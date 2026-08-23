@@ -30,20 +30,24 @@
                     @yield('aside_copy', 'ScholarFit scores every listing against your profile and shows you exactly which criteria you meet — and which ones to fix.')
                 </p>
 
-                <ul class="list-unstyled d-grid gap-3 mb-0">
-                    <li class="d-flex gap-3">
-                        <span class="sz-auth-tick">1</span>
-                        <span>Build your academic profile once.</span>
-                    </li>
-                    <li class="d-flex gap-3">
-                        <span class="sz-auth-tick">2</span>
-                        <span>Get ranked matches with a transparent score.</span>
-                    </li>
-                    <li class="d-flex gap-3">
-                        <span class="sz-auth-tick">3</span>
-                        <span>Apply and track every decision in one place.</span>
-                    </li>
-                </ul>
+                @hasSection('aside_steps')
+                    @yield('aside_steps')
+                @else
+                    <ul class="list-unstyled d-grid gap-3 mb-0">
+                        <li class="d-flex gap-3">
+                            <span class="sz-auth-tick">1</span>
+                            <span>Build your academic profile once.</span>
+                        </li>
+                        <li class="d-flex gap-3">
+                            <span class="sz-auth-tick">2</span>
+                            <span>Get ranked matches with a transparent score.</span>
+                        </li>
+                        <li class="d-flex gap-3">
+                            <span class="sz-auth-tick">3</span>
+                            <span>Apply and track every decision in one place.</span>
+                        </li>
+                    </ul>
+                @endif
             </div>
 
             <p class="opacity-50 small mb-0">&copy; {{ date('Y') }} ScholarZim</p>
@@ -66,6 +70,7 @@
 </main>
 
 <script src="{{ asset('assets/bvite/js/bvite.js') }}" type="module"></script>
+<script src="{{ asset('assets/js/scholarzim.js') }}" defer></script>
 @stack('scripts')
 </body>
 </html>
