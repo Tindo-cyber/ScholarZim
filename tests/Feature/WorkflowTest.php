@@ -5,12 +5,15 @@ namespace Tests\Feature;
 use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Services\ApplicantProfileService;
 use App\Services\OpportunityModerationService;
 use App\Services\ScholarFit\ScholarFitEngine;
 use App\Support\ApplicationStatus;
 use App\Support\OpportunityModerationStatus;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /** The ported business rules, not just whether pages render. */
@@ -66,10 +69,20 @@ class WorkflowTest extends TestCase
 
         $statement = str_repeat('I want this scholarship because it changes what I can finish. ', 3);
 
+        // submit() recomputes the required documents server-side and rejects the
+        // post when any are absent. Supplying them is what makes this a test of
+        // the apply-once rule rather than of the document guard.
+        Storage::fake('local');
+        $documents = [];
+        foreach (app(ApplicantProfileService::class)->forUser($user)->missingRequiredDocumentTypes() as $type) {
+            $documents[$type] = UploadedFile::fake()->create($type . '.pdf', 64, 'application/pdf');
+        }
+
         $this->actingAs($user)->post('/apply/' . $opportunity->opportunity_id, [
             'personal_statement' => $statement,
             'confirm' => '1',
-        ])->assertRedirect();
+            'documents' => $documents,
+        ])->assertSessionHasNoErrors()->assertRedirect();
 
         $this->assertDatabaseHas('applications', [
             'user_id' => $user->user_id,
