@@ -45,20 +45,38 @@ class ApplicationController extends Controller
                 ->with('errorMessage', 'You have already applied to this scholarship.');
         }
 
+        $profile = $this->profileService->forUser($user);
+
         return view('applications.wizard', [
             'opportunity' => $opportunity,
-            'profile' => $this->profileService->forUser($user),
+            'profile' => $profile,
             'fit' => $this->recommendationService->scoreOne($user, $opportunity),
+            'missingDocumentTypes' => $profile->missingRequiredDocumentTypes(),
         ]);
     }
 
     public function submit(Request $request, int $opportunityId)
     {
-        $data = $request->validate([
+        // Recomputed server-side rather than trusted from the form, so a
+        // profile document uploaded in another tab can't be bypassed.
+        $missingDocumentTypes = $this->profileService->forUser($request->user())->missingRequiredDocumentTypes();
+
+        $rules = [
             'personal_statement' => ['required', 'string', 'min:100', 'max:5000'],
             'document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'confirm' => ['accepted'],
-        ]);
+        ];
+        foreach ($missingDocumentTypes as $type) {
+            $rules["documents.$type"] = ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'];
+        }
+
+        $data = $request->validate($rules);
+
+        foreach ($missingDocumentTypes as $type) {
+            if ($request->hasFile("documents.$type")) {
+                $this->profileService->storeDocument($request->user(), $type, $request->file("documents.$type"));
+            }
+        }
 
         try {
             $application = $this->applicationService->submit(

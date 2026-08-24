@@ -64,7 +64,8 @@
                             </div>
                             <div class="col-md-3">
                                 <x-form.select name="country" label="Country"
-                                               :options="$countries" :value="$profile->country"
+                                               :options="$countries"
+                                               :value="$profile->country ?: \App\Support\FormOptions::DEFAULT_COUNTRY"
                                                placeholder="Select" />
                             </div>
                             <div class="col-md-3">
@@ -74,9 +75,11 @@
                             </div>
                         </div>
 
-                        <x-form.textarea name="academic_results" label="Academic results"
-                                         :value="$profile->academic_results" :rows="3"
-                                         hint="For example: 12 points at A-Level (Maths A, Physics B, Chemistry B), or GPA 3.4." />
+                        <div id="sz-academic-results-field" data-school-levels="{{ json_encode(\App\Support\FormOptions::schoolLevels()) }}">
+                            <x-form.textarea name="academic_results" label="Academic results"
+                                             :value="$profile->academic_results" :rows="3"
+                                             hint="For example: 12 points at A-Level (Maths A, Physics B, Chemistry B)." />
+                        </div>
 
                         <x-form.textarea name="biography" label="Short biography"
                                          :value="$profile->biography" :rows="5"
@@ -109,15 +112,25 @@
                 </div>
 
                 <div class="card-body d-grid gap-4">
+                    @if(!\App\Support\FormOptions::isSchoolLevel($profile->education_level) && filled($profile->education_level))
+                        <div class="alert alert-warning small mb-0">
+                            All four documents are required for your education level.
+                        </div>
+                    @endif
+
+                    @php $required = $profile->requiredDocumentTypes(); @endphp
+
                     @foreach([
-                        'results' => ['Results certificate', 'Required before you can apply. Worth 5 points of your ScholarFit score.'],
-                        'cv' => ['CV / resume', 'Optional, but most providers expect one.'],
-                        'passport' => ['ID or passport', 'Used to confirm your identity and nationality.'],
-                        'recommendation' => ['Recommendation letter', 'Optional supporting reference.'],
-                    ] as $type => [$label, $help])
+                        'results' => ['Worth 5 points of your ScholarFit score.'],
+                        'cv' => ['Most providers expect one.'],
+                        'passport' => ['Used to confirm your identity and nationality.'],
+                        'recommendation' => ['Supporting reference from a teacher or employer.'],
+                    ] as $type => [$help])
                         @php
+                            $label = \App\Models\ApplicantProfile::DOCUMENT_LABELS[$type];
                             $filename = $profile->documentFilename($type);
                             $uploadedAt = $profile->documentUploadedAt($type);
+                            $isRequired = in_array($type, $required, true);
                         @endphp
 
                         <div>
@@ -125,12 +138,16 @@
                                 <span class="fw-semibold small">{{ $label }}</span>
                                 @if($filename)
                                     <x-status-badge label="Uploaded" tone="success" icon="check" />
+                                @elseif($isRequired)
+                                    <x-status-badge label="Required" tone="danger" />
                                 @else
                                     <x-status-badge label="Missing" tone="secondary" />
                                 @endif
                             </div>
 
-                            <p class="small text-secondary mb-2">{{ $help }}</p>
+                            <p class="small text-secondary mb-2">
+                                {{ $isRequired ? 'Required before you can apply. ' : 'Optional, but recommended. ' }}{{ $help }}
+                            </p>
 
                             @if($filename)
                                 <p class="small mb-2">
@@ -162,3 +179,7 @@
     </div>
 
 @endsection
+
+@push('scripts')
+    <script src="{{ asset('assets/js/profile-form.js') }}"></script>
+@endpush

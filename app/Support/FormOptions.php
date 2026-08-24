@@ -124,6 +124,23 @@ final class FormOptions
         return array_merge(self::PRIMARY_GRADES, self::SECONDARY_FORMS, self::TERTIARY_LEVELS);
     }
 
+    /**
+     * Levels where "academic results" means a school report (points, subjects)
+     * rather than a tertiary transcript/GPA — primary, secondary, and O/A-Level.
+     */
+    public static function schoolLevels(): array
+    {
+        return array_merge(self::PRIMARY_GRADES, self::SECONDARY_FORMS, [
+            'High School (O-Level)',
+            'High School (A-Level)',
+        ]);
+    }
+
+    public static function isSchoolLevel(?string $level): bool
+    {
+        return $level !== null && in_array($level, self::schoolLevels(), true);
+    }
+
     /** Grouped variant so the selects can use optgroups. */
     public static function educationLevelGroups(): array
     {

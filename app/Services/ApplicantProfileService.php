@@ -69,9 +69,14 @@ class ApplicantProfileService
             ? 'results_uploaded_at'
             : $prefix . '_uploaded_at';
 
+        // Renamed to the document type rather than kept as whatever the
+        // student's device called it (e.g. "IMG_20240512.jpg").
+        $extension = $file->getClientOriginalExtension() ?: $file->extension();
+        $renamedTo = ApplicantProfile::DOCUMENT_FILE_LABELS[$documentType] . ($extension ? '.' . $extension : '');
+
         $profile->update([
             $prefix . '_path' => $this->fileStorage->store($file, 'profiles/' . $user->user_id),
-            $prefix . '_filename' => $file->getClientOriginalName(),
+            $prefix . '_filename' => $renamedTo,
             $uploadedAtColumn => Carbon::now(),
         ]);
 

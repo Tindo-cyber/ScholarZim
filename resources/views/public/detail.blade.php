@@ -1,15 +1,22 @@
-@extends('layouts.public')
+{{-- Signed-in users keep their app shell (sidebar/topbar) here; guests get the public marketing shell. --}}
+@extends(auth()->check() ? 'layouts.app' : 'layouts.public')
 
 @section('title', $opportunity->title)
 @section('meta_description', Str::limit(strip_tags($opportunity->description ?? ''), 150))
 
 @section('content')
-    <div class="container py-4 py-lg-5">
+    <div class="{{ auth()->check() ? '' : 'container py-4 py-lg-5' }}">
 
         <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('home') }}">Home</a></li>
-                <li class="breadcrumb-item"><a href="{{ route('scholarships.index') }}">Scholarships</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{{ auth()->check() ? route('dashboard') : route('home') }}">
+                        {{ auth()->check() ? 'Dashboard' : 'Home' }}
+                    </a>
+                </li>
+                <li class="breadcrumb-item">
+                    <a href="{{ auth()->check() ? route('opportunities.index') : route('scholarships.index') }}">Scholarships</a>
+                </li>
                 <li class="breadcrumb-item active" aria-current="page">{{ Str::limit($opportunity->title, 40) }}</li>
             </ol>
         </nav>

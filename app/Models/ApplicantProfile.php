@@ -49,6 +49,22 @@ class ApplicantProfile extends Model
         'recommendation' => 'recommendation_letter',
     ];
 
+    /** documentType => label shown to the applicant. */
+    public const DOCUMENT_LABELS = [
+        'results' => 'Results certificate',
+        'cv' => 'CV / resume',
+        'passport' => 'ID or passport',
+        'recommendation' => 'Recommendation letter',
+    ];
+
+    /** documentType => name used when renaming an uploaded file. */
+    public const DOCUMENT_FILE_LABELS = [
+        'results' => 'Results Certificate',
+        'cv' => 'CV',
+        'passport' => 'ID or Passport',
+        'recommendation' => 'Recommendation Letter',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
@@ -84,6 +100,26 @@ class ApplicantProfile extends Model
     public function hasResultsCertificate(): bool
     {
         return filled($this->results_certificate_path);
+    }
+
+    /**
+     * School-level students only need their results certificate; everyone
+     * past high school is asked for the full document set (CV, ID, results,
+     * and a recommendation letter) since there is no single "results" paper.
+     */
+    public function requiredDocumentTypes(): array
+    {
+        return \App\Support\FormOptions::isSchoolLevel($this->education_level)
+            ? ['results']
+            : array_keys(self::DOCUMENT_TYPES);
+    }
+
+    public function missingRequiredDocumentTypes(): array
+    {
+        return array_values(array_filter(
+            $this->requiredDocumentTypes(),
+            fn (string $type) => blank($this->documentPath($type))
+        ));
     }
 
     /**

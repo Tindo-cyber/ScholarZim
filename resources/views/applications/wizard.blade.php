@@ -53,15 +53,42 @@
 
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="h6 fw-semibold mb-0">Step 3 &mdash; Supporting document</h2>
+                        <h2 class="h6 fw-semibold mb-0">Step 3 &mdash; Documents</h2>
                     </div>
                     <div class="card-body">
+                        @if(empty($missingDocumentTypes))
+                            <div class="alert alert-success small">
+                                All your required documents are already on file and will be attached automatically.
+                            </div>
+                        @else
+                            <div class="alert alert-warning small">
+                                These are required for your education level but missing from your profile. Upload them
+                                here and they will be saved to your profile too.
+                            </div>
+
+                            @foreach($missingDocumentTypes as $type)
+                                @php $label = \App\Models\ApplicantProfile::DOCUMENT_LABELS[$type]; @endphp
+                                <div class="mb-3">
+                                    <label class="form-label" for="documents-{{ $type }}">
+                                        {{ $label }}<span class="text-danger" aria-hidden="true">*</span>
+                                    </label>
+                                    <input class="form-control @error('documents.' . $type) is-invalid @enderror" type="file"
+                                           id="documents-{{ $type }}" name="documents[{{ $type }}]"
+                                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required
+                                           aria-label="Upload {{ $label }}">
+                                    @error('documents.' . $type)
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            @endforeach
+                        @endif
+
                         <div class="mb-3">
-                            <label class="form-label" for="document">Attach a document (optional)</label>
+                            <label class="form-label" for="document">Additional document (optional)</label>
                             <input class="form-control @error('document') is-invalid @enderror" type="file"
                                    id="document" name="document" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx">
                             <div class="form-text">
-                                PDF, Word, JPG, or PNG, up to 5 MB. Your profile documents are shared automatically.
+                                Anything extra this provider asked for. PDF, Word, JPG, or PNG, up to 5 MB.
                             </div>
                             @error('document')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
