@@ -20,21 +20,26 @@ class EmailVerificationService
 
     public function issue(User $user): EmailVerificationToken
     {
+        $token = $this->mintToken($user);
+
+        $this->emailService->sendEmailVerification($user, $token->token);
+
+        return $token;
+    }
+
+    private function mintToken(User $user): EmailVerificationToken
+    {
         // Any earlier link is retired, so only the newest email works.
         EmailVerificationToken::where('user_id', $user->user_id)
             ->where('used', false)
             ->update(['used' => true]);
 
-        $token = EmailVerificationToken::create([
+        return EmailVerificationToken::create([
             'user_id' => $user->user_id,
             'token' => Str::random(64),
             'expires_at' => Carbon::now()->addHours(self::TTL_HOURS),
             'used' => false,
         ]);
-
-        $this->emailService->sendEmailVerification($user, $token->token);
-
-        return $token;
     }
 
     public function verify(string $token): ?User
@@ -58,10 +63,13 @@ class EmailVerificationService
         return $record->user;
     }
 
-    public function resend(User $user): void
+    /** @return bool whether a verification email actually went out. */
+    public function resend(User $user): bool
     {
-        if (! $user->email_verified) {
-            $this->issue($user);
+        if ($user->email_verified) {
+            return false;
         }
+
+        return $this->emailService->sendEmailVerification($user, $this->mintToken($user)->token);
     }
 }

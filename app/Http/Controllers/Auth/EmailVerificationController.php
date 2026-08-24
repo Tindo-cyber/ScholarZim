@@ -43,7 +43,18 @@ class EmailVerificationController extends Controller
     {
         $user = $request->user();
 
-        $this->emailVerificationService->resend($user);
+        if ($user->email_verified) {
+            return redirect()->to(RoleNames::dashboardUrl($user->roleName()));
+        }
+
+        // Reporting the send only when one happened. Claiming "sent" regardless
+        // left users waiting on an email the transport had already rejected.
+        if (! $this->emailVerificationService->resend($user)) {
+            return back()->with(
+                'errorMessage',
+                'We could not send the verification email just now. Please try again in a few minutes.'
+            );
+        }
 
         return back()->with('successMessage', 'Verification email sent to ' . $user->email . '.');
     }

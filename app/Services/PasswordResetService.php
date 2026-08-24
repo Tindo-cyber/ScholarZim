@@ -44,6 +44,10 @@ class PasswordResetService
             'used' => false,
         ]);
 
+        // The result is deliberately discarded. Surfacing a send failure here
+        // would answer the question this endpoint exists to refuse: whether the
+        // address belongs to an account. The failure is in the log and the audit
+        // trail instead, where it reaches an operator rather than a stranger.
         $this->emailService->sendPasswordReset($user, $token->token);
     }
 

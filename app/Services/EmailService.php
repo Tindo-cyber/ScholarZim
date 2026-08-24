@@ -17,9 +17,9 @@ class EmailService
     {
     }
 
-    public function sendNotification(User $user, string $type, string $message, ?string $link = null): void
+    public function sendNotification(User $user, string $type, string $message, ?string $link = null): bool
     {
-        $this->send(
+        return $this->send(
             $user,
             $this->subjectFor($type),
             'emails.notification',
@@ -34,41 +34,71 @@ class EmailService
         );
     }
 
-    public function sendPasswordReset(User $user, string $token): void
+    public function sendPasswordReset(User $user, string $token): bool
     {
-        $this->send($user, 'Reset your ScholarZim password', 'emails.password-reset', [
+        return $this->send($user, 'Reset your ScholarZim password', 'emails.password-reset', [
             'user' => $user,
             'actionUrl' => url('/reset-password/' . $token),
         ]);
     }
 
-    public function sendEmailVerification(User $user, string $token): void
+    public function sendEmailVerification(User $user, string $token): bool
     {
-        $this->send($user, 'Verify your ScholarZim email address', 'emails.verify-email', [
+        $sent = $this->send($user, 'Verify your ScholarZim email address', 'emails.verify-email', [
             'user' => $user,
             'actionUrl' => url('/verify-email/' . $token),
         ]);
 
-        $this->auditService->log($user->email, AuditAction::EMAIL_VERIFICATION_SENT, 'USER', $user->user_id);
+        // Only recorded once the transport took it. Auditing the send
+        // unconditionally left a VERIFICATION_SENT trail for mail that had in
+        // fact just failed, which is the opposite of what the trail is for.
+        if ($sent) {
+            $this->auditService->log($user->email, AuditAction::EMAIL_VERIFICATION_SENT, 'USER', $user->user_id);
+        }
+
+        return $sent;
     }
 
-    public function sendWelcome(User $user): void
+    public function sendWelcome(User $user): bool
     {
-        $this->send($user, 'Welcome to ScholarZim', 'emails.welcome', ['user' => $user]);
+        return $this->send($user, 'Welcome to ScholarZim', 'emails.welcome', ['user' => $user]);
     }
 
-    private function send(User $user, string $subject, string $view, array $data): void
+    /**
+     * @return bool whether the transport accepted the message. Callers that tell
+     *              a user their mail is on its way must check it rather than
+     *              assume, or they report a success that never happened.
+     */
+    private function send(User $user, string $subject, string $view, array $data): bool
     {
         if (blank($user->email)) {
-            return;
+            Log::error('Email skipped: account has no address', [
+                'user_id' => $user->user_id,
+                'subject' => $subject,
+            ]);
+
+            return false;
         }
 
         try {
             Mail::send($view, $data, static function ($mail) use ($user, $subject) {
                 $mail->to($user->email, $user->full_name)->subject($subject);
             });
+
+            return true;
         } catch (\Throwable $e) {
-            Log::warning('Email delivery failed', ['to' => $user->email, 'error' => $e->getMessage()]);
+            // Still not re-thrown: a failed notification must not roll back the
+            // registration or password reset that triggered it. But it is logged
+            // at error with the exception and the active mailer attached, because
+            // a warning carrying only getMessage() let a transport that was
+            // configured to send nowhere look healthy for as long as nobody
+            // happened to read the log.
+            Log::error('Email delivery failed', [
+                'to' => $user->email,
+                'subject' => $subject,
+                'mailer' => config('mail.default'),
+                'exception' => $e,
+            ]);
             $this->auditService->log(
                 $user->email,
                 AuditAction::EMAIL_DELIVERY_FAILED,
@@ -76,6 +106,8 @@ class EmailService
                 $user->user_id,
                 $e->getMessage()
             );
+
+            return false;
         }
     }
 
