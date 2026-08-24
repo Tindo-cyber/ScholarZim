@@ -3,6 +3,11 @@
 
 # ── 1. Composer dependencies ───────────────────────────────────────────────
 FROM composer:2 AS vendor
+# phpoffice/phpspreadsheet requires ext-gd, which the composer image does not ship;
+# without it `composer install` aborts on the platform check.
+RUN apk add --no-cache freetype-dev libjpeg-turbo-dev libpng-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" gd
 WORKDIR /app
 # Install against the manifests alone first, so a code-only change does not
 # re-resolve the dependency tree on every rebuild.
@@ -14,7 +19,7 @@ COPY . .
 RUN composer dump-autoload --optimize --no-dev
 
 # ── 2. Runtime ─────────────────────────────────────────────────────────────
-FROM php:8.3-fpm-alpine
+FROM php:8.4-fpm-alpine
 
 RUN apk add --no-cache nginx supervisor tzdata icu-dev libzip-dev libpng-dev oniguruma-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg 2>/dev/null || true \
