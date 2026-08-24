@@ -24,6 +24,8 @@
 
         <div class="ms-auto d-flex align-items-center gap-2">
 
+            <x-theme-toggle />
+
             <div class="dropdown">
                 <button class="btn border-0 position-relative px-2" type="button" data-bs-toggle="dropdown"
                         aria-expanded="false" aria-label="Notifications">

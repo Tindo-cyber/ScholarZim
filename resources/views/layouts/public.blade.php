@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-base.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-theme.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/scholarzim.css') }}">
+    <script src="{{ asset('assets/js/theme-toggle.js') }}"></script>
     @stack('styles')
 </head>
 <body data-bvite="theme-Mariner" class="layout-border svgstroke-a sz-public">
@@ -44,6 +45,8 @@
             </ul>
 
             <div class="d-flex flex-wrap align-items-center gap-2">
+                <x-theme-toggle />
+
                 @auth
                     <a class="btn btn-primary" href="{{ route('dashboard') }}">Go to dashboard</a>
                 @else

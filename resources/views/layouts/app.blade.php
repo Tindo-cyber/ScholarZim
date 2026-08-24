@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-base.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-theme.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/css/scholarzim.css') }}">
+    <script src="{{ asset('assets/js/theme-toggle.js') }}"></script>
     @stack('styles')
 </head>
 <body data-bvite="theme-Mariner" class="layout-border svgstroke-a layout-default">
