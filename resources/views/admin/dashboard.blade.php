@@ -73,6 +73,11 @@
                                 <td class="text-secondary small">{{ $opportunity->submitted_at?->diffForHumans() }}</td>
                                 <td class="text-end">
                                     <div class="d-inline-flex gap-2">
+                                        <a class="btn btn-sm btn-outline-secondary"
+                                           href="{{ route('admin.moderation.show', $opportunity->opportunity_id) }}">
+                                            View
+                                        </a>
+
                                         <form method="POST"
                                               action="{{ route('admin.moderation.approve', $opportunity->opportunity_id) }}"
                                               class="m-0">

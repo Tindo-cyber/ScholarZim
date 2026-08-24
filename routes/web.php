@@ -203,6 +203,9 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN])->prefix('admin')->name('
         ->whereNumber('userId')
         ->name('providers.certificate');
 
+    Route::get('/opportunities/{id}', [Admin\ModerationController::class, 'show'])
+        ->whereNumber('id')
+        ->name('moderation.show');
     Route::post('/opportunities/{id}/approve', [Admin\ModerationController::class, 'approve'])
         ->whereNumber('id')
         ->name('moderation.approve');
