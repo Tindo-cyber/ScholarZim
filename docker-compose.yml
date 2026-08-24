@@ -54,11 +54,17 @@ services:
       DB_DATABASE: ${DB_DATABASE:-scholarzim}
       DB_USERNAME: ${DB_USERNAME:-scholarzim}
       DB_PASSWORD: ${DB_PASSWORD:-scholarzim_dev_password}
-      MAIL_MAILER: smtp
-      MAIL_HOST: mailhog
-      MAIL_PORT: 1025
-      MAIL_FROM_ADDRESS: noreply@scholarzim.co.zw
-      MAIL_FROM_NAME: ScholarZim
+      # Defaults trap all mail in MailHog (http://localhost:8025) so local
+      # testing never sends to real inboxes. To check real delivery instead,
+      # set MAIL_MAILER=mailgun plus the MAILGUN_* keys in .env.docker.
+      MAIL_MAILER: ${MAIL_MAILER:-smtp}
+      MAIL_HOST: ${MAIL_HOST:-mailhog}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN:-}
+      MAILGUN_SECRET: ${MAILGUN_SECRET:-}
+      MAILGUN_ENDPOINT: ${MAILGUN_ENDPOINT:-api.mailgun.net}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@scholarzim.co.zw}
+      MAIL_FROM_NAME: ${MAIL_FROM_NAME:-ScholarZim}
       SCHOLARZIM_DEMO_SEED: ${SCHOLARZIM_DEMO_SEED:-true}
     volumes:
       # Bind-mounted (not a named volume) so uploaded documents stay visible

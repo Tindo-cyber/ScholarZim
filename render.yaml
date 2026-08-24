@@ -53,7 +53,7 @@ services:
       - key: MAILGUN_ENDPOINT
         value: api.mailgun.net
       - key: MAIL_FROM_ADDRESS
-        value: noreply@scholarzim.co.zw
+        value: no-reply@scholarzim.co.zw
       - key: MAIL_FROM_NAME
         value: ScholarZim
       # Mount a Render persistent disk here so uploaded documents survive deploys

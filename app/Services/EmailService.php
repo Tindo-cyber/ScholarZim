@@ -26,7 +26,9 @@ class EmailService
             [
                 'user' => $user,
                 'type' => $type,
-                'message' => $message,
+                // Not 'message': Illuminate\Mail\Mailer overwrites that key with the
+                // Message instance, so the view would receive an object, not the text.
+                'body' => $message,
                 'actionUrl' => $link ? url($link) : null,
             ]
         );

@@ -47,13 +47,20 @@ services:
       DB_DATABASE: ${DB_DATABASE:-scholarzim}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
-      MAIL_MAILER: ${MAIL_MAILER:-smtp}
-      MAIL_HOST: ${MAIL_HOST}
+      # Mailgun's HTTP API is the default send path: many hosts block outbound
+      # SMTP, and a silent send failure only surfaces as a logged warning.
+      # Set MAILGUN_DOMAIN and MAILGUN_SECRET in the host environment.
+      MAIL_MAILER: ${MAIL_MAILER:-mailgun}
+      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN}
+      MAILGUN_SECRET: ${MAILGUN_SECRET}
+      MAILGUN_ENDPOINT: ${MAILGUN_ENDPOINT:-api.mailgun.net}
+      # Only used when MAIL_MAILER is overridden back to smtp.
+      MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@scholarzim.co.zw}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-no-reply@scholarzim.co.zw}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-ScholarZim}
       SCHOLARZIM_DEMO_SEED: "false"
     volumes:
