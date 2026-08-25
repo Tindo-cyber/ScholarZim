@@ -56,21 +56,9 @@ final class FormOptions
         'General Secondary',
     ];
 
+    /** ScholarZim only lists Zimbabwean scholarships, so this is deliberately single-valued. */
     public const COUNTRIES = [
         'Zimbabwe',
-        'South Africa',
-        'Botswana',
-        'Namibia',
-        'Zambia',
-        'Mozambique',
-        'Malawi',
-        'Kenya',
-        'United Kingdom',
-        'United States',
-        'Canada',
-        'Australia',
-        'Germany',
-        'China',
     ];
 
     public const ZIMBABWE_PROVINCES = [
