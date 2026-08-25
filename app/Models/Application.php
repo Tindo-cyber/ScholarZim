@@ -23,10 +23,12 @@ class Application extends Model
         'document_filename',
         'document_path',
         'rejection_reason',
+        'interview_at',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
+        'interview_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

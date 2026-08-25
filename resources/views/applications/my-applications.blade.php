@@ -64,7 +64,11 @@
                                 <td class="text-secondary small">{{ $application->submitted_at?->format('d M Y') }}</td>
                                 <td>
                                     <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
-                                    @if($application->rejection_reason)
+                                    @if($application->application_status === \App\Support\ApplicationStatus::INTERVIEW && $application->interview_at)
+                                        <span class="d-block small text-secondary mt-1">
+                                            {{ $application->interview_at->format('d M Y \a\t g:i A') }}
+                                        </span>
+                                    @elseif($application->rejection_reason)
                                         <span class="d-block small text-secondary mt-1">{{ $application->rejection_reason }}</span>
                                     @endif
                                 </td>

@@ -189,8 +189,13 @@ class ApplicationService
      * Provider decision. Approving or rejecting requires a written reason - it is
      * shown to the applicant verbatim, so it cannot be left blank.
      */
-    public function updateStatus(int $applicationId, string $status, ?string $reason, User $provider): Application
-    {
+    public function updateStatus(
+        int $applicationId,
+        string $status,
+        ?string $reason,
+        User $provider,
+        ?string $interviewAt = null
+    ): Application {
         if (! in_array($status, self::PROVIDER_SETTABLE, true)) {
             throw ValidationException::withMessages([
                 'status' => 'Invalid application status: ' . $status,
@@ -205,11 +210,22 @@ class ApplicationService
             ]);
         }
 
+        $isInterview = $status === ApplicationStatus::INTERVIEW;
+
+        if ($isInterview && blank($interviewAt)) {
+            throw ValidationException::withMessages([
+                'interview_at' => 'An interview date and time is required when scheduling an interview.',
+            ]);
+        }
+
         $application = $this->findForProvider($applicationId, $provider);
 
         $application->update([
             'application_status' => $status,
-            'rejection_reason' => $status === ApplicationStatus::REJECTED ? $reason : null,
+            'rejection_reason' => in_array($status, [ApplicationStatus::REJECTED, ApplicationStatus::INTERVIEW], true)
+                ? $reason
+                : null,
+            'interview_at' => $isInterview ? Carbon::parse($interviewAt) : $application->interview_at,
         ]);
 
         $this->auditService->log(
@@ -251,6 +267,11 @@ class ApplicationService
             ApplicationStatus::WAITLISTED => [
                 NotificationType::APPLICATION_WAITLISTED,
                 'Your application to "' . $title . '" has been waitlisted.',
+            ],
+            ApplicationStatus::INTERVIEW => [
+                NotificationType::APPLICATION_INTERVIEW,
+                'You have been invited to interview for "' . $title . '" on '
+                    . $application->interview_at?->format('d M Y \a\t g:i A') . '. ' . $reason,
             ],
             default => [
                 NotificationType::APPLICATION_UNDER_REVIEW,

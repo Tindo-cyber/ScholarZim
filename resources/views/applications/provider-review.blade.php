@@ -100,6 +100,12 @@
                                        :value="$application->application_status"
                                        :placeholder="null" required />
 
+                        <div id="interview-at-field">
+                            <x-form.input name="interview_at" label="Interview date and time" type="datetime-local"
+                                          :value="$application->interview_at?->format('Y-m-d\TH:i')"
+                                          hint="The applicant is notified of this date and time when you save." />
+                        </div>
+
                         <x-form.textarea name="reason" label="Reason / message to applicant" :rows="4"
                                          :value="$application->rejection_reason"
                                          hint="Required when approving or rejecting. The applicant sees this verbatim." />
@@ -112,3 +118,7 @@
     </div>
 
 @endsection
+
+@push('scripts')
+    <script src="{{ asset('assets/js/application-review.js') }}"></script>
+@endpush

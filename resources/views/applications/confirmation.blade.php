@@ -45,7 +45,17 @@
                 </div>
             </div>
 
-            @if($application->rejection_reason)
+            @if($application->application_status === \App\Support\ApplicationStatus::INTERVIEW && $application->interview_at)
+                <div class="alert alert-info">
+                    <h3 class="h6 fw-semibold mb-1">You have been invited to interview</h3>
+                    <p class="mb-1">
+                        <strong>{{ $application->interview_at->format('l, d M Y \a\t g:i A') }}</strong>
+                    </p>
+                    @if($application->rejection_reason)
+                        <p class="mb-0">{{ $application->rejection_reason }}</p>
+                    @endif
+                </div>
+            @elseif($application->rejection_reason)
                 <div class="alert alert-danger">
                     <h3 class="h6 fw-semibold mb-1">Feedback from the provider</h3>
                     <p class="mb-0">{{ $application->rejection_reason }}</p>

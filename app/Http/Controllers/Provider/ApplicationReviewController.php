@@ -44,9 +44,16 @@ class ApplicationReviewController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in(ApplicationStatus::REVIEWABLE)],
             'reason' => ['nullable', 'string', 'max:500'],
+            'interview_at' => ['required_if:status,' . ApplicationStatus::INTERVIEW, 'nullable', 'date'],
         ]);
 
-        $this->applicationService->updateStatus($id, $data['status'], $data['reason'] ?? null, $request->user());
+        $this->applicationService->updateStatus(
+            $id,
+            $data['status'],
+            $data['reason'] ?? null,
+            $request->user(),
+            $data['interview_at'] ?? null
+        );
 
         return redirect()
             ->route('provider.applications.show', $id)
