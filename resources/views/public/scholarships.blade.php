@@ -12,7 +12,9 @@
         <x-filter-bar :action="route('scholarships.index')"
                       :filters="$filters"
                       :provider-names="$providerNames"
-                      :target-fields="$targetFields" />
+                      :target-fields="$targetFields"
+                      :result-count="$opportunities->total()"
+                      :can-save-search="true" />
 
         @if($opportunities->isEmpty())
             <div class="card">

@@ -49,12 +49,22 @@ main {
         inset: 0 auto 0 0;
         z-index: 1045;
         transform: translateX(-100%);
-        transition: transform .2s ease-in-out;
+        /*
+         * translateX alone only moves the panel off-screen: its links stay in the
+         * tab order, so a keyboard user on a phone would tab through a menu they
+         * cannot see. visibility takes it out of the tree entirely, and is
+         * transitioned with a delay so the slide-out animation still plays.
+         */
+        visibility: hidden;
+        transition: transform .2s ease-in-out, visibility 0s linear .2s;
         box-shadow: 0 0 2rem rgba(0, 0, 0, .15);
     }
 
-    .sz-sidebar.show {
+    .sz-sidebar.show,
+    .sz-sidebar.showing {
         transform: translateX(0);
+        visibility: visible;
+        transition: transform .2s ease-in-out, visibility 0s;
     }
 }
 
@@ -151,7 +161,7 @@ main {
     min-height: 22rem;
     display: flex;
     align-items: flex-end;
-    background: url('../img/scholarship-graduate-hero.jpg') center 20% / cover no-repeat;
+    background: url('/assets/img/scholarship-graduate-hero.jpg') center 20% / cover no-repeat;
     border-radius: var(--sz-radius);
     overflow: hidden;
     color: #fff;
@@ -172,11 +182,11 @@ main {
 .sz-provider-cta {
     background:
         linear-gradient(120deg, rgba(0, 41, 122, .92), rgba(0, 74, 173, .85)),
-        url('../img/scholarship-banner-navy.jpg') center / cover no-repeat;
+        url('/assets/img/scholarship-banner-navy.jpg') center / cover no-repeat;
 }
 
 .sz-steps-photo {
-    background: url('../img/scholarship-books-badge.jpg') center / cover no-repeat;
+    background: url('/assets/img/scholarship-books-badge.jpg') center / cover no-repeat;
     border-radius: var(--sz-radius);
     min-height: 16rem;
 }
@@ -204,7 +214,7 @@ main {
 .sz-auth-aside {
     background:
         linear-gradient(160deg, rgba(0, 102, 254, .82), rgba(0, 0, 0, .78)),
-        url('../img/graduate-scholarship-ribbon.jpg') center / cover no-repeat;
+        url('/assets/img/graduate-scholarship-ribbon.jpg') center / cover no-repeat;
 }
 
 .sz-auth-tick {
@@ -286,4 +296,197 @@ main {
     display: flex;
     align-items: flex-start;
     gap: .5rem;
+}
+
+/* ---------- Accessibility ---------- */
+
+/*
+ * Skip link: off-screen until focused, then pinned to the top-left so a keyboard
+ * user can jump the sidebar instead of tabbing through every nav item. It is the
+ * first focusable element in every layout.
+ */
+.sz-skip-link {
+    position: absolute;
+    left: -999rem;
+    top: 0;
+    z-index: 2000;
+    padding: .75rem 1.25rem;
+    background: var(--bs-primary);
+    color: #fff;
+    font-weight: 600;
+    border-bottom-right-radius: var(--sz-radius);
+    text-decoration: none;
+}
+
+.sz-skip-link:focus,
+.sz-skip-link:focus-visible {
+    left: 0;
+    color: #fff;
+    outline: 3px solid var(--bs-body-color);
+    outline-offset: 2px;
+}
+
+/* The skip target is programmatically focusable; it must not draw a stray ring. */
+#sz-main-content:focus {
+    outline: none;
+}
+
+/* ---------- Award panel ---------- */
+
+.sz-award-panel {
+    background: var(--bs-success-bg-subtle);
+    border-color: var(--bs-success-border-subtle) !important;
+}
+
+/* ---------- Tables that become cards on a phone ---------- */
+
+/*
+ * Below md, a .sz-table-stack row is redrawn as a card: the header row is hidden
+ * and each cell prints its own label from data-label. One markup source, no
+ * duplicated mobile-only table, and nothing to keep in step when a column is
+ * added - the new cell just needs its data-label.
+ *
+ * A cell with data-label="" (checkboxes, action buttons) prints no label.
+ */
+@media (max-width: 767.98px) {
+    .sz-table-stack thead {
+        display: none;
+    }
+
+    .sz-table-stack,
+    .sz-table-stack tbody,
+    .sz-table-stack tr,
+    .sz-table-stack td {
+        display: block;
+        width: 100%;
+    }
+
+    .sz-table-stack tr {
+        border: 1px solid var(--bs-border-color);
+        border-radius: var(--sz-radius);
+        margin-bottom: .75rem;
+        padding: .5rem .875rem;
+    }
+
+    .sz-table-stack td {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+        justify-content: space-between;
+        border: 0;
+        padding: .375rem 0;
+        text-align: left !important;
+    }
+
+    .sz-table-stack td::before {
+        content: attr(data-label);
+        flex: 0 0 8rem;
+        font-weight: 600;
+        color: var(--bs-secondary-color);
+    }
+
+    .sz-table-stack td[data-label=""]::before {
+        display: none;
+    }
+
+    /* The last cell holds the row's action; give it room and its own rule. */
+    .sz-table-stack td:last-child {
+        justify-content: flex-start;
+        border-top: 1px solid var(--bs-border-color);
+        margin-top: .25rem;
+        padding-top: .625rem;
+    }
+}
+
+/* ---------- Dark mode ---------- */
+
+/*
+ * The theme's own tokens (--bs-body-bg, --bs-border-color, and friends) already
+ * flip with the colour mode, so almost everything here follows automatically.
+ * What does not are the few places that hardcode a light-mode value: the tinted
+ * hero washes, and the sidebar's drop shadow, which is invisible against a dark
+ * body. Those are the only overrides below - anything else belongs in a token.
+ */
+[data-bs-theme="dark"] .sz-hero {
+    background:
+        radial-gradient(circle at 15% 20%, rgba(0, 102, 254, .22), transparent 45%),
+        radial-gradient(circle at 85% 10%, rgba(0, 184, 214, .18), transparent 40%);
+}
+
+@media (max-width: 1199.98px) {
+    [data-bs-theme="dark"] .sz-sidebar {
+        box-shadow: 0 0 2rem rgba(0, 0, 0, .6);
+    }
+}
+
+[data-bs-theme="dark"] .sz-stat-card {
+    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .35);
+}
+
+/*
+ * The photo banners keep their white text in both modes: they sit on a dark
+ * gradient over a photograph, which is the same in either theme, so flipping
+ * the text colour with the mode would make them unreadable.
+ */
+
+/* ---------- Print ---------- */
+
+/*
+ * Students print an application to take to an interview, and providers print a
+ * listing for a noticeboard. Both should come out as a document: no navigation,
+ * no buttons, no dark background eating the toner, and URLs spelled out after
+ * the links that carry them.
+ */
+@media print {
+    .sz-sidebar,
+    .sz-topbar,
+    .sz-public-footer,
+    .sz-skip-link,
+    .sz-photo-banner,
+    footer,
+    .btn,
+    .nav-pills,
+    .pagination,
+    .card-footer,
+    .alert-dismissible .btn-close {
+        display: none !important;
+    }
+
+    /* The shell is a flex/grid layout on screen; on paper it is just a column. */
+    .sz-main,
+    main,
+    body {
+        display: block !important;
+        background: #fff !important;
+        color: #000 !important;
+    }
+
+    .card {
+        border: 1px solid #999 !important;
+        box-shadow: none !important;
+        break-inside: avoid;
+    }
+
+    .card-header {
+        background: #f2f2f2 !important;
+    }
+
+    a[href^="http"]::after {
+        content: " (" attr(href) ")";
+        font-size: .85em;
+        word-break: break-all;
+    }
+
+    /* Stacked-table rules are a small-screen affordance, not a paper one. */
+    .sz-table-stack thead {
+        display: table-header-group !important;
+    }
+
+    .sz-table-stack td::before {
+        display: none !important;
+    }
+
+    @page {
+        margin: 1.5cm;
+    }
 }

@@ -54,6 +54,9 @@ services:
       DB_DATABASE: ${DB_DATABASE:-scholarzim}
       DB_USERNAME: ${DB_USERNAME:-scholarzim}
       DB_PASSWORD: ${DB_PASSWORD:-scholarzim_dev_password}
+      # The image supervises a queue worker; mail leaves the request that
+      # triggered it rather than blocking on SMTP.
+      QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
       MAIL_MAILER: smtp
       MAIL_HOST: mailhog
       MAIL_PORT: 1025

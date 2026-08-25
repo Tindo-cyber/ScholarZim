@@ -33,6 +33,8 @@ class ApplicantProfileService
             'field_of_study' => $data['field_of_study'] ?? null,
             'country' => $data['country'] ?? null,
             'province' => $data['province'] ?? null,
+            'date_of_birth' => $data['date_of_birth'] ?? null,
+            'citizenship' => $data['citizenship'] ?? null,
             'academic_results' => $data['academic_results'] ?? null,
             'biography' => $data['biography'] ?? null,
         ]);

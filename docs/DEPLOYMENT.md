@@ -236,6 +236,42 @@ Back up MySQL and the `upload_prod_data` volume regularly.
 
 ---
 
+## Processes inside the image
+
+Supervisor runs three programs, not one:
+
+| Program | Why it matters |
+|---------|----------------|
+| nginx + PHP-FPM | Serves requests |
+| `schedule:run` tick | Fires the four daily jobs (search alerts, deadline, interview, and profile reminders) |
+| `queue:work` | Delivers queued mail and notifications |
+
+If mail is being written but never arriving, the worker is the first thing to check:
+
+```bash
+docker compose exec app php artisan queue:failed
+docker compose logs app | grep queue
+```
+
+The worker recycles hourly (`--max-time=3600`), which is how queued code picks up a deploy
+without a manual bounce.
+
+## Front-end build
+
+The image builds ScholarZim's own CSS and JS in a separate `node:20-alpine` stage and copies
+only `public/build` into the runtime image, so node never ships to production. Nothing needs
+to be run by hand.
+
+If a deploy ever loses that directory the site still renders: with no manifest it falls back
+to serving the source assets unminified through `SourceAssetController`, rather than
+returning a 500 on every page. Unhashed assets are a caching problem, not an outage.
+
+## Health check
+
+`/health` is the probe (`healthCheckPath` in `render.yaml`): one database round trip,
+returning 503 when the database is unreachable so the platform actually takes the instance
+out of rotation. It replaced `/`, which ran the public statistics queries on every probe.
+
 ## Environment reference
 
 ```bash
@@ -254,6 +290,10 @@ DB_PORT=3306
 DB_DATABASE=scholarzim
 DB_USERNAME=scholarzim
 DB_PASSWORD=...
+
+# Mail and notifications leave the request that triggered them. The image
+# supervises a worker; without one, queued mail is written and never sent.
+QUEUE_CONNECTION=database
 
 MAIL_MAILER=smtp
 MAIL_HOST=...

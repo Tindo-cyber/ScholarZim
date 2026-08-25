@@ -49,9 +49,14 @@
             </div>
         @else
             <div class="table-responsive">
-                <table class="table align-middle mb-0">
+                <table class="table align-middle mb-0 sz-table-stack" data-bulk-table
+                       data-bulk-form="bulk-moderation-form">
                     <thead>
                         <tr>
+                            <th scope="col" style="width: 2.5rem;">
+                                <input class="form-check-input" type="checkbox"
+                                       data-bulk-toggle-all aria-label="Select every scholarship in the queue">
+                            </th>
                             <th scope="col">Scholarship</th>
                             <th scope="col">Provider</th>
                             <th scope="col">Submitted</th>
@@ -61,17 +66,40 @@
                     <tbody>
                         @foreach($moderationQueue as $opportunity)
                             <tr>
-                                <td>
-                                    <span class="fw-semibold d-block">{{ $opportunity->title }}</span>
-                                    <span class="small text-secondary">
-                                        {{ $opportunity->education_level ?: 'Any level' }} &middot;
-                                        {{ $opportunity->target_field ?: 'Any field' }} &middot;
-                                        closes {{ $opportunity->deadline?->format('d M Y') ?? 'rolling' }}
+                                <td data-label="">
+                                    {{--
+                                        Bound to the bulk form below by id: each row
+                                        already contains its own approve form, and a
+                                        form inside a form is dropped by the browser.
+                                    --}}
+                                    <input class="form-check-input" type="checkbox"
+                                           form="bulk-moderation-form"
+                                           name="opportunities[]" value="{{ $opportunity->opportunity_id }}"
+                                           data-bulk-item
+                                           aria-label="Select {{ $opportunity->title }}">
+                                </td>
+                                <td data-label="Scholarship">
+                                    <span class="min-w-0">
+                                        <span class="fw-semibold d-block">{{ $opportunity->title }}</span>
+                                        <span class="small text-secondary">
+                                            {{ $opportunity->education_level ?: 'Any level' }} &middot;
+                                            {{ $opportunity->target_field ?: 'Any field' }} &middot;
+                                            closes {{ $opportunity->deadline?->format('d M Y') ?? 'rolling' }}
+                                        </span>
+
+                                        @if(($opportunity->duplicate_candidates ?? collect())->isNotEmpty())
+                                            {{-- A prompt to look, never an automatic refusal. --}}
+                                            <a class="badge rounded-pill bg-warning-subtle text-warning text-decoration-none mt-1 d-inline-flex align-items-center gap-1"
+                                               href="{{ route('admin.moderation.show', $opportunity->opportunity_id) }}">
+                                                <x-icon name="shield" :size="12" />
+                                                {{ $opportunity->duplicate_candidates->count() }} possible duplicate(s)
+                                            </a>
+                                        @endif
                                     </span>
                                 </td>
-                                <td class="text-secondary">{{ $opportunity->awardingBody() }}</td>
-                                <td class="text-secondary small">{{ $opportunity->submitted_at?->diffForHumans() }}</td>
-                                <td class="text-end">
+                                <td data-label="Provider" class="text-secondary">{{ $opportunity->awardingBody() }}</td>
+                                <td data-label="Submitted" class="text-secondary small">{{ $opportunity->submitted_at?->diffForHumans() }}</td>
+                                <td data-label="" class="text-end">
                                     <div class="d-inline-flex gap-2">
                                         <a class="btn btn-sm btn-outline-secondary"
                                            href="{{ route('admin.moderation.show', $opportunity->opportunity_id) }}">
@@ -126,6 +154,38 @@
                         @endforeach
                     </tbody>
                 </table>
+            </div>
+
+            <div class="card-footer">
+                <form method="POST" action="{{ route('admin.moderation.bulk') }}" id="bulk-moderation-form">
+                    @csrf
+
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12 col-lg-3">
+                            <label class="form-label small" for="bulk-decision">Decision</label>
+                            <select class="form-select form-select-sm" id="bulk-decision" name="decision">
+                                <option value="approve">Approve and publish</option>
+                                <option value="reject">Decline</option>
+                            </select>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label small" for="bulk-mod-reason">Reason (declines only)</label>
+                            <input type="text" class="form-control form-control-sm" id="bulk-mod-reason"
+                                   name="reason" maxlength="500"
+                                   placeholder="Shown to the provider verbatim">
+                        </div>
+                        <div class="col-12 col-lg-3 d-grid">
+                            <button class="btn btn-sm btn-primary" type="submit">
+                                Apply to <span data-bulk-count>0</span> selected
+                            </button>
+                        </div>
+                    </div>
+
+                    <p class="form-text mb-0 mt-2">
+                        Each listing in a batch goes through the same checks as a single decision: providers are
+                        notified, applicants are announced to on approval, and every action is audited.
+                    </p>
+                </form>
             </div>
         @endif
     </div>

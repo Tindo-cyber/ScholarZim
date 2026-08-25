@@ -6,6 +6,12 @@
 - **bcrypt** password hashing via Laravel's `Hash` facade.
 - **Account states:** `ACTIVE`, `PENDING_APPROVAL`, `REJECTED`, `SUSPENDED` — non-active accounts cannot authenticate.
 - **Password reset:** UUID token, 1-hour expiry, single use; email delivery through Laravel Mail — **MailHog** in dev/demo (SMTP `:1025`, UI `:8025`) or SMTP/a mail API in prod. Failed delivery writes `EMAIL_DELIVERY_FAILED` to the audit log.
+- **Two-factor authentication (TOTP, RFC 6238)**, optional per account and strongly recommended for administrators, who can see every user on the platform.
+  - Enabling is a two-step handshake: a pending secret is stored, and two-factor only becomes active once a code generated from it is verified. Anything else lets an administrator lock themselves out with a secret their phone never stored.
+  - At sign-in, a correct password grants **no session at all**: the user id is parked in the session and only becomes an authenticated session once a valid code arrives. A stolen password alone never produces a signed-in session, not even briefly.
+  - The secret and the eight single-use recovery codes are encrypted at rest by the model's `encrypted` casts, so a database dump alone does not hand over a second factor. Codes are compared with `hash_equals`, so a timing signal cannot reveal how much of a code was right.
+  - The challenge is rate-limited to 5 attempts per minute per user and IP; failures write `TWO_FACTOR_CHALLENGE_FAILED` to the audit log.
+- **Session management.** `AuthenticateSession` is in the `web` middleware group, so "sign out all other sessions" on the account security page genuinely ends every other session on every device. It works by rotating the password hash the sessions carry, which is why it asks for the current password first.
 ## Authorization
 
 | Path pattern | Access |
@@ -15,8 +21,9 @@
 | `/provider/**`, `/opportunities/create` | ROLE_PROVIDER |
 | `/admin/**` | ROLE_ADMIN |
 | `/applications/*/document`, `/applications/*/results-certificate` | Authenticated + ownership checks in service layer |
-| `/api/public/**` | Public |
-| `/api/applicant/**` | ROLE_APPLICANT |
+| `/api/v1/scholarships`, `/api/v1/stats`, `/api/v1/facets`, `/api/public/**` | Public, rate-limited |
+| `/api/v1/me/**` | Sanctum bearer token or the web session |
+| `/health`, `/developers` | Public |
 
 Enforced by route middleware groups (`auth`, `role:ROLE_*`, and `account.active` for publishing routes) in `routes/web.php`. Ownership checks that depend on the record — an applicant's own application, a provider's own listing — live in the service layer.
 
@@ -47,6 +54,10 @@ Laravel's `throttle` middleware, keyed per client IP:
 | `POST /register/provider` | 5 per hour |
 | `POST /forgot-password` | 5 per minute |
 | `POST /resend-verification` | 3 per minute |
+| `POST /two-factor` (challenge) | 10 per minute, plus 5 per minute per user/IP in the controller |
+| `POST /account/two-factor/confirm` | 10 per minute |
+| `GET /api/v1/scholarships` and the rest of the public catalogue | 60 per minute |
+| `GET /api/v1/me/**` | 120 per minute |
 
 **Limitation:** the default cache driver is per-instance, so limits are not shared across multiple app instances (future work: a Redis-backed cache store).
 
@@ -65,8 +76,34 @@ Security-relevant events written to `audit_log`:
 | VIEW_PROVIDER_CERTIFICATE | Admin downloads provider cert |
 | VIEW_APPLICANT_RESULTS | Provider/admin views results PDF |
 | APPLY, STATUS_UPDATE, admin user ops | Business workflows |
+| TWO_FACTOR_ENABLED / TWO_FACTOR_DISABLED | Second factor turned on or off |
+| TWO_FACTOR_CHALLENGE_FAILED | Wrong code at setup or sign-in |
+| LOGOUT_OTHER_SESSIONS | Every other session for an account ended |
+| API_TOKEN_CREATED / API_TOKEN_REVOKED | Personal access token issued or revoked |
+| ACCOUNT_SELF_DELETED | A user deleted their own account |
+| WITHDRAW_APPLICATION, REQUEST_APPLICATION_INFO, PROVIDE_APPLICATION_INFO | Application lifecycle |
+| BULK_STATUS_UPDATE, BULK_MODERATION | A decision applied across a selection |
+| UPDATE_SCHOLARFIT_WEIGHTS | Scoring weights changed or reset |
 
 Admin can review entries at `/admin/dashboard` → audit log section.
+
+The trail deliberately **outlives the account it describes**: deleting a user removes their
+profile, applications, saved scholarships, alerts, and notifications, but not the audit
+entries, which record what the platform did rather than who the user was.
+
+## Account deletion
+
+Self-service at `/account/security`, and the admin path goes through the same service, so
+both take identical steps under identical refusals:
+
+- The current password **and** the account's own email address must both be given: a
+  password alone is muscle memory, and this is not reversible.
+- A provider still holding live listings is refused. Other people's applications point at
+  those rows, so deleting the listing would erase someone else's history; they withdraw the
+  listings first.
+- The bootstrap super admin can never be deleted.
+- Removal runs in one transaction, in foreign-key order — the schema deliberately does not
+  cascade, so a stray delete cannot quietly take applications with it.
 
 ## HTTP headers
 
@@ -98,4 +135,5 @@ Production: set `SESSION_SECURE_COOKIE=true` so session cookies are only sent ov
 - **Framework support window** — Laravel 10 is past its security-support window; `composer audit` reports open framework advisories with no 10.x fix. Upgrading to a supported release is the remedy.
 - **Ephemeral uploads on free Render** — attach a persistent disk (or object storage) so certificates survive redeploys.
 - **Admin PDF/Excel reports** — current exporters load full tables into memory; fine for FYP scale; paginate or stream before large production datasets.
-- **Account deletion** — data export only; full erasure not implemented.
+- **QR codes for two-factor** — setup shows the key for manual entry rather than a scannable code, to avoid an image-generation dependency. Every authenticator app accepts a typed key.
+- **`style-src 'unsafe-inline'`** — inline `style="..."` attributes remain across a number of views; extracting them is future work.

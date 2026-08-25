@@ -39,11 +39,27 @@ flowchart TB
 |-------|------------|
 | Runtime | PHP 8.1+ (developed against 8.4) |
 | Framework | Laravel 10 |
-| UI | Blade, Bootstrap 5 |
-| Security | Laravel auth (form login, bcrypt, role middleware) |
+| UI | Blade, Bootstrap 5, Vite (ScholarZim's own CSS/JS only) |
+| Security | Laravel auth (form login, bcrypt, role middleware), in-house TOTP second factor, Sanctum tokens for the API |
 | Persistence | Eloquent ORM, MySQL 8, Laravel migrations |
+| Background work | Database queue (mail and notifications), Laravel scheduler (four daily jobs) |
 | Reports | dompdf (PDF), PhpSpreadsheet (Excel) |
 | Email | Laravel Mail — MailHog locally, SMTP or a mail API in production |
+
+## Runtime processes
+
+Three processes, all supervised inside the one container:
+
+| Process | Responsibility |
+|---------|----------------|
+| nginx + PHP-FPM | Serves requests |
+| `schedule:run` tick | Fires the daily alert and reminder jobs |
+| `queue:work` | Drains queued mail and notifications |
+
+The queue is not optional. Approving a listing fans a notification out to every matching
+applicant; doing that inside the request made the administrator wait on one SMTP round trip
+per recipient. With `QUEUE_CONNECTION=database` the request returns immediately and the
+worker delivers — which also means **nothing is delivered without a worker running**.
 
 ## Layered design
 

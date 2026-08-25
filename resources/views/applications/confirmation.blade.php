@@ -53,8 +53,14 @@
                         <strong>{{ $application->interview_at->format('l, d M Y \a\t g:i A') }}</strong>
                     </p>
                     @if($application->rejection_reason)
-                        <p class="mb-0">{{ $application->rejection_reason }}</p>
+                        <p class="mb-2">{{ $application->rejection_reason }}</p>
                     @endif
+
+                    {{-- Times in the file are UTC, so the reader's calendar shows their own zone. --}}
+                    <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
+                       href="{{ route('applications.interview.ics', $application->application_id) }}">
+                        <x-icon name="calendar" :size="14" /> Add to calendar
+                    </a>
                 </div>
             @elseif($application->rejection_reason)
                 <div class="alert alert-danger">
@@ -63,6 +69,111 @@
                 </div>
             @endif
         </div>
+
+            @if($awaitingResponse)
+                {{--
+                    The provider asked for something. This is the whole exchange:
+                    their question, and one box to answer it in - no email round
+                    trip, and the application stays exactly where it is.
+                --}}
+                <div class="card border-warning mb-4">
+                    <div class="card-header bg-warning-subtle d-flex align-items-center gap-2">
+                        <x-icon name="chat" :size="18" />
+                        <h2 class="h6 fw-semibold mb-0">
+                            {{ $application->application_status === \App\Support\ApplicationStatus::DOCUMENTS_REQUESTED
+                                ? 'The provider needs more documents'
+                                : 'The provider has a question' }}
+                        </h2>
+                    </div>
+                    <div class="card-body">
+                        <blockquote class="border-start border-3 ps-3 mb-4">
+                            <p class="mb-1">{{ $application->info_request }}</p>
+                            <footer class="small text-secondary">
+                                Asked {{ $application->info_requested_at?->diffForHumans() }}
+                            </footer>
+                        </blockquote>
+
+                        <form method="POST" action="{{ route('applications.respond', $application->application_id) }}">
+                            @csrf
+                            <div class="mb-3">
+                                <label class="form-label" for="info-response">Your answer</label>
+                                <textarea class="form-control @error('response') is-invalid @enderror"
+                                          id="info-response" name="response" rows="4" required
+                                          minlength="10" maxlength="3000"
+                                          placeholder="Answer the question, or say when you will send what they asked for."></textarea>
+                                @error('response')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            @if($application->application_status === \App\Support\ApplicationStatus::DOCUMENTS_REQUESTED)
+                                <p class="form-text mb-3">
+                                    Documents are uploaded on
+                                    <a href="{{ route('applicant.profile') }}#documents">your profile</a>; the
+                                    provider can see them as soon as they are there.
+                                </p>
+                            @endif
+
+                            <button class="btn btn-primary" type="submit">Send response</button>
+                        </form>
+                    </div>
+                </div>
+            @elseif($application->info_response)
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Your conversation with the provider</h2>
+                    </div>
+                    <div class="card-body">
+                        <blockquote class="border-start border-3 ps-3 mb-3">
+                            <p class="mb-1">{{ $application->info_request }}</p>
+                            <footer class="small text-secondary">
+                                Provider, {{ $application->info_requested_at?->diffForHumans() }}
+                            </footer>
+                        </blockquote>
+                        <blockquote class="border-start border-3 border-primary ps-3 mb-0">
+                            <p class="mb-1">{{ $application->info_response }}</p>
+                            <footer class="small text-secondary">
+                                You, {{ $application->info_responded_at?->diffForHumans() }}
+                            </footer>
+                        </blockquote>
+                    </div>
+                </div>
+            @endif
+
+            @if($application->canBeWithdrawn())
+                <div class="card border-0 bg-body-tertiary">
+                    <div class="card-body d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                        <div class="min-w-0">
+                            <h2 class="h6 fw-semibold mb-1">Changed your mind?</h2>
+                            <p class="small text-secondary mb-0">
+                                Withdrawing tells the provider you are no longer in the running. You can apply
+                                again later while the scholarship is still open.
+                            </p>
+                        </div>
+                        <button class="btn btn-outline-danger flex-shrink-0" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#withdraw-panel"
+                                aria-expanded="false" aria-controls="withdraw-panel">
+                            Withdraw application
+                        </button>
+                    </div>
+
+                    <div class="collapse" id="withdraw-panel">
+                        <div class="card-body border-top">
+                            <form method="POST" action="{{ route('applications.withdraw', $application->application_id) }}">
+                                @csrf
+                                <div class="mb-3">
+                                    <label class="form-label" for="withdraw-reason">
+                                        Why are you withdrawing? <span class="text-secondary">(optional)</span>
+                                    </label>
+                                    <input type="text" class="form-control" id="withdraw-reason" name="reason"
+                                           maxlength="500" placeholder="e.g. I accepted another award">
+                                </div>
+                                <button class="btn btn-danger" type="submit">Yes, withdraw this application</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
         <div class="col-lg-4">
             <div class="card">

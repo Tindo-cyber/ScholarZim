@@ -129,21 +129,26 @@
                     <h2 class="h6 fw-semibold mb-0">Profile strength</h2>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between small mb-1">
-                        <span class="text-secondary">Completion</span>
-                        <span class="fw-semibold">{{ $stats['profileCompletion'] }}%</span>
-                    </div>
-                    <div class="progress mb-3" style="height: .5rem;" role="progressbar"
-                         aria-valuenow="{{ $stats['profileCompletion'] }}" aria-valuemin="0" aria-valuemax="100">
-                        <div class="progress-bar" style="width: {{ $stats['profileCompletion'] }}%"></div>
+                    <div class="text-center mb-3">
+                        <x-match-score :score="$stats['profileCompletion']"
+                                       size="lg"
+                                       :label="$stats['profileCompletion'] >= 100 ? 'Complete' : 'Completion'" />
                     </div>
 
                     @if($profile->missingFields())
                         <p class="small text-secondary mb-2">Still missing:</p>
+                        {{--
+                            Each gap links straight at the field that closes it, so
+                            the list is a set of actions rather than a scorecard.
+                        --}}
                         <ul class="list-unstyled d-grid gap-1 small mb-3">
-                            @foreach($profile->missingFields() as $field)
-                                <li class="d-flex align-items-center gap-2 text-secondary">
-                                    <x-icon name="x-circle" :size="14" />{{ $field }}
+                            @foreach($profile->completionChecklist() as $item)
+                                @continue($item['done'])
+                                <li class="d-flex align-items-center gap-2">
+                                    <x-icon name="x-circle" :size="14" class="text-secondary" />
+                                    <a href="{{ route('applicant.profile') }}#{{ $item['anchor'] === 'documents' ? 'documents' : 'field-' . $item['anchor'] }}">
+                                        {{ $item['label'] }}
+                                    </a>
                                 </li>
                             @endforeach
                         </ul>

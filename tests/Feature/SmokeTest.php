@@ -49,6 +49,8 @@ class SmokeTest extends TestCase
         $this->get('/register')->assertOk();
         $this->get('/register/provider')->assertOk();
         $this->get('/forgot-password')->assertOk();
+        $this->get('/developers')->assertOk();
+        $this->get('/health')->assertOk()->assertJsonPath('database', 'up');
     }
 
     public function test_applicant_pages_render(): void
@@ -62,6 +64,7 @@ class SmokeTest extends TestCase
         $this->actingAs($user)->get('/applicant/profile')->assertOk();
         $this->actingAs($user)->get('/applicant/recommendations')->assertOk();
         $this->actingAs($user)->get('/applicant/saved')->assertOk();
+        $this->actingAs($user)->get('/applicant/saved-searches')->assertOk();
         $this->actingAs($user)->get('/my-applications')->assertOk();
         $this->actingAs($user)->get('/opportunities')->assertOk();
         $this->actingAs($user)->get('/notifications')->assertOk();
@@ -84,6 +87,7 @@ class SmokeTest extends TestCase
         $this->actingAs($user)->get('/provider/applications')->assertOk();
         $this->actingAs($user)->get('/provider/applications/' . $application->application_id)->assertOk();
         $this->actingAs($user)->get('/opportunities/create')->assertOk();
+        $this->actingAs($user)->get('/provider/analytics')->assertOk();
     }
 
     public function test_admin_pages_render(): void
@@ -96,11 +100,21 @@ class SmokeTest extends TestCase
         $this->actingAs($user)->get('/admin/analytics')->assertOk();
         $this->actingAs($user)->get('/admin/audit-log')->assertOk();
         $this->actingAs($user)->get('/admin/search?q=Tendai')->assertOk();
+        $this->actingAs($user)->get('/admin/scholarfit')->assertOk();
     }
 
-    public function test_roles_are_enforced(): void
+    /**
+     * One role per test method: AuthenticateSession binds a session to the
+     * account that opened it, so signing a second user into the same session
+     * ends it rather than switching users.
+     */
+    public function test_applicants_are_kept_out_of_admin_pages(): void
     {
         $this->actingAs($this->applicant())->get('/admin/dashboard')->assertForbidden();
+    }
+
+    public function test_providers_are_kept_out_of_applicant_pages(): void
+    {
         $this->actingAs($this->provider())->get('/applicant/dashboard')->assertForbidden();
     }
 

@@ -11,6 +11,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\OpportunityController;
 use App\Http\Controllers\Provider;
 use App\Http\Controllers\PublicController;
+use App\Http\Controllers\TwoFactorSettingsController;
 use App\Support\RoleNames;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,16 @@ Route::get('/scholarships', [PublicController::class, 'scholarships'])->name('sc
 Route::get('/scholarships/{id}', [PublicController::class, 'detail'])
     ->whereNumber('id')
     ->name('scholarships.show');
+
+Route::get('/health', \App\Http\Controllers\HealthController::class)->name('health');
+
+// Fallback asset path, used only when no Vite build is present. See
+// SourceAssetController for why it exists.
+Route::get('/assets/source/{asset}', [\App\Http\Controllers\SourceAssetController::class, 'show'])
+    ->where('asset', '[A-Za-z0-9.\-]+')
+    ->name('assets.source');
+
+Route::get('/developers', [\App\Http\Controllers\Api\V1\DocsController::class, 'page'])->name('api.docs');
 
 /*
 |--------------------------------------------------------------------------
@@ -55,6 +66,14 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/reset-password/{token}', [Auth\PasswordResetController::class, 'showResetForm'])->name('password.reset');
     Route::post('/reset-password/{token}', [Auth\PasswordResetController::class, 'reset'])->name('password.update');
+
+    // Second step of signing in. The password has been accepted but no session
+    // has been granted yet - the pending user id lives in the session only.
+    Route::get('/two-factor', [Auth\TwoFactorChallengeController::class, 'show'])->name('two-factor.challenge');
+    Route::post('/two-factor', [Auth\TwoFactorChallengeController::class, 'verify'])
+        ->middleware('throttle:10,1')
+        ->name('two-factor.verify');
+    Route::post('/two-factor/cancel', [Auth\TwoFactorChallengeController::class, 'cancel'])->name('two-factor.cancel');
 });
 
 Route::get('/verify-email/{token}', [Auth\EmailVerificationController::class, 'verify'])->name('verification.verify');
@@ -85,6 +104,20 @@ Route::middleware('auth')->group(function () {
     Route::post('/account/notification-preferences', [AccountController::class, 'updateNotificationPreferences'])
         ->name('account.notifications');
     Route::get('/account/export-data', [AccountController::class, 'exportData'])->name('account.export');
+
+    Route::post('/account/logout-other-sessions', [AccountController::class, 'logoutOtherSessions'])
+        ->name('account.logoutOthers');
+    Route::post('/account/api-tokens', [AccountController::class, 'createApiToken'])->name('account.tokens.store');
+    Route::delete('/account/api-tokens/{tokenId}', [AccountController::class, 'revokeApiToken'])
+        ->whereNumber('tokenId')
+        ->name('account.tokens.destroy');
+    Route::post('/account/delete', [AccountController::class, 'destroyAccount'])->name('account.destroy');
+
+    Route::post('/account/two-factor', [TwoFactorSettingsController::class, 'generate'])->name('account.2fa.generate');
+    Route::post('/account/two-factor/confirm', [TwoFactorSettingsController::class, 'confirm'])
+        ->middleware('throttle:10,1')
+        ->name('account.2fa.confirm');
+    Route::delete('/account/two-factor', [TwoFactorSettingsController::class, 'disable'])->name('account.2fa.disable');
 
     Route::get('/opportunities', [OpportunityController::class, 'index'])->name('opportunities.index');
 
@@ -120,7 +153,28 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT])->group(function () {
         ->whereNumber('id')
         ->name('applicant.saved.destroy');
 
+    Route::get('/applicant/saved-searches', [Applicant\SavedSearchController::class, 'index'])
+        ->name('applicant.savedSearches');
+    Route::post('/applicant/saved-searches', [Applicant\SavedSearchController::class, 'store'])
+        ->name('applicant.savedSearches.store');
+    Route::post('/applicant/saved-searches/{id}/toggle', [Applicant\SavedSearchController::class, 'toggle'])
+        ->whereNumber('id')
+        ->name('applicant.savedSearches.toggle');
+    Route::delete('/applicant/saved-searches/{id}', [Applicant\SavedSearchController::class, 'destroy'])
+        ->whereNumber('id')
+        ->name('applicant.savedSearches.destroy');
+
     Route::get('/my-applications', [ApplicationController::class, 'myApplications'])->name('applications.mine');
+
+    Route::post('/applications/{applicationId}/withdraw', [ApplicationController::class, 'withdraw'])
+        ->whereNumber('applicationId')
+        ->name('applications.withdraw');
+    Route::post('/applications/{applicationId}/respond', [ApplicationController::class, 'respondToInfoRequest'])
+        ->whereNumber('applicationId')
+        ->name('applications.respond');
+    Route::get('/applications/{applicationId}/interview.ics', [ApplicationController::class, 'interviewCalendar'])
+        ->whereNumber('applicationId')
+        ->name('applications.interview.ics');
     Route::get('/apply/{opportunityId}', [ApplicationController::class, 'showWizard'])
         ->whereNumber('opportunityId')
         ->name('applications.wizard');
@@ -146,8 +200,12 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT])->group(function () {
 Route::middleware(['auth', 'role:' . RoleNames::PROVIDER])->group(function () {
     Route::get('/provider/dashboard', [Provider\DashboardController::class, 'index'])->name('provider.dashboard');
 
+    Route::get('/provider/analytics', [Provider\AnalyticsController::class, 'index'])->name('provider.analytics');
+
     Route::get('/provider/applications', [Provider\ApplicationReviewController::class, 'index'])
         ->name('provider.applications');
+    Route::post('/provider/applications/bulk', [Provider\ApplicationReviewController::class, 'bulkReview'])
+        ->name('provider.applications.bulk');
     Route::get('/provider/applications/{id}', [Provider\ApplicationReviewController::class, 'show'])
         ->whereNumber('id')
         ->name('provider.applications.show');
@@ -188,6 +246,10 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN])->prefix('admin')->name('
     Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/analytics', [Admin\AnalyticsController::class, 'index'])->name('analytics');
     Route::get('/audit-log', [Admin\AuditLogController::class, 'index'])->name('audit');
+
+    Route::get('/scholarfit', [Admin\ScholarFitController::class, 'index'])->name('scholarfit');
+    Route::post('/scholarfit', [Admin\ScholarFitController::class, 'update'])->name('scholarfit.update');
+    Route::post('/scholarfit/reset', [Admin\ScholarFitController::class, 'reset'])->name('scholarfit.reset');
     Route::get('/search', [Admin\SearchController::class, 'index'])->name('search');
 
     Route::get('/reports', [Admin\ReportController::class, 'hub'])->name('reports');
@@ -215,6 +277,9 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN])->prefix('admin')->name('
     Route::get('/providers/{userId}/certificate', [FileDownloadController::class, 'providerCertificate'])
         ->whereNumber('userId')
         ->name('providers.certificate');
+
+    Route::post('/opportunities/bulk-review', [Admin\ModerationController::class, 'bulkReview'])
+        ->name('moderation.bulk');
 
     Route::get('/opportunities/{id}', [Admin\ModerationController::class, 'show'])
         ->whereNumber('id')

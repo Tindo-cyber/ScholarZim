@@ -125,15 +125,39 @@
                     </div>
                 </div>
 
-                @if($fit->breakdown->missingRequirements)
+                @if(! $fit->isEligible())
+                    {{--
+                        A hard rule failed. The wizard still lets them through -
+                        the provider sets the rule and the provider decides - but
+                        it says so plainly before they spend time on a statement.
+                    --}}
+                    <div class="card border-danger">
+                        <div class="card-header bg-danger-subtle">
+                            <h2 class="h6 fw-semibold mb-0">You do not meet this award's rules</h2>
+                        </div>
+                        <div class="card-body">
+                            <ul class="small mb-0 ps-3 d-grid gap-1">
+                                @foreach($fit->breakdown->disqualifiers as $blocker)
+                                    <li>{{ $blocker['text'] }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    </div>
+                @elseif($fit->breakdown->fixes)
                     <div class="card border-warning">
                         <div class="card-header bg-warning-subtle">
                             <h2 class="h6 fw-semibold mb-0">Before you submit</h2>
                         </div>
                         <div class="card-body">
-                            <ul class="small mb-0 ps-3">
-                                @foreach($fit->breakdown->missingRequirements as $item)
-                                    <li>{{ $item }}</li>
+                            <ul class="small mb-0 ps-3 d-grid gap-1">
+                                @foreach($fit->breakdown->fixes as $fix)
+                                    <li>
+                                        {{ $fix['text'] }}
+                                        @if($fix['target'] === 'profile')
+                                            <a class="fw-semibold"
+                                               href="{{ route('applicant.profile') }}#field-{{ $fix['cta'] }}">Fix this</a>
+                                        @endif
+                                    </li>
                                 @endforeach
                             </ul>
                         </div>

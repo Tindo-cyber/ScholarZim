@@ -26,11 +26,16 @@ Open http://localhost:8000 and follow [docs/demo-script.md](docs/demo-script.md)
 ```bash
 cd ScholarZim
 composer install
+npm install && npm run build   # ScholarZim's own CSS/JS
 cp .env.example .env
 php artisan key:generate
 php artisan migrate --seed
-php artisan serve            # http://localhost:8000
+php artisan serve              # http://localhost:8000
+php artisan queue:work         # in a second terminal: mail is queued
 ```
+
+The site still works without the npm step — the source assets are served unminified — but
+the build is what produces the hashed, minified bundle.
 
 MySQL and MailHog can be borrowed from the Docker stack rather than installed natively:
 
@@ -38,12 +43,14 @@ MySQL and MailHog can be borrowed from the Docker stack rather than installed na
 docker compose up -d mysql mailhog
 ```
 
-The daily reminder jobs run off the scheduler. In the container that tick is
-supervised automatically; locally, run it on demand:
+The daily jobs run off the scheduler. In the container that tick is supervised
+automatically, alongside a queue worker; locally, run them on demand:
 
 ```bash
 php artisan schedule:run
-php artisan scholarzim:deadline-reminders    # or invoke a job directly
+php artisan scholarzim:search-alerts         # or invoke a job directly
+php artisan scholarzim:deadline-reminders
+php artisan scholarzim:interview-reminders
 php artisan scholarzim:profile-reminders
 ```
 
@@ -54,7 +61,7 @@ cd ScholarZim
 php artisan test
 ```
 
-Expect 29 tests / 118 assertions passing.
+Expect 111 tests / 389 assertions passing.
 
 ## Documentation index
 
@@ -70,9 +77,12 @@ Expect 29 tests / 118 assertions passing.
 
 ## Technology stack
 
-PHP 8.1+ (developed against 8.4) · Laravel 10 · Blade · Bootstrap 5 · MySQL 8 · Eloquent migrations · PHPUnit · Composer
+PHP 8.1+ (developed against 8.4) · Laravel 10 · Blade · Bootstrap 5 · Vite · MySQL 8 · Eloquent migrations · PHPUnit · Composer · npm
 
-Reports are generated with dompdf (PDF) and PhpSpreadsheet (Excel).
+Reports are generated with dompdf (PDF) and PhpSpreadsheet (Excel). API tokens use Laravel
+Sanctum. The TOTP second factor is implemented in-house (RFC 6238) rather than pulled in as
+a dependency — the algorithm is sixty lines of HMAC-SHA1 and every authenticator app
+implements it identically.
 
 ## Repository layout
 
@@ -98,5 +108,7 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Set `APP_ENV=production` with envi
 
 - Demo data is disabled in production (`SCHOLARZIM_DEMO_SEED=false`).
 - SMS notifications log the message rather than dispatching it — the delivery path is wired end to end and awaits a gateway. In-app and email notifications are functional.
-- REST API exposes public catalog and applicant endpoints; the full admin/provider surface is server-rendered only.
+- Email is queued. Nothing is delivered without a worker (`php artisan queue:work`); the Docker image supervises one.
+- The REST API (`/api/v1`, described at `/developers`) is read-only: it exposes the public catalogue plus an applicant's own applications and recommendations behind a Sanctum token. The full admin/provider surface is server-rendered only.
+- Two-factor authentication shows the setup key for manual entry rather than a QR code, so no image-generation dependency is needed; every authenticator app supports entering a key by hand.
 - This codebase is a port of an earlier Spring Boot implementation. The schema, column names, and business rules carried over unchanged.

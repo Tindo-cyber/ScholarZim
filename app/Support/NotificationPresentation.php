@@ -31,7 +31,13 @@ final class NotificationPresentation
         }
 
         if (str_starts_with($type, 'APPLICATION_')
-            || in_array($type, [NotificationType::NEW_APPLICATION, NotificationType::DOCUMENTS_REQUESTED], true)) {
+            || in_array($type, [
+                NotificationType::NEW_APPLICATION,
+                NotificationType::DOCUMENTS_REQUESTED,
+                NotificationType::INFO_REQUESTED,
+                NotificationType::INFO_PROVIDED,
+                NotificationType::INTERVIEW_REMINDER,
+            ], true)) {
             return self::CATEGORY_APPLICATIONS;
         }
 
@@ -58,6 +64,11 @@ final class NotificationPresentation
             NotificationType::SCHOLARSHIP_REJECTED => 'x-circle',
             NotificationType::DEADLINE_REMINDER => 'clock-history',
             NotificationType::DOCUMENTS_REQUESTED => 'paperclip',
+            NotificationType::INFO_REQUESTED => 'chat',
+            NotificationType::INFO_PROVIDED => 'chat',
+            NotificationType::APPLICATION_WITHDRAWN => 'x-circle',
+            NotificationType::INTERVIEW_REMINDER => 'calendar',
+            NotificationType::SCHOLARSHIP_SEARCH_MATCH => 'search',
             NotificationType::NEW_OPPORTUNITY => 'stars',
             NotificationType::NEW_APPLICATION, NotificationType::APPLICATION_SUBMITTED => 'inbox',
             NotificationType::APPLICATION_UNDER_REVIEW => 'hourglass-split',
@@ -79,9 +90,12 @@ final class NotificationPresentation
             NotificationType::SCHOLARSHIP_REJECTED => 'danger',
             NotificationType::DEADLINE_REMINDER, NotificationType::DOCUMENTS_REQUESTED,
             NotificationType::PROFILE_INCOMPLETE, NotificationType::APPLICATION_WAITLISTED,
-            NotificationType::SCHOLARSHIP_CLOSED => 'warning',
+            NotificationType::SCHOLARSHIP_CLOSED, NotificationType::INFO_REQUESTED,
+            NotificationType::INTERVIEW_REMINDER => 'warning',
             NotificationType::NEW_OPPORTUNITY, NotificationType::NEW_APPLICATION,
-            NotificationType::APPLICATION_INTERVIEW => 'info',
+            NotificationType::APPLICATION_INTERVIEW, NotificationType::INFO_PROVIDED,
+            NotificationType::SCHOLARSHIP_SEARCH_MATCH => 'info',
+            NotificationType::APPLICATION_WITHDRAWN => 'secondary',
             default => 'primary',
         };
     }

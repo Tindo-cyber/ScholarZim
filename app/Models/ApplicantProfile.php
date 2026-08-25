@@ -18,6 +18,8 @@ class ApplicantProfile extends Model
         'field_of_study',
         'country',
         'province',
+        'date_of_birth',
+        'citizenship',
         'academic_results',
         'biography',
         'results_certificate_path',
@@ -35,6 +37,7 @@ class ApplicantProfile extends Model
     ];
 
     protected $casts = [
+        'date_of_birth' => 'date',
         'results_uploaded_at' => 'datetime',
         'cv_uploaded_at' => 'datetime',
         'passport_uploaded_at' => 'datetime',
@@ -122,26 +125,60 @@ class ApplicantProfile extends Model
         ));
     }
 
+    public function age(): ?int
+    {
+        return $this->date_of_birth?->age;
+    }
+
+    /**
+     * The single source of truth for "is this profile finished": every entry is
+     * a field ScholarFit reads, with the anchor that scrolls the profile form to
+     * it. The ring, the checklist, and the reminder job all read this, so they
+     * can never disagree about what is missing.
+     *
+     * @return array<int, array{label: string, done: bool, anchor: string, hint: string}>
+     */
+    public function completionChecklist(): array
+    {
+        $items = [
+            ['label' => 'Education level', 'value' => $this->education_level, 'anchor' => 'education_level',
+                'hint' => 'Sets which listings you are matched against.'],
+            ['label' => 'Institution', 'value' => $this->institution_name, 'anchor' => 'institution_name',
+                'hint' => 'Shown to providers reviewing your application.'],
+            ['label' => 'Field of study', 'value' => $this->field_of_study, 'anchor' => 'field_of_study',
+                'hint' => 'Worth up to a quarter of your ScholarFit score.'],
+            ['label' => 'Province', 'value' => $this->province, 'anchor' => 'province',
+                'hint' => 'Some awards are restricted to one province.'],
+            ['label' => 'Date of birth', 'value' => $this->date_of_birth, 'anchor' => 'date_of_birth',
+                'hint' => 'Needed to check age limits on an award.'],
+            ['label' => 'Citizenship', 'value' => $this->citizenship, 'anchor' => 'citizenship',
+                'hint' => 'Needed to check citizenship rules on an award.'],
+            ['label' => 'Academic results', 'value' => $this->academic_results, 'anchor' => 'academic_results',
+                'hint' => 'Your points or degree class, in your own words.'],
+            ['label' => 'Short biography', 'value' => $this->biography, 'anchor' => 'biography',
+                'hint' => 'The first thing a provider reads about you.'],
+            ['label' => 'Results certificate', 'value' => $this->results_certificate_path, 'anchor' => 'documents',
+                'hint' => 'Required before most providers will consider you.'],
+        ];
+
+        return array_map(static fn (array $item) => [
+            'label' => $item['label'],
+            'done' => filled($item['value']),
+            'anchor' => $item['anchor'],
+            'hint' => $item['hint'],
+        ], $items);
+    }
+
     /**
      * Percentage of the profile fields that matter to ScholarFit scoring.
      * Mirrors ProfileCompletionSupport in the Spring app.
      */
     public function completionPercentage(): int
     {
-        $fields = [
-            $this->education_level,
-            $this->institution_name,
-            $this->field_of_study,
-            $this->country,
-            $this->province,
-            $this->academic_results,
-            $this->biography,
-            $this->results_certificate_path,
-        ];
+        $checklist = $this->completionChecklist();
+        $done = count(array_filter($checklist, static fn (array $item) => $item['done']));
 
-        $filled = count(array_filter($fields, static fn ($value) => filled($value)));
-
-        return (int) round($filled / count($fields) * 100);
+        return (int) round($done / count($checklist) * 100);
     }
 
     public function isComplete(): bool
@@ -152,17 +189,9 @@ class ApplicantProfile extends Model
     /** Field-by-field checklist rendered on the profile and dashboard pages. */
     public function missingFields(): array
     {
-        $checks = [
-            'Education level' => $this->education_level,
-            'Institution' => $this->institution_name,
-            'Field of study' => $this->field_of_study,
-            'Country' => $this->country,
-            'Province' => $this->province,
-            'Academic results' => $this->academic_results,
-            'Short biography' => $this->biography,
-            'Results certificate' => $this->results_certificate_path,
-        ];
-
-        return array_keys(array_filter($checks, static fn ($value) => blank($value)));
+        return array_values(array_map(
+            static fn (array $item) => $item['label'],
+            array_filter($this->completionChecklist(), static fn (array $item) => ! $item['done'])
+        ));
     }
 }

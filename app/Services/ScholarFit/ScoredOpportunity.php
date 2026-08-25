@@ -14,8 +14,18 @@ class ScoredOpportunity
     ) {
     }
 
+    /** False when the applicant fails a hard eligibility rule the provider set. */
+    public function isEligible(): bool
+    {
+        return $this->breakdown->isEligible();
+    }
+
     public function scoreTone(): string
     {
+        if (! $this->isEligible()) {
+            return 'danger';
+        }
+
         return match (true) {
             $this->matchScore >= 75 => 'success',
             $this->matchScore >= 45 => 'warning',

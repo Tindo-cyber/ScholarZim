@@ -26,7 +26,7 @@ class DashboardController extends Controller
             'greeting' => Greeting::forUser($request->user()->full_name),
             'stats' => $this->platformStatsService->adminStats(),
             'pendingProviders' => $this->adminUserService->pendingProviders(),
-            'moderationQueue' => $this->moderationService->pendingQueue(),
+            'moderationQueue' => $this->moderationService->pendingQueueWithDuplicates(),
             'recentActivity' => $this->auditService->recent(10),
         ]);
     }

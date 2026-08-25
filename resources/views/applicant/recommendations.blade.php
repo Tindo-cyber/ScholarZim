@@ -70,14 +70,24 @@
                                     @endforeach
                                 </div>
 
-                                @if($match->breakdown->missingRequirements)
+                                @if($match->breakdown->fixes)
                                     <details class="small">
                                         <summary class="text-secondary">
-                                            {{ count($match->breakdown->missingRequirements) }} thing(s) holding this score back
+                                            {{ count($match->breakdown->fixes) }} thing(s) holding this score back
                                         </summary>
-                                        <ul class="mt-2 mb-0 ps-3 text-secondary">
-                                            @foreach($match->breakdown->missingRequirements as $item)
-                                                <li>{{ $item }}</li>
+                                        {{-- Each one links at the field that fixes it. --}}
+                                        <ul class="mt-2 mb-0 ps-3 text-secondary d-grid gap-1">
+                                            @foreach($match->breakdown->fixes as $fix)
+                                                <li>
+                                                    {{ $fix['text'] }}
+                                                    @if($fix['target'] === 'profile')
+                                                        <a class="fw-semibold"
+                                                           href="{{ route('applicant.profile') }}#field-{{ $fix['cta'] }}">Fix this</a>
+                                                    @elseif($fix['target'] === 'documents')
+                                                        <a class="fw-semibold"
+                                                           href="{{ route('applicant.profile') }}#documents">Upload it</a>
+                                                    @endif
+                                                </li>
                                             @endforeach
                                         </ul>
                                     </details>

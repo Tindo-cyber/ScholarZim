@@ -24,6 +24,7 @@
                     <x-nav-item :href="route('opportunities.index')" icon="search" :active="request()->routeIs('opportunities.index')">Browse scholarships</x-nav-item>
                     <x-nav-item :href="route('applications.mine')" icon="file-text" :active="request()->routeIs('applications.mine')">My applications</x-nav-item>
                     <x-nav-item :href="route('applicant.saved')" icon="bookmark" :active="request()->routeIs('applicant.saved')">Saved</x-nav-item>
+                    <x-nav-item :href="route('applicant.savedSearches')" icon="bell" :active="request()->routeIs('applicant.savedSearches*')">Search alerts</x-nav-item>
                     <x-nav-item :href="route('applicant.profile')" icon="person" :active="request()->routeIs('applicant.profile')">My profile</x-nav-item>
                 @endif
 
@@ -31,6 +32,7 @@
                     <x-nav-item :href="route('provider.dashboard')" icon="grid" :active="request()->routeIs('provider.dashboard')">Dashboard</x-nav-item>
                     <x-nav-item :href="route('opportunities.create')" icon="plus" :active="request()->routeIs('opportunities.create')">Post a scholarship</x-nav-item>
                     <x-nav-item :href="route('provider.applications')" icon="inbox" :active="request()->routeIs('provider.applications*')">Applications</x-nav-item>
+                    <x-nav-item :href="route('provider.analytics')" icon="trend" :active="request()->routeIs('provider.analytics')">Analytics</x-nav-item>
                     <x-nav-item :href="route('opportunities.index')" icon="search" :active="request()->routeIs('opportunities.index')">All scholarships</x-nav-item>
                 @endif
 
@@ -38,6 +40,7 @@
                     <x-nav-item :href="route('admin.dashboard')" icon="grid" :active="request()->routeIs('admin.dashboard')">Dashboard</x-nav-item>
                     <x-nav-item :href="route('admin.users.index')" icon="people" :active="request()->routeIs('admin.users.*')">Users</x-nav-item>
                     <x-nav-item :href="route('admin.analytics')" icon="chart" :active="request()->routeIs('admin.analytics')">Analytics</x-nav-item>
+                    <x-nav-item :href="route('admin.scholarfit')" icon="stars" :active="request()->routeIs('admin.scholarfit')">ScholarFit weights</x-nav-item>
                     <x-nav-item :href="route('admin.audit')" icon="shield" :active="request()->routeIs('admin.audit')">Audit log</x-nav-item>
                     <x-nav-item :href="route('admin.reports')" icon="download" :active="request()->routeIs('admin.reports')">Reports</x-nav-item>
                     <x-nav-item :href="route('admin.search')" icon="search" :active="request()->routeIs('admin.search')">Search</x-nav-item>

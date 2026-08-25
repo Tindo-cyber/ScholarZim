@@ -65,6 +65,22 @@ class LoginController extends Controller
         }
 
         RateLimiter::clear($throttleKey);
+
+        // Password accepted, but an account with a second factor does not get a
+        // session yet: it is parked until TwoFactorChallengeController sees a
+        // valid code, so a stolen password alone never signs anybody in.
+        if ($user->hasTwoFactorEnabled()) {
+            $userId = $user->user_id;
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            $request->session()->put(TwoFactorChallengeController::PENDING_KEY, $userId);
+            $request->session()->put(TwoFactorChallengeController::REMEMBER_KEY, $request->boolean('remember'));
+
+            return redirect()->route('two-factor.challenge');
+        }
+
         $request->session()->regenerate();
 
         $this->auditService->log($user->email, AuditAction::LOGIN_SUCCESS, 'USER', $user->user_id);

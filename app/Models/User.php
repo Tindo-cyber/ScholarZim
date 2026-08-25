@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 /**
  * Ported from com.scholarzim.entity.User.
@@ -19,6 +20,7 @@ use Illuminate\Notifications\Notifiable;
  */
 class User extends Authenticatable
 {
+    use HasApiTokens;
     use HasFactory;
     use Notifiable;
 
@@ -43,6 +45,8 @@ class User extends Authenticatable
     protected $hidden = [
         'password_hash',
         'remember_token',
+        'two_factor_secret',
+        'two_factor_recovery_codes',
     ];
 
     protected $casts = [
@@ -51,6 +55,10 @@ class User extends Authenticatable
         'email_notify_applications' => 'boolean',
         'email_notify_scholarships' => 'boolean',
         'email_notify_system' => 'boolean',
+        'two_factor_confirmed_at' => 'datetime',
+        // Encrypted at rest: a database dump alone must not hand over a second factor.
+        'two_factor_secret' => 'encrypted',
+        'two_factor_recovery_codes' => 'encrypted:array',
     ];
 
     /** Laravel hashes into "password"; the schema stores it in password_hash. */
@@ -99,6 +107,11 @@ class User extends Authenticatable
         return $this->hasMany(SavedScholarship::class, 'user_id', 'user_id');
     }
 
+    public function savedSearches(): HasMany
+    {
+        return $this->hasMany(SavedSearch::class, 'user_id', 'user_id');
+    }
+
     public function roleName(): string
     {
         return $this->role?->role_name ?? '';
@@ -128,6 +141,12 @@ class User extends Authenticatable
     {
         return $this->account_status === null
             || strcasecmp($this->account_status, \App\Support\AccountStatus::ACTIVE) === 0;
+    }
+
+    /** Two-factor is only "on" once a code has been verified, not merely generated. */
+    public function hasTwoFactorEnabled(): bool
+    {
+        return $this->two_factor_confirmed_at !== null && filled($this->two_factor_secret);
     }
 
     public function displayName(): string

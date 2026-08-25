@@ -102,6 +102,45 @@ final class FormOptions
         'Research Grant',
     ];
 
+    public const CURRENCIES = [
+        'USD',
+        'ZWG',
+        'ZAR',
+        'GBP',
+        'EUR',
+    ];
+
+    public const DEFAULT_CURRENCY = 'USD';
+
+    /** Citizenship values a provider can require, and an applicant can claim. */
+    public const CITIZENSHIPS = [
+        'Zimbabwean',
+        'South African',
+        'Zambian',
+        'Malawian',
+        'Mozambican',
+        'Botswanan',
+        'Other',
+    ];
+
+    /**
+     * Result orderings offered on the browse pages. The key is what appears in
+     * ?sort=, and Opportunity::scopeSorted() is the only place that reads it -
+     * anything unrecognised falls back to DEFAULT_SORT rather than erroring.
+     */
+    public const SORT_OPTIONS = [
+        'newest' => 'Newest first',
+        'deadline' => 'Deadline (soonest)',
+        'award_desc' => 'Award value (highest)',
+        'award_asc' => 'Award value (lowest)',
+        'title' => 'Title (A-Z)',
+    ];
+
+    public const DEFAULT_SORT = 'newest';
+
+    /** Sorts that only make sense once a signed-in applicant has a profile. */
+    public const MATCH_SORT = 'match';
+
     private function __construct()
     {
     }

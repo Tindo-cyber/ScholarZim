@@ -14,7 +14,7 @@ php artisan migrate --seed && php artisan serve
 ## Verify
 
 ```bash
-php artisan test   # 29 tests
+php artisan test   # 111 tests
 ```
 
 See [demo-script.md](demo-script.md) for the viva walkthrough.

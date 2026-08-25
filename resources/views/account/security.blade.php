@@ -5,7 +5,7 @@
 @section('content')
 
     <x-page-header title="Security &amp; privacy"
-                   subtitle="Your password, what we email you about, and a copy of your data." />
+                   subtitle="Your password, your second factor, what we email you about, and a copy of your data." />
 
     <div class="row g-4">
         <div class="col-xl-6">
@@ -27,6 +27,118 @@
                                       autocomplete="new-password" />
 
                         <button class="btn btn-primary" type="submit">Update password</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h2 class="h6 fw-semibold mb-0">Two-factor authentication</h2>
+                    <x-status-badge :label="$twoFactorEnabled ? 'On' : 'Off'"
+                                    :tone="$twoFactorEnabled ? 'success' : 'secondary'"
+                                    :icon="$twoFactorEnabled ? 'shield-check' : null" />
+                </div>
+                <div class="card-body">
+                    @if($twoFactorEnabled)
+                        <p class="text-secondary">
+                            Signing in asks for a code from your authenticator app after your password. You have
+                            <strong>{{ $recoveryRemaining }}</strong> unused recovery
+                            {{ Str::plural('code', $recoveryRemaining) }}.
+                        </p>
+
+                        <form method="POST" action="{{ route('account.2fa.disable') }}">
+                            @csrf
+                            @method('DELETE')
+
+                            <x-form.input name="current_password" label="Confirm your password" type="password"
+                                          required autocomplete="current-password"
+                                          hint="Turning off a second factor is a security change, so it needs your password." />
+
+                            <button class="btn btn-outline-danger" type="submit">Turn off two-factor</button>
+                        </form>
+                    @elseif(session('twoFactorSetup'))
+                        @php $setup = session('twoFactorSetup'); @endphp
+
+                        <p class="text-secondary">
+                            Add this key to your authenticator app (Google Authenticator, Authy, or any TOTP app),
+                            then type the code it shows to finish. Two-factor is not on until you do.
+                        </p>
+
+                        <div class="mb-3">
+                            <label class="form-label" for="totp-secret">Setup key</label>
+                            <input class="form-control font-monospace" id="totp-secret" type="text"
+                                   value="{{ $setup['formatted'] }}" readonly
+                                   onfocus="this.select()">
+                            <div class="form-text">
+                                Choose "enter a setup key" in your app, with ScholarZim as the account name.
+                            </div>
+                        </div>
+
+                        <details class="mb-3">
+                            <summary class="small fw-semibold">Full otpauth link</summary>
+                            <code class="small d-block mt-2 text-break">{{ $setup['uri'] }}</code>
+                        </details>
+
+                        <div class="alert alert-warning">
+                            <div class="fw-semibold mb-1">Save your recovery codes now</div>
+                            <p class="small mb-2">
+                                Each works once, and they are the only way back in if you lose your phone.
+                                They are not shown again.
+                            </p>
+                            <ul class="list-unstyled font-monospace small mb-0 row row-cols-2 g-1">
+                                @foreach($setup['recovery'] as $code)
+                                    <li class="col">{{ $code }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+
+                        <form method="POST" action="{{ route('account.2fa.confirm') }}">
+                            @csrf
+
+                            <x-form.input name="code" label="Code from your app" required
+                                          inputmode="numeric" autocomplete="one-time-code"
+                                          placeholder="000000" />
+
+                            <button class="btn btn-primary" type="submit">Turn on two-factor</button>
+                        </form>
+                    @else
+                        <p class="text-secondary">
+                            Add a code from an authenticator app on top of your password. Strongly recommended
+                            for administrator accounts, which can see every user on the platform.
+                        </p>
+
+                        <form method="POST" action="{{ route('account.2fa.generate') }}">
+                            @csrf
+
+                            <x-form.input name="current_password" label="Confirm your password" type="password"
+                                          required autocomplete="current-password"
+                                          hint="So a session left open on a shared machine cannot bind a second factor to someone else's phone."
+                                          id="two-factor-current-password" />
+
+                            <button class="btn btn-primary" type="submit">Set up two-factor</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h6 fw-semibold mb-0">Other sessions</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-secondary">
+                        Signed in on a library or lab computer and forgot to sign out? This ends every session
+                        except this one, on every device.
+                    </p>
+
+                    <form method="POST" action="{{ route('account.logoutOthers') }}">
+                        @csrf
+
+                        <x-form.input name="current_password" label="Confirm your password" type="password"
+                                      required autocomplete="current-password"
+                                      id="logout-others-current-password" />
+
+                        <button class="btn btn-outline-primary" type="submit">Sign out all other sessions</button>
                     </form>
                 </div>
             </div>
@@ -107,6 +219,111 @@
                     @endunless
                 </div>
             </div>
+
+            <div class="card mb-4">
+                <div class="card-header d-flex align-items-center justify-content-between">
+                    <h2 class="h6 fw-semibold mb-0">API tokens</h2>
+                    <a class="small" href="{{ route('api.docs') }}">Read the API docs</a>
+                </div>
+                <div class="card-body">
+                    <p class="text-secondary small">
+                        A token lets a program read your applications and ScholarFit recommendations on your
+                        behalf. Tokens are read-only and can be revoked at any time.
+                    </p>
+
+                    @if(session('newApiToken'))
+                        <div class="alert alert-success">
+                            <div class="fw-semibold mb-1">Copy this token now</div>
+                            <p class="small mb-2">It is shown once and never stored in a readable form.</p>
+                            <input class="form-control font-monospace small" type="text" readonly
+                                   value="{{ session('newApiToken') }}" onfocus="this.select()"
+                                   aria-label="Your new API token">
+                        </div>
+                    @endif
+
+                    @if($apiTokens->isNotEmpty())
+                        <ul class="list-unstyled d-grid gap-2 mb-3">
+                            @foreach($apiTokens as $token)
+                                <li class="d-flex align-items-center gap-2 border rounded-3 p-2">
+                                    <div class="min-w-0 flex-grow-1">
+                                        <span class="fw-semibold d-block text-truncate">{{ $token->name }}</span>
+                                        <span class="small text-secondary">
+                                            Created {{ $token->created_at?->format('d M Y') }}
+                                            @if($token->last_used_at)
+                                                · last used {{ $token->last_used_at->diffForHumans() }}
+                                            @else
+                                                · never used
+                                            @endif
+                                        </span>
+                                    </div>
+
+                                    <form method="POST" action="{{ route('account.tokens.destroy', $token->id) }}" class="m-0">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger" type="submit"
+                                                aria-label="Revoke the token {{ $token->name }}">Revoke</button>
+                                    </form>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+
+                    <form method="POST" action="{{ route('account.tokens.store') }}" class="row g-2 align-items-end">
+                        @csrf
+                        <div class="col-sm-8">
+                            <label class="form-label" for="token-name">Token name</label>
+                            <input type="text" class="form-control" id="token-name" name="token_name"
+                                   maxlength="60" required placeholder="e.g. My phone app">
+                        </div>
+                        <div class="col-sm-4 d-grid">
+                            <button class="btn btn-outline-primary" type="submit">Create token</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card border-danger">
+                <div class="card-header bg-danger-subtle">
+                    <h2 class="h6 fw-semibold mb-0">Delete this account</h2>
+                </div>
+                <div class="card-body">
+                    <p class="text-secondary">
+                        This removes your profile, applications, saved scholarships, alerts, and notifications.
+                        It cannot be undone, so
+                        <a href="{{ route('account.export') }}">export your data</a> first if you want a copy.
+                    </p>
+
+                    @if($user->isProvider())
+                        <p class="small text-secondary">
+                            Withdraw any listing that is still live first &mdash; students' applications point
+                            at them, and deleting the listing would erase their history too.
+                        </p>
+                    @endif
+
+                    <button class="btn btn-outline-danger" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#delete-account-panel"
+                            aria-expanded="false" aria-controls="delete-account-panel">
+                        Delete my account
+                    </button>
+
+                    <div class="collapse mt-3" id="delete-account-panel">
+                        <form method="POST" action="{{ route('account.destroy') }}">
+                            @csrf
+
+                            <x-form.input name="current_password" label="Confirm your password" type="password"
+                                          required autocomplete="current-password"
+                                          id="delete-current-password" />
+
+                            <x-form.input name="confirm_email" label="Type your email address to confirm"
+                                          required :placeholder="$user->email"
+                                          hint="A password alone is muscle memory; this is not reversible." />
+
+                            <button class="btn btn-danger" type="submit">Permanently delete my account</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 

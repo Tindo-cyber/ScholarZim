@@ -13,7 +13,19 @@ RUN composer install \
 COPY . .
 RUN composer dump-autoload --optimize --no-dev
 
-# ── 2. Runtime ─────────────────────────────────────────────────────────────
+# ── 2. Front-end bundle ────────────────────────────────────────────────────
+# ScholarZim's own CSS and JS are content-hashed by Vite, so a deploy cannot
+# serve a stale stylesheet out of a browser cache. Only the build output is
+# carried into the runtime image; node itself never ships.
+FROM node:20-alpine AS assets
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci --no-audit --no-fund
+COPY vite.config.js ./
+COPY resources ./resources
+RUN npm run build
+
+# ── 3. Runtime ─────────────────────────────────────────────────────────────
 FROM php:8.3-fpm-alpine
 
 RUN apk add --no-cache nginx supervisor tzdata icu-dev libzip-dev libpng-dev oniguruma-dev \
@@ -25,6 +37,7 @@ RUN apk add --no-cache nginx supervisor tzdata icu-dev libzip-dev libpng-dev oni
 WORKDIR /var/www/html
 
 COPY --from=vendor /app /var/www/html
+COPY --from=assets /app/public/build /var/www/html/public/build
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/scholarzim.ini
 COPY docker/supervisord.conf /etc/supervisord.conf

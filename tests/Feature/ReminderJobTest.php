@@ -170,4 +170,76 @@ class ReminderJobTest extends TestCase
             ->where('related_id', $relatedId)
             ->count();
     }
+
+    public function test_interview_reminder_reaches_both_sides_once(): void
+    {
+        $application = $this->interviewApplication(Carbon::now()->addHours(20));
+
+        $this->artisan('scholarzim:interview-reminders')->assertSuccessful();
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->student->user_id,
+            'type' => NotificationType::INTERVIEW_REMINDER,
+        ]);
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $application->opportunity->provider_user_id,
+            'type' => NotificationType::INTERVIEW_REMINDER,
+        ]);
+
+        $before = \App\Models\Notification::where('type', NotificationType::INTERVIEW_REMINDER)->count();
+
+        // Idempotent: interview_reminded_at is what stops a second nudge.
+        $this->artisan('scholarzim:interview-reminders')->assertSuccessful();
+
+        $this->assertSame(
+            $before,
+            \App\Models\Notification::where('type', NotificationType::INTERVIEW_REMINDER)->count()
+        );
+    }
+
+    public function test_an_interview_further_out_is_left_alone(): void
+    {
+        $this->interviewApplication(Carbon::now()->addDays(5));
+
+        $this->artisan('scholarzim:interview-reminders')->assertSuccessful();
+
+        $this->assertDatabaseMissing('notifications', [
+            'type' => NotificationType::INTERVIEW_REMINDER,
+        ]);
+    }
+
+    /** Rescheduling has to earn a fresh reminder, not inherit the spent one. */
+    public function test_rescheduling_clears_the_reminder_stamp(): void
+    {
+        $application = $this->interviewApplication(Carbon::now()->addHours(20));
+
+        $this->artisan('scholarzim:interview-reminders')->assertSuccessful();
+
+        $this->assertNotNull($application->fresh()->interview_reminded_at);
+
+        $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
+
+        app(\App\Services\ApplicationService::class)->updateStatus(
+            $application->application_id,
+            ApplicationStatus::INTERVIEW,
+            'Rescheduled to a later slot.',
+            $provider,
+            Carbon::now()->addHours(23)->toDateTimeString()
+        );
+
+        $this->assertNull($application->fresh()->interview_reminded_at);
+    }
+
+    private function interviewApplication(Carbon $interviewAt): Application
+    {
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+
+        return Application::create([
+            'user_id' => $this->student->user_id,
+            'opportunity_id' => $opportunity->opportunity_id,
+            'application_status' => ApplicationStatus::INTERVIEW,
+            'submitted_at' => Carbon::now()->subWeek(),
+            'interview_at' => $interviewAt,
+        ]);
+    }
 }

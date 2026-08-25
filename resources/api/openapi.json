@@ -1,0 +1,225 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "ScholarZim API",
+    "version": "1.0.0",
+    "description": "Read-only access to the ScholarZim scholarship catalogue, plus an applicant's own applications and ScholarFit recommendations.\n\nThe catalogue endpoints are open. Everything under /me needs a personal access token, created on the account security page and sent as `Authorization: Bearer <token>`.\n\nOnly listings that have cleared moderation and are still open are ever returned - the API applies the same visibility rule as the public site."
+  },
+  "servers": [
+    { "url": "/api/v1", "description": "Version 1" }
+  ],
+  "tags": [
+    { "name": "Catalogue", "description": "Public scholarship listings" },
+    { "name": "Me", "description": "The authenticated applicant" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "A personal access token from /account/security."
+      }
+    },
+    "schemas": {
+      "Award": {
+        "type": "object",
+        "properties": {
+          "amount": { "type": "number", "nullable": true, "example": 2500 },
+          "currency": { "type": "string", "nullable": true, "example": "USD" },
+          "formatted": { "type": "string", "nullable": true, "example": "USD 2,500" },
+          "slots": { "type": "integer", "nullable": true, "example": 10 },
+          "renewable": { "type": "boolean" }
+        }
+      },
+      "Eligibility": {
+        "type": "object",
+        "description": "Hard rules. A null value means the provider set no rule on that dimension.",
+        "properties": {
+          "minAcademicPoints": { "type": "integer", "nullable": true },
+          "maxAge": { "type": "integer", "nullable": true },
+          "citizenship": { "type": "string", "nullable": true },
+          "province": { "type": "string", "nullable": true },
+          "resultsCertificateRequired": { "type": "boolean" }
+        }
+      },
+      "Scholarship": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer" },
+          "title": { "type": "string" },
+          "description": { "type": "string", "nullable": true },
+          "awardingBody": { "type": "string" },
+          "educationLevel": { "type": "string", "nullable": true },
+          "fieldOfStudy": { "type": "string", "nullable": true },
+          "fundingType": { "type": "string", "nullable": true },
+          "award": { "$ref": "#/components/schemas/Award" },
+          "eligibility": { "$ref": "#/components/schemas/Eligibility" },
+          "applyUrl": { "type": "string", "nullable": true },
+          "country": { "type": "string", "nullable": true },
+          "deadline": { "type": "string", "format": "date", "nullable": true },
+          "daysRemaining": { "type": "integer", "nullable": true },
+          "status": { "type": "string" },
+          "url": { "type": "string" }
+        }
+      },
+      "Recommendation": {
+        "type": "object",
+        "properties": {
+          "matchScore": { "type": "integer", "minimum": 0, "maximum": 100 },
+          "confidence": { "type": "string", "enum": ["HIGH", "MEDIUM", "LOW", "NONE"] },
+          "explanation": { "type": "string" },
+          "missingRequirements": { "type": "array", "items": { "type": "string" } },
+          "scholarship": { "$ref": "#/components/schemas/Scholarship" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": { "message": { "type": "string" } }
+      }
+    },
+    "responses": {
+      "NotFound": {
+        "description": "No such record, or it is not publicly visible.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Unauthenticated": {
+        "description": "Missing or invalid bearer token.",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    }
+  },
+  "paths": {
+    "/scholarships": {
+      "get": {
+        "tags": ["Catalogue"],
+        "summary": "List open scholarships",
+        "parameters": [
+          { "name": "keyword", "in": "query", "schema": { "type": "string" } },
+          { "name": "education_level", "in": "query", "schema": { "type": "string" } },
+          { "name": "field_of_study", "in": "query", "schema": { "type": "string" } },
+          { "name": "country", "in": "query", "schema": { "type": "string" } },
+          { "name": "provider", "in": "query", "schema": { "type": "string" } },
+          { "name": "funding_type", "in": "query", "schema": { "type": "string" } },
+          { "name": "deadline_before", "in": "query", "schema": { "type": "string", "format": "date" } },
+          { "name": "min_award", "in": "query", "description": "Excludes listings that state no award value.", "schema": { "type": "number" } },
+          { "name": "sort", "in": "query", "schema": { "type": "string", "enum": ["newest", "deadline", "award_desc", "award_asc", "title"], "default": "newest" } },
+          { "name": "per_page", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 } },
+          { "name": "page", "in": "query", "schema": { "type": "integer", "minimum": 1 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of listings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": { "type": "array", "items": { "$ref": "#/components/schemas/Scholarship" } },
+                    "links": { "type": "object" },
+                    "meta": { "type": "object" }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/scholarships/{id}": {
+      "get": {
+        "tags": ["Catalogue"],
+        "summary": "Fetch one scholarship",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "The listing.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "data": { "$ref": "#/components/schemas/Scholarship" } }
+                }
+              }
+            }
+          },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    },
+    "/stats": {
+      "get": {
+        "tags": ["Catalogue"],
+        "summary": "Platform totals shown on the landing page",
+        "responses": { "200": { "description": "Counts.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/facets": {
+      "get": {
+        "tags": ["Catalogue"],
+        "summary": "Filter values a client needs to build its own search UI",
+        "responses": { "200": { "description": "Facet lists.", "content": { "application/json": { "schema": { "type": "object" } } } } }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "The authenticated account",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Account summary.", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+    "/me/notifications": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "Latest notifications and the unread count",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Notifications.", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    },
+    "/me/applications": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "The applicant's own applications",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Applications.", "content": { "application/json": { "schema": { "type": "object" } } } },
+          "401": { "$ref": "#/components/responses/Unauthenticated" },
+          "403": { "description": "The account is not an applicant." }
+        }
+      }
+    },
+    "/me/recommendations": {
+      "get": {
+        "tags": ["Me"],
+        "summary": "ScholarFit-ranked listings for this applicant",
+        "description": "Listings the applicant has applied to, and listings whose hard eligibility rules they fail, are excluded.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "minimum": 1, "maximum": 50, "default": 10 } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked recommendations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": { "data": { "type": "array", "items": { "$ref": "#/components/schemas/Recommendation" } } }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthenticated" }
+        }
+      }
+    }
+  }
+}

@@ -25,11 +25,53 @@ Run `php artisan test` in the project root first — all automated tests should 
 - [ ] **View results certificate** opens inline PDF for the opportunity owner
 - [ ] Unrelated provider receives 403 when attempting certificate download
 
+## Award value and eligibility
+
+- [ ] Posting a listing with an award value shows it on the card and the detail page
+- [ ] A blank award field stores nothing, not zero — the listing reads "Value not stated"
+- [ ] Sorting by award value puts stated values first and unstated ones last, both directions
+- [ ] A minimum-award filter excludes listings with no stated value
+- [ ] A student who fails a hard rule sees "You are not eligible" with the reason, no percentage
+- [ ] The same student does not see that listing in their recommendations
+- [ ] A student missing the field a rule tests (no date of birth) is prompted, not refused
+
+## Alerts, withdrawal, and questions
+
+- [ ] Saving a search from the browse page stores exactly the filters on screen
+- [ ] `scholarzim:search-alerts` sends nothing immediately after a search is saved
+- [ ] After a matching listing is approved, one alert arrives; a second run sends nothing
+- [ ] Provider "Information requested" puts a reply box on the applicant's page
+- [ ] The applicant's answer appears on the provider's review screen
+- [ ] Withdrawing an application notifies the provider and allows re-applying
+- [ ] An approved or rejected application can no longer be withdrawn
+
+## Bulk actions
+
+- [ ] Select-all ticks every row; the button count matches the selection
+- [ ] A bulk decline without a reason is refused, exactly like a single decline
+- [ ] A batch containing one already-reviewed row still processes the rest, and says so
+- [ ] Interviews are not offered as a bulk option
+
 ## Security and ops
 
 - [ ] `/uploads/**` is not publicly accessible (redirect or auth required)
 - [ ] Dark mode: dashboards and auth screens remain readable (no washed-out WebP overlays)
+- [ ] Two-factor: a correct password lands on the challenge page, not the dashboard
+- [ ] A recovery code signs in once, and the remaining count drops
+- [ ] "Sign out all other sessions" ends a session open in a second browser
+- [ ] Account deletion refuses without the typed email; refuses for a provider with live listings
+- [ ] `/health` returns 200 with `"database": "up"`
+- [ ] Queued mail arrives with a worker running, and `queue:failed` is empty
 - [ ] Demo login `tanaka.moyo@student.co.zw` / `Password123!` can apply (demo cert seeded)
+
+## Design and accessibility
+
+- [ ] Tab from the top of any page: the first stop is "Skip to main content", and it works
+- [ ] At phone width, the applications and users tables read as cards with visible labels
+- [ ] At phone width with the sidebar closed, tabbing does not reach its links
+- [ ] A closing-soon listing shows a countdown chip that escalates inside 7 and 3 days
+- [ ] Print preview of an application: no navigation, no buttons, link URLs shown
+- [ ] The profile completion ring matches the checklist beside it
 
 ## Regression
 
@@ -39,6 +81,10 @@ Run `php artisan test` in the project root first — all automated tests should 
 - [ ] Scholarships browse, filter, and save scholarship work
 - [ ] Provider dashboard loads; application status changes (approve/reject) notify applicant
 - [ ] Applicant dashboard and my-applications list load correctly
+- [ ] Sorting and filter chips survive paging (the ordering is not lost on page 2)
+- [ ] `/developers` renders and `/api/v1/openapi.json` is valid JSON naming this host
+- [ ] With `npm run build` run, pages load hashed assets from `/build`; without it, the
+      unminified fallback still renders
 
 ---
 

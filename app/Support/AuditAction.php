@@ -29,6 +29,20 @@ final class AuditAction
     public const UPDATE_OPPORTUNITY = 'UPDATE_OPPORTUNITY';
     public const EXTEND_OPPORTUNITY_DEADLINE = 'EXTEND_OPPORTUNITY_DEADLINE';
     public const DELETE_OPPORTUNITY = 'DELETE_OPPORTUNITY';
+    public const WITHDRAW_APPLICATION = 'WITHDRAW_APPLICATION';
+    public const REQUEST_APPLICATION_INFO = 'REQUEST_APPLICATION_INFO';
+    public const PROVIDE_APPLICATION_INFO = 'PROVIDE_APPLICATION_INFO';
+    public const BULK_STATUS_UPDATE = 'BULK_STATUS_UPDATE';
+    public const BULK_MODERATION = 'BULK_MODERATION';
+    public const UPDATE_SCHOLARFIT_WEIGHTS = 'UPDATE_SCHOLARFIT_WEIGHTS';
+    public const TWO_FACTOR_ENABLED = 'TWO_FACTOR_ENABLED';
+    public const TWO_FACTOR_DISABLED = 'TWO_FACTOR_DISABLED';
+    public const TWO_FACTOR_CHALLENGE_FAILED = 'TWO_FACTOR_CHALLENGE_FAILED';
+    public const LOGOUT_OTHER_SESSIONS = 'LOGOUT_OTHER_SESSIONS';
+    public const ACCOUNT_SELF_DELETED = 'ACCOUNT_SELF_DELETED';
+    public const API_TOKEN_CREATED = 'API_TOKEN_CREATED';
+    public const API_TOKEN_REVOKED = 'API_TOKEN_REVOKED';
+    public const SAVED_SEARCH_CREATED = 'SAVED_SEARCH_CREATED';
 
     private function __construct()
     {
@@ -47,11 +61,15 @@ final class AuditAction
     {
         return match ($action) {
             self::LOGIN_FAILURE, self::DELETE_USER, self::REJECT_PROVIDER,
-            self::REJECT_OPPORTUNITY, self::EMAIL_DELIVERY_FAILED, self::DELETE_OPPORTUNITY => 'danger',
+            self::REJECT_OPPORTUNITY, self::EMAIL_DELIVERY_FAILED, self::DELETE_OPPORTUNITY,
+            self::TWO_FACTOR_DISABLED, self::TWO_FACTOR_CHALLENGE_FAILED,
+            self::ACCOUNT_SELF_DELETED, self::API_TOKEN_REVOKED => 'danger',
             self::APPROVE_PROVIDER, self::APPROVE_OPPORTUNITY,
-            self::LOGIN_SUCCESS, self::EMAIL_VERIFIED => 'success',
+            self::LOGIN_SUCCESS, self::EMAIL_VERIFIED, self::TWO_FACTOR_ENABLED => 'success',
             self::STATUS_UPDATE, self::UPDATE_USER, self::PROFILE_UPDATE,
-            self::UPDATE_OPPORTUNITY, self::EXTEND_OPPORTUNITY_DEADLINE => 'warning',
+            self::UPDATE_OPPORTUNITY, self::EXTEND_OPPORTUNITY_DEADLINE,
+            self::BULK_STATUS_UPDATE, self::BULK_MODERATION,
+            self::UPDATE_SCHOLARFIT_WEIGHTS, self::WITHDRAW_APPLICATION => 'warning',
             default => 'secondary',
         };
     }

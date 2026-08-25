@@ -23,6 +23,11 @@ class ApplicationReviewController extends Controller
             'statusCounts' => $this->applicationService->statusCountsForProvider($user),
             'activeStatus' => $request->query('status'),
             'statuses' => ApplicationStatus::REVIEWABLE,
+            // Interviews need a per-applicant date, so they are not offered in bulk.
+            'bulkStatuses' => array_values(array_diff(
+                ApplicationStatus::REVIEWABLE,
+                [ApplicationStatus::INTERVIEW]
+            )),
         ]);
     }
 
@@ -35,7 +40,43 @@ class ApplicationReviewController extends Controller
             'applicantProfile' => $application->user?->applicantProfile,
             'statuses' => ApplicationStatus::REVIEWABLE,
             'timeline' => ApplicationStatus::timeline($application->application_status),
+            'awaitingResponse' => $application->awaitsApplicantResponse(),
         ]);
+    }
+
+    /**
+     * The same decision across a selection from the inbox.
+     *
+     * Partial success is reported rather than hidden: a batch where three of
+     * five moved is more useful to a provider than a flat "done", and the two
+     * that did not are named.
+     */
+    public function bulkReview(Request $request)
+    {
+        $data = $request->validate([
+            'applications' => ['required', 'array', 'min:1'],
+            'applications.*' => ['integer'],
+            'status' => ['required', Rule::in(ApplicationStatus::REVIEWABLE)],
+            'reason' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $result = $this->applicationService->bulkUpdateStatus(
+            $data['applications'],
+            $data['status'],
+            $data['reason'] ?? null,
+            $request->user()
+        );
+
+        $message = $result['updated'] . ' application(s) set to '
+            . ApplicationStatus::displayLabel($data['status']) . '.';
+
+        if ($result['failed'] !== []) {
+            return back()
+                ->with('successMessage', $message)
+                ->with('errorMessage', 'Skipped: ' . implode('; ', $result['failed']));
+        }
+
+        return back()->with('successMessage', $message);
     }
 
     /** Single entry point for every provider decision on an application. */

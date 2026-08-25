@@ -19,6 +19,7 @@ class AdminUserService
         private readonly NotificationService $notificationService,
         private readonly AuditService $auditService,
         private readonly EmailService $emailService,
+        private readonly AccountDeletionService $accountDeletion,
     ) {
     }
 
@@ -163,14 +164,16 @@ class AdminUserService
         return $user;
     }
 
+    /**
+     * Deletion goes through AccountDeletionService so an admin removing an
+     * account and a user removing their own take exactly the same path: the same
+     * dependent rows come out, in the same order, under the same refusals.
+     */
     public function delete(int $userId, User $admin): void
     {
         $user = $this->requireNotSuperAdmin($userId);
-        $email = $user->email;
 
-        $user->delete();
-
-        $this->auditService->log($admin->email, AuditAction::DELETE_USER, 'USER', $userId, 'Deleted account ' . $email);
+        $this->accountDeletion->delete($user, $admin->email);
     }
 
     /** The bootstrap super admin cannot be locked out or removed by another admin. */

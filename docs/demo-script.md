@@ -46,7 +46,10 @@ Run tests beforehand: `php artisan test` (29 tests should pass).
 1. Visit `/` — landing page
 2. Visit `/scholarships` — browse list, use search/filter if shown
 3. Open any scholarship detail — show deadline, provider, funding type
-4. Mention REST API: `/api/public/stats`, `/api/public/scholarships`
+4. Use the **Sort by** control — deadline, then award value — and note the removable filter
+   chips and the live result count above them
+5. Mention the API: `/developers` for the human-readable docs, `/api/v1/scholarships` and
+   `/api/v1/openapi.json` for the machine-readable ones
 
 ---
 
@@ -93,17 +96,69 @@ Run tests beforehand: `php artisan test` (29 tests should pass).
 
 ---
 
-## Step 5 — Quality evidence (2 min)
+## Step 5 — What the award is worth, and who may apply (3 min)
+
+**Talking point:** The two things a student compares first, and the difference between a
+weighting and a rule.
+
+1. Still as **provider@scholarzim.co.zw**, open **Post a scholarship**
+2. Scroll to **What the award is worth** — enter a value, currency, and number of awards
+3. Scroll to **Hard eligibility rules** — set a minimum points figure well above 14 (the
+   demo student states 14 points at A-Level) and note the warning: *these disqualify, they
+   do not merely score down*
+4. Submit, then approve it as the admin
+5. Log in as **student@scholarzim.co.zw** and open the listing: the fit panel shows **"You
+   are not eligible"** with the reason, not a mid-range percentage
+6. Edit the listing to drop the rule, and show the same listing scoring normally
+
+**Talking point:** Browse `/scholarships` and sort by **Award value (highest)**. Listings
+that state no value sort last under both value orderings — a missing figure is not a
+zero-value award.
+
+---
+
+## Step 6 — Alerts, withdrawal, and a question (3 min)
+
+**Talking point:** The parts of the workflow that keep people coming back.
+
+1. As the student, filter the scholarship list, then press **Alert me about this search**
+   and name it
+2. In the terminal: `php artisan scholarzim:search-alerts` — nothing is sent, because
+   everything already published counts as seen
+3. Approve a new matching listing as the admin, run the command again — one alert; run it
+   a third time — nothing, because the high-water mark has moved
+4. As the provider, open an application and set it to **Information requested** with a
+   question
+5. As the student, open the application: the question and a reply box are on the page. Send
+   an answer, and show it back on the provider's review screen
+6. As the student, withdraw a different application, and show it can be applied to again
+
+---
+
+## Step 7 — Tuning the algorithm (2 min)
+
+**Talking point:** The weights are a design decision the platform can revisit, not a
+constant compiled into the code.
+
+1. As the admin, open **ScholarFit weights**
+2. Move a slider — the running total turns red and Save is disabled until it reads 100
+3. Set field of study to a much lower weight, save, and reload a student's matches: the
+   ranking has changed
+4. Press **Reset to defaults** to restore the shipped weighting
+
+---
+
+## Step 8 — Quality evidence (2 min)
 
 **Talking point:** Automated verification of business rules.
 
-1. In terminal: `php artisan test` — show green build
+1. In terminal: `php artisan test` — 111 tests, green
 2. Mention CI on GitHub: feature tests + a migrate/rollback smoke run against MySQL 8
 3. Point to `docs/manual-qa-checklist.md` and `docs/evaluation.md`
 
 ---
 
-## Step 6 — Security highlights (1 min)
+## Step 9 — Security highlights (2 min)
 
 Cover briefly (see [security.md](security.md)):
 
@@ -111,6 +166,15 @@ Cover briefly (see [security.md](security.md)):
 - Secured file downloads (not public `/uploads/**`)
 - Rate limiting on login and provider registration
 - CSRF on forms and applicant APIs; secure session cookies in production
+
+Worth demonstrating live if there is time:
+
+1. As the admin, open **Security & privacy** → **Set up two-factor**, add the key to an
+   authenticator app, and confirm it
+2. Sign out and back in: the correct password now lands on a challenge page, **not** on the
+   dashboard — no session is granted until the code is right
+3. Use a recovery code instead, and show the remaining count drop by one
+4. Point out **Sign out all other sessions** and the audit entries the whole exchange wrote
 
 ---
 
@@ -122,3 +186,6 @@ Cover briefly (see [security.md](security.md)):
 | Empty scholarship list | Use `demo` profile so seeder runs; or delete DB volume and restart |
 | Login fails | Check account status (pending provider cannot login as active) |
 | Certificate download 404 | Re-run demo profile to recreate stub PDFs on disk |
+| No email arrives | Mail is queued — run `php artisan queue:work`, or check `php artisan queue:failed` |
+| Page loads unstyled | Run `npm install && npm run build`, or accept the unminified fallback |
+| Alert job sends nothing | Expected on the first run: only listings published *after* the search was saved count |

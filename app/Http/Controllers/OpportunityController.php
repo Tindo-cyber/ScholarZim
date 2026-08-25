@@ -22,15 +22,7 @@ class OpportunityController extends Controller
     /** Signed-in browse view; same data as the public list plus save state. */
     public function index(Request $request)
     {
-        $filters = [
-            'keyword' => $request->query('keyword'),
-            'education_level' => $request->query('education_level'),
-            'country' => $request->query('country'),
-            'field_of_study' => $request->query('field_of_study'),
-            'provider' => $request->query('provider'),
-            'funding_type' => $request->query('funding_type'),
-            'deadline_before' => $request->query('deadline_before'),
-        ];
+        $filters = PublicController::filtersFrom($request);
 
         return view('opportunities.list', [
             'opportunities' => $this->opportunityService->search($filters),
@@ -52,6 +44,10 @@ class OpportunityController extends Controller
             'defaultCountry' => FormOptions::DEFAULT_COUNTRY,
             'targetFieldSuggestions' => $this->opportunityService->targetFields(),
             'awardingBodySuggestions' => $this->opportunityService->providerNames(),
+            'currencies' => FormOptions::CURRENCIES,
+            'defaultCurrency' => FormOptions::DEFAULT_CURRENCY,
+            'citizenships' => FormOptions::CITIZENSHIPS,
+            'provinces' => FormOptions::ZIMBABWE_PROVINCES,
         ]);
     }
 
@@ -66,6 +62,16 @@ class OpportunityController extends Controller
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
             'country' => ['nullable', 'string', 'max:100'],
             'deadline' => ['nullable', 'date', 'after_or_equal:today'],
+            'award_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
+            'award_slots' => ['nullable', 'integer', 'min:1', 'max:5000'],
+            'is_renewable' => ['nullable', 'boolean'],
+            'external_url' => ['nullable', 'url', 'max:500'],
+            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
+            'required_citizenship' => ['nullable', Rule::in(FormOptions::CITIZENSHIPS)],
+            'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
+            'requires_results_certificate' => ['nullable', 'boolean'],
         ]);
 
         try {
@@ -102,6 +108,10 @@ class OpportunityController extends Controller
             'defaultCountry' => FormOptions::DEFAULT_COUNTRY,
             'targetFieldSuggestions' => $this->opportunityService->targetFields(),
             'awardingBodySuggestions' => $this->opportunityService->providerNames(),
+            'currencies' => FormOptions::CURRENCIES,
+            'defaultCurrency' => FormOptions::DEFAULT_CURRENCY,
+            'citizenships' => FormOptions::CITIZENSHIPS,
+            'provinces' => FormOptions::ZIMBABWE_PROVINCES,
         ]);
     }
 
@@ -116,6 +126,16 @@ class OpportunityController extends Controller
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
             'country' => ['nullable', 'string', 'max:100'],
             'deadline' => ['nullable', 'date', 'after_or_equal:today'],
+            'award_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
+            'award_slots' => ['nullable', 'integer', 'min:1', 'max:5000'],
+            'is_renewable' => ['nullable', 'boolean'],
+            'external_url' => ['nullable', 'url', 'max:500'],
+            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
+            'required_citizenship' => ['nullable', Rule::in(FormOptions::CITIZENSHIPS)],
+            'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
+            'requires_results_certificate' => ['nullable', 'boolean'],
             'reason' => ['required', 'string', 'max:500'],
         ]);
 

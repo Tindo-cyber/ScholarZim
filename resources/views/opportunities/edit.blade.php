@@ -82,6 +82,8 @@
                     </div>
                 </div>
 
+                @include('opportunities.partials.award-fields', ['opportunity' => $opportunity])
+
                 <div class="card mb-4">
                     <div class="card-header">
                         <h2 class="h6 fw-semibold mb-0">Reason for this change</h2>

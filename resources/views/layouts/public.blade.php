@@ -10,11 +10,14 @@
     <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}">
     <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-base.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-theme.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/scholarzim.css') }}">
+    @include('partials.assets')
     <script src="{{ asset('assets/js/theme-toggle.js') }}"></script>
     @stack('styles')
 </head>
 <body data-bvite="theme-Mariner" class="layout-border svgstroke-a sz-public">
+
+{{-- First tab stop on every page: keyboard users skip the nav rather than tabbing through it. --}}
+<a class="sz-skip-link" href="#sz-main-content">Skip to main content</a>
 
 <header class="sz-public-nav border-bottom sticky-top bg-body">
     <nav class="container navbar navbar-expand-lg py-3">
@@ -58,7 +61,7 @@
     </nav>
 </header>
 
-<main>
+<main id="sz-main-content" tabindex="-1">
     <div class="container pt-3">
         <x-flash-alerts />
     </div>

@@ -37,6 +37,47 @@
                 </div>
             </div>
 
+            @if($application->info_request)
+                {{--
+                    The question and its answer sit above the profile: when a
+                    provider comes back to this page it is usually because the
+                    applicant replied, so the reply is what they are looking for.
+                --}}
+                <div class="card mb-4 {{ $application->info_responded_at && ! $awaitingResponse ? 'border-primary' : '' }}">
+                    <div class="card-header d-flex align-items-center gap-2">
+                        <x-icon name="chat" :size="18" />
+                        <h2 class="h6 fw-semibold mb-0">What you asked for</h2>
+                        @if($awaitingResponse)
+                            <x-status-badge label="Awaiting reply" tone="warning" class="ms-auto" />
+                        @elseif($application->info_responded_at)
+                            <x-status-badge label="Answered" tone="primary" class="ms-auto" />
+                        @endif
+                    </div>
+                    <div class="card-body">
+                        <blockquote class="border-start border-3 ps-3 mb-3">
+                            <p class="mb-1">{{ $application->info_request }}</p>
+                            <footer class="small text-secondary">
+                                You, {{ $application->info_requested_at?->diffForHumans() }}
+                            </footer>
+                        </blockquote>
+
+                        @if($application->info_response && ! $awaitingResponse)
+                            <blockquote class="border-start border-3 border-primary ps-3 mb-0">
+                                <p class="mb-1">{{ $application->info_response }}</p>
+                                <footer class="small text-secondary">
+                                    {{ $application->user?->displayName() ?? 'The applicant' }},
+                                    {{ $application->info_responded_at?->diffForHumans() }}
+                                </footer>
+                            </blockquote>
+                        @else
+                            <p class="small text-secondary mb-0">
+                                The applicant has been notified and has not replied yet.
+                            </p>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             <div class="card mb-4">
                 <div class="card-header">
                     <h2 class="h6 fw-semibold mb-0">Applicant profile</h2>
@@ -50,6 +91,8 @@
                                 'Field of study' => $applicantProfile->field_of_study,
                                 'Country' => $applicantProfile->country,
                                 'Province' => $applicantProfile->province,
+                                'Citizenship' => $applicantProfile->citizenship,
+                                'Age' => $applicantProfile->age(),
                                 'Academic results' => $applicantProfile->academic_results,
                             ] as $label => $value)
                                 <dt class="col-sm-4 text-secondary fw-normal small">{{ $label }}</dt>
@@ -110,7 +153,7 @@
 
                         <x-form.textarea name="reason" label="Reason / message to applicant" :rows="4"
                                          :value="$application->rejection_reason"
-                                         hint="Required when approving or rejecting. The applicant sees this verbatim." />
+                                         hint="Required when approving, rejecting, or asking the applicant for anything. They see it verbatim." />
 
                         <button class="btn btn-primary w-100" type="submit">Save decision</button>
                     </form>
@@ -120,7 +163,3 @@
     </div>
 
 @endsection
-
-@push('scripts')
-    <script src="{{ asset('assets/js/application-review.js') }}"></script>
-@endpush

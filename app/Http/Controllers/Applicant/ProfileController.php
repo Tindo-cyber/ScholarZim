@@ -26,6 +26,7 @@ class ProfileController extends Controller
             'countries' => FormOptions::COUNTRIES,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
             'institutions' => FormOptions::INSTITUTIONS,
+            'citizenships' => FormOptions::CITIZENSHIPS,
         ]);
     }
 
@@ -39,6 +40,10 @@ class ProfileController extends Controller
             'field_of_study' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:100'],
             'province' => ['nullable', 'string', 'max:100'],
+            // Both feed the hard eligibility checks, so an obviously wrong value
+            // is rejected here rather than silently disqualifying someone later.
+            'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1920-01-01'],
+            'citizenship' => ['nullable', Rule::in(FormOptions::CITIZENSHIPS)],
             'academic_results' => ['nullable', 'string', 'max:500'],
             'biography' => ['nullable', 'string', 'max:5000'],
         ]);

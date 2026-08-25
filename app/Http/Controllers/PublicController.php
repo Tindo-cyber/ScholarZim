@@ -54,6 +54,12 @@ class PublicController extends Controller
 
         $user = $request->user();
 
+        // The provider's funnel starts here. A provider looking at their own post
+        // is not an audience, so their visit is not counted.
+        if ($user?->user_id !== $opportunity->provider_user_id) {
+            $this->opportunityService->recordView($opportunity);
+        }
+
         return view('public.detail', [
             'opportunity' => $opportunity,
             'isSaved' => $this->savedScholarshipService->isSaved($user, $id),
@@ -69,17 +75,36 @@ class PublicController extends Controller
         ]);
     }
 
-    /** Shared shape for the faceted search on both listing pages. */
+    /**
+     * Shared shape for the faceted search on both listing pages.
+     *
+     * An unknown sort key is dropped here rather than passed down, so the select
+     * always renders with a value it actually offers.
+     *
+     * Read with input() rather than query(): the browse pages send these on the
+     * query string, but "save this search" POSTs the very same set as hidden
+     * fields, and both must produce the identical filter array.
+     */
+    public static function filtersFrom(Request $request): array
+    {
+        $sort = (string) $request->input('sort', FormOptions::DEFAULT_SORT);
+
+        return [
+            'keyword' => $request->input('keyword'),
+            'education_level' => $request->input('education_level'),
+            'country' => $request->input('country'),
+            'field_of_study' => $request->input('field_of_study'),
+            'provider' => $request->input('provider'),
+            'funding_type' => $request->input('funding_type'),
+            'deadline_before' => $request->input('deadline_before'),
+            'min_award' => $request->input('min_award'),
+            'renewable_only' => $request->boolean('renewable_only') ?: null,
+            'sort' => array_key_exists($sort, FormOptions::SORT_OPTIONS) ? $sort : FormOptions::DEFAULT_SORT,
+        ];
+    }
+
     private function filters(Request $request): array
     {
-        return [
-            'keyword' => $request->query('keyword'),
-            'education_level' => $request->query('education_level'),
-            'country' => $request->query('country'),
-            'field_of_study' => $request->query('field_of_study'),
-            'provider' => $request->query('provider'),
-            'funding_type' => $request->query('funding_type'),
-            'deadline_before' => $request->query('deadline_before'),
-        ];
+        return self::filtersFrom($request);
     }
 }

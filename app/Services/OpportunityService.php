@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Opportunity;
+use App\Models\OpportunityView;
 use App\Models\User;
 use App\Support\AuditAction;
 use App\Support\FormOptions;
@@ -20,7 +21,45 @@ class OpportunityService
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly AuditService $auditService,
+        private readonly RecommendationService $recommendations,
     ) {
+    }
+
+    /**
+     * Award and hard-eligibility columns, normalised from a validated request.
+     *
+     * Shared by create() and update() so a listing cannot end up with an amount
+     * on one path and not the other. An empty string means "not stated" and is
+     * stored as NULL, because a blank rule must never read as a rule of zero.
+     */
+    private function awardAttributes(array $data): array
+    {
+        $intOrNull = static fn (mixed $value): ?int => filled($value) ? (int) $value : null;
+
+        $stringOrNull = static function (mixed $value): ?string {
+            $trimmed = trim((string) $value);
+
+            return $trimmed !== '' ? $trimmed : null;
+        };
+
+        $amount = filled($data['award_amount'] ?? null) ? (float) $data['award_amount'] : null;
+
+        return [
+            'award_amount' => $amount,
+            // A currency without an amount is meaningless, so it is only kept
+            // alongside one.
+            'award_currency' => $amount === null
+                ? null
+                : ($stringOrNull($data['award_currency'] ?? null) ?? FormOptions::DEFAULT_CURRENCY),
+            'award_slots' => $intOrNull($data['award_slots'] ?? null),
+            'is_renewable' => (bool) ($data['is_renewable'] ?? false),
+            'external_url' => $stringOrNull($data['external_url'] ?? null),
+            'min_academic_points' => $intOrNull($data['min_academic_points'] ?? null),
+            'max_age' => $intOrNull($data['max_age'] ?? null),
+            'required_citizenship' => $stringOrNull($data['required_citizenship'] ?? null),
+            'required_province' => $stringOrNull($data['required_province'] ?? null),
+            'requires_results_certificate' => (bool) ($data['requires_results_certificate'] ?? false),
+        ];
     }
 
     /**
@@ -53,7 +92,7 @@ class OpportunityService
             'submitted_at' => Carbon::now(),
             'provider_name' => $displayName !== '' ? $displayName : $provider->full_name,
             'created_at' => Carbon::now(),
-        ]);
+        ] + $this->awardAttributes($data));
 
         $this->auditService->log(
             $provider->email,
@@ -113,7 +152,7 @@ class OpportunityService
             'rejection_reason' => null,
             'last_change_reason' => $reason,
             'updated_at' => Carbon::now(),
-        ]);
+        ] + $this->awardAttributes($data));
 
         $this->auditService->log(
             $provider->email,
@@ -258,24 +297,30 @@ class OpportunityService
         );
     }
 
-    /** Faceted public search. Returns a paginator so listing pages can page. */
+    /**
+     * Faceted public search. Returns a paginator so listing pages can page.
+     *
+     * The ordering arrives in $filters['sort'] straight off the query string;
+     * scopeSorted() is the only thing that reads it and falls back to the
+     * default for anything it does not recognise.
+     */
     public function search(array $filters, int $perPage = 12)
     {
         return Opportunity::query()
             ->publiclyVisible()
             ->matchingFilters($filters)
-            ->orderByDesc('created_at')
+            ->sorted($filters['sort'] ?? FormOptions::DEFAULT_SORT)
             ->paginate($perPage)
             ->withQueryString();
     }
 
-    /** Unpaginated variant, used by the recommendation engine. */
+    /** Unpaginated variant, used by the recommendation engine and alert job. */
     public function searchAll(array $filters = [])
     {
         return Opportunity::query()
             ->publiclyVisible()
             ->matchingFilters($filters)
-            ->orderByDesc('created_at')
+            ->sorted($filters['sort'] ?? FormOptions::DEFAULT_SORT)
             ->get();
     }
 
@@ -352,10 +397,90 @@ class OpportunityService
             ->get();
     }
 
+    /**
+     * Counts a public view of a listing.
+     *
+     * Two writes on purpose: the running total on the listing keeps the cheap
+     * "1,204 views" figure, and the per-day row behind it is what the provider
+     * funnel plots. The daily row is upserted so concurrent readers cannot lose
+     * a count to a lost update.
+     */
+    public function recordView(Opportunity $opportunity): void
+    {
+        $today = Carbon::today()->toDateString();
+
+        try {
+            Opportunity::where('opportunity_id', $opportunity->opportunity_id)->increment('view_count');
+
+            OpportunityView::query()->upsert(
+                [[
+                    'opportunity_id' => $opportunity->opportunity_id,
+                    'viewed_on' => $today,
+                    'views' => 1,
+                ]],
+                ['opportunity_id', 'viewed_on'],
+                // Raw increment rather than a read-modify-write: two viewers on
+                // the same page must not overwrite each other's count.
+                ['views' => \Illuminate\Support\Facades\DB::raw('views + 1')]
+            );
+        } catch (\Throwable $e) {
+            // A view counter is never worth failing a page render over.
+            Log::debug('View counter write failed', [
+                'opportunity' => $opportunity->opportunity_id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+    }
+
+    /**
+     * Listings that look like the one under review: same awarding body, same
+     * deadline, and a title that starts the same way. Shown to the moderator as a
+     * prompt to look, never as an automatic refusal - two intakes of the same
+     * annual bursary are a legitimate pair of rows.
+     *
+     * @return \Illuminate\Support\Collection<int, Opportunity>
+     */
+    public function findPotentialDuplicates(Opportunity $opportunity)
+    {
+        $titlePrefix = mb_substr(trim((string) $opportunity->title), 0, 20);
+
+        if ($titlePrefix === '') {
+            return collect();
+        }
+
+        $like = str_replace(['%', '_'], ['\%', '\_'], $titlePrefix) . '%';
+
+        return Opportunity::query()
+            ->where('opportunity_id', '!=', $opportunity->opportunity_id)
+            ->where('moderation_status', '!=', OpportunityModerationStatus::REJECTED)
+            ->where(function ($q) use ($opportunity, $like) {
+                $q->where('title', 'like', $like);
+
+                // The "same body, same closing date" arm only means anything when
+                // both are actually recorded.
+                if (filled($opportunity->provider_name) && $opportunity->deadline !== null) {
+                    $q->orWhere(function ($inner) use ($opportunity) {
+                        $inner->where('provider_name', $opportunity->provider_name)
+                            ->whereDate('deadline', $opportunity->deadline);
+                    });
+                }
+            })
+            ->orderByDesc('created_at')
+            ->limit(5)
+            ->get();
+    }
+
+    /**
+     * Everything cached about the catalogue: the filter facets, and every
+     * applicant's ScholarFit ranking, which was computed against the set of
+     * listings that just changed.
+     */
     public function forgetFacetCaches(): void
     {
         Cache::forget('opportunities.provider_names');
         Cache::forget('opportunities.target_fields');
+
+        $this->recommendations->invalidateCatalog();
     }
 
     private function normalizeCountry(?string $value): string

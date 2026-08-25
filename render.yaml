@@ -4,7 +4,9 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
-    healthCheckPath: /
+    # A dedicated check rather than "/": the landing page runs the public stats
+    # queries, and a health probe should not be the heaviest request on the box.
+    healthCheckPath: /health
     envVars:
       - key: APP_ENV
         value: production
@@ -24,6 +26,10 @@ services:
         value: warning
       - key: SESSION_SECURE_COOKIE
         value: "true"
+      # Mail leaves the request that triggered it; the supervised queue worker
+      # in the image drains the jobs table.
+      - key: QUEUE_CONNECTION
+        value: database
       # FYP demo: set to "true" in the Render dashboard to seed sample users/scholarships
       - key: SCHOLARZIM_DEMO_SEED
         value: "true"

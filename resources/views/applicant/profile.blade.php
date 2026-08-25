@@ -73,6 +73,18 @@
                                                :options="$provinces" :value="$profile->province"
                                                placeholder="Select" />
                             </div>
+                            <div class="col-md-6">
+                                <x-form.input name="date_of_birth" label="Date of birth" type="date"
+                                              :value="$profile->date_of_birth?->format('Y-m-d')"
+                                              max="{{ now()->toDateString() }}"
+                                              hint="Some awards have an age limit. Without this we cannot check one for you." />
+                            </div>
+                            <div class="col-md-6">
+                                <x-form.select name="citizenship" label="Citizenship"
+                                               :options="$citizenships" :value="$profile->citizenship"
+                                               placeholder="Select"
+                                               hint="Some awards are restricted to particular citizens." />
+                            </div>
                         </div>
 
                         <div id="sz-academic-results-field" data-school-levels="{{ json_encode(\App\Support\FormOptions::schoolLevels()) }}">
@@ -94,19 +106,53 @@
         <div class="col-xl-4">
 
             <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="h6 fw-semibold mb-0">Profile completion</h2>
+                </div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between small mb-1">
-                        <span class="text-secondary">Profile completion</span>
-                        <span class="fw-semibold">{{ $profile->completionPercentage() }}%</span>
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                        <x-match-score :score="$profile->completionPercentage()"
+                                       size="lg"
+                                       :label="$profile->isComplete() ? 'Complete' : 'In progress'" />
+
+                        <p class="small text-secondary mb-0">
+                            @if($profile->isComplete())
+                                Every field ScholarFit reads is filled in. Your matches are as accurate as we
+                                can make them.
+                            @else
+                                Each item below is a field ScholarFit scores you on. Filling them in raises your
+                                match on every listing at once.
+                            @endif
+                        </p>
                     </div>
-                    <div class="progress" style="height: .5rem;" role="progressbar"
-                         aria-valuenow="{{ $profile->completionPercentage() }}" aria-valuemin="0" aria-valuemax="100">
-                        <div class="progress-bar" style="width: {{ $profile->completionPercentage() }}%"></div>
-                    </div>
+
+                    {{--
+                        The same checklist the reminder job reads, so the nudge email
+                        and this page can never disagree about what is missing.
+                    --}}
+                    <ul class="list-unstyled d-grid gap-2 mb-0">
+                        @foreach($profile->completionChecklist() as $item)
+                            <li class="sz-fit-reason small">
+                                <x-icon :name="$item['done'] ? 'check-circle' : 'circle'" :size="16"
+                                        class="text-{{ $item['done'] ? 'success' : 'secondary' }} mt-1" />
+                                <span class="min-w-0">
+                                    @if($item['done'])
+                                        <span class="fw-semibold">{{ $item['label'] }}</span>
+                                    @else
+                                        <a class="fw-semibold"
+                                           href="#{{ $item['anchor'] === 'documents' ? 'documents' : 'field-' . $item['anchor'] }}">
+                                            {{ $item['label'] }}
+                                        </a>
+                                        <span class="d-block text-secondary">{{ $item['hint'] }}</span>
+                                    @endif
+                                </span>
+                            </li>
+                        @endforeach
+                    </ul>
                 </div>
             </div>
 
-            <div class="card">
+            <div class="card" id="documents">
                 <div class="card-header">
                     <h2 class="h6 fw-semibold mb-0">Documents</h2>
                 </div>
@@ -180,7 +226,3 @@
     </div>
 
 @endsection
-
-@push('scripts')
-    <script src="{{ asset('assets/js/profile-form.js') }}"></script>
-@endpush

@@ -12,6 +12,10 @@ final class NotificationType
     public const APPLICATION_INTERVIEW = 'APPLICATION_INTERVIEW';
     public const NEW_APPLICATION = 'NEW_APPLICATION';
     public const DOCUMENTS_REQUESTED = 'DOCUMENTS_REQUESTED';
+    public const INFO_REQUESTED = 'INFO_REQUESTED';
+    public const INFO_PROVIDED = 'INFO_PROVIDED';
+    public const APPLICATION_WITHDRAWN = 'APPLICATION_WITHDRAWN';
+    public const INTERVIEW_REMINDER = 'INTERVIEW_REMINDER';
     public const NEW_OPPORTUNITY = 'NEW_OPPORTUNITY';
     public const DEADLINE_REMINDER = 'DEADLINE_REMINDER';
     public const PROFILE_INCOMPLETE = 'PROFILE_INCOMPLETE';
@@ -29,6 +33,10 @@ final class NotificationType
     public const SCHOLARSHIP_WITHDRAWN = 'SCHOLARSHIP_WITHDRAWN';
     public const SCHOLARSHIP_CLOSED = 'SCHOLARSHIP_CLOSED';
 
+    // Saved-search alerts are scholarship news, so the prefix routes them into
+    // the same email preference that gates every other listing announcement.
+    public const SCHOLARSHIP_SEARCH_MATCH = 'SCHOLARSHIP_SEARCH_MATCH';
+
     public const ALL = [
         self::APPLICATION_SUBMITTED,
         self::APPLICATION_UNDER_REVIEW,
@@ -38,6 +46,10 @@ final class NotificationType
         self::APPLICATION_APPROVED,
         self::APPLICATION_REJECTED,
         self::DOCUMENTS_REQUESTED,
+        self::INFO_REQUESTED,
+        self::INFO_PROVIDED,
+        self::APPLICATION_WITHDRAWN,
+        self::INTERVIEW_REMINDER,
         self::DEADLINE_REMINDER,
         self::NEW_OPPORTUNITY,
         self::PROFILE_INCOMPLETE,
@@ -50,6 +62,7 @@ final class NotificationType
         self::SCHOLARSHIP_UPDATED,
         self::SCHOLARSHIP_WITHDRAWN,
         self::SCHOLARSHIP_CLOSED,
+        self::SCHOLARSHIP_SEARCH_MATCH,
     ];
 
     private function __construct()

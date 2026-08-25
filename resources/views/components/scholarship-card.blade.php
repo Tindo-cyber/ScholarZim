@@ -8,7 +8,9 @@
 ])
 
 @php
-    $days = $opportunity->daysUntilDeadline();
+    $deadlineTone = $opportunity->deadlineTone();
+    $deadlineLabel = $opportunity->deadlineLabel();
+    $award = $opportunity->formattedAward();
 @endphp
 
 <article {{ $attributes->merge(['class' => 'card sz-scholarship-card h-100']) }}>
@@ -21,9 +23,17 @@
                         <x-status-badge :label="$opportunity->funding_type" tone="primary" />
                     @endif
 
-                    @if($days !== null && $days >= 0 && $days <= 14)
-                        <x-status-badge :label="$days === 0 ? 'Closes today' : 'Closes in ' . $days . ' days'"
-                                        tone="danger" icon="clock-history" />
+                    @if($opportunity->is_renewable)
+                        <x-status-badge label="Renewable" tone="info" />
+                    @endif
+
+                    {{--
+                        The chip only appears once the deadline is close enough to
+                        change what a student does about it; a listing closing in
+                        three months does not need a countdown.
+                    --}}
+                    @if($deadlineTone && $deadlineLabel)
+                        <x-status-badge :label="$deadlineLabel" :tone="$deadlineTone" icon="clock-history" />
                     @endif
                 </div>
 
@@ -41,6 +51,18 @@
                 <x-match-score :score="$score" :show-label="false" class="position-relative z-1" />
             @endif
         </div>
+
+        @if($award)
+            <div class="d-flex align-items-center gap-2">
+                <x-icon name="coins" :size="18" class="text-success" />
+                <span class="fw-bold">{{ $award }}</span>
+                @if($opportunity->award_slots)
+                    <span class="small text-secondary">
+                        · {{ $opportunity->award_slots }} {{ Str::plural('award', $opportunity->award_slots) }}
+                    </span>
+                @endif
+            </div>
+        @endif
 
         @if($opportunity->description)
             <p class="small text-secondary mb-0 sz-clamp-2">{{ $opportunity->description }}</p>
@@ -90,7 +112,8 @@
                         @csrf
                         <button class="btn btn-sm {{ $saved ? 'btn-primary' : 'btn-outline-secondary' }}"
                                 type="submit"
-                                title="{{ $saved ? 'Remove from saved' : 'Save for later' }}">
+                                title="{{ $saved ? 'Remove from saved' : 'Save for later' }}"
+                                aria-label="{{ $saved ? 'Remove ' . $opportunity->title . ' from saved' : 'Save ' . $opportunity->title . ' for later' }}">
                             <x-icon name="bookmark" :size="14" />
                         </button>
                     </form>

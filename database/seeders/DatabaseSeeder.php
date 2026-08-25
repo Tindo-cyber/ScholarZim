@@ -113,11 +113,25 @@ class DatabaseSeeder extends Seeder
                 'field_of_study' => 'Computer Science & IT',
                 'country' => FormOptions::DEFAULT_COUNTRY,
                 'province' => 'Harare',
+                'date_of_birth' => Carbon::today()->subYears(21)->toDateString(),
+                'citizenship' => 'Zimbabwean',
                 'academic_results' => '14 points at A-Level (Maths A, Physics A, Computer Science B)',
                 'biography' => 'Second-year computing student building civic-tech projects for rural schools.',
                 'results_certificate_path' => 'profiles/demo/results.pdf',
                 'results_certificate_filename' => 'a-level-results.pdf',
                 'results_uploaded_at' => Carbon::now()->subMonth(),
+                // The demo student carries the full document set, so the apply
+                // wizard can be walked end to end in a viva without stopping to
+                // upload four files.
+                'cv_path' => 'profiles/demo/cv.pdf',
+                'cv_filename' => 'tendai-moyo-cv.pdf',
+                'cv_uploaded_at' => Carbon::now()->subMonth(),
+                'passport_path' => 'profiles/demo/id.pdf',
+                'passport_filename' => 'national-id.pdf',
+                'passport_uploaded_at' => Carbon::now()->subMonth(),
+                'recommendation_letter_path' => 'profiles/demo/recommendation.pdf',
+                'recommendation_letter_filename' => 'lecturer-recommendation.pdf',
+                'recommendation_letter_uploaded_at' => Carbon::now()->subMonth(),
             ]
         );
 

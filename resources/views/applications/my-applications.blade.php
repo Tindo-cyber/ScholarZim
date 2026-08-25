@@ -39,7 +39,8 @@
     @else
         <div class="card">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
+                {{-- sz-table-stack turns each row into a card below md; see scholarzim.css. --}}
+                <table class="table table-hover align-middle mb-0 sz-table-stack">
                     <thead>
                         <tr>
                             <th scope="col">Scholarship</th>
@@ -52,29 +53,54 @@
                     <tbody>
                         @foreach($applications as $application)
                             <tr>
-                                <td>
-                                    <span class="fw-semibold d-block">{{ $application->opportunity?->title ?? 'Removed listing' }}</span>
-                                    @if($application->opportunity?->deadline)
-                                        <span class="small text-secondary">
-                                            Closes {{ $application->opportunity->deadline->format('d M Y') }}
-                                        </span>
-                                    @endif
+                                <td data-label="Scholarship">
+                                    <span class="min-w-0">
+                                        <span class="fw-semibold d-block">{{ $application->opportunity?->title ?? 'Removed listing' }}</span>
+                                        @if($application->opportunity?->deadline)
+                                            <span class="small text-secondary">
+                                                Closes {{ $application->opportunity->deadline->format('d M Y') }}
+                                            </span>
+                                        @endif
+                                    </span>
                                 </td>
-                                <td class="text-secondary">{{ $application->opportunity?->awardingBody() }}</td>
-                                <td class="text-secondary small">{{ $application->submitted_at?->format('d M Y') }}</td>
-                                <td>
-                                    <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
-                                    @if($application->application_status === \App\Support\ApplicationStatus::INTERVIEW && $application->interview_at)
-                                        <span class="d-block small text-secondary mt-1">
-                                            {{ $application->interview_at->format('d M Y \a\t g:i A') }}
-                                        </span>
-                                    @elseif($application->rejection_reason)
-                                        <span class="d-block small text-secondary mt-1">{{ $application->rejection_reason }}</span>
-                                    @endif
+                                <td data-label="Awarding body" class="text-secondary">
+                                    {{ $application->opportunity?->awardingBody() }}
                                 </td>
-                                <td class="text-end">
-                                    <a class="btn btn-sm btn-outline-secondary"
-                                       href="{{ route('applications.confirmation', $application->application_id) }}">View</a>
+                                <td data-label="Submitted" class="text-secondary small">
+                                    {{ $application->submitted_at?->format('d M Y') }}
+                                </td>
+                                <td data-label="Status">
+                                    <span class="min-w-0">
+                                        <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
+
+                                        {{--
+                                            An unanswered question is the one thing on this
+                                            page the student has to act on, so it is called
+                                            out rather than left as a status word.
+                                        --}}
+                                        @if($application->awaitsApplicantResponse())
+                                            <a class="d-block small fw-semibold mt-1"
+                                               href="{{ route('applications.confirmation', $application->application_id) }}">
+                                                Waiting on your response
+                                            </a>
+                                        @elseif($application->application_status === \App\Support\ApplicationStatus::INTERVIEW && $application->interview_at)
+                                            <span class="d-block small text-secondary mt-1">
+                                                {{ $application->interview_at->format('d M Y \a\t g:i A') }}
+                                            </span>
+                                        @elseif($application->isWithdrawn() && $application->withdrawn_at)
+                                            <span class="d-block small text-secondary mt-1">
+                                                Withdrawn {{ $application->withdrawn_at->format('d M Y') }}
+                                            </span>
+                                        @elseif($application->rejection_reason)
+                                            <span class="d-block small text-secondary mt-1">{{ $application->rejection_reason }}</span>
+                                        @endif
+                                    </span>
+                                </td>
+                                <td data-label="" class="text-end">
+                                    <a class="btn btn-sm {{ $application->awaitsApplicantResponse() ? 'btn-primary' : 'btn-outline-secondary' }}"
+                                       href="{{ route('applications.confirmation', $application->application_id) }}">
+                                        {{ $application->awaitsApplicantResponse() ? 'Respond' : 'View' }}
+                                    </a>
                                 </td>
                             </tr>
                         @endforeach

@@ -23,6 +23,18 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // Runs before the deadline nudge so a student who is told about a new
+        // match in the morning is not also told it closes tomorrow, out of order.
+        $schedule->command('scholarzim:search-alerts')
+            ->dailyAt('07:30')
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        $schedule->command('scholarzim:interview-reminders')
+            ->dailyAt('08:30')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         $schedule->command('scholarzim:archive-expired-opportunities')
             ->dailyAt('00:30')
             ->withoutOverlapping()
