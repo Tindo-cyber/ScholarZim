@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Applicant;
 
 use App\Http\Controllers\Controller;
 use App\Services\ApplicantProfileService;
+use App\Services\ApplicationService;
 use App\Services\RecommendationService;
 use App\Services\SavedScholarshipService;
 use Illuminate\Http\Request;
@@ -14,6 +15,7 @@ class RecommendationController extends Controller
         private readonly RecommendationService $recommendationService,
         private readonly ApplicantProfileService $profileService,
         private readonly SavedScholarshipService $savedScholarshipService,
+        private readonly ApplicationService $applicationService,
     ) {
     }
 
@@ -29,6 +31,7 @@ class RecommendationController extends Controller
             'matches' => $this->recommendationService->forUser($user, 24, $minimumScore),
             'minimumScore' => $minimumScore,
             'savedIds' => $this->savedScholarshipService->savedIds($user),
+            'appliedIds' => $this->applicationService->appliedIds($user),
         ]);
     }
 }

@@ -3,20 +3,24 @@
 namespace App\Http\Controllers\Applicant;
 
 use App\Http\Controllers\Controller;
+use App\Services\ApplicationService;
 use App\Services\SavedScholarshipService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class SavedScholarshipController extends Controller
 {
-    public function __construct(private readonly SavedScholarshipService $savedScholarshipService)
-    {
+    public function __construct(
+        private readonly SavedScholarshipService $savedScholarshipService,
+        private readonly ApplicationService $applicationService,
+    ) {
     }
 
     public function index(Request $request)
     {
         return view('applicant.saved', [
             'saved' => $this->savedScholarshipService->listSaved($request->user()),
+            'appliedIds' => $this->applicationService->appliedIds($request->user()),
         ]);
     }
 

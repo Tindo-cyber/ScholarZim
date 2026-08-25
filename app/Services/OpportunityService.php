@@ -105,6 +105,7 @@ class OpportunityService
             'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
             'deadline' => $data['deadline'] ?? null,
             'provider_name' => $displayName !== '' ? $displayName : $provider->full_name,
+            'status' => OpportunityStatus::ACTIVE,
             'moderation_status' => OpportunityModerationStatus::PENDING,
             'submitted_at' => Carbon::now(),
             'reviewed_at' => null,
@@ -149,6 +150,7 @@ class OpportunityService
 
         $opportunity->update([
             'deadline' => $newDeadline,
+            'status' => OpportunityStatus::ACTIVE,
             'last_change_reason' => $reason,
             'updated_at' => Carbon::now(),
         ]);
@@ -306,11 +308,14 @@ class OpportunityService
             ->count();
     }
 
+    /**
+     * Same rules as search(): approved, open, and not past its deadline. An
+     * archived (closed/expired) listing is 404, not just absent from search -
+     * it should not be directly viewable or applyable-to by URL either.
+     */
     public function findPubliclyVisible(int $id): ?Opportunity
     {
-        $opportunity = Opportunity::with('provider')->find($id);
-
-        return $opportunity && $opportunity->isPubliclyVisible() ? $opportunity : null;
+        return Opportunity::with('provider')->publiclyVisible()->find($id);
     }
 
     /** @return array<int, string> */

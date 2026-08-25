@@ -67,7 +67,8 @@
                     <div class="row g-3">
                         @foreach($related as $item)
                             <div class="col-md-4">
-                                <x-scholarship-card :opportunity="$item" :show-save="false" />
+                                <x-scholarship-card :opportunity="$item" :show-save="false"
+                                                    :applied="in_array($item->opportunity_id, $appliedIds, true)" />
                             </div>
                         @endforeach
                     </div>
@@ -114,8 +115,14 @@
                         <div class="d-grid gap-2">
                             @auth
                                 @if(auth()->user()->isApplicant())
-                                    <a class="btn btn-primary btn-lg"
-                                       href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply now</a>
+                                    @if($hasApplied)
+                                        <button class="btn btn-success btn-lg" type="button" disabled>
+                                            <x-icon name="check-circle" :size="16" /> Applied
+                                        </button>
+                                    @else
+                                        <a class="btn btn-primary btn-lg"
+                                           href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply now</a>
+                                    @endif
 
                                     <form method="POST"
                                           action="{{ $isSaved

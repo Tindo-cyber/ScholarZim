@@ -92,6 +92,9 @@
                                         <td>
                                             <x-status-badge :label="$opportunity->moderationLabel()"
                                                             :tone="$opportunity->moderationTone()" />
+                                            @if(strcasecmp((string) $opportunity->status, \App\Support\OpportunityStatus::CLOSED) === 0)
+                                                <x-status-badge label="Archived" tone="secondary" icon="lock" />
+                                            @endif
                                             @if($opportunity->rejection_reason)
                                                 <span class="d-block small text-secondary mt-1">
                                                     {{ $opportunity->rejection_reason }}

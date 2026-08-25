@@ -26,7 +26,8 @@
                 @continue($entry->opportunity === null)
 
                 <div class="col-md-6 col-xl-4">
-                    <x-scholarship-card :opportunity="$entry->opportunity" :saved="true" />
+                    <x-scholarship-card :opportunity="$entry->opportunity" :saved="true"
+                                        :applied="in_array($entry->opportunity->opportunity_id, $appliedIds, true)" />
                 </div>
             @endforeach
         </div>

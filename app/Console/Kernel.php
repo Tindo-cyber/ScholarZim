@@ -22,6 +22,11 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:00')
             ->withoutOverlapping()
             ->onOneServer();
+
+        $schedule->command('scholarzim:archive-expired-opportunities')
+            ->dailyAt('00:30')
+            ->withoutOverlapping()
+            ->onOneServer();
     }
 
     /**

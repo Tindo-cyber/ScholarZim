@@ -62,9 +62,10 @@ final class NotificationPresentation
             NotificationType::NEW_APPLICATION, NotificationType::APPLICATION_SUBMITTED => 'inbox',
             NotificationType::APPLICATION_UNDER_REVIEW => 'hourglass-split',
             NotificationType::APPLICATION_WAITLISTED => 'list-ol',
-            NotificationType::APPLICATION_INTERVIEW => 'calendar-event',
+            NotificationType::APPLICATION_INTERVIEW => 'calendar',
             NotificationType::PROFILE_INCOMPLETE => 'person-exclamation',
             NotificationType::PROVIDER_APPLICATION, NotificationType::SCHOLARSHIP_PENDING_REVIEW => 'shield-check',
+            NotificationType::SCHOLARSHIP_CLOSED => 'lock',
             default => 'bell',
         };
     }
@@ -77,7 +78,8 @@ final class NotificationPresentation
             NotificationType::APPLICATION_REJECTED, NotificationType::PROVIDER_REJECTED,
             NotificationType::SCHOLARSHIP_REJECTED => 'danger',
             NotificationType::DEADLINE_REMINDER, NotificationType::DOCUMENTS_REQUESTED,
-            NotificationType::PROFILE_INCOMPLETE, NotificationType::APPLICATION_WAITLISTED => 'warning',
+            NotificationType::PROFILE_INCOMPLETE, NotificationType::APPLICATION_WAITLISTED,
+            NotificationType::SCHOLARSHIP_CLOSED => 'warning',
             NotificationType::NEW_OPPORTUNITY, NotificationType::NEW_APPLICATION,
             NotificationType::APPLICATION_INTERVIEW => 'info',
             default => 'primary',

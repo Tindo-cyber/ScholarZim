@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Applicant;
 use App\Http\Controllers\Controller;
 use App\Services\ApplicantDashboardService;
 use App\Services\ApplicantProfileService;
+use App\Services\ApplicationService;
 use App\Services\RecommendationService;
 use App\Support\Greeting;
 use Illuminate\Http\Request;
@@ -15,6 +16,7 @@ class DashboardController extends Controller
         private readonly ApplicantDashboardService $dashboardService,
         private readonly RecommendationService $recommendationService,
         private readonly ApplicantProfileService $profileService,
+        private readonly ApplicationService $applicationService,
     ) {
     }
 
@@ -30,6 +32,7 @@ class DashboardController extends Controller
             'recentApplications' => $this->dashboardService->recentApplications($user),
             'upcomingDeadlines' => $this->dashboardService->upcomingDeadlines($user),
             'recommendations' => $this->recommendationService->forUser($user, 4),
+            'appliedIds' => $this->applicationService->appliedIds($user),
         ]);
     }
 }

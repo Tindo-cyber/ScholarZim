@@ -85,8 +85,12 @@
                             </div>
 
                             <div class="col-md-3 d-grid gap-2">
-                                <a class="btn btn-primary btn-sm"
-                                   href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply</a>
+                                @if(in_array($opportunity->opportunity_id, $appliedIds, true))
+                                    <x-status-badge label="Applied" tone="success" icon="check-circle" class="justify-content-center" />
+                                @else
+                                    <a class="btn btn-primary btn-sm"
+                                       href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply</a>
+                                @endif
                                 <a class="btn btn-outline-secondary btn-sm"
                                    href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Details</a>
 

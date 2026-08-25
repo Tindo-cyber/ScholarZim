@@ -91,11 +91,32 @@ class ApplicationService
         return $application;
     }
 
+    /** True if the applicant has a live application against this listing - a REJECTED one does not lock them out. */
     public function hasApplied(User $user, int $opportunityId): bool
     {
         return Application::where('user_id', $user->user_id)
             ->where('opportunity_id', $opportunityId)
+            ->where('application_status', '!=', ApplicationStatus::REJECTED)
             ->exists();
+    }
+
+    /**
+     * Opportunity ids this applicant can no longer apply to (submitted, under
+     * review, approved, etc.) - a prior REJECTED application is excluded so
+     * those listings still show an "Apply" action instead of "Applied".
+     *
+     * @return array<int, int>
+     */
+    public function appliedIds(?User $user): array
+    {
+        if (! $user) {
+            return [];
+        }
+
+        return Application::where('user_id', $user->user_id)
+            ->where('application_status', '!=', ApplicationStatus::REJECTED)
+            ->pluck('opportunity_id')
+            ->all();
     }
 
     /**
@@ -113,8 +134,12 @@ class ApplicationService
      * Full submission from the wizard.
      *
      * Guards, in order: the listing must have cleared moderation, still be open,
-     * still be inside its deadline, and the applicant must not already have an
-     * application against it.
+     * still be inside its deadline, and the applicant must not already have a
+     * live (non-rejected) application against it.
+     *
+     * A prior REJECTED application reuses its row rather than inserting a new
+     * one, since (user_id, opportunity_id) is unique at the database level -
+     * re-applying is a resubmission, not a second application.
      */
     public function submit(int $opportunityId, User $user, array $data, ?UploadedFile $document = null): Application
     {
@@ -134,34 +159,48 @@ class ApplicationService
             throw new RuntimeException('The deadline for this scholarship has passed.');
         }
 
-        if ($this->hasApplied($user, $opportunityId)) {
+        $existing = Application::where('user_id', $user->user_id)
+            ->where('opportunity_id', $opportunityId)
+            ->first();
+
+        if ($existing && $existing->application_status !== ApplicationStatus::REJECTED) {
             throw new RuntimeException('You have already applied to this opportunity.');
         }
 
-        $documentPath = null;
-        $documentName = null;
+        $documentPath = $existing?->document_path;
+        $documentName = $existing?->document_filename;
 
         if ($document !== null) {
             $documentPath = $this->fileStorage->store($document, 'applications');
             $documentName = $document->getClientOriginalName();
         }
 
-        $application = Application::create([
-            'user_id' => $user->user_id,
-            'opportunity_id' => $opportunityId,
+        $attributes = [
             'application_status' => ApplicationStatus::SUBMITTED,
             'submitted_at' => Carbon::now(),
             'personal_statement' => $data['personal_statement'] ?? null,
             'document_path' => $documentPath,
             'document_filename' => $documentName,
-        ]);
+            'rejection_reason' => null,
+            'interview_at' => null,
+        ];
+
+        if ($existing) {
+            $existing->update($attributes);
+            $application = $existing;
+        } else {
+            $application = Application::create($attributes + [
+                'user_id' => $user->user_id,
+                'opportunity_id' => $opportunityId,
+            ]);
+        }
 
         $this->auditService->log(
             $user->email,
             AuditAction::APPLY,
             'APPLICATION',
             $application->application_id,
-            'Applied to "' . $opportunity->title . '"'
+            ($existing ? 'Re-applied' : 'Applied') . ' to "' . $opportunity->title . '"'
         );
 
         $this->notificationService->notifyUser(

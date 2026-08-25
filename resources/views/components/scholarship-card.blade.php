@@ -2,6 +2,7 @@
     'opportunity',
     'score' => null,
     'saved' => false,
+    'applied' => false,
     'showSave' => true,
     'showApply' => true,
 ])
@@ -65,7 +66,11 @@
             @if($showApply)
                 @auth
                     @if(auth()->user()->isApplicant())
-                        <a class="btn btn-sm btn-primary" href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply</a>
+                        @if($applied)
+                            <x-status-badge label="Applied" tone="success" icon="check-circle" />
+                        @else
+                            <a class="btn btn-sm btn-primary" href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply</a>
+                        @endif
                     @endif
                 @else
                     <a class="btn btn-sm btn-primary" href="{{ route('login') }}">Sign in to apply</a>

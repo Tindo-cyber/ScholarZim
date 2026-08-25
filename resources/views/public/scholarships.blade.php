@@ -27,7 +27,8 @@
                 @foreach($opportunities as $opportunity)
                     <div class="col-md-6 col-xl-4">
                         <x-scholarship-card :opportunity="$opportunity"
-                                            :saved="in_array($opportunity->opportunity_id, $savedIds, true)" />
+                                            :saved="in_array($opportunity->opportunity_id, $savedIds, true)"
+                                            :applied="in_array($opportunity->opportunity_id, $appliedIds, true)" />
                     </div>
                 @endforeach
             </div>

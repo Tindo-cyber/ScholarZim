@@ -60,7 +60,8 @@
                         <div class="row g-3">
                             @foreach($recommendations as $match)
                                 <div class="col-md-6">
-                                    <x-scholarship-card :opportunity="$match->opportunity" :score="$match->matchScore" />
+                                    <x-scholarship-card :opportunity="$match->opportunity" :score="$match->matchScore"
+                                                        :applied="in_array($match->opportunity->opportunity_id, $appliedIds, true)" />
                                 </div>
                             @endforeach
                         </div>

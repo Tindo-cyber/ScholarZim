@@ -92,6 +92,7 @@ class EmailService
             'SCHOLARSHIP_APPROVED' => 'Your scholarship post is now live',
             'SCHOLARSHIP_REJECTED' => 'Your scholarship post needs changes',
             'SCHOLARSHIP_PENDING_REVIEW' => 'A scholarship is awaiting review',
+            'SCHOLARSHIP_CLOSED' => 'Your scholarship post was archived',
             default => 'ScholarZim notification',
         };
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ApplicationService;
 use App\Services\OpportunityService;
 use App\Services\SavedScholarshipService;
 use App\Support\FormOptions;
@@ -14,6 +15,7 @@ class OpportunityController extends Controller
     public function __construct(
         private readonly OpportunityService $opportunityService,
         private readonly SavedScholarshipService $savedScholarshipService,
+        private readonly ApplicationService $applicationService,
     ) {
     }
 
@@ -36,6 +38,7 @@ class OpportunityController extends Controller
             'targetFields' => $this->opportunityService->targetFields(),
             'filters' => $filters,
             'savedIds' => $this->savedScholarshipService->savedIds($request->user()),
+            'appliedIds' => $this->applicationService->appliedIds($request->user()),
         ]);
     }
 

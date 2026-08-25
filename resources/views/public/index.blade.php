@@ -112,7 +112,8 @@
                 <div class="row g-3 g-lg-4">
                     @foreach($featured as $opportunity)
                         <div class="col-md-6 col-lg-4">
-                            <x-scholarship-card :opportunity="$opportunity" />
+                            <x-scholarship-card :opportunity="$opportunity"
+                                                :applied="in_array($opportunity->opportunity_id, $appliedIds, true)" />
                         </div>
                     @endforeach
                 </div>

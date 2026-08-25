@@ -27,6 +27,7 @@ final class NotificationType
     public const SCHOLARSHIP_REJECTED = 'SCHOLARSHIP_REJECTED';
     public const SCHOLARSHIP_UPDATED = 'SCHOLARSHIP_UPDATED';
     public const SCHOLARSHIP_WITHDRAWN = 'SCHOLARSHIP_WITHDRAWN';
+    public const SCHOLARSHIP_CLOSED = 'SCHOLARSHIP_CLOSED';
 
     public const ALL = [
         self::APPLICATION_SUBMITTED,
@@ -48,6 +49,7 @@ final class NotificationType
         self::SCHOLARSHIP_REJECTED,
         self::SCHOLARSHIP_UPDATED,
         self::SCHOLARSHIP_WITHDRAWN,
+        self::SCHOLARSHIP_CLOSED,
     ];
 
     private function __construct()

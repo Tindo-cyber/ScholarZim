@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\ApplicationService;
 use App\Services\OpportunityService;
 use App\Services\PlatformStatsService;
 use App\Services\RecommendationService;
@@ -16,15 +17,17 @@ class PublicController extends Controller
         private readonly OpportunityService $opportunityService,
         private readonly SavedScholarshipService $savedScholarshipService,
         private readonly RecommendationService $recommendationService,
+        private readonly ApplicationService $applicationService,
     ) {
     }
 
-    public function landing()
+    public function landing(Request $request)
     {
         return view('public.index', [
             'stats' => $this->platformStatsService->publicStats(),
             'featured' => $this->opportunityService->featured(6),
             'fields' => FormOptions::FIELDS_OF_STUDY,
+            'appliedIds' => $this->applicationService->appliedIds($request->user()),
         ]);
     }
 
@@ -39,6 +42,7 @@ class PublicController extends Controller
             'targetFields' => $this->opportunityService->targetFields(),
             'filters' => $filters,
             'savedIds' => $this->savedScholarshipService->savedIds($request->user()),
+            'appliedIds' => $this->applicationService->appliedIds($request->user()),
         ]);
     }
 
@@ -53,6 +57,7 @@ class PublicController extends Controller
         return view('public.detail', [
             'opportunity' => $opportunity,
             'isSaved' => $this->savedScholarshipService->isSaved($user, $id),
+            'hasApplied' => $user && $user->isApplicant() && $this->applicationService->hasApplied($user, $id),
             // The fit panel only renders for signed-in students with a profile.
             'fit' => $user && $user->isApplicant()
                 ? $this->recommendationService->scoreOne($user, $opportunity)
@@ -60,6 +65,7 @@ class PublicController extends Controller
             'related' => $this->opportunityService->searchAll([
                 'field_of_study' => $opportunity->target_field,
             ])->where('opportunity_id', '!=', $id)->take(3),
+            'appliedIds' => $this->applicationService->appliedIds($user),
         ]);
     }
 
