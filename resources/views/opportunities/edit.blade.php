@@ -75,6 +75,7 @@
                             <div class="col-md-4">
                                 <x-form.input name="deadline" label="Application deadline" type="date"
                                               :value="$opportunity->deadline?->format('Y-m-d')"
+                                              min="{{ now()->toDateString() }}"
                                               hint="Leave blank for a rolling intake." />
                             </div>
                         </div>

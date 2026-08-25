@@ -68,6 +68,7 @@
                             </div>
                             <div class="col-md-4">
                                 <x-form.input name="deadline" label="Application deadline" type="date"
+                                              min="{{ now()->toDateString() }}"
                                               hint="Leave blank for a rolling intake." />
                             </div>
                         </div>

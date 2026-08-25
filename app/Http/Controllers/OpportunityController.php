@@ -115,7 +115,7 @@ class OpportunityController extends Controller
             'target_field' => ['nullable', 'string', 'max:255'],
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
             'country' => ['nullable', 'string', 'max:100'],
-            'deadline' => ['nullable', 'date'],
+            'deadline' => ['nullable', 'date', 'after_or_equal:today'],
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
