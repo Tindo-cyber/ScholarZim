@@ -157,8 +157,9 @@
                                             Reg. {{ $profile->registration_number }}
                                         </span>
                                         <a class="small text-decoration-none d-inline-flex align-items-center gap-1 mt-1"
-                                           href="{{ route('admin.providers.certificate', $profile->user_id) }}">
-                                            <x-icon name="download" :size="14" />{{ $profile->certificate_filename }}
+                                           href="{{ route('admin.providers.certificate', $profile->user_id) }}"
+                                           target="_blank" rel="noopener">
+                                            <x-icon name="eye" :size="14" />{{ $profile->certificate_filename }}
                                         </a>
                                     </div>
 

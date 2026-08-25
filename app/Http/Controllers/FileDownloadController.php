@@ -34,10 +34,7 @@ class FileDownloadController extends Controller
 
         abort_unless($this->fileStorage->exists($application->document_path), 404, 'No document attached.');
 
-        return response()->download(
-            $this->fileStorage->absolutePath($application->document_path),
-            $application->document_filename ?: 'application-document'
-        );
+        return $this->fileStorage->respond($application->document_path, $application->document_filename ?: 'application-document');
     }
 
     /** Results certificate attached to an application, for the reviewing provider. */
@@ -56,10 +53,7 @@ class FileDownloadController extends Controller
             $profile->profile_id
         );
 
-        return response()->download(
-            $this->fileStorage->absolutePath($profile->results_certificate_path),
-            $profile->results_certificate_filename ?: 'results-certificate'
-        );
+        return $this->fileStorage->respond($profile->results_certificate_path, $profile->results_certificate_filename ?: 'results-certificate');
     }
 
     /** Admin-only: the registration certificate a provider uploaded at signup. */
@@ -76,10 +70,7 @@ class FileDownloadController extends Controller
             $profile->profile_id
         );
 
-        return response()->download(
-            $this->fileStorage->absolutePath($profile->certificate_path),
-            $profile->certificate_filename ?: 'registration-certificate'
-        );
+        return $this->fileStorage->respond($profile->certificate_path, $profile->certificate_filename ?: 'registration-certificate');
     }
 
     /** One of the applicant's own profile documents. */
@@ -90,9 +81,6 @@ class FileDownloadController extends Controller
 
         abort_unless($this->fileStorage->exists($path), 404);
 
-        return response()->download(
-            $this->fileStorage->absolutePath($path),
-            $profile->documentFilename($documentType) ?: $documentType
-        );
+        return $this->fileStorage->respond($path, $profile->documentFilename($documentType) ?: $documentType);
     }
 }

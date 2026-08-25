@@ -38,8 +38,9 @@
                     @if($application->document_filename)
                         <h3 class="h6 fw-semibold text-uppercase text-secondary small mb-2">Attached document</h3>
                         <a class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                           href="{{ route('files.applicationDocument', $application->application_id) }}">
-                            <x-icon name="download" :size="14" />{{ $application->document_filename }}
+                           href="{{ route('files.applicationDocument', $application->application_id) }}"
+                           target="_blank" rel="noopener">
+                            <x-icon name="eye" :size="14" />{{ $application->document_filename }}
                         </a>
                     @endif
                 </div>

@@ -152,8 +152,9 @@
                             @if($filename)
                                 <p class="small mb-2">
                                     <a class="text-decoration-none d-inline-flex align-items-center gap-1"
-                                       href="{{ route('files.myDocument', $type) }}">
-                                        <x-icon name="download" :size="14" />{{ $filename }}
+                                       href="{{ route('files.myDocument', $type) }}"
+                                       target="_blank" rel="noopener">
+                                        <x-icon name="eye" :size="14" />{{ $filename }}
                                     </a>
                                     <span class="text-secondary d-block">
                                         Uploaded {{ $uploadedAt?->diffForHumans() }}

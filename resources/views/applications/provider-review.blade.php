@@ -65,15 +65,17 @@
                         <div class="d-flex flex-wrap gap-2">
                             @if($application->document_filename)
                                 <a class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                                   href="{{ route('files.applicationDocument', $application->application_id) }}">
-                                    <x-icon name="download" :size="14" />{{ $application->document_filename }}
+                                   href="{{ route('files.applicationDocument', $application->application_id) }}"
+                                   target="_blank" rel="noopener">
+                                    <x-icon name="eye" :size="14" />{{ $application->document_filename }}
                                 </a>
                             @endif
 
                             @if($applicantProfile->hasResultsCertificate())
                                 <a class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                                   href="{{ route('files.applicantResults', $application->application_id) }}">
-                                    <x-icon name="download" :size="14" />Results certificate
+                                   href="{{ route('files.applicantResults', $application->application_id) }}"
+                                   target="_blank" rel="noopener">
+                                    <x-icon name="eye" :size="14" />Results certificate
                                 </a>
                             @endif
                         </div>
