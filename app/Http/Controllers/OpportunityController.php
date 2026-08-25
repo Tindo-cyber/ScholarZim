@@ -75,4 +75,88 @@ class OpportunityController extends Controller
             ->route('provider.dashboard')
             ->with('successMessage', 'Scholarship submitted for review. It goes live once an administrator approves it.');
     }
+
+    public function edit(Request $request, int $id)
+    {
+        try {
+            $opportunity = $this->opportunityService->findOwnedOrFail($id, $request->user());
+        } catch (\RuntimeException $e) {
+            abort(404);
+        }
+
+        if ($opportunity->isWithdrawn()) {
+            return redirect()
+                ->route('provider.dashboard')
+                ->with('errorMessage', 'This scholarship has been withdrawn and can no longer be edited.');
+        }
+
+        return view('opportunities.edit', [
+            'opportunity' => $opportunity,
+            'educationLevels' => FormOptions::educationLevelGroups(),
+            'fields' => FormOptions::FIELDS_OF_STUDY,
+            'countries' => FormOptions::COUNTRIES,
+            'fundingTypes' => FormOptions::FUNDING_TYPES,
+            'defaultCountry' => FormOptions::DEFAULT_COUNTRY,
+            'targetFieldSuggestions' => $this->opportunityService->targetFields(),
+            'awardingBodySuggestions' => $this->opportunityService->providerNames(),
+        ]);
+    }
+
+    public function update(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['required', 'string', 'max:10000'],
+            'provider_display_name' => ['nullable', 'string', 'max:255'],
+            'education_level' => ['nullable', Rule::in(FormOptions::educationLevels())],
+            'target_field' => ['nullable', 'string', 'max:255'],
+            'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
+            'country' => ['nullable', 'string', 'max:100'],
+            'deadline' => ['nullable', 'date'],
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        try {
+            $opportunity = $this->opportunityService->update($id, $data, $request->user(), $data['reason']);
+        } catch (\RuntimeException $e) {
+            return back()->withInput()->with('errorMessage', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('provider.dashboard')
+            ->with('successMessage', '"' . $opportunity->title . '" was updated and re-submitted for review.');
+    }
+
+    public function extendDeadline(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'deadline' => ['required', 'date', 'after:today'],
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        try {
+            $opportunity = $this->opportunityService->extendDeadline($id, $request->user(), $data['deadline'], $data['reason']);
+        } catch (\RuntimeException $e) {
+            return back()->with('errorMessage', $e->getMessage());
+        }
+
+        return back()->with('successMessage', 'Deadline for "' . $opportunity->title . '" extended to ' . $opportunity->deadline->format('d M Y') . '.');
+    }
+
+    public function destroy(Request $request, int $id)
+    {
+        $data = $request->validate([
+            'reason' => ['required', 'string', 'max:500'],
+        ]);
+
+        try {
+            $opportunity = $this->opportunityService->delete($id, $request->user(), $data['reason']);
+        } catch (\RuntimeException $e) {
+            return back()->with('errorMessage', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('provider.dashboard')
+            ->with('successMessage', '"' . $opportunity->title . '" was withdrawn.');
+    }
 }

@@ -26,6 +26,9 @@ final class AuditAction
     public const NOTIFICATION_PREFERENCES_UPDATE = 'NOTIFICATION_PREFERENCES_UPDATE';
     public const APPROVE_OPPORTUNITY = 'APPROVE_OPPORTUNITY';
     public const REJECT_OPPORTUNITY = 'REJECT_OPPORTUNITY';
+    public const UPDATE_OPPORTUNITY = 'UPDATE_OPPORTUNITY';
+    public const EXTEND_OPPORTUNITY_DEADLINE = 'EXTEND_OPPORTUNITY_DEADLINE';
+    public const DELETE_OPPORTUNITY = 'DELETE_OPPORTUNITY';
 
     private function __construct()
     {
@@ -44,10 +47,11 @@ final class AuditAction
     {
         return match ($action) {
             self::LOGIN_FAILURE, self::DELETE_USER, self::REJECT_PROVIDER,
-            self::REJECT_OPPORTUNITY, self::EMAIL_DELIVERY_FAILED => 'danger',
+            self::REJECT_OPPORTUNITY, self::EMAIL_DELIVERY_FAILED, self::DELETE_OPPORTUNITY => 'danger',
             self::APPROVE_PROVIDER, self::APPROVE_OPPORTUNITY,
             self::LOGIN_SUCCESS, self::EMAIL_VERIFIED => 'success',
-            self::STATUS_UPDATE, self::UPDATE_USER, self::PROFILE_UPDATE => 'warning',
+            self::STATUS_UPDATE, self::UPDATE_USER, self::PROFILE_UPDATE,
+            self::UPDATE_OPPORTUNITY, self::EXTEND_OPPORTUNITY_DEADLINE => 'warning',
             default => 'secondary',
         };
     }

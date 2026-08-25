@@ -78,6 +78,171 @@ class OpportunityService
         return $opportunity;
     }
 
+    /**
+     * Providers may revise a listing after it is posted. Since the content
+     * changed, it goes back through moderation before it is public again -
+     * the same trust boundary a brand-new post crosses in create().
+     */
+    public function update(int $opportunityId, array $data, User $provider, string $reason): Opportunity
+    {
+        $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
+
+        if ($opportunity->isWithdrawn()) {
+            throw new \RuntimeException('This scholarship has been withdrawn and can no longer be edited.');
+        }
+
+        $wasApproved = OpportunityModerationStatus::isApproved($opportunity->moderation_status);
+        $country = $this->normalizeCountry($data['country'] ?? null);
+        $displayName = trim((string) ($data['provider_display_name'] ?? ''));
+
+        $opportunity->update([
+            'title' => $data['title'],
+            'description' => $data['description'] ?? null,
+            'education_level' => $data['education_level'] ?? null,
+            'funding_type' => $data['funding_type'] ?? null,
+            'country' => $country,
+            'target_country' => $country,
+            'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
+            'deadline' => $data['deadline'] ?? null,
+            'provider_name' => $displayName !== '' ? $displayName : $provider->full_name,
+            'moderation_status' => OpportunityModerationStatus::PENDING,
+            'submitted_at' => Carbon::now(),
+            'reviewed_at' => null,
+            'reviewed_by' => null,
+            'rejection_reason' => null,
+            'last_change_reason' => $reason,
+            'updated_at' => Carbon::now(),
+        ]);
+
+        $this->auditService->log(
+            $provider->email,
+            AuditAction::UPDATE_OPPORTUNITY,
+            'OPPORTUNITY',
+            $opportunity->opportunity_id,
+            'Updated "' . $opportunity->title . '": ' . $reason
+        );
+
+        $this->forgetFacetCaches();
+
+        if ($wasApproved) {
+            $this->notifyAdminsOfPendingReview($opportunity);
+        }
+
+        return $opportunity;
+    }
+
+    /**
+     * A narrower action than update(): only the deadline moves, so the listing
+     * stays live and does not need to go back through moderation.
+     */
+    public function extendDeadline(int $opportunityId, User $provider, string $newDeadline, string $reason): Opportunity
+    {
+        $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
+
+        if ($opportunity->isWithdrawn()) {
+            throw new \RuntimeException('This scholarship has been withdrawn and can no longer be edited.');
+        }
+
+        if ($opportunity->deadline && Carbon::parse($newDeadline)->lt($opportunity->deadline)) {
+            throw new \RuntimeException('The new deadline must be on or after the current deadline.');
+        }
+
+        $opportunity->update([
+            'deadline' => $newDeadline,
+            'last_change_reason' => $reason,
+            'updated_at' => Carbon::now(),
+        ]);
+
+        $this->auditService->log(
+            $provider->email,
+            AuditAction::EXTEND_OPPORTUNITY_DEADLINE,
+            'OPPORTUNITY',
+            $opportunity->opportunity_id,
+            'Extended deadline for "' . $opportunity->title . '" to ' . $opportunity->deadline->format('d M Y') . ': ' . $reason
+        );
+
+        $this->forgetFacetCaches();
+
+        $this->notifyApplicants(
+            $opportunity,
+            NotificationType::SCHOLARSHIP_UPDATED,
+            'The deadline for "' . $opportunity->title . '" was extended to ' . $opportunity->deadline->format('d M Y') . '.'
+        );
+
+        return $opportunity;
+    }
+
+    /**
+     * Soft delete: the row stays (applications reference it), the listing just
+     * drops out of scopePubliclyVisible() because moderation_status is no
+     * longer APPROVED.
+     */
+    public function delete(int $opportunityId, User $provider, string $reason): Opportunity
+    {
+        $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
+
+        if ($opportunity->isWithdrawn()) {
+            throw new \RuntimeException('This scholarship has already been withdrawn.');
+        }
+
+        $opportunity->update([
+            'moderation_status' => OpportunityModerationStatus::WITHDRAWN,
+            'last_change_reason' => $reason,
+            'updated_at' => Carbon::now(),
+        ]);
+
+        $this->auditService->log(
+            $provider->email,
+            AuditAction::DELETE_OPPORTUNITY,
+            'OPPORTUNITY',
+            $opportunity->opportunity_id,
+            'Withdrew "' . $opportunity->title . '": ' . $reason
+        );
+
+        $this->forgetFacetCaches();
+
+        $this->notifyApplicants(
+            $opportunity,
+            NotificationType::SCHOLARSHIP_WITHDRAWN,
+            'The scholarship "' . $opportunity->title . '" was withdrawn by the provider: ' . $reason
+        );
+
+        return $opportunity;
+    }
+
+    public function findOwnedOrFail(int $opportunityId, User $provider): Opportunity
+    {
+        $opportunity = Opportunity::where('opportunity_id', $opportunityId)
+            ->where('provider_user_id', $provider->user_id)
+            ->first();
+
+        if (! $opportunity) {
+            throw new \RuntimeException('Scholarship not found.');
+        }
+
+        return $opportunity;
+    }
+
+    /** Tells applicants who already applied about a change to the listing, for transparency. */
+    private function notifyApplicants(Opportunity $opportunity, string $type, string $message): void
+    {
+        $applicantIds = $opportunity->applications()->pluck('user_id');
+
+        if ($applicantIds->isEmpty()) {
+            return;
+        }
+
+        $applicants = User::whereIn('user_id', $applicantIds)->get();
+
+        $this->notificationService->notifyMany(
+            $applicants,
+            $type,
+            $message,
+            '/scholarships/' . $opportunity->opportunity_id,
+            $opportunity->opportunity_id
+        );
+    }
+
     private function notifyAdminsOfPendingReview(Opportunity $opportunity): void
     {
         $admins = User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::ADMIN))->get();

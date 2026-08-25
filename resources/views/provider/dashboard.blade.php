@@ -71,6 +71,7 @@
                                     <th scope="col">Deadline</th>
                                     <th scope="col">Applications</th>
                                     <th scope="col">Review state</th>
+                                    <th scope="col" class="text-end">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -96,6 +97,118 @@
                                                     {{ $opportunity->rejection_reason }}
                                                 </span>
                                             @endif
+                                            @if($opportunity->last_change_reason)
+                                                <span class="d-block small text-secondary mt-1">
+                                                    Last change: {{ $opportunity->last_change_reason }}
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="text-end">
+                                            @unless($opportunity->isWithdrawn())
+                                                <div class="dropdown">
+                                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                                            type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        Manage
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end">
+                                                        <li>
+                                                            <a class="dropdown-item"
+                                                               href="{{ route('opportunities.edit', $opportunity->opportunity_id) }}">
+                                                                Edit
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <button class="dropdown-item" type="button"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#extend-deadline-{{ $opportunity->opportunity_id }}">
+                                                                Extend deadline
+                                                            </button>
+                                                        </li>
+                                                        <li><hr class="dropdown-divider"></li>
+                                                        <li>
+                                                            <button class="dropdown-item text-danger" type="button"
+                                                                    data-bs-toggle="modal"
+                                                                    data-bs-target="#withdraw-{{ $opportunity->opportunity_id }}">
+                                                                Withdraw
+                                                            </button>
+                                                        </li>
+                                                    </ul>
+                                                </div>
+
+                                                <div class="modal fade text-start" id="extend-deadline-{{ $opportunity->opportunity_id }}"
+                                                     tabindex="-1" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <form method="POST"
+                                                              action="{{ route('opportunities.extendDeadline', $opportunity->opportunity_id) }}"
+                                                              class="modal-content">
+                                                            @csrf
+                                                            <div class="modal-header">
+                                                                <h3 class="modal-title h6">Extend deadline for "{{ $opportunity->title }}"</h3>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                                        aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <label class="form-label"
+                                                                       for="deadline-{{ $opportunity->opportunity_id }}">
+                                                                    New deadline
+                                                                </label>
+                                                                <input type="date" class="form-control mb-3" required
+                                                                       id="deadline-{{ $opportunity->opportunity_id }}"
+                                                                       name="deadline"
+                                                                       min="{{ $opportunity->deadline?->format('Y-m-d') }}">
+
+                                                                <label class="form-label"
+                                                                       for="extend-reason-{{ $opportunity->opportunity_id }}">
+                                                                    Reason (for transparency, shown in the audit trail)
+                                                                </label>
+                                                                <textarea class="form-control" rows="3" required
+                                                                          id="extend-reason-{{ $opportunity->opportunity_id }}"
+                                                                          name="reason"></textarea>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-outline-secondary"
+                                                                        data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-primary">Extend deadline</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+
+                                                <div class="modal fade text-start" id="withdraw-{{ $opportunity->opportunity_id }}"
+                                                     tabindex="-1" aria-hidden="true">
+                                                    <div class="modal-dialog">
+                                                        <form method="POST"
+                                                              action="{{ route('opportunities.destroy', $opportunity->opportunity_id) }}"
+                                                              class="modal-content">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <div class="modal-header">
+                                                                <h3 class="modal-title h6">Withdraw "{{ $opportunity->title }}"</h3>
+                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                                        aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p class="small text-secondary">
+                                                                    This removes the listing from the public site. It cannot be undone,
+                                                                    and applicants who already applied will be notified.
+                                                                </p>
+                                                                <label class="form-label"
+                                                                       for="withdraw-reason-{{ $opportunity->opportunity_id }}">
+                                                                    Reason (for transparency, shown to applicants and in the audit trail)
+                                                                </label>
+                                                                <textarea class="form-control" rows="3" required
+                                                                          id="withdraw-reason-{{ $opportunity->opportunity_id }}"
+                                                                          name="reason"></textarea>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-outline-secondary"
+                                                                        data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn btn-danger">Withdraw listing</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            @endunless
                                         </td>
                                     </tr>
                                 @endforeach

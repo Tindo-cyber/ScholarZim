@@ -37,6 +37,8 @@ class Opportunity extends Model
         'reviewed_at',
         'reviewed_by',
         'rejection_reason',
+        'updated_at',
+        'last_change_reason',
     ];
 
     protected $casts = [
@@ -44,6 +46,7 @@ class Opportunity extends Model
         'created_at' => 'datetime',
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     public function provider(): BelongsTo
@@ -144,6 +147,11 @@ class Opportunity extends Model
     public function isPubliclyVisible(): bool
     {
         return OpportunityModerationStatus::isApproved($this->moderation_status);
+    }
+
+    public function isWithdrawn(): bool
+    {
+        return OpportunityModerationStatus::isWithdrawn($this->moderation_status);
     }
 
     public function daysUntilDeadline(): ?int

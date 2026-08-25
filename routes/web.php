@@ -162,6 +162,19 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER])->group(function () {
     Route::middleware('account.active')->group(function () {
         Route::get('/opportunities/create', [OpportunityController::class, 'create'])->name('opportunities.create');
         Route::post('/opportunities/create', [OpportunityController::class, 'store'])->name('opportunities.store');
+
+        Route::get('/opportunities/{id}/edit', [OpportunityController::class, 'edit'])
+            ->whereNumber('id')
+            ->name('opportunities.edit');
+        Route::put('/opportunities/{id}', [OpportunityController::class, 'update'])
+            ->whereNumber('id')
+            ->name('opportunities.update');
+        Route::post('/opportunities/{id}/extend-deadline', [OpportunityController::class, 'extendDeadline'])
+            ->whereNumber('id')
+            ->name('opportunities.extendDeadline');
+        Route::delete('/opportunities/{id}', [OpportunityController::class, 'destroy'])
+            ->whereNumber('id')
+            ->name('opportunities.destroy');
     });
 });
 
