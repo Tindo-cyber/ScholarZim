@@ -29,7 +29,9 @@ php artisan queue:work
 ```
 
 Skipping `npm run build` will not break the site: without a manifest the source
-files are served individually and unminified. See [Front end](#front-end).
+files are served individually and unminified. Nothing about a fresh clone needs
+`public/build` or `public/hot` to exist, and neither is committed. See
+[Front end](#front-end).
 
 Seeded accounts (all password `ChangeMe123`):
 
@@ -169,6 +171,23 @@ manifest present it falls back to serving the source files individually through
 `SourceAssetController`, so a missing `npm run build` degrades to an unminified site rather
 than a 500 on every page.
 
+`App\Support\FrontendAssets` picks between those three paths, and it checks them rather
+than trusting that they exist:
+
+- **`public/hot`** is honoured only if something is actually listening at the address inside
+  it. Laravel reads that file as "the dev server is running", but Vite deletes it only on a
+  clean shutdown - close the terminal or kill the process and it stays behind for good,
+  pointing every stylesheet at a port nobody is on. The vendor theme keeps loading from
+  `public/assets` either way, so the result is a page styled enough to look deliberate and
+  missing the app-shell overlay that stops the theme's own `grid-template-areas` from
+  stacking every `<main>` child into one cell. A stale file is ignored and deleted.
+- **`public/build/manifest.json`** is honoured only if the chunks it names are on disk. A
+  manifest pointing at files that are gone is worse than no manifest: the tags render and
+  every one of them 404s.
+
+Both are `.gitignore`d and neither is a build input, so a `git pull` cannot hand anyone a
+broken front end - the worst case is the unminified fallback.
+
 `theme-toggle.js` is deliberately left out of the bundle: it has to run before first paint
 to avoid a flash of the wrong theme, so it stays a render-blocking script in the head.
 
@@ -215,7 +234,10 @@ php artisan test
   and that non-admins are refused.
 - `ReminderJobTest` covers all three reminder jobs, including idempotency and the deadline
   window boundary.
-- `SourceAssetTest` covers the no-build asset fallback and its whitelist.
+- `SourceAssetTest` covers the no-build asset fallback, its whitelist, a stale `public/hot`
+  not reaching the page, and the fallback script list not drifting from `app.js`.
+- `FrontendAssetsTest` covers the delivery-path decision for every state a checkout can be
+  in, including a dev server that is listening and one that is not.
 - `SecurityHeadersTest` asserts the CSP and hardening headers, and that `script-src` has
   not been relaxed.
 

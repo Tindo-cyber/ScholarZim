@@ -9,13 +9,11 @@
     turn a forgotten `npm run build` into a 500 on every page. Without a manifest
     the source files are served individually instead, by SourceAssetController -
     unhashed and unminified, but a working site.
---}}
-@php
-    $viteReady = file_exists(public_path('build/manifest.json'))
-        || file_exists(public_path('hot'));
-@endphp
 
-@if($viteReady)
+    FrontendAssets makes that call; see it for why the presence of public/hot or
+    of a manifest is not on its own enough to trust either one.
+--}}
+@if(\App\Support\FrontendAssets::viteReady())
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 @else
     <link rel="stylesheet" href="{{ route('assets.source', 'scholarzim.css') }}">
