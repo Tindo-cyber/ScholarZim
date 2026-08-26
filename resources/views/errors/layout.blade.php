@@ -4,10 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('code') &middot; ScholarZim</title>
-    <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}">
-    <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-base.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-theme.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/css/scholarzim.css') }}">
+    @include('partials.assets')
 </head>
 <body data-bvite="theme-Mariner" class="layout-border svgstroke-a">
 

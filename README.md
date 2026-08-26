@@ -164,6 +164,21 @@ compiled stylesheets and script are referenced statically from `public/assets/bv
 theme ships compiled and is never edited here, so it has nothing to gain from a build step.
 The palette is set once via `data-bvite="theme-Mariner"` on `<body>` in each layout.
 
+Every stylesheet and script in the document head comes from a single partial,
+`resources/views/partials/assets.blade.php`, which all four layouts (`app`, `auth`, `public`,
+`errors/layout`) include and none of them supplement. That is a rule rather than a
+preference: when each layout kept its own copy of the list they drifted, and the drift was
+invisible from the page that caused it — the error layout pointed at an
+`assets/css/scholarzim.css` that has never existed, so every 404 and 500 rendered without
+ScholarZim's own styles, and the auth layout was the only one omitting `theme-toggle.js`, so
+signing in ignored a saved dark mode. `HeadAssetsTest` enforces both halves of the rule.
+
+Link order inside that partial is load-bearing. The vendor theme defines a bare `main` with
+its own dashboard grid (`grid-template-columns: 120px auto`) and `scholarzim.css` overrides
+it back to `display: block`. Equal specificity means document order is the only reason the
+override wins; reversed, every page collapses into that 120px first column while still
+looking styled enough to seem deliberate.
+
 ScholarZim's own CSS and JS live in `resources/css` and `resources/js` and go through Vite,
 so they are minified and content-hashed and a deploy cannot serve a stale stylesheet out of
 a browser cache. `resources/views/partials/assets.blade.php` emits the built tags; with no
@@ -189,7 +204,9 @@ Both are `.gitignore`d and neither is a build input, so a `git pull` cannot hand
 broken front end - the worst case is the unminified fallback.
 
 `theme-toggle.js` is deliberately left out of the bundle: it has to run before first paint
-to avoid a flash of the wrong theme, so it stays a render-blocking script in the head.
+to avoid a flash of the wrong theme, so it stays a render-blocking script in the head. It
+guards on the elements it needs, so it is safe on the auth and error pages that have no
+toggle to show.
 
 Charts on both analytics pages are inline SVG/CSS, so no charting library is required at
 runtime.
@@ -238,6 +255,9 @@ php artisan test
   not reaching the page, and the fallback script list not drifting from `app.js`.
 - `FrontendAssetsTest` covers the delivery-path decision for every state a checkout can be
   in, including a dev server that is listening and one that is not.
+- `HeadAssetsTest` asserts no view references a missing asset, that every layout takes its
+  head assets from the shared partial and adds none of its own, that all five error pages get
+  the full stylesheet set, and that the overlay is still linked after the vendor theme.
 - `SecurityHeadersTest` asserts the CSP and hardening headers, and that `script-src` has
   not been relaxed.
 

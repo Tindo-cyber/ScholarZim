@@ -6,11 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Dashboard') &middot; ScholarZim</title>
 
-    <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}">
-    <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-base.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-theme.css') }}">
     @include('partials.assets')
-    <script src="{{ asset('assets/js/theme-toggle.js') }}"></script>
     @stack('styles')
 </head>
 <body data-bvite="theme-Mariner" class="layout-border svgstroke-a layout-default">

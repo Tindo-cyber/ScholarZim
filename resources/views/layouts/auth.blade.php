@@ -6,9 +6,6 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'Sign in') &middot; ScholarZim</title>
 
-    <link rel="icon" href="{{ asset('assets/img/favicon.ico') }}">
-    <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-base.css') }}">
-    <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-theme.css') }}">
     @include('partials.assets')
     @stack('styles')
 </head>
