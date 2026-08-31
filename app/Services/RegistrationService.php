@@ -59,30 +59,39 @@ class RegistrationService
     public function registerProvider(array $data, UploadedFile $certificate): User
     {
         $role = Role::where('role_name', RoleNames::PROVIDER)->firstOrFail();
+        // Stored before the transaction because a filesystem cannot be rolled
+        // back with it - so if the registration fails, the certificate is
+        // deleted again rather than left on disk belonging to no account.
         $certificatePath = $this->fileStorage->store($certificate, 'provider-certificates');
 
-        $user = DB::transaction(function () use ($data, $role, $certificate, $certificatePath) {
-            $user = User::create([
-                'role_id' => $role->role_id,
-                'full_name' => $data['full_name'],
-                'email' => $data['email'],
-                'phone' => $data['phone'] ?? null,
-                'password_hash' => Hash::make($data['password']),
-                'account_status' => AccountStatus::PENDING,
-                'email_verified' => false,
-            ]);
+        try {
+            $user = DB::transaction(function () use ($data, $role, $certificate, $certificatePath) {
+                $user = User::create([
+                    'role_id' => $role->role_id,
+                    'full_name' => $data['full_name'],
+                    'email' => $data['email'],
+                    'phone' => $data['phone'] ?? null,
+                    'password_hash' => Hash::make($data['password']),
+                    'account_status' => AccountStatus::PENDING,
+                    'email_verified' => false,
+                ]);
 
-            ProviderProfile::create([
-                'user_id' => $user->user_id,
-                'organisation_type' => $data['organisation_type'],
-                'registration_number' => $data['registration_number'],
-                'certificate_path' => $certificatePath,
-                'certificate_filename' => $certificate->getClientOriginalName(),
-                'submitted_at' => Carbon::now(),
-            ]);
+                ProviderProfile::create([
+                    'user_id' => $user->user_id,
+                    'organisation_type' => $data['organisation_type'],
+                    'registration_number' => $data['registration_number'],
+                    'certificate_path' => $certificatePath,
+                    'certificate_filename' => $certificate->getClientOriginalName(),
+                    'submitted_at' => Carbon::now(),
+                ]);
 
-            return $user;
-        });
+                return $user;
+            });
+        } catch (\Throwable $e) {
+            $this->fileStorage->delete($certificatePath);
+
+            throw $e;
+        }
 
         $this->auditService->log($user->email, AuditAction::REGISTER, 'USER', $user->user_id, 'Provider registration');
         $this->emailVerificationService->issue($user);

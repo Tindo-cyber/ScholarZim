@@ -4,6 +4,13 @@
 # ── 1. Composer dependencies ───────────────────────────────────────────────
 FROM composer:2 AS vendor
 WORKDIR /app
+# phpoffice/phpspreadsheet requires ext-gd, which the composer image does not
+# ship. Without it `composer install` stops at the platform check and the image
+# never builds - so the extension is installed here purely to let the dependency
+# resolution run; the runtime stage installs its own copy further down.
+RUN apk add --no-cache freetype-dev libjpeg-turbo-dev libpng-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j"$(nproc)" gd
 # Install against the manifests alone first, so a code-only change does not
 # re-resolve the dependency tree on every rebuild.
 COPY composer.json composer.lock ./
@@ -17,7 +24,7 @@ RUN composer dump-autoload --optimize --no-dev
 # ScholarZim's own CSS and JS are content-hashed by Vite, so a deploy cannot
 # serve a stale stylesheet out of a browser cache. Only the build output is
 # carried into the runtime image; node itself never ships.
-FROM node:20-alpine AS assets
+FROM node:22-alpine AS assets
 WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --no-audit --no-fund
@@ -26,7 +33,11 @@ COPY resources ./resources
 RUN npm run build
 
 # ── 3. Runtime ─────────────────────────────────────────────────────────────
-FROM php:8.3-fpm-alpine
+# 8.4, not 8.3: the locked symfony/* components require PHP >= 8.4.1, and
+# composer's generated platform_check.php aborts the app on boot rather than
+# limping along, so an 8.3 runtime produces an image that builds and then
+# refuses to serve a single request.
+FROM php:8.4-fpm-alpine
 
 RUN apk add --no-cache nginx supervisor tzdata icu-dev libzip-dev libpng-dev oniguruma-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg 2>/dev/null || true \

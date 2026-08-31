@@ -138,8 +138,43 @@ final class FrontendAssets
             if (! is_string($file) || ! is_file($buildDir . DIRECTORY_SEPARATOR . $file)) {
                 return false;
             }
+
+            if (str_ends_with($entry, '.css') && ! self::entryDeliversCss($manifest[$entry], $buildDir)) {
+                return false;
+            }
         }
 
         return true;
+    }
+
+    /**
+     * Whether a CSS entry point actually resolves to a stylesheet.
+     *
+     * The file check above is not enough on its own. A build made while
+     * resources/css/app.css was empty - or one left behind from before the
+     * stylesheet was added - names an empty JavaScript chunk for the CSS entry
+     * and carries no stylesheet at all. Every file the manifest points at is on
+     * disk, so the entry looks complete, @vite() emits a <script> where the
+     * <link> should be, and the site renders with the vendor theme alone: no app
+     * shell, no hero, no auth split panel, and no 404 anywhere to say why.
+     *
+     * Vite writes a CSS entry one of two ways, so both count: `file` is the
+     * stylesheet itself, or `file` is a JS chunk with the stylesheets listed
+     * under `css`. Anything else means the build cannot dress the page, and the
+     * source-file fallback - unhashed, but complete - is the better answer.
+     */
+    private static function entryDeliversCss(array $entry, string $buildDir): bool
+    {
+        if (str_ends_with((string) $entry['file'], '.css')) {
+            return true;
+        }
+
+        foreach ((array) ($entry['css'] ?? []) as $stylesheet) {
+            if (is_string($stylesheet) && is_file($buildDir . DIRECTORY_SEPARATOR . $stylesheet)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

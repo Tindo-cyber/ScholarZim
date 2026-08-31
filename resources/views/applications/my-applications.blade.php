@@ -78,7 +78,11 @@
                                             page the student has to act on, so it is called
                                             out rather than left as a status word.
                                         --}}
-                                        @if($application->awaitsApplicantResponse())
+                                        @if($application->isAwarded())
+                                            <span class="d-block small text-success fw-semibold mt-1">
+                                                Awarded {{ $application->awarded_at?->format('d M Y') }}
+                                            </span>
+                                        @elseif($application->awaitsApplicantResponse())
                                             <a class="d-block small fw-semibold mt-1"
                                                href="{{ route('applications.confirmation', $application->application_id) }}">
                                                 Waiting on your response

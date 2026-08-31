@@ -5,6 +5,11 @@ namespace App\Support;
 final class NotificationType
 {
     public const APPLICATION_APPROVED = 'APPLICATION_APPROVED';
+
+    // The APPLICATION_ prefix is what routes this into the Applications email
+    // category in NotificationPresentation::category(), so an award follows the
+    // same preference toggle as every other decision on the application.
+    public const APPLICATION_AWARDED = 'APPLICATION_AWARDED';
     public const APPLICATION_REJECTED = 'APPLICATION_REJECTED';
     public const APPLICATION_SUBMITTED = 'APPLICATION_SUBMITTED';
     public const APPLICATION_UNDER_REVIEW = 'APPLICATION_UNDER_REVIEW';
@@ -44,6 +49,7 @@ final class NotificationType
         self::APPLICATION_INTERVIEW,
         self::NEW_APPLICATION,
         self::APPLICATION_APPROVED,
+        self::APPLICATION_AWARDED,
         self::APPLICATION_REJECTED,
         self::DOCUMENTS_REQUESTED,
         self::INFO_REQUESTED,

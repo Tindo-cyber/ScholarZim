@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Support\AuditAction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class ApplicantProfileService
@@ -33,6 +34,8 @@ class ApplicantProfileService
             'field_of_study' => $data['field_of_study'] ?? null,
             'country' => $data['country'] ?? null,
             'province' => $data['province'] ?? null,
+            'district' => $data['district'] ?? null,
+            'locality' => $data['locality'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
             'citizenship' => $data['citizenship'] ?? null,
             'academic_results' => $data['academic_results'] ?? null,
@@ -64,8 +67,7 @@ class ApplicantProfileService
         }
 
         $profile = $this->forUser($user);
-
-        $this->fileStorage->delete($profile->{$prefix . '_path'});
+        $supersededPath = $profile->{$prefix . '_path'};
 
         $uploadedAtColumn = $prefix === 'results_certificate'
             ? 'results_uploaded_at'
@@ -76,19 +78,40 @@ class ApplicantProfileService
         $extension = $file->getClientOriginalExtension() ?: $file->extension();
         $renamedTo = ApplicantProfile::DOCUMENT_FILE_LABELS[$documentType] . ($extension ? '.' . $extension : '');
 
-        $profile->update([
-            $prefix . '_path' => $this->fileStorage->store($file, 'profiles/' . $user->user_id),
-            $prefix . '_filename' => $renamedTo,
-            $uploadedAtColumn => Carbon::now(),
-        ]);
+        // The replacement is written before anything is taken away. Deleting the
+        // old file first - as this used to - meant a failed upload or a failed
+        // update left the profile pointing at a path that no longer existed, so
+        // a student lost the document they already had by trying to replace it.
+        $storedPath = $this->fileStorage->store($file, 'profiles/' . $user->user_id, $user);
 
-        $this->auditService->log(
-            $user->email,
-            AuditAction::PROFILE_UPDATE,
-            'APPLICANT_PROFILE',
-            $profile->profile_id,
-            'Uploaded ' . $documentType
-        );
+        try {
+            DB::transaction(function () use ($profile, $prefix, $storedPath, $renamedTo, $uploadedAtColumn, $user, $documentType) {
+                $profile->update([
+                    $prefix . '_path' => $storedPath,
+                    $prefix . '_filename' => $renamedTo,
+                    $uploadedAtColumn => Carbon::now(),
+                ]);
+
+                $this->auditService->logOrFail(
+                    $user->email,
+                    AuditAction::PROFILE_UPDATE,
+                    'APPLICANT_PROFILE',
+                    $profile->profile_id,
+                    'Uploaded ' . $documentType
+                );
+            });
+        } catch (\Throwable $e) {
+            // The row still refers to the previous file, so it is the new upload
+            // that is now the orphan.
+            $this->fileStorage->delete($storedPath);
+
+            throw $e;
+        }
+
+        // Committed: the old file is genuinely unreferenced and safe to remove.
+        if ($supersededPath !== $storedPath) {
+            $this->fileStorage->delete($supersededPath);
+        }
 
         return $profile;
     }

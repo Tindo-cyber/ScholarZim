@@ -76,6 +76,46 @@ class AdminSettingsTest extends TestCase
         $this->assertTrue(app(SettingsService::class)->scholarFitWeightsAreDefault());
     }
 
+    /**
+     * A criterion the engine does not score is refused rather than dropped.
+     * Silently ignoring it meant an administrator could invent a dimension,
+     * be told the weights saved, and have nothing change.
+     */
+    public function test_an_unknown_scoring_criterion_is_refused(): void
+    {
+        $settings = app(SettingsService::class);
+
+        try {
+            $settings->updateScholarFitWeights([
+                'academic' => 20,
+                'education_level' => 25,
+                'field' => 25,
+                'location' => 15,
+                'deadline' => 10,
+                'certificate' => 5,
+                'interview_performance' => 0,
+            ], $this->admin->email);
+
+            $this->fail('an unknown criterion should not have been accepted');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertStringContainsString(
+                'interview_performance',
+                implode(' ', $e->validator->errors()->all())
+            );
+        }
+
+        $this->assertTrue($settings->scholarFitWeightsAreDefault());
+    }
+
+    /** The scoring identity names both the engine and the weights in force. */
+    public function test_the_scoring_identity_names_the_engine_and_the_weights(): void
+    {
+        $settings = app(SettingsService::class);
+
+        $this->assertStringContainsString('ScholarFit v2', $settings->scoringIdentity());
+        $this->assertStringContainsString($settings->scoringVersion(), $settings->scoringIdentity());
+    }
+
     public function test_resetting_restores_the_shipped_defaults(): void
     {
         $settings = app(SettingsService::class);

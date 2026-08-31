@@ -18,6 +18,8 @@ class ApplicantProfile extends Model
         'field_of_study',
         'country',
         'province',
+        'district',
+        'locality',
         'date_of_birth',
         'citizenship',
         'academic_results',

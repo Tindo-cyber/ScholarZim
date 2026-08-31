@@ -2,12 +2,14 @@
 
 namespace App\Services;
 
+use App\Exceptions\InvalidOpportunityTransition;
 use App\Models\Opportunity;
 use App\Models\OpportunityView;
 use App\Models\User;
 use App\Support\AuditAction;
 use App\Support\FormOptions;
 use App\Support\NotificationType;
+use App\Support\OpportunityLifecycle;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
 use App\Support\RoleNames;
@@ -118,23 +120,32 @@ class OpportunityService
     }
 
     /**
-     * Providers may revise a listing after it is posted. Since the content
-     * changed, it goes back through moderation before it is public again -
-     * the same trust boundary a brand-new post crosses in create().
+     * Providers may revise a listing after it is posted.
+     *
+     * Whether that costs them their approval depends on what they changed. An
+     * edit that alters what is being offered or who may have it - the fields
+     * OpportunityLifecycle calls material - goes back through moderation, on the
+     * same trust boundary a brand-new post crosses in create(). A presentational
+     * edit, or extending a deadline, leaves an approved listing live.
+     *
+     * The old rule sent every edit back to the queue, which meant fixing a typo
+     * un-published a live scholarship until an administrator got to it. That
+     * teaches providers to leave mistakes alone, which is the opposite of what
+     * moderation is for - and it was already inconsistent, since extendDeadline()
+     * had carved out exactly this exception for itself.
      */
     public function update(int $opportunityId, array $data, User $provider, string $reason): Opportunity
     {
         $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
 
         if ($opportunity->isWithdrawn()) {
-            throw new \RuntimeException('This scholarship has been withdrawn and can no longer be edited.');
+            throw InvalidOpportunityTransition::withdrawn();
         }
 
-        $wasApproved = OpportunityModerationStatus::isApproved($opportunity->moderation_status);
         $country = $this->normalizeCountry($data['country'] ?? null);
         $displayName = trim((string) ($data['provider_display_name'] ?? ''));
 
-        $opportunity->update([
+        $attributes = [
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
             'education_level' => $data['education_level'] ?? null,
@@ -142,29 +153,68 @@ class OpportunityService
             'country' => $country,
             'target_country' => $country,
             'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
+        ] + $this->awardAttributes($data);
+
+        $wasApproved = OpportunityModerationStatus::isApproved($opportunity->moderation_status);
+        $material = OpportunityLifecycle::isMaterialChange($opportunity, $attributes)
+            // Bringing a deadline forward cuts applicants off early, so it is
+            // material even though pushing one back is not.
+            || OpportunityLifecycle::shortensDeadline($opportunity, $data['deadline'] ?? null);
+
+        $attributes += [
             'deadline' => $data['deadline'] ?? null,
             'provider_name' => $displayName !== '' ? $displayName : $provider->full_name,
-            'status' => OpportunityStatus::ACTIVE,
-            'moderation_status' => OpportunityModerationStatus::PENDING,
-            'submitted_at' => Carbon::now(),
-            'reviewed_at' => null,
-            'reviewed_by' => null,
-            'rejection_reason' => null,
             'last_change_reason' => $reason,
             'updated_at' => Carbon::now(),
-        ] + $this->awardAttributes($data));
+        ];
+
+        if ($material) {
+            OpportunityLifecycle::assertModeration(
+                $opportunity->moderation_status,
+                OpportunityModerationStatus::PENDING
+            );
+
+            $attributes += [
+                'moderation_status' => OpportunityModerationStatus::PENDING,
+                'submitted_at' => Carbon::now(),
+                'reviewed_at' => null,
+                'reviewed_by' => null,
+                'rejection_reason' => null,
+            ];
+        }
+
+        // A closed listing reopens only if its deadline is genuinely in the
+        // future again. Editing one used to set it ACTIVE unconditionally, which
+        // said "open" about a listing whose deadline had already passed.
+        if ($opportunity->isClosed() && filled($attributes['deadline'])
+            && Carbon::parse($attributes['deadline'])->gte(Carbon::today())) {
+            OpportunityLifecycle::assertPublication($opportunity->status, OpportunityStatus::ACTIVE);
+            $attributes['status'] = OpportunityStatus::ACTIVE;
+        }
+
+        // Diffed before the write, so the entry names the fields that moved and
+        // what they moved from. A moderator reviewing a listing that came back
+        // to the queue needs to see the change, not re-read the whole listing.
+        $changes = $this->auditService->diff(
+            $opportunity->only(array_keys($attributes)),
+            $attributes
+        );
+
+        $opportunity->update($attributes);
 
         $this->auditService->log(
             $provider->email,
             AuditAction::UPDATE_OPPORTUNITY,
             'OPPORTUNITY',
             $opportunity->opportunity_id,
-            'Updated "' . $opportunity->title . '": ' . $reason
+            'Updated "' . $opportunity->title . '" (' . ($material ? 'material, back to review' : 'minor, stays live')
+                . '): ' . $reason,
+            $changes + ['reason' => $reason]
         );
 
         $this->forgetFacetCaches();
 
-        if ($wasApproved) {
+        if ($material && $wasApproved) {
             $this->notifyAdminsOfPendingReview($opportunity);
         }
 
@@ -180,19 +230,29 @@ class OpportunityService
         $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
 
         if ($opportunity->isWithdrawn()) {
-            throw new \RuntimeException('This scholarship has been withdrawn and can no longer be edited.');
+            throw InvalidOpportunityTransition::withdrawn();
         }
 
         if ($opportunity->deadline && Carbon::parse($newDeadline)->lt($opportunity->deadline)) {
             throw new \RuntimeException('The new deadline must be on or after the current deadline.');
         }
 
-        $opportunity->update([
+        $attributes = [
             'deadline' => $newDeadline,
-            'status' => OpportunityStatus::ACTIVE,
             'last_change_reason' => $reason,
             'updated_at' => Carbon::now(),
-        ]);
+        ];
+
+        // Reopening is the one thing an extension does to the lifecycle, and it
+        // only applies to a listing the deadline had closed. Setting ACTIVE
+        // unconditionally, as this used to, would also have reopened a listing
+        // the provider had withdrawn.
+        if ($opportunity->isClosed() && Carbon::parse($newDeadline)->gte(Carbon::today())) {
+            OpportunityLifecycle::assertPublication($opportunity->status, OpportunityStatus::ACTIVE);
+            $attributes['status'] = OpportunityStatus::ACTIVE;
+        }
+
+        $opportunity->update($attributes);
 
         $this->auditService->log(
             $provider->email,
@@ -222,12 +282,13 @@ class OpportunityService
     {
         $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
 
-        if ($opportunity->isWithdrawn()) {
-            throw new \RuntimeException('This scholarship has already been withdrawn.');
-        }
+        // Publication axis only. The administrator's verdict is left exactly as
+        // it was, so the platform still knows whether this listing had passed
+        // review - which withdrawing used to erase.
+        OpportunityLifecycle::assertPublication($opportunity->status, OpportunityStatus::WITHDRAWN);
 
         $opportunity->update([
-            'moderation_status' => OpportunityModerationStatus::WITHDRAWN,
+            'status' => OpportunityStatus::WITHDRAWN,
             'last_change_reason' => $reason,
             'updated_at' => Carbon::now(),
         ]);

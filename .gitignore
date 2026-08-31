@@ -10,6 +10,9 @@
 .env.backup
 .env.production
 .env.prod
+# Filled-in compose env: holds a real APP_KEY and Mailgun secret, so it is a
+# working credential file rather than a template. The template is .env.example.
+.env.docker
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml

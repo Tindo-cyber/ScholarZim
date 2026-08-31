@@ -71,7 +71,8 @@
                                         <input class="form-check-input" type="checkbox"
                                                name="applications[]" value="{{ $application->application_id }}"
                                                data-bulk-item
-                                               @disabled($application->isWithdrawn())
+                                               {{-- Decided and withdrawn alike: a bulk action on either is refused, so it cannot be selected. --}}
+                                               @disabled($application->isTerminal())
                                                aria-label="Select the application from {{ $application->user?->displayName() ?? 'a deleted user' }}">
                                     </td>
                                     <td data-label="Applicant">
@@ -93,7 +94,12 @@
                                         <span class="min-w-0">
                                             <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
 
-                                            @if($application->info_responded_at && ! $application->awaitsApplicantResponse())
+                                            @if($application->isAwarded())
+                                                {{-- The award date is the fact the Awarded tab exists to show. --}}
+                                                <span class="d-block small text-secondary mt-1">
+                                                    Awarded {{ $application->awarded_at?->format('d M Y') ?? 'date not recorded' }}
+                                                </span>
+                                            @elseif($application->info_responded_at && ! $application->awaitsApplicantResponse())
                                                 <span class="d-block small text-primary fw-semibold mt-1">
                                                     Answered your question
                                                 </span>

@@ -16,6 +16,9 @@ class Kernel extends HttpKernel
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
         \App\Http\Middleware\TrustProxies::class,
+        // First in the global stack: everything logged from here on,
+        // including framework-level failures, carries the correlation id.
+        \App\Http\Middleware\AssignRequestId::class,
         \Illuminate\Http\Middleware\HandleCors::class,
         \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
@@ -38,6 +41,11 @@ class Kernel extends HttpKernel
             // is holding has been rotated out from under it.
             \Illuminate\Session\Middleware\AuthenticateSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            // Sits directly after the session is resolved, so a suspension takes
+            // effect on the next request rather than at the next login. Placed in
+            // the group rather than on individual routes because the one thing a
+            // suspended account must not have is a route somebody forgot.
+            \App\Http\Middleware\BlockSuspendedAccounts::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SecurityHeaders::class,
@@ -46,6 +54,9 @@ class Kernel extends HttpKernel
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            // Same rule for token callers: a suspended account's API token stops
+            // working immediately instead of outliving the suspension.
+            \App\Http\Middleware\BlockSuspendedAccounts::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];

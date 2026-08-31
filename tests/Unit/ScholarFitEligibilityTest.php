@@ -70,7 +70,7 @@ class ScholarFitEligibilityTest extends TestCase
 
         $this->assertFalse($scored->isEligible());
         $this->assertSame(0, $scored->matchScore);
-        $this->assertStringContainsString('not eligible', $scored->breakdown->explanation);
+        $this->assertStringContainsStringIgnoringCase('not eligible', $scored->breakdown->explanation);
     }
 
     public function test_being_over_the_age_limit_disqualifies_outright(): void

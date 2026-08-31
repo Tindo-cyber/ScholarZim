@@ -15,7 +15,9 @@ final class OpportunityModerationStatus
     public const PENDING = 'PENDING';
     public const APPROVED = 'APPROVED';
     public const REJECTED = 'REJECTED';
-    public const WITHDRAWN = 'WITHDRAWN';
+
+    /** The three verdicts an administrator can reach, and nothing else. */
+    public const ALL = [self::PENDING, self::APPROVED, self::REJECTED];
 
     private function __construct()
     {
@@ -31,7 +33,6 @@ final class OpportunityModerationStatus
             self::PENDING => 'Awaiting review',
             self::APPROVED => 'Published',
             self::REJECTED => 'Declined',
-            self::WITHDRAWN => 'Withdrawn',
             default => $status,
         };
     }
@@ -45,7 +46,7 @@ final class OpportunityModerationStatus
         return match (strtoupper(trim($status))) {
             self::PENDING => 'warning',
             self::APPROVED => 'success',
-            self::REJECTED, self::WITHDRAWN => 'danger',
+            self::REJECTED => 'danger',
             default => 'secondary',
         };
     }
@@ -58,10 +59,5 @@ final class OpportunityModerationStatus
     public static function isApproved(?string $status): bool
     {
         return strcasecmp((string) $status, self::APPROVED) === 0;
-    }
-
-    public static function isWithdrawn(?string $status): bool
-    {
-        return strcasecmp((string) $status, self::WITHDRAWN) === 0;
     }
 }

@@ -41,21 +41,27 @@ class SendProfileReminders extends Command
             }
 
             $userId = $applicant->user_id;
-            if ($notifications->hasNotification($applicant, NotificationType::PROFILE_INCOMPLETE, $userId)) {
-                continue;
-            }
 
             $message = $hasCertificate
                 ? 'Complete your academic profile to unlock better scholarship matches.'
                 : 'Upload your results certificate and finish your profile before applying.';
 
-            $notifications->notifyUser(
+            // Idempotent by way of notifyOnce(), so a second run in the same
+            // period adds nothing rather than nagging twice. It returns null
+            // when it suppressed a duplicate, which is what keeps the tally
+            // below honest about how many people were actually nudged.
+            $reminder = $notifications->notifyOnce(
                 $applicant,
                 NotificationType::PROFILE_INCOMPLETE,
                 $message,
                 '/applicant/profile',
                 $userId
             );
+
+            if ($reminder === null) {
+                continue;
+            }
+
             $sent++;
         }
 

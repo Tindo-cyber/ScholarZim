@@ -56,6 +56,73 @@ class FrontendAssetsTest extends TestCase
         $this->assertFalse(FrontendAssets::viteReadyIn($this->publicDir));
     }
 
+    /**
+     * The build that prompted entryDeliversCss(). Every file the manifest names
+     * is on disk, so the older check passed it, but the CSS entry resolves to an
+     * empty JavaScript chunk and the build carries no stylesheet at all - the
+     * shape `npm run build` leaves behind when it runs before resources/css
+     * exists. @vite() then emits a <script> where the <link> should be and the
+     * site renders on the vendor theme alone, with nothing anywhere to say so.
+     */
+    public function test_a_build_whose_css_entry_carries_no_stylesheet_uses_the_fallback(): void
+    {
+        mkdir($this->publicDir . '/build/assets', 0777, true);
+
+        file_put_contents($this->publicDir . '/build/manifest.json', json_encode([
+            'resources/css/app.css' => ['file' => 'assets/app-empty.js', 'isEntry' => true],
+            'resources/js/app.js' => ['file' => 'assets/app-test.js', 'isEntry' => true],
+        ]));
+
+        file_put_contents($this->publicDir . '/build/assets/app-empty.js', '');
+        file_put_contents($this->publicDir . '/build/assets/app-test.js', '// app');
+
+        $this->assertFalse(FrontendAssets::viteReadyIn($this->publicDir));
+    }
+
+    /**
+     * The other shape Vite writes a CSS entry in - a JS chunk that names its
+     * stylesheets under `css` - is a real build and must still be used.
+     */
+    public function test_a_css_entry_that_names_its_stylesheet_separately_is_used(): void
+    {
+        mkdir($this->publicDir . '/build/assets', 0777, true);
+
+        file_put_contents($this->publicDir . '/build/manifest.json', json_encode([
+            'resources/css/app.css' => [
+                'file' => 'assets/app-entry.js',
+                'css' => ['assets/app-test.css'],
+                'isEntry' => true,
+            ],
+            'resources/js/app.js' => ['file' => 'assets/app-test.js', 'isEntry' => true],
+        ]));
+
+        file_put_contents($this->publicDir . '/build/assets/app-entry.js', '// entry');
+        file_put_contents($this->publicDir . '/build/assets/app-test.css', 'main{display:block}');
+        file_put_contents($this->publicDir . '/build/assets/app-test.js', '// app');
+
+        $this->assertTrue(FrontendAssets::viteReadyIn($this->publicDir));
+    }
+
+    /** The same shape, but the stylesheet it names was never written. */
+    public function test_a_css_entry_naming_a_missing_stylesheet_uses_the_fallback(): void
+    {
+        mkdir($this->publicDir . '/build/assets', 0777, true);
+
+        file_put_contents($this->publicDir . '/build/manifest.json', json_encode([
+            'resources/css/app.css' => [
+                'file' => 'assets/app-entry.js',
+                'css' => ['assets/app-gone.css'],
+                'isEntry' => true,
+            ],
+            'resources/js/app.js' => ['file' => 'assets/app-test.js', 'isEntry' => true],
+        ]));
+
+        file_put_contents($this->publicDir . '/build/assets/app-entry.js', '// entry');
+        file_put_contents($this->publicDir . '/build/assets/app-test.js', '// app');
+
+        $this->assertFalse(FrontendAssets::viteReadyIn($this->publicDir));
+    }
+
     public function test_an_unreadable_manifest_uses_the_fallback(): void
     {
         mkdir($this->publicDir . '/build', 0777, true);

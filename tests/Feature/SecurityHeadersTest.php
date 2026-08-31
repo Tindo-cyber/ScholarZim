@@ -43,4 +43,33 @@ class SecurityHeadersTest extends TestCase
     {
         $this->get('/')->assertHeaderMissing('Strict-Transport-Security');
     }
+
+    /**
+     * In production TLS stops at the reverse proxy, so the only evidence the
+     * app has that a request arrived over HTTPS is X-Forwarded-Proto. That
+     * header is discarded unless a proxy is trusted, which left the deployed
+     * site - HTTPS end to end - never sending HSTS at all. config/trustedproxy
+     * supplies the missing trust from TRUSTED_PROXIES.
+     */
+    public function test_hsts_is_sent_when_a_trusted_proxy_reports_tls(): void
+    {
+        config(['trustedproxy.proxies' => '*']);
+
+        $this->get('/', ['X-Forwarded-Proto' => 'https'])
+            ->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+
+    /**
+     * The other half of that bargain: the header is only worth reading from a
+     * proxy we trust. With none configured - the default everywhere but the
+     * production compose file - a client cannot talk the app into believing
+     * its plain-HTTP request was secure.
+     */
+    public function test_a_forwarded_scheme_is_ignored_when_no_proxy_is_trusted(): void
+    {
+        config(['trustedproxy.proxies' => null]);
+
+        $this->get('/', ['X-Forwarded-Proto' => 'https'])
+            ->assertHeaderMissing('Strict-Transport-Security');
+    }
 }

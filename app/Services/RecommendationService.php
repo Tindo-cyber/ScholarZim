@@ -43,7 +43,11 @@ class RecommendationService
             return [];
         }
 
-        $ranked = $this->rankedIdsForUser($user);
+        // Dropped before slicing, not after. A cached ranking can name listings
+        // that have since closed, and trimming to the limit first meant those
+        // gaps came out of the page: a dozen were asked for, three had expired,
+        // and nine were rendered while eligible listings sat unshown behind them.
+        $ranked = $this->stillOnOffer($this->rankedIdsForUser($user));
 
         if ($minimumScore > 0) {
             $ranked = array_values(array_filter(
@@ -81,17 +85,24 @@ class RecommendationService
             return [];
         }
 
-        $appliedIds = Application::where('user_id', $user->user_id)
+        // Only applications that actually block a fresh one are excluded, and the
+        // rule for that lives on the Application model rather than being spelled
+        // out again here. Scoring every application as a permanent exclusion -
+        // which is what this used to do - hid every listing the student had been
+        // rejected from or withdrawn from, even though both are exactly the
+        // listings they are allowed to apply to again.
+        $blockedIds = Application::where('user_id', $user->user_id)
+            ->blockingReapplication()
             ->pluck('opportunity_id')
             ->all();
 
-        $key = $this->cacheKey($user, $profile, $appliedIds);
+        $key = $this->cacheKey($user, $profile);
         $ttl = now()->addMinutes((int) config('scholarfit.cache_ttl_minutes', 60));
 
-        return Cache::remember($key, $ttl, function () use ($profile, $appliedIds) {
+        return Cache::remember($key, $ttl, function () use ($profile, $blockedIds) {
             $candidates = Opportunity::query()
                 ->publiclyVisible()
-                ->when($appliedIds !== [], fn ($q) => $q->whereNotIn('opportunity_id', $appliedIds))
+                ->when($blockedIds !== [], fn ($q) => $q->whereNotIn('opportunity_id', $blockedIds))
                 ->get();
 
             $eligible = array_filter(
@@ -125,7 +136,42 @@ class RecommendationService
     {
         $ranked = $this->rankedIdsForUser($user);
 
-        return $ranked === [] ? 0 : $ranked[0]['score'];
+        $live = $this->stillOnOffer($ranked);
+
+        return $live === [] ? 0 : $live[0]['score'];
+    }
+
+    /**
+     * The rows of a cached ranking whose listings are still on offer.
+     *
+     * The one place that asks this question. A cached entry can outlive the
+     * listings it names without anything invalidating it - a deadline passing
+     * fires no catalogue event - so every consumer of rankedIdsForUser() needs
+     * the check, and each having its own copy is how they drift apart. Keeping
+     * it to ids rather than models means the dashboard's headline score does not
+     * pay to hydrate a catalogue it will not render.
+     *
+     * @param  array<int, array{id: int, score: int}>  $ranked
+     * @return array<int, array{id: int, score: int}>
+     */
+    private function stillOnOffer(array $ranked): array
+    {
+        $ids = array_column($ranked, 'id');
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $visible = Opportunity::query()
+            ->publiclyVisible()
+            ->whereIn('opportunity_id', $ids)
+            ->pluck('opportunity_id')
+            ->flip();
+
+        return array_values(array_filter(
+            $ranked,
+            static fn (array $row) => $visible->has($row['id'])
+        ));
     }
 
     /**
@@ -140,8 +186,11 @@ class RecommendationService
 
     /**
      * Turns cached (id, score) pairs back into scored models, preserving rank
-     * order. Any id that has since stopped being publicly visible drops out, so a
-     * withdrawn listing never survives inside the cache window.
+     * order.
+     *
+     * Visibility is settled by stillOnOffer() before anything reaches here, so
+     * this loads the rows it is given rather than re-deciding what counts as
+     * visible. A row that disappears between the two queries simply drops out.
      *
      * @param  array<int, array{id: int, score: int}>  $ranked
      * @return array<int, ScoredOpportunity>
@@ -155,7 +204,6 @@ class RecommendationService
         }
 
         $opportunities = Opportunity::query()
-            ->publiclyVisible()
             ->whereIn('opportunity_id', $ids)
             ->get()
             ->keyBy('opportunity_id');
@@ -175,18 +223,77 @@ class RecommendationService
         return $hydrated;
     }
 
-    private function cacheKey(User $user, ApplicantProfile $profile, array $appliedIds): string
+    /**
+     * Every input a score depends on, folded into one key.
+     *
+     * The application component used to be count($appliedIds), which is the
+     * weakness this stage exists to remove. A count cannot tell one application
+     * from another, so withdrawing from A and applying to B left the key
+     * unchanged and the student kept being served a ranking built for the
+     * applications they no longer had. Worse, the two changes that matter most -
+     * a withdrawal and a rejection - move a status without moving the count at
+     * all, so the ranking they unblocked stayed hidden until the TTL expired.
+     *
+     * The fingerprint below is taken over (opportunity_id, status) pairs in a
+     * fixed order, so it is deterministic across requests and machines while
+     * still changing on every one of those events.
+     */
+    private function cacheKey(User $user, ApplicantProfile $profile): string
     {
         $parts = [
             'scholarfit.rank',
             $user->user_id,
-            $profile->updated_at?->timestamp ?? 0,
+            $this->profileFingerprint($profile),
             $this->catalogVersion(),
+            // Weights an administrator can change...
             $this->settings->scoringVersion(),
-            count($appliedIds),
+            // ...and the algorithm those weights are fed into.
+            ScholarFitEngine::ALGORITHM_VERSION,
+            $this->applicationsFingerprint($user),
         ];
 
         return implode('.', $parts);
+    }
+
+    /**
+     * A digest of the profile row itself, rather than its updated_at.
+     *
+     * The timestamp was the obvious choice and is quietly wrong: it is stored to
+     * the second, so two edits inside the same second - or an edit in the same
+     * second the profile was created - produce an identical key and the student
+     * keeps being served a ranking computed from the values they just replaced.
+     *
+     * Hashing the attributes has no such resolution limit, and covers every
+     * scoring input on the row at once: the academic and demographic fields the
+     * weighted dimensions read, and the document paths the certificate dimension
+     * checks. Sorted first so the digest does not depend on column order.
+     */
+    private function profileFingerprint(ApplicantProfile $profile): string
+    {
+        $attributes = $profile->getAttributes();
+        ksort($attributes);
+
+        return substr(sha1((string) json_encode($attributes)), 0, 12);
+    }
+
+    /**
+     * A stable digest of what this applicant has applied to and where each of
+     * those applications now stands.
+     *
+     * Ordered by opportunity so the same set of applications always produces the
+     * same digest, and built from status as well as id so that a withdrawal, a
+     * rejection, or an approval each changes it even though none of them changes
+     * how many applications exist.
+     */
+    private function applicationsFingerprint(User $user): string
+    {
+        $rows = Application::where('user_id', $user->user_id)
+            ->orderBy('opportunity_id')
+            ->pluck('application_status', 'opportunity_id')
+            ->map(static fn (?string $status, int $id) => $id . ':' . ($status ?? 'NULL'))
+            ->implode('|');
+
+        return $rows === '' ? 'none' : substr(sha1($rows), 0, 12);
     }
 
     private function catalogVersion(): int

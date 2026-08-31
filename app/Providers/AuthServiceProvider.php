@@ -2,8 +2,19 @@
 
 namespace App\Providers;
 
-// use Illuminate\Support\Facades\Gate;
+use App\Models\Application;
+use App\Models\Notification;
+use App\Models\Opportunity;
+use App\Models\SavedScholarship;
+use App\Models\SavedSearch;
+use App\Policies\ApplicationPolicy;
+use App\Policies\NotificationPolicy;
+use App\Policies\OpportunityPolicy;
+use App\Policies\ReportPolicy;
+use App\Policies\SavedScholarshipPolicy;
+use App\Policies\SavedSearchPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 class AuthServiceProvider extends ServiceProvider
 {
@@ -13,14 +24,19 @@ class AuthServiceProvider extends ServiceProvider
      * @var array<class-string, class-string>
      */
     protected $policies = [
-        //
+        Application::class => ApplicationPolicy::class,
+        Opportunity::class => OpportunityPolicy::class,
+        SavedScholarship::class => SavedScholarshipPolicy::class,
+        SavedSearch::class => SavedSearchPolicy::class,
+        Notification::class => NotificationPolicy::class,
     ];
 
-    /**
-     * Register any authentication / authorization services.
-     */
     public function boot(): void
     {
-        //
+        // Reporting is not about one record, so it is registered as abilities
+        // rather than through a model policy.
+        Gate::define('view-reports', [ReportPolicy::class, 'viewAny']);
+        Gate::define('export-reports', [ReportPolicy::class, 'export']);
+        Gate::define('view-audit-log', [ReportPolicy::class, 'viewAuditLog']);
     }
 }

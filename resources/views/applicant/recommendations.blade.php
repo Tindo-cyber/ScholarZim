@@ -65,8 +65,9 @@
                                 <p class="small text-secondary mb-2">{{ $opportunity->awardingBody() }}</p>
 
                                 <div class="d-flex flex-wrap gap-2 mb-2">
-                                    @foreach($match->breakdown->metReasons() as $reason)
-                                        <x-status-badge :label="$reason['label']" tone="success" icon="check" />
+                                    {{-- The dimensions that carried this score, named by the same objects it was summed from. --}}
+                                    @foreach($match->breakdown->metReasons() as $dimension)
+                                        <x-status-badge :label="$dimension->label" tone="success" icon="check" />
                                     @endforeach
                                 </div>
 
@@ -95,7 +96,12 @@
                             </div>
 
                             <div class="col-md-3 d-grid gap-2">
-                                @if(in_array($opportunity->opportunity_id, $appliedIds, true))
+                                @if($awards[$opportunity->opportunity_id] ?? null)
+                                    <a class="text-decoration-none"
+                                       href="{{ route('applications.confirmation', $awards[$opportunity->opportunity_id]->application_id) }}">
+                                        <x-status-badge label="Scholarship awarded" tone="success" icon="stars" class="justify-content-center" />
+                                    </a>
+                                @elseif(in_array($opportunity->opportunity_id, $appliedIds, true))
                                     <x-status-badge label="Applied" tone="success" icon="check-circle" class="justify-content-center" />
                                 @else
                                     <a class="btn btn-primary btn-sm"

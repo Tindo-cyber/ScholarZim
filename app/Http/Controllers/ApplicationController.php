@@ -29,7 +29,7 @@ class ApplicationController extends Controller
             'applications' => $this->applicationService->paginateForApplicant($user, $request->query('status')),
             'statusCounts' => $this->applicationService->statusCountsForApplicant($user),
             'activeStatus' => $request->query('status'),
-            'statuses' => ApplicationStatus::REVIEWABLE,
+            'statuses' => ApplicationStatus::FILTERABLE,
         ]);
     }
 

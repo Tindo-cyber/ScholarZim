@@ -5,30 +5,21 @@ namespace App\Services;
 use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Support\ApplicationStateMachine;
 use App\Support\ApplicationStatus;
 use App\Support\AuditAction;
 use App\Support\NotificationType;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
 class ApplicationService
 {
-    /** The only transitions a provider is allowed to drive from the review screen. */
-    private const PROVIDER_SETTABLE = [
-        ApplicationStatus::APPROVED,
-        ApplicationStatus::REJECTED,
-        ApplicationStatus::UNDER_REVIEW,
-        ApplicationStatus::DOCUMENTS_REQUESTED,
-        ApplicationStatus::INFO_REQUESTED,
-        ApplicationStatus::WAITLISTED,
-        ApplicationStatus::SHORTLISTED,
-        ApplicationStatus::INTERVIEW,
-    ];
-
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly AuditService $auditService,
@@ -92,22 +83,12 @@ class ApplicationService
         return $application;
     }
 
-    /**
-     * Statuses that do NOT lock an applicant out of applying again: a rejection
-     * is a closed door they may knock on next intake, and a withdrawal was their
-     * own decision to step back.
-     */
-    private const REAPPLIABLE = [
-        ApplicationStatus::REJECTED,
-        ApplicationStatus::WITHDRAWN,
-    ];
-
     /** True if the applicant has a live application against this listing. */
     public function hasApplied(User $user, int $opportunityId): bool
     {
         return Application::where('user_id', $user->user_id)
             ->where('opportunity_id', $opportunityId)
-            ->whereNotIn('application_status', self::REAPPLIABLE)
+            ->blockingReapplication()
             ->exists();
     }
 
@@ -125,8 +106,31 @@ class ApplicationService
         }
 
         return Application::where('user_id', $user->user_id)
-            ->whereNotIn('application_status', self::REAPPLIABLE)
+            ->blockingReapplication()
             ->pluck('opportunity_id')
+            ->all();
+    }
+
+    /**
+     * This applicant's awarded applications, keyed by the listing they belong to.
+     *
+     * A companion to appliedIds() for the listing pages: an award is a subset of
+     * "already applied", and the cards need to say which subset. Told apart in
+     * the UI because "Applied" on a scholarship a student has actually won reads
+     * as though nothing has happened yet.
+     *
+     * @return array<int, Application>
+     */
+    public function awardsByOpportunity(?User $user): array
+    {
+        if (! $user) {
+            return [];
+        }
+
+        return Application::where('user_id', $user->user_id)
+            ->where('application_status', ApplicationStatus::AWARDED)
+            ->get(['application_id', 'opportunity_id', 'awarded_at'])
+            ->keyBy('opportunity_id')
             ->all();
     }
 
@@ -170,58 +174,115 @@ class ApplicationService
             throw new RuntimeException('The deadline for this scholarship has passed.');
         }
 
-        $existing = Application::where('user_id', $user->user_id)
-            ->where('opportunity_id', $opportunityId)
-            ->first();
-
-        if ($existing && ! in_array($existing->application_status, self::REAPPLIABLE, true)) {
-            throw new RuntimeException('You have already applied to this opportunity.');
-        }
-
-        $documentPath = $existing?->document_path;
-        $documentName = $existing?->document_filename;
+        // The upload happens before the transaction because writing a file is not
+        // something a database can roll back. Every failure path below therefore
+        // deletes it again, so a rejected submission cannot leave a file behind
+        // that no row refers to.
+        $uploadedPath = null;
 
         if ($document !== null) {
-            $documentPath = $this->fileStorage->store($document, 'applications');
-            $documentName = $document->getClientOriginalName();
+            $uploadedPath = $this->fileStorage->store($document, 'applications', $user);
         }
 
-        $attributes = [
-            'application_status' => ApplicationStatus::SUBMITTED,
-            'submitted_at' => Carbon::now(),
-            'personal_statement' => $data['personal_statement'] ?? null,
-            'document_path' => $documentPath,
-            'document_filename' => $documentName,
-            'rejection_reason' => null,
-            'interview_at' => null,
-            // A resubmission is a clean slate: nothing from the withdrawn or
-            // rejected attempt may leak into the new one.
-            'withdrawn_at' => null,
-            'withdrawal_reason' => null,
-            'info_request' => null,
-            'info_requested_at' => null,
-            'info_response' => null,
-            'info_responded_at' => null,
-            'interview_reminded_at' => null,
-        ];
+        try {
+            [$application, $supersededDocument] = DB::transaction(
+                function () use ($opportunityId, $user, $data, $document, $uploadedPath, $opportunity) {
+                    // Locked, then re-read: between the caller's last look and this
+                    // line another request may have created or reopened the very
+                    // same application. On MySQL this blocks the second writer
+                    // until the first commits, so the checks below run against
+                    // committed truth rather than a stale read.
+                    $existing = Application::where('user_id', $user->user_id)
+                        ->where('opportunity_id', $opportunityId)
+                        ->lockForUpdate()
+                        ->first();
 
-        if ($existing) {
-            $existing->update($attributes);
-            $application = $existing;
-        } else {
-            $application = Application::create($attributes + [
-                'user_id' => $user->user_id,
-                'opportunity_id' => $opportunityId,
-            ]);
+                    // Re-applying is a resubmission of the same row, so it is a
+                    // transition like any other: only a rejected or withdrawn
+                    // attempt may be reopened, and an approved one never can.
+                    if ($existing) {
+                        if (! ApplicationStateMachine::allowsReapplication($existing->application_status)) {
+                            throw new RuntimeException($this->reapplicationRefusal($existing));
+                        }
+
+                        ApplicationStateMachine::assertCanTransition(
+                            $existing->application_status,
+                            ApplicationStatus::SUBMITTED,
+                            ApplicationStateMachine::ACTOR_APPLICANT
+                        );
+                    }
+
+                    $documentPath = $uploadedPath ?? $existing?->document_path;
+                    $documentName = $document?->getClientOriginalName() ?? $existing?->document_filename;
+
+                    // A replaced document is only deleted once the new row is
+                    // safely committed, so a rollback still leaves the old file
+                    // exactly where the surviving row expects it.
+                    $superseded = $uploadedPath !== null && $existing?->document_path !== null
+                        && $existing->document_path !== $uploadedPath
+                            ? $existing->document_path
+                            : null;
+
+                    $attributes = [
+                        'application_status' => ApplicationStatus::SUBMITTED,
+                        'submitted_at' => Carbon::now(),
+                        'personal_statement' => $data['personal_statement'] ?? null,
+                        'document_path' => $documentPath,
+                        'document_filename' => $documentName,
+                        'rejection_reason' => null,
+                        'interview_at' => null,
+                        // A resubmission is a clean slate: nothing from the
+                        // withdrawn or rejected attempt may leak into the new one.
+                        'withdrawn_at' => null,
+                        'withdrawal_reason' => null,
+                        'info_request' => null,
+                        'info_requested_at' => null,
+                        'info_response' => null,
+                        'info_responded_at' => null,
+                        'interview_reminded_at' => null,
+                    ];
+
+                    if ($existing) {
+                        $existing->update($attributes);
+                        $application = $existing;
+                    } else {
+                        $application = Application::create($attributes + [
+                            'user_id' => $user->user_id,
+                            'opportunity_id' => $opportunityId,
+                        ]);
+                    }
+
+                    // Inside the transaction on purpose: an audit line that
+                    // survived a rolled-back submission would be a record of
+                    // something that never happened.
+                    $this->auditService->logOrFail(
+                        $user->email,
+                        AuditAction::APPLY,
+                        'APPLICATION',
+                        $application->application_id,
+                        ($existing ? 'Re-applied' : 'Applied') . ' to "' . $opportunity->title . '"'
+                    );
+
+                    return [$application, $superseded];
+                }
+            );
+        } catch (UniqueConstraintViolationException $e) {
+            // Two submissions raced to insert the first application for this
+            // pair and the database settled it. The loser is told what is
+            // actually true rather than shown a SQL error.
+            $this->fileStorage->delete($uploadedPath);
+
+            throw new RuntimeException('You have already applied to this opportunity.');
+        } catch (\Throwable $e) {
+            $this->fileStorage->delete($uploadedPath);
+
+            throw $e;
         }
 
-        $this->auditService->log(
-            $user->email,
-            AuditAction::APPLY,
-            'APPLICATION',
-            $application->application_id,
-            ($existing ? 'Re-applied' : 'Applied') . ' to "' . $opportunity->title . '"'
-        );
+        // Past this line the transaction has committed, so the file the row no
+        // longer points at is safe to remove and the notifications below can
+        // never announce a submission that was rolled back.
+        $this->fileStorage->delete($supersededDocument);
 
         $this->notificationService->notifyUser(
             $user,
@@ -245,6 +306,108 @@ class ApplicationService
     }
 
     /**
+     * Why a second application to the same listing was refused.
+     *
+     * One message per reason rather than one message for all of them. "You have
+     * already applied" is true of an award but tells a student nothing they can
+     * act on, and it reads as an error when it is in fact the best possible
+     * outcome - they already have the scholarship.
+     */
+    private function reapplicationRefusal(Application $existing): string
+    {
+        if ($existing->isAwarded()) {
+            return 'You have already been awarded this scholarship and cannot apply again.';
+        }
+
+        return 'You have already applied to this opportunity.';
+    }
+
+    /**
+     * The provider grants the award.
+     *
+     * Kept out of updateStatus() on purpose. That method is the review path: its
+     * destination allow-list is ApplicationStatus::REVIEWABLE, it is what the
+     * review dropdown and the bulk action post to, and awarding through it would
+     * make an award something a provider could apply to fifty applications with
+     * one click. Awarding is a single, deliberate act on one application that
+     * has already been approved, so it gets its own entry point with its own
+     * authorisation - and REVIEWABLE stays the thing that cannot reach AWARDED.
+     */
+    public function award(int $applicationId, User $provider): Application
+    {
+        // Ownership first, outside the transaction: it cannot change under us,
+        // and a provider reaching for someone else's applicant is turned away
+        // without taking a row lock.
+        $this->findForProvider($applicationId, $provider);
+
+        $application = DB::transaction(function () use ($applicationId, $provider) {
+            // Two clicks on the same button, or two people in the same provider
+            // account, arrive here at once. The lock serialises them; the second
+            // then reads AWARDED - a status the machine allows nothing out of -
+            // and is refused, so there is exactly one award, one timestamp, one
+            // audit line and one notification however many requests arrived.
+            $application = Application::whereKey($applicationId)->lockForUpdate()->firstOrFail();
+
+            $previousStatus = $application->application_status;
+
+            ApplicationStateMachine::assertCanTransition(
+                $previousStatus,
+                ApplicationStatus::AWARDED,
+                ApplicationStateMachine::ACTOR_PROVIDER
+            );
+
+            $application->update([
+                'application_status' => ApplicationStatus::AWARDED,
+                // Never overwritten: the transition above is only reachable from
+                // APPROVED, so a row that already carries a stamp cannot get
+                // here. The guard is belt and braces for a hand-edited row.
+                'awarded_at' => $application->awarded_at ?? Carbon::now(),
+            ]);
+
+            $this->auditService->logOrFail(
+                $provider->email,
+                AuditAction::AWARD_APPLICATION,
+                'APPLICATION',
+                $application->application_id,
+                'Awarded "' . ($application->opportunity?->title ?? 'a scholarship') . '" to '
+                    . ($application->user?->displayName() ?? 'a deleted user'),
+                [
+                    'old' => ['application_status' => $previousStatus],
+                    'new' => [
+                        'application_status' => ApplicationStatus::AWARDED,
+                        'awarded_at' => $application->awarded_at?->toIso8601String(),
+                        // The student and the listing the award belongs to, so
+                        // the trail identifies the award without a join back to
+                        // rows that may since have been deleted.
+                        'applicant_user_id' => $application->user_id,
+                        'applicant_email' => $application->user?->email,
+                        'opportunity_id' => $application->opportunity_id,
+                        'opportunity_title' => $application->opportunity?->title,
+                    ],
+                ]
+            );
+
+            return $application;
+        });
+
+        // Committed: the award exists, so announcing it cannot be a lie.
+        $applicant = $application->user;
+
+        if ($applicant) {
+            $this->notificationService->notifyUser(
+                $applicant,
+                NotificationType::APPLICATION_AWARDED,
+                'Congratulations! Your application for "'
+                    . ($application->opportunity?->title ?? 'a scholarship') . '" has been awarded.',
+                '/applications/' . $application->application_id . '/confirmation',
+                $application->application_id
+            );
+        }
+
+        return $application;
+    }
+
+    /**
      * Provider decision. Approving or rejecting requires a written reason - it is
      * shown to the applicant verbatim, so it cannot be left blank.
      */
@@ -255,7 +418,11 @@ class ApplicationService
         User $provider,
         ?string $interviewAt = null
     ): Application {
-        if (! in_array($status, self::PROVIDER_SETTABLE, true)) {
+        // Destination check only - it rejects a status no provider may ever set
+        // (SUBMITTED, PENDING, WITHDRAWN, or a value invented by hand) before any
+        // work is done. Whether this particular application may go there is the
+        // state machine's call once the row is loaded, below.
+        if (! in_array($status, ApplicationStatus::REVIEWABLE, true)) {
             throw ValidationException::withMessages([
                 'status' => 'Invalid application status: ' . $status,
             ]);
@@ -285,35 +452,71 @@ class ApplicationService
             ]);
         }
 
-        $application = $this->findForProvider($applicationId, $provider);
+        // Ownership is settled outside the transaction: it cannot change under
+        // us, and a stranger should be turned away without taking a row lock.
+        $this->findForProvider($applicationId, $provider);
 
-        if ($application->isWithdrawn()) {
-            throw new RuntimeException('This application was withdrawn by the applicant.');
-        }
+        $application = DB::transaction(function () use (
+            $applicationId,
+            $status,
+            $reason,
+            $provider,
+            $interviewAt,
+            $isInterview,
+            $isQuestion
+        ) {
+            // Re-read under a lock rather than trusting the copy fetched above.
+            // Two reviewers acting on the same application at the same moment
+            // would otherwise both see it live, and the second write would
+            // silently overturn the first - approving an applicant who had just
+            // been rejected, with both notifications already sent. Here the
+            // second reviewer waits, sees the decision that landed, and is
+            // refused by the state machine.
+            $application = Application::whereKey($applicationId)->lockForUpdate()->firstOrFail();
 
-        $application->update([
-            'application_status' => $status,
-            'rejection_reason' => in_array($status, [ApplicationStatus::REJECTED, ApplicationStatus::INTERVIEW], true)
-                ? $reason
-                : null,
-            'interview_at' => $isInterview ? Carbon::parse($interviewAt) : $application->interview_at,
-            // Rescheduling must earn a fresh reminder, so the stamp the reminder
-            // job sets is cleared whenever the date is (re)written.
-            'interview_reminded_at' => $isInterview ? null : $application->interview_reminded_at,
-            // Asking again re-opens the reply box, which is why the timestamp is
-            // rewritten rather than only set the first time.
-            'info_request' => $isQuestion ? $reason : $application->info_request,
-            'info_requested_at' => $isQuestion ? Carbon::now() : $application->info_requested_at,
-        ]);
+            // Captured under the lock, before the write, so the audit entry
+            // records the status this decision actually replaced rather than
+            // whatever a re-read afterwards would have found.
+            $previousStatus = $application->application_status;
 
-        $this->auditService->log(
-            $provider->email,
-            AuditAction::STATUS_UPDATE,
-            'APPLICATION',
-            $application->application_id,
-            'Set status to ' . $status . ($reason ? ': ' . $reason : '')
-        );
+            ApplicationStateMachine::assertCanTransition(
+                $application->application_status,
+                $status,
+                ApplicationStateMachine::ACTOR_PROVIDER
+            );
 
+            $application->update([
+                'application_status' => $status,
+                'rejection_reason' => in_array($status, [ApplicationStatus::REJECTED, ApplicationStatus::INTERVIEW], true)
+                    ? $reason
+                    : null,
+                'interview_at' => $isInterview ? Carbon::parse($interviewAt) : $application->interview_at,
+                // Rescheduling must earn a fresh reminder, so the stamp the reminder
+                // job sets is cleared whenever the date is (re)written.
+                'interview_reminded_at' => $isInterview ? null : $application->interview_reminded_at,
+                // Asking again re-opens the reply box, which is why the timestamp is
+                // rewritten rather than only set the first time.
+                'info_request' => $isQuestion ? $reason : $application->info_request,
+                'info_requested_at' => $isQuestion ? Carbon::now() : $application->info_requested_at,
+            ]);
+
+            $this->auditService->logOrFail(
+                $provider->email,
+                AuditAction::STATUS_UPDATE,
+                'APPLICATION',
+                $application->application_id,
+                'Set status to ' . $status . ($reason ? ': ' . $reason : ''),
+                [
+                    'old' => ['application_status' => $previousStatus],
+                    'new' => ['application_status' => $status],
+                    'reason' => $reason,
+                ]
+            );
+
+            return $application;
+        });
+
+        // Only now, with the decision committed, is the applicant told about it.
         $this->notifyApplicantOfDecision($application, $status, $reason);
 
         return $application;
@@ -380,31 +583,40 @@ class ApplicationService
      */
     public function withdraw(int $applicationId, User $user, ?string $reason = null): Application
     {
-        $application = $this->findForApplicant($applicationId, $user);
+        $this->findForApplicant($applicationId, $user);
 
-        if (! $application->canBeWithdrawn()) {
-            throw new RuntimeException(
-                'This application has already been ' . strtolower($application->statusLabel())
-                    . ' and can no longer be withdrawn.'
+        $application = DB::transaction(function () use ($applicationId, $user, $reason) {
+            // Same reason as a provider decision: the applicant may be pulling
+            // out at the exact moment the provider is deciding. Whoever takes
+            // the lock first wins, and the loser is refused by the state machine
+            // instead of overwriting a status it never saw.
+            $application = Application::whereKey($applicationId)->lockForUpdate()->firstOrFail();
+
+            ApplicationStateMachine::assertCanTransition(
+                $application->application_status,
+                ApplicationStatus::WITHDRAWN,
+                ApplicationStateMachine::ACTOR_APPLICANT
             );
-        }
 
-        $application->update([
-            'application_status' => ApplicationStatus::WITHDRAWN,
-            'withdrawn_at' => Carbon::now(),
-            'withdrawal_reason' => filled($reason) ? trim($reason) : null,
-        ]);
+            $application->update([
+                'application_status' => ApplicationStatus::WITHDRAWN,
+                'withdrawn_at' => Carbon::now(),
+                'withdrawal_reason' => filled($reason) ? trim($reason) : null,
+            ]);
+
+            $this->auditService->logOrFail(
+                $user->email,
+                AuditAction::WITHDRAW_APPLICATION,
+                'APPLICATION',
+                $application->application_id,
+                'Withdrew application to "' . ($application->opportunity?->title ?? 'a scholarship') . '"'
+                    . ($reason ? ': ' . $reason : '')
+            );
+
+            return $application;
+        });
 
         $title = $application->opportunity?->title ?? 'a scholarship';
-
-        $this->auditService->log(
-            $user->email,
-            AuditAction::WITHDRAW_APPLICATION,
-            'APPLICATION',
-            $application->application_id,
-            'Withdrew application to "' . $title . '"' . ($reason ? ': ' . $reason : '')
-        );
-
         $provider = $application->opportunity?->provider;
 
         if ($provider) {
@@ -429,27 +641,35 @@ class ApplicationService
      */
     public function respondToInfoRequest(int $applicationId, User $user, string $response): Application
     {
-        $application = $this->findForApplicant($applicationId, $user);
+        $this->findForApplicant($applicationId, $user);
 
-        if (! $application->awaitsApplicantResponse()) {
-            throw new RuntimeException('There is nothing to respond to on this application.');
-        }
+        $application = DB::transaction(function () use ($applicationId, $user, $response) {
+            // Locked so the answer cannot be written against a request the
+            // provider withdrew or superseded a moment ago.
+            $application = Application::whereKey($applicationId)->lockForUpdate()->firstOrFail();
 
-        $application->update([
-            'info_response' => trim($response),
-            'info_responded_at' => Carbon::now(),
-        ]);
+            if (! $application->awaitsApplicantResponse()) {
+                throw new RuntimeException('There is nothing to respond to on this application.');
+            }
+
+            $application->update([
+                'info_response' => trim($response),
+                'info_responded_at' => Carbon::now(),
+            ]);
+
+            $this->auditService->logOrFail(
+                $user->email,
+                AuditAction::PROVIDE_APPLICATION_INFO,
+                'APPLICATION',
+                $application->application_id,
+                'Responded to the information request on "'
+                    . ($application->opportunity?->title ?? 'a scholarship') . '"'
+            );
+
+            return $application;
+        });
 
         $title = $application->opportunity?->title ?? 'a scholarship';
-
-        $this->auditService->log(
-            $user->email,
-            AuditAction::PROVIDE_APPLICATION_INFO,
-            'APPLICATION',
-            $application->application_id,
-            'Responded to the information request on "' . $title . '"'
-        );
-
         $provider = $application->opportunity?->provider;
 
         if ($provider) {

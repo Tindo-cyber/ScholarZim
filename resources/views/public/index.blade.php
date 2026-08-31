@@ -113,7 +113,9 @@
                     @foreach($featured as $opportunity)
                         <div class="col-md-6 col-lg-4">
                             <x-scholarship-card :opportunity="$opportunity"
-                                                :applied="in_array($opportunity->opportunity_id, $appliedIds, true)" />
+                                                :saved="in_array($opportunity->opportunity_id, $savedIds, true)"
+                                                :applied="in_array($opportunity->opportunity_id, $appliedIds, true)"
+                                                :award="$awards[$opportunity->opportunity_id] ?? null" />
                         </div>
                     @endforeach
                 </div>

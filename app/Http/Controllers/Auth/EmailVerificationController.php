@@ -39,13 +39,34 @@ class EmailVerificationController extends Controller
             ->with('successMessage', 'Email verified. You can now sign in.');
     }
 
+    /**
+     * Report what actually happened rather than assuming it worked.
+     *
+     * This used to flash "verification email sent" on every call, including the
+     * two cases where nothing was sent: an address that is already verified, and
+     * a mailer that rejected the message. A user whose mail never arrives is
+     * already stuck; telling them it is on its way sends them back to an inbox
+     * to wait for something that does not exist.
+     */
     public function resend(Request $request)
     {
         $user = $request->user();
 
-        $this->emailVerificationService->resend($user);
-
-        return back()->with('successMessage', 'Verification email sent to ' . $user->email . '.');
+        return match ($this->emailVerificationService->resend($user)) {
+            EmailVerificationService::SENT => back()->with(
+                'successMessage',
+                'Verification email sent to ' . $user->email . '.'
+            ),
+            EmailVerificationService::ALREADY_VERIFIED => back()->with(
+                'successMessage',
+                'That address is already verified - there is nothing left to confirm.'
+            ),
+            default => back()->with(
+                'errorMessage',
+                'We could not send the verification email just now. Try again in a few minutes, '
+                    . 'and contact support if it keeps failing.'
+            ),
+        };
     }
 
     /** Banner target for users who land somewhere before verifying. */

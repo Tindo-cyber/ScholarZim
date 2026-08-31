@@ -147,6 +147,14 @@ class AdminUserService
     public function suspend(int $userId, User $admin): User
     {
         $user = $this->requireNotSuperAdmin($userId);
+
+        // Suspension now ends the session it is applied to, so suspending
+        // yourself logs you straight out - and if you were the only active
+        // administrator, nobody is left who can undo it.
+        if ($user->user_id === $admin->user_id) {
+            throw new RuntimeException('You cannot suspend your own account.');
+        }
+
         $user->update(['account_status' => AccountStatus::SUSPENDED]);
 
         $this->auditService->log($admin->email, AuditAction::UPDATE_USER, 'USER', $user->user_id, 'Suspended account');

@@ -27,7 +27,16 @@ class PublicController extends Controller
             'stats' => $this->platformStatsService->publicStats(),
             'featured' => $this->opportunityService->featured(6),
             'fields' => FormOptions::FIELDS_OF_STUDY,
+            // The featured cards carry the same save button as the browse page,
+            // so they need the same saved list behind it - without it every card
+            // renders as unsaved and its button posts to the store route, so a
+            // student cannot unsave from here and re-saving is the only outcome.
+            'savedIds' => $this->savedScholarshipService->savedIds($request->user()),
             'appliedIds' => $this->applicationService->appliedIds($request->user()),
+            // An award is a subset of "applied", and the cards say which subset:
+            // "Applied" on a scholarship the student has actually won reads as
+            // though nothing has happened yet.
+            'awards' => $this->applicationService->awardsByOpportunity($request->user()),
         ]);
     }
 
@@ -43,6 +52,7 @@ class PublicController extends Controller
             'filters' => $filters,
             'savedIds' => $this->savedScholarshipService->savedIds($request->user()),
             'appliedIds' => $this->applicationService->appliedIds($request->user()),
+            'awards' => $this->applicationService->awardsByOpportunity($request->user()),
         ]);
     }
 
@@ -60,6 +70,8 @@ class PublicController extends Controller
             $this->opportunityService->recordView($opportunity);
         }
 
+        $awards = $this->applicationService->awardsByOpportunity($user);
+
         return view('public.detail', [
             'opportunity' => $opportunity,
             'isSaved' => $this->savedScholarshipService->isSaved($user, $id),
@@ -72,6 +84,10 @@ class PublicController extends Controller
                 'field_of_study' => $opportunity->target_field,
             ])->where('opportunity_id', '!=', $id)->take(3),
             'appliedIds' => $this->applicationService->appliedIds($user),
+            'awards' => $awards,
+            // The award for this listing specifically, which is what replaces
+            // Apply and Quick apply on the page for the student who holds it.
+            'award' => $awards[$id] ?? null,
         ]);
     }
 

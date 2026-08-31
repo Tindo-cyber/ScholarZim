@@ -29,7 +29,12 @@ Route::get('/scholarships/{id}', [PublicController::class, 'detail'])
     ->whereNumber('id')
     ->name('scholarships.show');
 
-Route::get('/health', \App\Http\Controllers\HealthController::class)->name('health');
+// Liveness: no dependencies, so a failure means restart this process.
+Route::get('/health', [\App\Http\Controllers\HealthController::class, 'live'])->name('health');
+
+// Readiness: checks the dependencies a request needs, so a database outage takes
+// the instance out of rotation without restarting a process that is working fine.
+Route::get('/health/ready', [\App\Http\Controllers\HealthController::class, 'ready'])->name('health.ready');
 
 // Fallback asset path, used only when no Vite build is present. See
 // SourceAssetController for why it exists.
@@ -212,6 +217,11 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER])->group(function () {
     Route::post('/provider/applications/{id}/review', [Provider\ApplicationReviewController::class, 'review'])
         ->whereNumber('id')
         ->name('provider.applications.review');
+    // Separate from review: awarding is not a review decision and must not be
+    // reachable through the status dropdown or the bulk action.
+    Route::post('/provider/applications/{id}/award', [Provider\ApplicationReviewController::class, 'award'])
+        ->whereNumber('id')
+        ->name('provider.applications.award');
 
     Route::get('/provider/applications/{applicationId}/results-certificate', [FileDownloadController::class, 'applicantResults'])
         ->whereNumber('applicationId')

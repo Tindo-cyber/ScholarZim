@@ -26,6 +26,20 @@ services:
         value: warning
       - key: SESSION_SECURE_COOKIE
         value: "true"
+      # Render terminates TLS at its own load balancer, so the container only
+      # ever sees plain HTTP and learns the real scheme from X-Forwarded-Proto.
+      # Without a trusted proxy that header is discarded, $request->secure()
+      # stays false, and every absolute URL the app generates comes out http://
+      # - including the verification and password-reset links mailed to users,
+      # which then arrive on a scheme that SESSION_SECURE_COOKIE above refuses
+      # to send the session cookie over. docker-compose.prod.yml already sets
+      # this; Render was the deployment path missing it.
+      #
+      # "*" trusts whichever host forwarded the request, which is correct only
+      # because Render's proxy is the only route to the container. See
+      # config/trustedproxy.php.
+      - key: TRUSTED_PROXIES
+        value: "*"
       # Mail leaves the request that triggered it; the supervised queue worker
       # in the image drains the jobs table.
       - key: QUEUE_CONNECTION

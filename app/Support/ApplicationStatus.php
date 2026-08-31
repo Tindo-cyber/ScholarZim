@@ -16,6 +16,17 @@ final class ApplicationStatus
     public const WITHDRAWN = 'WITHDRAWN';
     public const PENDING = 'PENDING'; // legacy
 
+    /**
+     * The scholarship has actually been granted.
+     *
+     * APPROVED and AWARDED are two different facts and the platform had only one
+     * word for both: a provider selecting an applicant, and the award being made
+     * to them. Keeping them apart is what lets a provider see who they picked but
+     * have not yet funded, and what makes "awards made" a real number rather than
+     * a count of intentions.
+     */
+    public const AWARDED = 'AWARDED';
+
     private const LABELS = [
         self::SUBMITTED => 'Submitted',
         self::UNDER_REVIEW => 'Under review',
@@ -24,6 +35,7 @@ final class ApplicationStatus
         self::SHORTLISTED => 'Shortlisted',
         self::INTERVIEW => 'Interview',
         self::APPROVED => 'Approved',
+        self::AWARDED => 'Awarded',
         self::REJECTED => 'Rejected',
         self::WAITLISTED => 'Waitlisted',
         self::WITHDRAWN => 'Withdrawn',
@@ -43,6 +55,20 @@ final class ApplicationStatus
     ];
 
     /**
+     * The status tabs on the provider inbox and on "my applications".
+     *
+     * Deliberately not REVIEWABLE. Awarding is not a review decision - it has its
+     * own action, its own authorisation, and its own single source status - so it
+     * must not appear in the review dropdown or in the bulk action, both of which
+     * are built from REVIEWABLE. It is still something both sides need to filter
+     * by, which is what this list is for.
+     */
+    public const FILTERABLE = [
+        ...self::REVIEWABLE,
+        self::AWARDED,
+    ];
+
+    /**
      * States that bounce the application back to the applicant with something to
      * answer. Both open the reply box on the confirmation page; neither is a
      * decision, so the application stays in the provider's queue.
@@ -59,6 +85,7 @@ final class ApplicationStatus
     public static function isTerminal(?string $status): bool
     {
         return $status === self::APPROVED
+            || $status === self::AWARDED
             || $status === self::REJECTED
             || $status === self::WITHDRAWN;
     }
@@ -72,10 +99,14 @@ final class ApplicationStatus
     /**
      * An applicant may pull out at any point before a decision lands. Once it is
      * approved or rejected there is nothing left to withdraw from.
+     *
+     * Delegates so this rule has exactly one definition: ApplicationStateMachine
+     * decides who may move an application where, and withdrawal is one of those
+     * moves rather than a separate rule that could drift away from the matrix.
      */
     public static function isWithdrawable(?string $status): bool
     {
-        return $status !== null && ! self::isTerminal($status);
+        return ApplicationStateMachine::canWithdraw($status);
     }
 
     public static function displayLabel(?string $status): string
@@ -90,7 +121,7 @@ final class ApplicationStatus
     public static function badgeTone(?string $status): string
     {
         return match ($status) {
-            self::APPROVED => 'success',
+            self::APPROVED, self::AWARDED => 'success',
             self::REJECTED => 'danger',
             self::WITHDRAWN => 'secondary',
             self::SHORTLISTED, self::INTERVIEW => 'info',
@@ -109,6 +140,19 @@ final class ApplicationStatus
     {
         $stages = [self::SUBMITTED, self::UNDER_REVIEW, self::SHORTLISTED, self::APPROVED];
         $reachedIndex = array_search($status, $stages, true);
+
+        // The award is a fifth step, but only for an application that reached it.
+        // Appending it to the rail unconditionally would hang an unreachable
+        // stage off every application on the platform, including the rejected
+        // ones, so it is drawn as its own completed rail instead.
+        if ($status === self::AWARDED) {
+            return [
+                ['label' => 'Submitted', 'done' => true],
+                ['label' => 'Reviewed', 'done' => true],
+                ['label' => 'Approved', 'done' => true],
+                ['label' => 'Awarded', 'done' => true, 'tone' => 'success'],
+            ];
+        }
 
         if ($status === self::REJECTED) {
             return [

@@ -4,109 +4,114 @@ namespace App\Services\ScholarFit;
 
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
+use App\Services\ScholarFit\Matchers\AcademicMatcher;
+use App\Services\ScholarFit\Matchers\CertificateMatcher;
+use App\Services\ScholarFit\Matchers\DeadlineMatcher;
+use App\Services\ScholarFit\Matchers\EducationMatcher;
+use App\Services\ScholarFit\Matchers\FieldMatcher;
+use App\Services\ScholarFit\Matchers\LocationMatcher;
 use App\Services\SettingsService;
-use Illuminate\Support\Carbon;
 
 /**
- * Scores how well an applicant profile fits a scholarship, out of 100.
+ * ScholarFit: a deterministic, explainable scoring engine.
  *
- * Ported from com.scholarzim.service.scholarfit.ScholarFitEngine. The default
- * weights are unchanged so scores stay comparable with the Spring implementation
- * (academic 20, education level 25, field 25, location 15, deadline 10,
- * certificate 5), but they are now read through SettingsService, so an
- * administrator can retune the platform without a deploy.
+ * Not machine learning, and not described as AI anywhere in the product. Every
+ * score here is arithmetic over stated rules, which is what lets the same inputs
+ * be replayed months later and lets a student be told exactly why they scored
+ * what they scored.
  *
- * Two kinds of criteria, deliberately kept apart:
+ * Two layers, kept apart on purpose:
  *
- *   Weighted dimensions decide how good a match is. A miss costs points.
- *   Hard eligibility rules decide whether the applicant may apply at all. A miss
- *   zeroes the score, because a high percentage sitting next to "you are not
- *   eligible" is a lie.
+ *   Layer 1, EligibilityEvaluator, is a gate. A requirement the provider set and
+ *   the applicant fails ends the assessment at zero.
  *
- * A rule the provider did not set is never a disqualification, and neither is a
- * rule this profile has no data to test - that becomes a prompt to fill the
- * field in, not a refusal.
+ *   Layer 2, the six matchers, ranks the applicants who got through. Each
+ *   returns a ratio of its own weight together with the sentence explaining it,
+ *   so no soft dimension can compensate for a hard failure - the gate has
+ *   already closed by the time any of them run.
+ *
+ * The total is normalised by construction rather than by clamping: weights sum
+ * to 100 (SettingsService refuses an override that does not) and every ratio is
+ * bounded to 0..1 inside DimensionResult, so the sum cannot leave 0..100.
  */
 class ScholarFitEngine
 {
-    private const RELATED_FIELDS = [
-        'Computer Science' => ['Information Technology', 'Software Engineering', 'Data Science'],
-        'Information Technology' => ['Computer Science', 'Software Engineering'],
-        'Medicine' => ['Nursing', 'Pharmacy', 'Public Health'],
-        'Accounting' => ['Finance', 'Economics', 'Business Administration'],
-        'Engineering' => ['Mechanical Engineering', 'Civil Engineering', 'Electrical Engineering'],
-    ];
+    /**
+     * The scoring algorithm's own version, separate from the weights.
+     *
+     * v1 was the ported Spring heuristic: binary academic scoring, exact-string
+     * field matching, rural encoded as a province, and an explanation assembled
+     * from a different set of facts than the score. v2 is the two-layer engine
+     * in this namespace.
+     *
+     * Configurable weights already invalidate cached rankings through
+     * SettingsService::scoringVersion(), but a change to the code here moves no
+     * setting at all, so every cached ranking would keep being served with
+     * scores this engine would no longer produce. RecommendationService folds
+     * this constant into its cache key for exactly that reason.
+     *
+     * Bump it in the same commit as any change to how a score is calculated.
+     */
+    public const ALGORITHM_VERSION = 2;
 
-    private const RELATED_LEVELS = [
-        'Undergraduate' => ['Honours', 'Bachelor'],
-        'Honours' => ['Undergraduate', 'Bachelor'],
-        'Masters' => ['Postgraduate', 'PhD'],
-        'PhD' => ['Postgraduate', 'Masters'],
-    ];
+    /** The version as it appears in explanations, logs and tests. */
+    public const VERSION_LABEL = 'ScholarFit v2';
 
-    private const POINTS_PATTERN = '/(\d{1,2})\s*points?/i';
-
-    /** Optional fallback for international profiles that still quote a GPA. */
-    private const GPA_PATTERN = '/(?:gpa|grade point average)\s*[:=]?\s*(\d+(?:\.\d+)?)/i';
-
-    /** Fraction of a dimension weight awarded when the listing states no preference. */
-    private const UNSPECIFIED_CREDIT = 0.4;
-
-    /** Location tiers, as a fraction of the location weight. */
-    private const LOCATION_TARGET_MATCH = 1.0;
-    private const LOCATION_COUNTRY_MATCH = 0.67;
-    private const LOCATION_UNSPECIFIED = 0.53;
-    private const LOCATION_RURAL_BONUS = 0.2;
-
-    /** Where a fix lives, so the UI can link straight at it. */
-    private const PROFILE_FIELD = 'profile';
-    private const PROFILE_DOCUMENTS = 'documents';
-
-    public function __construct(private readonly SettingsService $settings)
-    {
+    public function __construct(
+        private readonly SettingsService $settings,
+        private readonly EligibilityEvaluator $eligibility = new EligibilityEvaluator(),
+        private readonly AcademicMatcher $academic = new AcademicMatcher(),
+        private readonly EducationMatcher $education = new EducationMatcher(),
+        private readonly FieldMatcher $field = new FieldMatcher(),
+        private readonly LocationMatcher $location = new LocationMatcher(),
+        private readonly DeadlineMatcher $deadline = new DeadlineMatcher(),
+        private readonly CertificateMatcher $certificate = new CertificateMatcher(),
+    ) {
     }
 
     public function evaluate(ApplicantProfile $profile, Opportunity $opportunity): ScoredOpportunity
     {
         $weights = $this->settings->scholarFitWeights();
+        $record = AcademicRecord::fromProfile($profile);
+
+        // Layer 1 first, and its result is never mixed into the arithmetic
+        // below: a blocker zeroes the score outright rather than subtracting
+        // from it.
+        $gate = $this->eligibility->evaluate($profile, $opportunity, $record);
+
+        // Layer 2. Every dimension is scored even when the gate has closed, so
+        // an ineligible applicant can still be shown where they stand and what
+        // would change it - the score is zero, the breakdown is not a blank.
+        $dimensions = [
+            $this->academic->match($record, $opportunity, (int) $weights['academic']),
+            $this->education->match($profile, $opportunity, (int) $weights['education_level']),
+            $this->field->match($profile, $opportunity, (int) $weights['field']),
+            $this->location->match($profile, $opportunity, (int) $weights['location']),
+            $this->deadline->match($opportunity, (int) $weights['deadline']),
+            $this->certificate->match($profile, $opportunity, (int) $weights['certificate']),
+        ];
 
         $breakdown = new MatchBreakdown();
         $breakdown->weights = $weights;
-        $reasons = [];
-        $missing = [];
-        $fixes = [];
+        $breakdown->dimensionResults = $dimensions;
+        $breakdown->disqualifiers = $gate['blockers'];
+        $breakdown->scoringVersion = self::VERSION_LABEL;
 
-        $breakdown->disqualifiers = $this->checkEligibility($profile, $opportunity, $missing, $fixes);
+        $earned = 0;
+        foreach ($dimensions as $dimension) {
+            $earned += $dimension->points();
+        }
 
-        $breakdown->academicScore = $this->scoreAcademic(
-            $profile, $weights['academic'], $reasons, $missing, $fixes
-        );
-        $breakdown->educationLevelScore = $this->scoreEducationLevel(
-            $profile, $opportunity, $weights['education_level'], $reasons, $missing, $fixes
-        );
-        $breakdown->fieldScore = $this->scoreField(
-            $profile, $opportunity, $weights['field'], $reasons, $missing, $fixes
-        );
-        $breakdown->locationScore = $this->scoreLocation(
-            $profile, $opportunity, $weights['location'], $reasons, $missing, $fixes
-        );
-        $breakdown->deadlineScore = $this->scoreDeadline(
-            $opportunity, $weights['deadline'], $reasons, $missing, $fixes
-        );
-        $breakdown->certificateScore = $this->scoreCertificate(
-            $profile, $weights['certificate'], $reasons, $missing, $fixes
-        );
+        $matchScore = $breakdown->isEligible() ? $earned : 0;
 
-        // An ineligible applicant scores zero however well the rest of the
-        // profile reads: the gate closed before the weighting mattered.
-        $matchScore = $breakdown->isEligible() ? min(100, $breakdown->totalScore()) : 0;
-
-        $breakdown->reasons = $reasons;
-        $breakdown->missingRequirements = array_values(array_unique($missing));
-        $breakdown->fixes = $this->dedupeFixes($fixes);
-        $breakdown->confidenceLevel = $this->resolveConfidence($matchScore, $breakdown->isEligible());
-        $breakdown->confidenceLabel = $this->resolveConfidenceLabel($matchScore, $breakdown->isEligible());
-        $breakdown->explanation = $this->buildExplanation($matchScore, $reasons, $breakdown->disqualifiers);
+        // Prompts from the gate and fixes from the dimensions are the same kind
+        // of thing to a reader - "here is what to go and do" - so they are
+        // presented as one list, gate first because it is the blocking one.
+        $breakdown->fixes = $this->collectFixes($gate['prompts'], $dimensions);
+        $breakdown->missingRequirements = array_column($breakdown->fixes, 'text');
+        $breakdown->confidenceLevel = $this->confidenceLevel($matchScore, $breakdown->isEligible());
+        $breakdown->confidenceLabel = $this->confidenceLabel($matchScore, $breakdown->isEligible());
+        $breakdown->explanation = $breakdown->summaryLine($matchScore);
 
         return new ScoredOpportunity($opportunity, $matchScore, $breakdown);
     }
@@ -122,492 +127,36 @@ class ScholarFitEngine
             $scored[] = $this->evaluate($profile, $opportunity);
         }
 
-        usort($scored, static fn (ScoredOpportunity $a, ScoredOpportunity $b) => $b->matchScore <=> $a->matchScore);
+        // Ties broken by opportunity id so repeated runs over the same
+        // catalogue produce byte-identical orderings - a ranking that shuffles
+        // between page loads is not reproducible and cannot be cached honestly.
+        usort($scored, static function (ScoredOpportunity $a, ScoredOpportunity $b) {
+            return [$b->matchScore, $a->opportunity->opportunity_id]
+                <=> [$a->matchScore, $b->opportunity->opportunity_id];
+        });
 
         return $limit > 0 ? array_slice($scored, 0, $limit) : $scored;
     }
 
     /**
-     * Hard eligibility. Each rule is tested only when the provider set it AND the
-     * profile holds the data to test it against; a profile that simply has not
-     * filled the field in gets a prompt instead of a refusal, because a blank
-     * field is not evidence of ineligibility.
-     *
+     * @param  array<int, array{text: string, target: ?string, cta: ?string}>  $prompts
+     * @param  array<int, DimensionResult>  $dimensions
      * @return array<int, array{text: string, target: ?string, cta: ?string}>
      */
-    private function checkEligibility(
-        ApplicantProfile $profile,
-        Opportunity $opportunity,
-        array &$missing,
-        array &$fixes
-    ): array {
-        $blockers = [];
+    private function collectFixes(array $prompts, array $dimensions): array
+    {
+        $fixes = $prompts;
 
-        if ($opportunity->min_academic_points !== null) {
-            $points = $this->extractPoints($profile);
-
-            if ($points === null) {
-                $this->addFix(
-                    $missing,
-                    $fixes,
-                    'This award needs at least ' . $opportunity->min_academic_points
-                        . ' points - state your points on your profile so we can check',
-                    self::PROFILE_FIELD,
-                    'academic_results'
-                );
-            } elseif ($points < $opportunity->min_academic_points) {
-                $blockers[] = $this->fix(
-                    'Requires at least ' . $opportunity->min_academic_points
-                        . ' points; your profile states ' . $points . '.',
-                    self::PROFILE_FIELD,
-                    'academic_results'
-                );
+        foreach ($dimensions as $dimension) {
+            if ($dimension->hasFix()) {
+                $fixes[] = [
+                    'text' => $dimension->fix,
+                    'target' => $dimension->fixTarget,
+                    'cta' => $dimension->fixAnchor,
+                ];
             }
         }
 
-        if ($opportunity->max_age !== null) {
-            $age = $profile->age();
-
-            if ($age === null) {
-                $this->addFix(
-                    $missing,
-                    $fixes,
-                    'This award has an age limit of ' . $opportunity->max_age
-                        . ' - add your date of birth so we can check it',
-                    self::PROFILE_FIELD,
-                    'date_of_birth'
-                );
-            } elseif ($age > $opportunity->max_age) {
-                $blockers[] = $this->fix(
-                    'Open to applicants aged ' . $opportunity->max_age . ' and under; you are ' . $age . '.',
-                    null,
-                    null
-                );
-            }
-        }
-
-        if (filled($opportunity->required_citizenship)) {
-            if (blank($profile->citizenship)) {
-                $this->addFix(
-                    $missing,
-                    $fixes,
-                    'This award is limited to ' . $opportunity->required_citizenship
-                        . ' citizens - add your citizenship to your profile',
-                    self::PROFILE_FIELD,
-                    'citizenship'
-                );
-            } elseif (strcasecmp(trim($profile->citizenship), trim($opportunity->required_citizenship)) !== 0) {
-                $blockers[] = $this->fix(
-                    'Open to ' . $opportunity->required_citizenship
-                        . ' citizens only; your profile states ' . $profile->citizenship . '.',
-                    self::PROFILE_FIELD,
-                    'citizenship'
-                );
-            }
-        }
-
-        if (filled($opportunity->required_province)) {
-            if (blank($profile->province)) {
-                $this->addFix(
-                    $missing,
-                    $fixes,
-                    'This award is limited to ' . $opportunity->required_province
-                        . ' - add your province to your profile',
-                    self::PROFILE_FIELD,
-                    'province'
-                );
-            } elseif (strcasecmp(trim($profile->province), trim($opportunity->required_province)) !== 0) {
-                $blockers[] = $this->fix(
-                    'Open to applicants from ' . $opportunity->required_province
-                        . ' only; your profile states ' . $profile->province . '.',
-                    self::PROFILE_FIELD,
-                    'province'
-                );
-            }
-        }
-
-        if ($opportunity->requires_results_certificate && ! $profile->hasResultsCertificate()) {
-            $blockers[] = $this->fix(
-                'This provider requires a results certificate before you can apply.',
-                self::PROFILE_DOCUMENTS,
-                'documents'
-            );
-        }
-
-        return $blockers;
-    }
-
-    private function scoreAcademic(
-        ApplicantProfile $profile,
-        int $weight,
-        array &$reasons,
-        array &$missing,
-        array &$fixes
-    ): int {
-        $qualifies = $this->hasQualifyingAcademicRecord($profile);
-        $reasons[] = $this->reason('academicResults', 'Your results look competitive', $qualifies);
-
-        if (! $qualifies) {
-            $this->addFix(
-                $missing,
-                $fixes,
-                'Add O/A-Level points, subject grades, or degree class to your profile',
-                self::PROFILE_FIELD,
-                'academic_results'
-            );
-
-            return 0;
-        }
-
-        return $weight;
-    }
-
-    private function scoreEducationLevel(
-        ApplicantProfile $profile,
-        Opportunity $opportunity,
-        int $weight,
-        array &$reasons,
-        array &$missing,
-        array &$fixes
-    ): int {
-        $profileLevel = $profile->education_level;
-        $oppLevel = $opportunity->education_level;
-        $relatedCredit = (float) config('scholarfit.related_credit');
-
-        if (blank($profileLevel)) {
-            $this->addFix(
-                $missing,
-                $fixes,
-                'Complete your education level on your profile',
-                self::PROFILE_FIELD,
-                'education_level'
-            );
-            $reasons[] = $this->reason('degree', 'Your degree matches', false);
-
-            return 0;
-        }
-
-        if (blank($oppLevel)) {
-            $reasons[] = $this->reason('degree', 'Your degree matches', true);
-
-            return (int) round($weight * $relatedCredit);
-        }
-
-        if (strcasecmp(trim($profileLevel), trim($oppLevel)) === 0) {
-            $reasons[] = $this->reason('degree', 'Your degree matches', true);
-
-            return $weight;
-        }
-
-        $related = self::RELATED_LEVELS[trim($profileLevel)] ?? [];
-        $matches = array_filter($related, static fn (string $r) => strcasecmp($r, trim($oppLevel)) === 0);
-
-        if ($matches !== []) {
-            $reasons[] = $this->reason('degree', 'Your degree matches', true);
-
-            return (int) round($weight * $relatedCredit);
-        }
-
-        $reasons[] = $this->reason('degree', 'Your degree matches', false);
-        $this->addFix(
-            $missing,
-            $fixes,
-            'Requires ' . $oppLevel . ' - your profile shows ' . $profileLevel,
-            self::PROFILE_FIELD,
-            'education_level'
-        );
-
-        return 0;
-    }
-
-    private function scoreField(
-        ApplicantProfile $profile,
-        Opportunity $opportunity,
-        int $weight,
-        array &$reasons,
-        array &$missing,
-        array &$fixes
-    ): int {
-        $profileField = $profile->field_of_study;
-        $oppField = $opportunity->target_field;
-        $relatedCredit = (float) config('scholarfit.related_credit');
-
-        if (blank($oppField)) {
-            $reasons[] = $this->reason('field', 'Field of study aligns', filled($profileField));
-
-            return blank($profileField) ? 0 : (int) round($weight * self::UNSPECIFIED_CREDIT);
-        }
-
-        if (blank($profileField)) {
-            $reasons[] = $this->reason('field', 'Field of study aligns', false);
-            $this->addFix(
-                $missing,
-                $fixes,
-                'Add your field of study to your profile',
-                self::PROFILE_FIELD,
-                'field_of_study'
-            );
-
-            return 0;
-        }
-
-        if (strcasecmp(trim($profileField), trim($oppField)) === 0) {
-            $reasons[] = $this->reason('field', 'Field of study aligns', true);
-
-            return $weight;
-        }
-
-        $related = self::RELATED_FIELDS[trim($profileField)] ?? [];
-        $matches = array_filter($related, static fn (string $r) => strcasecmp($r, trim($oppField)) === 0);
-
-        if ($matches !== []) {
-            $reasons[] = $this->reason('field', 'Field of study aligns', true);
-
-            return (int) round($weight * $relatedCredit);
-        }
-
-        $reasons[] = $this->reason('field', 'Field of study aligns', false);
-        $this->addFix(
-            $missing,
-            $fixes,
-            'Targets ' . $oppField . ' - your profile shows ' . $profileField,
-            self::PROFILE_FIELD,
-            'field_of_study'
-        );
-
-        return 0;
-    }
-
-    private function scoreLocation(
-        ApplicantProfile $profile,
-        Opportunity $opportunity,
-        int $weight,
-        array &$reasons,
-        array &$missing,
-        array &$fixes
-    ): int {
-        $score = 0;
-        $locationOk = false;
-
-        if (filled($profile->country) && filled($opportunity->target_country)
-            && strcasecmp($profile->country, trim($opportunity->target_country)) === 0) {
-            $score = (int) round($weight * self::LOCATION_TARGET_MATCH);
-            $locationOk = true;
-        } elseif (filled($profile->country) && filled($opportunity->country)
-            && strcasecmp($profile->country, trim($opportunity->country)) === 0) {
-            $score = (int) round($weight * self::LOCATION_COUNTRY_MATCH);
-            $locationOk = true;
-        } elseif (blank($opportunity->target_country) && blank($opportunity->country)) {
-            $score = (int) round($weight * self::LOCATION_UNSPECIFIED);
-            $locationOk = filled($profile->country);
-        }
-
-        if ($score > 0 && filled($profile->province) && strcasecmp($profile->province, 'Rural') === 0) {
-            $score = min($score + (int) round($weight * self::LOCATION_RURAL_BONUS), $weight);
-        }
-
-        $reasons[] = $this->reason('location', 'Location eligibility met', $locationOk || $score > 0);
-
-        if (! $locationOk && $score === 0) {
-            if (blank($profile->country)) {
-                $this->addFix($missing, $fixes, 'Add your country on your profile', self::PROFILE_FIELD, 'country');
-            } elseif (filled($opportunity->target_country)) {
-                $this->addFix(
-                    $missing,
-                    $fixes,
-                    'Scholarship targets applicants in ' . $opportunity->target_country,
-                    null,
-                    null
-                );
-            }
-        }
-
-        return $score;
-    }
-
-    private function scoreDeadline(
-        Opportunity $opportunity,
-        int $weight,
-        array &$reasons,
-        array &$missing,
-        array &$fixes
-    ): int {
-        if ($opportunity->deadline === null) {
-            $reasons[] = $this->reason('deadline', 'Deadline still open', true);
-
-            return (int) round($weight * 0.8);
-        }
-
-        $days = (int) Carbon::today()->diffInDays($opportunity->deadline, false);
-
-        if ($days < 0) {
-            $reasons[] = $this->reason('deadline', 'Deadline still open', false);
-            $this->addFix($missing, $fixes, 'Application deadline has passed', null, null);
-
-            return 0;
-        }
-
-        $reasons[] = $this->reason('deadline', 'Deadline still open', true);
-
-        return match (true) {
-            $days <= 14 => $weight,
-            $days <= 30 => (int) round($weight * 0.8),
-            default => (int) round($weight * 0.5),
-        };
-    }
-
-    private function scoreCertificate(
-        ApplicantProfile $profile,
-        int $weight,
-        array &$reasons,
-        array &$missing,
-        array &$fixes
-    ): int {
-        $uploaded = filled($profile->results_certificate_path);
-        $reasons[] = $this->reason('certificate', 'Results certificate uploaded', $uploaded);
-
-        if (! $uploaded) {
-            $this->addFix(
-                $missing,
-                $fixes,
-                'Upload your results certificate before applying',
-                self::PROFILE_DOCUMENTS,
-                'documents'
-            );
-
-            return 0;
-        }
-
-        return $weight;
-    }
-
-    /** The points figure quoted on the profile, if one can be read out of it. */
-    private function extractPoints(ApplicantProfile $profile): ?int
-    {
-        if (blank($profile->academic_results)) {
-            return null;
-        }
-
-        return preg_match(self::POINTS_PATTERN, trim($profile->academic_results), $matches) === 1
-            ? (int) $matches[1]
-            : null;
-    }
-
-    private function hasQualifyingAcademicRecord(ApplicantProfile $profile): bool
-    {
-        if (blank($profile->academic_results)) {
-            return false;
-        }
-
-        $results = trim($profile->academic_results);
-        $lower = strtolower($results);
-
-        foreach (['distinction', 'first class', 'upper second', 'cum laude'] as $marker) {
-            if (str_contains($lower, $marker)) {
-                return true;
-            }
-        }
-
-        if (preg_match(self::POINTS_PATTERN, $results, $points) === 1) {
-            return (int) $points[1] >= 6;
-        }
-
-        if (preg_match(self::GPA_PATTERN, $results, $gpa) === 1) {
-            return (float) $gpa[1] >= 2.0;
-        }
-
-        if (preg_match('/\b(a\+?|b\+?|pass|credit|merit|honours?)\b/i', $results) === 1) {
-            return true;
-        }
-
-        if (str_contains($lower, 'o-level') || str_contains($lower, 'a-level') || str_contains($lower, 'zimsec')) {
-            return mb_strlen($results) >= 8;
-        }
-
-        if (preg_match('/\b([6-9]\d|100)\s*%/', $results) === 1) {
-            return true;
-        }
-
-        return mb_strlen($results) >= 12;
-    }
-
-    private function resolveConfidence(int $matchScore, bool $eligible): string
-    {
-        if (! $eligible) {
-            return 'NONE';
-        }
-
-        return match (true) {
-            $matchScore >= (int) config('scholarfit.confidence.high') => 'HIGH',
-            $matchScore >= (int) config('scholarfit.confidence.medium') => 'MEDIUM',
-            default => 'LOW',
-        };
-    }
-
-    private function resolveConfidenceLabel(int $matchScore, bool $eligible): string
-    {
-        if (! $eligible) {
-            return 'Not eligible';
-        }
-
-        return match (true) {
-            $matchScore >= (int) config('scholarfit.confidence.high') => 'High confidence',
-            $matchScore >= (int) config('scholarfit.confidence.medium') => 'Moderate confidence',
-            default => 'Low confidence',
-        };
-    }
-
-    private function buildExplanation(int $matchScore, array $reasons, array $disqualifiers): string
-    {
-        if ($disqualifiers !== []) {
-            return 'You are not eligible for this scholarship: '
-                . implode(' ', array_column($disqualifiers, 'text'));
-        }
-
-        $metCount = count(array_filter($reasons, static fn (array $r) => $r['met']));
-        $total = count($reasons);
-
-        if ($metCount === 0) {
-            return 'Your profile does not yet meet the criteria for this scholarship. '
-                . 'Completing your profile will improve this score.';
-        }
-
-        $headline = match (true) {
-            $matchScore >= (int) config('scholarfit.confidence.high') => 'Strong match',
-            $matchScore >= 45 => 'Reasonable match',
-            default => 'Weak match',
-        };
-
-        return sprintf('%s - you meet %d of %d criteria (%d%%).', $headline, $metCount, $total, $matchScore);
-    }
-
-    private function reason(string $key, string $label, bool $met): array
-    {
-        return ['key' => $key, 'label' => $label, 'met' => $met];
-    }
-
-    /**
-     * Records a shortfall in both shapes at once: the flat sentence that reports
-     * and the API have always exposed, and the linkable version the UI renders.
-     */
-    private function addFix(array &$missing, array &$fixes, string $text, ?string $target, ?string $anchor): void
-    {
-        $missing[] = $text;
-        $fixes[] = $this->fix($text, $target, $anchor);
-    }
-
-    /** @return array{text: string, target: ?string, cta: ?string} */
-    private function fix(string $text, ?string $target, ?string $anchor): array
-    {
-        return [
-            'text' => $text,
-            'target' => $target,
-            'cta' => $anchor,
-        ];
-    }
-
-    private function dedupeFixes(array $fixes): array
-    {
         $seen = [];
         $unique = [];
 
@@ -621,5 +170,31 @@ class ScholarFitEngine
         }
 
         return $unique;
+    }
+
+    private function confidenceLevel(int $matchScore, bool $eligible): string
+    {
+        if (! $eligible) {
+            return 'NONE';
+        }
+
+        return match (true) {
+            $matchScore >= (int) config('scholarfit.confidence.high') => 'HIGH',
+            $matchScore >= (int) config('scholarfit.confidence.medium') => 'MEDIUM',
+            default => 'LOW',
+        };
+    }
+
+    private function confidenceLabel(int $matchScore, bool $eligible): string
+    {
+        if (! $eligible) {
+            return 'Not eligible';
+        }
+
+        return match (true) {
+            $matchScore >= (int) config('scholarfit.confidence.high') => 'High confidence',
+            $matchScore >= (int) config('scholarfit.confidence.medium') => 'Moderate confidence',
+            default => 'Low confidence',
+        };
     }
 }

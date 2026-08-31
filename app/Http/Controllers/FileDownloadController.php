@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\ApplicantProfile;
 use App\Models\ProviderProfile;
+use App\Policies\DocumentPolicy;
 use App\Services\ApplicationService;
 use App\Services\AuditService;
 use App\Services\FileStorageService;
@@ -60,6 +61,14 @@ class FileDownloadController extends Controller
     public function providerCertificate(Request $request, int $userId)
     {
         $profile = ProviderProfile::where('user_id', $userId)->firstOrFail();
+
+        // Checked here as well as on the route. The route being inside the admin
+        // group is what protects this today, and a registration certificate is
+        // not a file to leave protected by where a route happens to be declared.
+        abort_unless(
+            (new DocumentPolicy())->viewProviderCertificate($request->user(), $profile),
+            403
+        );
 
         abort_unless($this->fileStorage->exists($profile->certificate_path), 404);
 

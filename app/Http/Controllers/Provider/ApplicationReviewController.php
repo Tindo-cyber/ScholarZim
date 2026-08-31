@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Provider;
 
+use App\Exceptions\InvalidApplicationTransition;
 use App\Http\Controllers\Controller;
 use App\Services\ApplicationService;
+use App\Support\ApplicationStateMachine;
 use App\Support\ApplicationStatus;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -22,7 +24,9 @@ class ApplicationReviewController extends Controller
             'applications' => $this->applicationService->forProvider($user, $request->query('status')),
             'statusCounts' => $this->applicationService->statusCountsForProvider($user),
             'activeStatus' => $request->query('status'),
-            'statuses' => ApplicationStatus::REVIEWABLE,
+            // Tabs, not review targets: Awarded is something to filter by but
+            // never something the review form or the bulk action can set.
+            'statuses' => ApplicationStatus::FILTERABLE,
             // Interviews need a per-applicant date, so they are not offered in bulk.
             'bulkStatuses' => array_values(array_diff(
                 ApplicationStatus::REVIEWABLE,
@@ -38,10 +42,48 @@ class ApplicationReviewController extends Controller
         return view('applications.provider-review', [
             'application' => $application,
             'applicantProfile' => $application->user?->applicantProfile,
-            'statuses' => ApplicationStatus::REVIEWABLE,
+            // Only the moves this application can actually make. A decided or
+            // withdrawn one yields an empty list, which is what collapses the
+            // decision form - offering a dropdown whose every option would be
+            // refused on save is worse than offering none.
+            //
+            // Intersected with REVIEWABLE because awarding is not one of the
+            // moves this form posts: review() validates against REVIEWABLE, so
+            // an "Awarded" option in the dropdown would fail validation on save.
+            // It gets its own button instead, driven by canAward below.
+            'statuses' => array_values(array_intersect(
+                ApplicationStateMachine::allowedFor(
+                    $application->application_status,
+                    ApplicationStateMachine::ACTOR_PROVIDER
+                ),
+                ApplicationStatus::REVIEWABLE
+            )),
+            'canAward' => $application->canBeAwarded(),
             'timeline' => ApplicationStatus::timeline($application->application_status),
             'awaitingResponse' => $application->awaitsApplicantResponse(),
         ]);
+    }
+
+    /**
+     * The award itself: the provider grants the scholarship to an applicant they
+     * have already approved.
+     *
+     * No request body - there is nothing to decide beyond who, and that is the
+     * URL. Everything else (ownership, the transition, the timestamp, the audit
+     * line, the notification) is the service's, so this path cannot drift away
+     * from the rules the rest of the lifecycle follows.
+     */
+    public function award(Request $request, int $id)
+    {
+        try {
+            $this->applicationService->award($id, $request->user());
+        } catch (InvalidApplicationTransition $e) {
+            return back()->with('errorMessage', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('provider.applications.show', $id)
+            ->with('successMessage', 'Scholarship awarded. The applicant has been notified.');
     }
 
     /**
@@ -88,13 +130,19 @@ class ApplicationReviewController extends Controller
             'interview_at' => ['required_if:status,' . ApplicationStatus::INTERVIEW, 'nullable', 'date'],
         ]);
 
-        $this->applicationService->updateStatus(
-            $id,
-            $data['status'],
-            $data['reason'] ?? null,
-            $request->user(),
-            $data['interview_at'] ?? null
-        );
+        try {
+            $this->applicationService->updateStatus(
+                $id,
+                $data['status'],
+                $data['reason'] ?? null,
+                $request->user(),
+                $data['interview_at'] ?? null
+            );
+        } catch (InvalidApplicationTransition $e) {
+            // A refused move is a business answer, not a crash: the provider is
+            // told which rule stopped them and the page keeps their input.
+            return back()->withInput()->with('errorMessage', $e->getMessage());
+        }
 
         return redirect()
             ->route('provider.applications.show', $id)

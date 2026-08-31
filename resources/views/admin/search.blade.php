@@ -64,8 +64,8 @@
                                     {{ $opportunity->title }}
                                 </a>
                                 <span class="small text-secondary d-block">{{ $opportunity->awardingBody() }}</span>
-                                <x-status-badge :label="$opportunity->moderationLabel()"
-                                                :tone="$opportunity->moderationTone()" class="mt-1" />
+                                <x-status-badge :label="$opportunity->lifecycleLabel()"
+                                                :tone="$opportunity->lifecycleTone()" class="mt-1" />
                             </li>
                         @empty
                             <li class="list-group-item text-secondary small">No matching scholarships.</li>

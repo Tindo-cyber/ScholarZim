@@ -49,11 +49,11 @@ class DatabaseSeeder extends Seeder
     private function admin(): User
     {
         return User::updateOrCreate(
-            ['email' => env('SCHOLARZIM_ADMIN_EMAIL', 'admin@scholarzim.co.zw')],
+            ['email' => config('scholarzim.admin.email')],
             [
                 'role_id' => Role::where('role_name', RoleNames::ADMIN)->value('role_id'),
                 'full_name' => 'Platform Administrator',
-                'password_hash' => Hash::make(env('SCHOLARZIM_ADMIN_PASSWORD', 'ChangeMe123')),
+                'password_hash' => Hash::make(config('scholarzim.admin.password')),
                 'account_status' => AccountStatus::ACTIVE,
                 'email_verified' => true,
                 'is_super_admin' => true,
@@ -84,7 +84,7 @@ class DatabaseSeeder extends Seeder
                 'certificate_filename' => 'registration-certificate.pdf',
                 'submitted_at' => Carbon::now()->subMonths(6),
                 'reviewed_at' => Carbon::now()->subMonths(6)->addDay(),
-                'reviewed_by' => env('SCHOLARZIM_ADMIN_EMAIL', 'admin@scholarzim.co.zw'),
+                'reviewed_by' => config('scholarzim.admin.email'),
             ]
         );
 
@@ -167,7 +167,7 @@ class DatabaseSeeder extends Seeder
                     'moderation_status' => OpportunityModerationStatus::APPROVED,
                     'submitted_at' => Carbon::now()->subDays(20),
                     'reviewed_at' => Carbon::now()->subDays(19),
-                    'reviewed_by' => env('SCHOLARZIM_ADMIN_EMAIL', 'admin@scholarzim.co.zw'),
+                    'reviewed_by' => config('scholarzim.admin.email'),
                     'created_at' => Carbon::now()->subDays(20),
                 ]
             );

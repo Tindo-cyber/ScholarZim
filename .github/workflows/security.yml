@@ -16,13 +16,28 @@ jobs:
       - uses: actions/checkout@v7
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: '8.4'
           extensions: mbstring, bcmath, intl, zip, gd
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
-      # Advisory only: Laravel 10 is past its security-support window, so the
-      # open framework advisories have no 10.x fix to upgrade to. Flip this to
-      # a blocking step once the app is on a supported Laravel release.
-      - name: Audit dependencies
-        continue-on-error: true
+      # Blocking. This step was advisory-only for as long as the app sat on
+      # Laravel 10, because the open framework advisories had no 10.x release to
+      # upgrade to and a failing job nobody can act on is a job everybody learns
+      # to ignore. On a supported Laravel that escape hatch is no longer needed:
+      # an advisory here now has a fix to move to, so it should stop the build.
+      # If one ever lands with no patch available, silence that single advisory
+      # with an explicit, dated entry under config.audit.ignore in composer.json
+      # rather than muting the whole step again.
+      - name: Audit PHP dependencies
         run: composer audit
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install front-end dependencies
+        run: npm ci --no-audit --no-fund
+      # The build tooling ships to nobody, but it still runs against this repo's
+      # source on every developer machine and CI runner, so it is audited too.
+      - name: Audit front-end dependencies
+        run: npm audit --audit-level=high

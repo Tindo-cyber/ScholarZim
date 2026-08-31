@@ -118,7 +118,7 @@ class OpportunityModerationService
 
     public function approve(int $opportunityId, User $admin): Opportunity
     {
-        $opportunity = $this->requirePending($opportunityId);
+        $opportunity = $this->requirePending($opportunityId, $admin);
 
         $opportunity->update([
             'moderation_status' => OpportunityModerationStatus::APPROVED,
@@ -154,7 +154,7 @@ class OpportunityModerationService
 
     public function reject(int $opportunityId, User $admin, string $reason): Opportunity
     {
-        $opportunity = $this->requirePending($opportunityId);
+        $opportunity = $this->requirePending($opportunityId, $admin);
 
         $opportunity->update([
             'moderation_status' => OpportunityModerationStatus::REJECTED,
@@ -205,9 +205,18 @@ class OpportunityModerationService
         );
     }
 
-    private function requirePending(int $opportunityId): Opportunity
+    private function requirePending(int $opportunityId, ?User $admin = null): Opportunity
     {
         $opportunity = Opportunity::with('provider')->findOrFail($opportunityId);
+
+        // Nobody signs off their own listing. Not reachable while a user holds a
+        // single role - an administrator cannot also be the provider who posted
+        // it - but the rule is the separation of duties the moderation queue
+        // exists to enforce, and it should not depend on the shape of the role
+        // table staying as it is.
+        if ($admin !== null && $opportunity->provider_user_id === $admin->user_id) {
+            throw new RuntimeException('You cannot moderate a scholarship you posted yourself.');
+        }
 
         if (! OpportunityModerationStatus::isPending($opportunity->moderation_status)) {
             throw new RuntimeException('This scholarship has already been reviewed.');

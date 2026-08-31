@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Applicant;
 use App\Http\Controllers\Controller;
 use App\Models\ApplicantProfile;
 use App\Services\ApplicantProfileService;
+use App\Services\ScholarFit\Taxonomy\Locality;
 use App\Support\FormOptions;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -25,6 +26,7 @@ class ProfileController extends Controller
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'countries' => FormOptions::COUNTRIES,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
+            'localities' => Locality::ALL,
             'institutions' => FormOptions::INSTITUTIONS,
             'citizenships' => FormOptions::CITIZENSHIPS,
         ]);
@@ -40,6 +42,10 @@ class ProfileController extends Controller
             'field_of_study' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', 'string', 'max:100'],
             'province' => ['nullable', 'string', 'max:100'],
+            'district' => ['nullable', 'string', 'max:100'],
+            // Rural or urban, and nothing else - it is its own attribute rather
+            // than a value smuggled into the province field.
+            'locality' => ['nullable', Rule::in(Locality::ALL)],
             // Both feed the hard eligibility checks, so an obviously wrong value
             // is rejected here rather than silently disqualifying someone later.
             'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1920-01-01'],

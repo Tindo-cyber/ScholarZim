@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\OpportunityLifecycle;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
 use Illuminate\Database\Eloquent\Builder;
@@ -48,6 +49,8 @@ class Opportunity extends Model
         'max_age',
         'required_citizenship',
         'required_province',
+        'target_district',
+        'target_locality',
         'requires_results_certificate',
         'view_count',
     ];
@@ -178,14 +181,66 @@ class Opportunity extends Model
         return OpportunityModerationStatus::badgeTone($this->moderation_status);
     }
 
-    public function isPubliclyVisible(): bool
+    /**
+     * The one state to show a human, drawn from both axes.
+     *
+     * The two columns are now genuinely independent, which is right for storage
+     * and wrong for a badge: a withdrawn listing still carries the approval it
+     * had when it was taken down, so rendering the moderation column alone would
+     * label it "Published". Publication wins wherever it has something final to
+     * say, and moderation speaks for everything still in play.
+     */
+    public function lifecycleLabel(): string
     {
-        return OpportunityModerationStatus::isApproved($this->moderation_status);
+        if ($this->isWithdrawn() || $this->isClosed()) {
+            return OpportunityStatus::displayLabel($this->status);
+        }
+
+        return OpportunityModerationStatus::displayLabel($this->moderation_status);
     }
 
+    public function lifecycleTone(): string
+    {
+        if ($this->isWithdrawn() || $this->isClosed()) {
+            return OpportunityStatus::badgeTone($this->status);
+        }
+
+        return OpportunityModerationStatus::badgeTone($this->moderation_status);
+    }
+
+    /**
+     * Taken down by the provider. Reads the publication column, not the
+     * moderation one - withdrawing is the provider's decision about their own
+     * listing, and it no longer overwrites the administrator's verdict.
+     */
     public function isWithdrawn(): bool
     {
-        return OpportunityModerationStatus::isWithdrawn($this->moderation_status);
+        return OpportunityStatus::isWithdrawn($this->status);
+    }
+
+    public function isClosed(): bool
+    {
+        return OpportunityStatus::isClosed($this->status);
+    }
+
+    public function deadlineHasPassed(): bool
+    {
+        return OpportunityLifecycle::deadlineHasPassed($this);
+    }
+
+    /**
+     * The in-memory twin of scopePubliclyVisible(), answered by the same rule so
+     * a loaded model and a query can never disagree about the same row.
+     */
+    public function isPubliclyVisible(): bool
+    {
+        return OpportunityLifecycle::isPubliclyVisible($this);
+    }
+
+    /** Whether a new application may still be made against this listing. */
+    public function acceptsApplications(): bool
+    {
+        return OpportunityLifecycle::acceptsApplications($this);
     }
 
     public function daysUntilDeadline(): ?int

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\ApplicationStatus;
 use App\Support\AuditAction;
 use App\Support\OpportunityModerationStatus;
+use App\Support\OpportunityStatus;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -142,7 +143,7 @@ class AccountSecurityTest extends TestCase
         // here to model a provider who has genuinely wound down.
         Application::query()->delete();
         Opportunity::where('provider_user_id', $provider->user_id)
-            ->update(['moderation_status' => OpportunityModerationStatus::WITHDRAWN]);
+            ->update(['status' => OpportunityStatus::WITHDRAWN]);
 
         $this->actingAs($provider)
             ->post('/account/delete', [

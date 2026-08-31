@@ -142,17 +142,20 @@ class SendDeadlineReminders extends Command
     ): bool {
         $opportunityId = $opportunity->opportunity_id;
 
-        if ($notifications->hasNotification($applicant, NotificationType::DEADLINE_REMINDER, $opportunityId)) {
-            return false;
-        }
-
-        $notifications->notifyUser(
+        // notifyOnce() carries the already-sent check, so the sweep stays
+        // idempotent across repeated runs without each command restating what
+        // "already reminded" means.
+        $sent = $notifications->notifyOnce(
             $applicant,
             NotificationType::DEADLINE_REMINDER,
             $message,
             $link,
             $opportunityId
         );
+
+        if ($sent === null) {
+            return false;
+        }
         $sms->sendDeadlineReminder($applicant->phone, $smsMessage);
 
         return true;

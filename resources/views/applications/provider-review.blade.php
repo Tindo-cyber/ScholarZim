@@ -137,6 +137,42 @@
                 </div>
 
                 <div class="card-body">
+                    @if($canAward)
+                        {{--
+                            Approved, and not yet awarded. This is the only place
+                            the award can be granted from, and the only state it
+                            can be granted in - the server enforces both, this
+                            just stops offering a button that would be refused.
+                        --}}
+                        <p class="small text-secondary">
+                            You approved this applicant. Awarding the scholarship records the grant against
+                            their application and tells them it is theirs.
+                        </p>
+                        <form method="POST" action="{{ route('provider.applications.award', $application->application_id) }}">
+                            @csrf
+                            <button class="btn btn-success w-100 d-inline-flex align-items-center justify-content-center gap-2"
+                                    type="submit">
+                                <x-icon name="stars" :size="16" /> Award this scholarship
+                            </button>
+                        </form>
+                    @elseif($application->isAwarded())
+                        <p class="mb-0">
+                            <span class="fw-semibold d-block mb-1">Scholarship awarded</span>
+                            <span class="text-secondary small">
+                                Granted {{ $application->awarded_at?->format('d M Y') ?? 'recently' }}. An award is
+                                final &mdash; this application cannot be moved again.
+                            </span>
+                        </p>
+                    @elseif($statuses === [])
+                        {{--
+                            Rejected or withdrawn: the lifecycle is over, so there
+                            is no decision left to take and the form would only
+                            offer moves the server refuses.
+                        --}}
+                        <p class="text-secondary mb-0">
+                            This application is {{ strtolower($application->statusLabel()) }} and can no longer be changed.
+                        </p>
+                    @else
                     <form method="POST" action="{{ route('provider.applications.review', $application->application_id) }}">
                         @csrf
 
@@ -157,6 +193,7 @@
 
                         <button class="btn btn-primary w-100" type="submit">Save decision</button>
                     </form>
+                    @endif
                 </div>
             </div>
         </div>

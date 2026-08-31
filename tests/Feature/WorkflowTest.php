@@ -133,6 +133,6 @@ class WorkflowTest extends TestCase
 
         $this->assertGreaterThan($weak->matchScore, $strong->matchScore);
         $this->assertLessThanOrEqual(100, $strong->matchScore);
-        $this->assertNotEmpty($strong->breakdown->reasons);
+        $this->assertNotEmpty($strong->breakdown->dimensionResults);
     }
 }

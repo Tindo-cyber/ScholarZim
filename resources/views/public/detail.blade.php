@@ -167,7 +167,8 @@
                         @foreach($related as $item)
                             <div class="col-md-4">
                                 <x-scholarship-card :opportunity="$item" :show-save="false"
-                                                    :applied="in_array($item->opportunity_id, $appliedIds, true)" />
+                                                    :applied="in_array($item->opportunity_id, $appliedIds, true)"
+                                                    :award="$awards[$item->opportunity_id] ?? null" />
                             </div>
                         @endforeach
                     </div>
@@ -214,14 +215,23 @@
 
                                 <p class="small text-secondary text-center">{{ $fit->breakdown->explanation }}</p>
 
+                                {{--
+                                    One line per dimension, read straight off the
+                                    same DimensionResult objects the score was
+                                    summed from - so what a student is told here
+                                    cannot drift away from what they were scored.
+                                --}}
                                 <h3 class="h6 fw-semibold mt-4 mb-2">Why this score</h3>
                                 <ul class="list-unstyled d-grid gap-2 mb-3">
-                                    @foreach($fit->breakdown->reasons as $reason)
+                                    @foreach($fit->breakdown->dimensionResults as $dimension)
                                         <li class="sz-fit-reason small">
-                                            <x-icon :name="$reason['met'] ? 'check-circle' : 'x-circle'"
+                                            <x-icon :name="$dimension->ratio >= 0.5 ? 'check-circle' : 'x-circle'"
                                                     :size="16"
-                                                    class="text-{{ $reason['met'] ? 'success' : 'secondary' }} mt-1" />
-                                            <span class="{{ $reason['met'] ? '' : 'text-secondary' }}">{{ $reason['label'] }}</span>
+                                                    class="text-{{ $dimension->ratio >= 0.5 ? 'success' : 'secondary' }} mt-1" />
+                                            <span class="{{ $dimension->ratio >= 0.5 ? '' : 'text-secondary' }}">
+                                                <strong>{{ $dimension->scoreLine() }}</strong>
+                                                <span class="d-block text-secondary">{{ $dimension->detail }}</span>
+                                            </span>
                                         </li>
                                     @endforeach
                                 </ul>
@@ -256,7 +266,28 @@
                         <div class="d-grid gap-2">
                             @auth
                                 @if(auth()->user()->isApplicant())
-                                    @if($hasApplied)
+                                    @if($award)
+                                        {{--
+                                            Neither Apply nor Quick apply: the
+                                            student already holds this award, and
+                                            the server refuses a second
+                                            application either way. The listing
+                                            itself stays readable - it is theirs
+                                            now, so hiding it would be perverse.
+                                        --}}
+                                        <div class="alert alert-success mb-0 text-center">
+                                            <div class="fw-semibold d-flex align-items-center justify-content-center gap-2">
+                                                <x-icon name="stars" :size="18" /> Scholarship awarded
+                                            </div>
+                                            @if($award->awarded_at)
+                                                <div class="small mt-1">Awarded on {{ $award->awarded_at->format('d F Y') }}</div>
+                                            @endif
+                                        </div>
+                                        <a class="btn btn-outline-success"
+                                           href="{{ route('applications.confirmation', $award->application_id) }}">
+                                            View your award
+                                        </a>
+                                    @elseif($hasApplied)
                                         <button class="btn btn-success btn-lg" type="button" disabled>
                                             <x-icon name="check-circle" :size="16" /> Applied
                                         </button>

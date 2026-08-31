@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Services\AccountDeletionService;
 use App\Services\AuditService;
 use App\Services\TwoFactorService;
+use App\Models\DocumentFile;
+use App\Models\User;
 use App\Support\AuditAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -176,11 +178,22 @@ class AccountController extends Controller
     {
         $user = $request->user()->load(['applicantProfile', 'providerProfile', 'applications.opportunity', 'savedScholarships']);
 
+        // toArray() on the profiles used to be the whole export, which dumped
+        // every column - including results_certificate_path, cv_path,
+        // passport_path, recommendation_letter_path and certificate_path. Those
+        // are internal storage locations. They are not reachable over the web,
+        // so publishing them is not an exploit on its own, but an export a user
+        // can forward to anybody is the wrong place to describe where private
+        // documents live on the server.
+        //
+        // Documents are listed by what they are, not by where they are kept: the
+        // name the user uploaded, when, and how big - enough for a data-subject
+        // request, nothing that helps anyone reach the bytes.
         $payload = [
             'exported_at' => now()->toIso8601String(),
             'account' => $user->only(['user_id', 'full_name', 'email', 'phone', 'account_status']),
-            'profile' => $user->applicantProfile?->toArray(),
-            'provider_profile' => $user->providerProfile?->toArray(),
+            'profile' => $this->exportableProfile($user),
+            'documents' => $this->exportableDocuments($user),
             'applications' => $user->applications->map(fn ($a) => [
                 'scholarship' => $a->opportunity?->title,
                 'status' => $a->statusLabel(),
@@ -190,6 +203,58 @@ class AccountController extends Controller
         ];
 
         return response()->json($payload)
-            ->header('Content-Disposition', 'attachment; filename="scholarzim-export.json"');
+            ->header('Content-Disposition', 'attachment; filename="scholarzim-export.json"')
+            // The body is the user's own personal data; nothing should keep a copy.
+            ->header('Cache-Control', 'no-store, private');
+    }
+
+    /**
+     * The profile as data about the person, with the storage columns left out.
+     *
+     * An allow-list rather than an exclude-list: a column added later is absent
+     * from the export until somebody decides it belongs there, which fails safe.
+     * The opposite - listing what to hide - leaks every field nobody remembered.
+     */
+    private function exportableProfile(User $user): ?array
+    {
+        $profile = $user->applicantProfile;
+
+        if ($profile === null) {
+            return null;
+        }
+
+        return $profile->only([
+            'education_level',
+            'institution_name',
+            'field_of_study',
+            'country',
+            'province',
+            'district',
+            'locality',
+            'date_of_birth',
+            'citizenship',
+            'academic_results',
+            'biography',
+        ]);
+    }
+
+    /**
+     * What the user has uploaded, described rather than located.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function exportableDocuments(User $user): array
+    {
+        return DocumentFile::where('uploaded_by_user_id', $user->user_id)
+            ->orderBy('created_at')
+            ->get()
+            ->map(static fn (DocumentFile $file) => [
+                'filename' => $file->original_filename,
+                'type' => $file->mime_type,
+                'size_bytes' => $file->size_bytes,
+                'checksum_sha256' => $file->checksum,
+                'uploaded_at' => $file->created_at?->toIso8601String(),
+            ])
+            ->all();
     }
 }

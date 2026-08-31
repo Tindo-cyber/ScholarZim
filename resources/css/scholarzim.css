@@ -10,6 +10,50 @@
     --sz-radius: .75rem;
 }
 
+/*
+ * Every layout puts its header in a sticky bar, so the browser's idea of "the
+ * top of the page" is covered by roughly 4.5rem of chrome. Without this an
+ * in-page jump - "How it works" and "More fields" in the landing page nav, the
+ * #faq and #categories links, any :target - scrolls the heading it was aiming
+ * for underneath that bar, and the reader lands mid-paragraph on a section whose
+ * title they never see. scroll-padding-top belongs on the scroll container, so
+ * it goes on the root element rather than on each anchor target; the extra rem
+ * over the measured bar height is breathing room, not a gap anyone will notice.
+ */
+html {
+    scroll-padding-top: 5.5rem;
+}
+
+/* ---------- Links ---------- */
+
+/*
+ * The BVite theme paints every anchor with its gold accent (`:is(a){color:
+ * var(--accent-color)}`), which overrides Bootstrap's own --bs-link-color. On
+ * the dark palette that gold is legible, so the damage never shows up while
+ * working in dark mode - but on the light palette #DEAD00 sits at roughly 1.9:1
+ * against a white body, well under the 4.5:1 AA minimum. Every prose link on
+ * the site is affected: "Forgot your password?" and the account links under the
+ * sign-in form, the "create a free account" link in the landing page FAQ.
+ *
+ * Handing the colour back to Bootstrap's link variables fixes both palettes at
+ * once, because the vendor theme already redefines them per colour mode (#0d6efd
+ * on light, #6ea8fe on dark). This rule only needs to match the vendor's
+ * specificity - `:is(a)` counts as a single element selector - and win on order,
+ * which it does: partials/assets.blade.php loads this file after the theme.
+ *
+ * Anchors that carry their own colour are untouched. .btn, .nav-link,
+ * .navbar-brand and .dropdown-item are class selectors and already outrank both
+ * rules; .link-* and .text-* utilities set !important. Only bare anchors change.
+ */
+a {
+    color: var(--bs-link-color);
+}
+
+a:hover,
+a:focus {
+    color: var(--bs-link-hover-color);
+}
+
 /* ---------- App shell ---------- */
 
 /*

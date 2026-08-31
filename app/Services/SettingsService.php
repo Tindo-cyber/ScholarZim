@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PlatformSetting;
+use App\Services\ScholarFit\ScholarFitEngine;
 use App\Support\AuditAction;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -54,6 +55,19 @@ class SettingsService
     public function updateScholarFitWeights(array $weights, string $actorEmail): array
     {
         $defaults = config('scholarfit.weights');
+
+        // Unknown criteria are refused rather than dropped. Silently ignoring
+        // them meant an administrator could set "interview" to 40, be shown a
+        // saved-successfully message, and have the engine keep scoring on the
+        // six dimensions it actually knows about.
+        $unknown = array_diff(array_keys($weights), array_keys($defaults));
+
+        if ($unknown !== []) {
+            throw ValidationException::withMessages([
+                'weights' => 'Unknown scoring criteria: ' . implode(', ', $unknown) . '.',
+            ]);
+        }
+
         $clean = [];
 
         foreach (array_keys($defaults) as $dimension) {
@@ -157,5 +171,17 @@ class SettingsService
         $weights = $this->scholarFitWeights();
 
         return substr(md5(json_encode($weights)), 0, 8);
+    }
+
+    /**
+     * The full scoring identity: which engine, under which weights.
+     *
+     * "ScholarFit v2 (a1b2c3d4)". The engine version moves when the algorithm
+     * changes and the hash moves when an administrator retunes it, so a score
+     * quoted in a log or a report can be traced to both.
+     */
+    public function scoringIdentity(): string
+    {
+        return ScholarFitEngine::VERSION_LABEL . ' (' . $this->scoringVersion() . ')';
     }
 }

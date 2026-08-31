@@ -16,6 +16,15 @@ use Illuminate\Support\Facades\Mail;
  * it returns without waiting on SMTP. With QUEUE_CONNECTION=sync - the test and
  * bare-development default - that is still immediate, so behaviour is unchanged
  * where no worker is running.
+ *
+ * Swallowing the failure is right for a notification - an administrator
+ * approving a listing should not see an error because one of forty recipients
+ * bounced - but it is wrong when the email *is* the deliverable, as it is for a
+ * verification link. So the outcome is returned rather than only logged, and
+ * callers decide: the notification paths ignore it exactly as before, and the
+ * ones where a lost email leaves the user stuck can say so. Without this the
+ * only trace of a broken mailer was a log line and an audit row, while every
+ * screen kept reporting success.
  */
 class EmailService
 {
@@ -23,9 +32,9 @@ class EmailService
     {
     }
 
-    public function sendNotification(User $user, string $type, string $message, ?string $link = null): void
+    public function sendNotification(User $user, string $type, string $message, ?string $link = null): bool
     {
-        $this->send(
+        return $this->send(
             $user,
             $this->subjectFor($type),
             'emails.notification',
@@ -37,25 +46,32 @@ class EmailService
         );
     }
 
-    public function sendPasswordReset(User $user, string $token): void
+    public function sendPasswordReset(User $user, string $token): bool
     {
-        $this->send($user, 'Reset your ScholarZim password', 'emails.password-reset', [
+        return $this->send($user, 'Reset your ScholarZim password', 'emails.password-reset', [
             'actionUrl' => url('/reset-password/' . $token),
         ]);
     }
 
-    public function sendEmailVerification(User $user, string $token): void
+    public function sendEmailVerification(User $user, string $token): bool
     {
-        $this->send($user, 'Verify your ScholarZim email address', 'emails.verify-email', [
+        $sent = $this->send($user, 'Verify your ScholarZim email address', 'emails.verify-email', [
             'actionUrl' => url('/verify-email/' . $token),
         ]);
 
-        $this->auditService->log($user->email, AuditAction::EMAIL_VERIFICATION_SENT, 'USER', $user->user_id);
+        // Only audited as sent when it was. A failed send has already written its
+        // own EMAIL_DELIVERY_FAILED row, and logging both left a trail saying the
+        // link went out on the one occasion it demonstrably had not.
+        if ($sent) {
+            $this->auditService->log($user->email, AuditAction::EMAIL_VERIFICATION_SENT, 'USER', $user->user_id);
+        }
+
+        return $sent;
     }
 
-    public function sendWelcome(User $user): void
+    public function sendWelcome(User $user): bool
     {
-        $this->send($user, 'Welcome to ScholarZim', 'emails.welcome', []);
+        return $this->send($user, 'Welcome to ScholarZim', 'emails.welcome', []);
     }
 
     /**
@@ -63,11 +79,16 @@ class EmailService
      * templates read, not the User model. A queued row can outlive the record it
      * was built from, and an email that fails on wake-up because the account was
      * since renamed or deleted is worse than one addressed from a snapshot.
+     *
+     * @return bool whether the message was handed to the mailer without error.
+     *              True means accepted for delivery, not delivered: with a queue
+     *              driver the send itself happens later in the worker, and the
+     *              transport can still reject it there.
      */
-    private function send(User $user, string $subject, string $view, array $data): void
+    private function send(User $user, string $subject, string $view, array $data): bool
     {
         if (blank($user->email)) {
-            return;
+            return false;
         }
 
         $recipient = (object) ['full_name' => (string) $user->full_name];
@@ -84,13 +105,18 @@ class EmailService
                 $user->user_id,
                 $e->getMessage()
             );
+
+            return false;
         }
+
+        return true;
     }
 
     private function subjectFor(string $type): string
     {
         return match ($type) {
             'APPLICATION_APPROVED' => 'Your scholarship application was approved',
+            'APPLICATION_AWARDED' => 'You have been awarded a scholarship',
             'APPLICATION_REJECTED' => 'Update on your scholarship application',
             'APPLICATION_INTERVIEW' => 'You have been invited to an interview',
             'APPLICATION_WITHDRAWN' => 'An applicant withdrew their application',

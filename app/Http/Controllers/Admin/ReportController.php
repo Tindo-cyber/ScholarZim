@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\ExcelReportService;
 use App\Services\ReportService;
+use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
 class ReportController extends Controller
@@ -20,6 +21,17 @@ class ReportController extends Controller
     public function hub()
     {
         return view('admin.reports');
+    }
+
+    /**
+     * Every export on this controller crosses the whole platform, so the ability
+     * is asserted here as well as on the admin route group. The gate is the
+     * statement of the rule; the route is where it currently happens to be
+     * enforced, and those are not the same thing.
+     */
+    private function authorizeExport(): void
+    {
+        abort_unless(Gate::allows('export-reports'), 403);
     }
 
     public function usersPdf(): Response
@@ -59,6 +71,8 @@ class ReportController extends Controller
 
     private function download(string $body, string $filename, string $contentType): Response
     {
+        $this->authorizeExport();
+
         return response($body, 200, [
             'Content-Type' => $contentType,
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',

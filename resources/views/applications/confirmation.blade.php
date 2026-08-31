@@ -46,7 +46,15 @@
                 </div>
             </div>
 
-            @if($application->application_status === \App\Support\ApplicationStatus::INTERVIEW && $application->interview_at)
+            @if($application->isAwarded())
+                <div class="alert alert-success">
+                    <h3 class="h6 fw-semibold mb-1">Scholarship awarded</h3>
+                    <p class="mb-0">
+                        Congratulations &mdash; this scholarship has been awarded to you{{ $application->awarded_at ? ' on ' . $application->awarded_at->format('d F Y') : '' }}.
+                        The provider will be in touch about what happens next.
+                    </p>
+                </div>
+            @elseif($application->application_status === \App\Support\ApplicationStatus::INTERVIEW && $application->interview_at)
                 <div class="alert alert-info">
                     <h3 class="h6 fw-semibold mb-1">You have been invited to interview</h3>
                     <p class="mb-1">

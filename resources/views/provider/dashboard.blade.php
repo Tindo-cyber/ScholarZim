@@ -90,8 +90,8 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <x-status-badge :label="$opportunity->moderationLabel()"
-                                                            :tone="$opportunity->moderationTone()" />
+                                            <x-status-badge :label="$opportunity->lifecycleLabel()"
+                                                            :tone="$opportunity->lifecycleTone()" />
                                             @if(strcasecmp((string) $opportunity->status, \App\Support\OpportunityStatus::CLOSED) === 0)
                                                 <x-status-badge label="Archived" tone="secondary" icon="lock" />
                                             @endif

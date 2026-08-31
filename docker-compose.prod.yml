@@ -41,6 +41,11 @@ services:
       LOG_CHANNEL: stderr
       LOG_LEVEL: warning
       SESSION_SECURE_COOKIE: "true"
+      # TLS stops at the reverse proxy, so the scheme arrives in
+      # X-Forwarded-Proto. Without a trusted proxy the app reads every request
+      # as plain HTTP and never sends HSTS. Safe as "*" only because the port
+      # below is published on 127.0.0.1, so the proxy is the sole caller.
+      TRUSTED_PROXIES: "*"
       DB_CONNECTION: mysql
       DB_HOST: mysql
       DB_PORT: 3306

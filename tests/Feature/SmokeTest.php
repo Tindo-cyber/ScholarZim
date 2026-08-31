@@ -50,7 +50,13 @@ class SmokeTest extends TestCase
         $this->get('/register/provider')->assertOk();
         $this->get('/forgot-password')->assertOk();
         $this->get('/developers')->assertOk();
-        $this->get('/health')->assertOk()->assertJsonPath('database', 'up');
+        // Liveness answers for the process alone - it deliberately reports no
+        // dependency, because a restart is the only thing a failure here can
+        // ask for and restarting cannot fix a database.
+        $this->get('/health')->assertOk()->assertJsonPath('checked', 'liveness');
+
+        // Readiness is where dependencies are reported.
+        $this->get('/health/ready')->assertOk()->assertJsonPath('checks.database', 'up');
     }
 
     public function test_applicant_pages_render(): void

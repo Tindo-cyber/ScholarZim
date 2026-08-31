@@ -20,6 +20,38 @@ class ScoredOpportunity
         return $this->breakdown->isEligible();
     }
 
+    /**
+     * Why this score is what it is, rendered from the same DimensionResult
+     * objects the score was summed from.
+     *
+     * Eligible:
+     *   Match Score: 86%
+     *   Academic: 18/20 - 16 points against a 12-point requirement
+     *   ...
+     *   Eligibility: Passed
+     *
+     * Not eligible:
+     *   Not eligible
+     *   Reason:
+     *   Minimum academic points required: 15. Applicant points: 12.
+     */
+    public function explain(): string
+    {
+        return implode("\n", $this->breakdown->explanationLines($this->matchScore));
+    }
+
+    /** @return array<int, string> */
+    public function explanationLines(): array
+    {
+        return $this->breakdown->explanationLines($this->matchScore);
+    }
+
+    /** Which engine produced this score. */
+    public function scoringVersion(): string
+    {
+        return $this->breakdown->scoringVersion;
+    }
+
     public function scoreTone(): string
     {
         if (! $this->isEligible()) {

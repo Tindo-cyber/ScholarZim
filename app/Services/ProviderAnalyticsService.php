@@ -21,8 +21,15 @@ use Illuminate\Support\Carbon;
  */
 class ProviderAnalyticsService
 {
-    /** Funnel stages, in the order they are drawn. */
-    public const STAGES = ['Views', 'Saves', 'Applications', 'Awarded'];
+    /**
+     * Funnel stages, in the order they are drawn.
+     *
+     * Approved and Awarded are separate steps because they are separate facts:
+     * this stage used to be one box labelled "Awarded" counting APPROVED rows,
+     * which reported every selection as a scholarship granted. A provider who
+     * has picked ten students and funded three needs to see both numbers.
+     */
+    public const STAGES = ['Views', 'Saves', 'Applications', 'Approved', 'Awarded'];
 
     public function overview(User $provider, int $days = 30): array
     {
@@ -44,11 +51,23 @@ class ProviderAnalyticsService
             ->all();
 
         $applications = array_sum($statusCounts);
-        $awarded = (int) ($statusCounts[ApplicationStatus::APPROVED] ?? 0);
+
+        $awarded = (int) ($statusCounts[ApplicationStatus::AWARDED] ?? 0);
+
+        // The funnel is cumulative by construction - every stage is drawn as a
+        // share of the one above it - so "Approved" here means "reached approval
+        // or went past it". An awarded application no longer holds the APPROVED
+        // status, and counting only the ones still sitting there would make the
+        // step from Approved to Awarded exceed 100% the moment a provider
+        // awarded everyone they picked.
+        //
+        // statusCounts below stays strictly per-status: that is the status mix,
+        // where each application must appear exactly once.
+        $approved = (int) ($statusCounts[ApplicationStatus::APPROVED] ?? 0) + $awarded;
 
         return [
             'days' => $days,
-            'funnel' => $this->funnel($views, $saves, $applications, $awarded),
+            'funnel' => $this->funnel($views, $saves, $applications, $approved, $awarded),
             'statusCounts' => $statusCounts,
             'viewTrend' => $this->viewTrend($opportunityIds, $days),
             'byListing' => $this->byListing($opportunityIds),
@@ -67,12 +86,13 @@ class ProviderAnalyticsService
      * provider actually acts on - "300 views, 12 applications" only means
      * something once it reads as 4%.
      */
-    private function funnel(int $views, int $saves, int $applications, int $awarded): array
+    private function funnel(int $views, int $saves, int $applications, int $approved, int $awarded): array
     {
         $stages = [
             ['label' => 'Views', 'value' => $views],
             ['label' => 'Saves', 'value' => $saves],
             ['label' => 'Applications', 'value' => $applications],
+            ['label' => 'Approved', 'value' => $approved],
             ['label' => 'Awarded', 'value' => $awarded],
         ];
 
@@ -127,18 +147,33 @@ class ProviderAnalyticsService
             ->limit(20)
             ->get();
 
-        $awarded = Application::whereIn('opportunity_id', $opportunityIds)
-            ->where('application_status', ApplicationStatus::APPROVED)
-            ->selectRaw('opportunity_id, COUNT(*) as total')
-            ->groupBy('opportunity_id')
-            ->pluck('total', 'opportunity_id')
-            ->all();
+        // One grouped query for both outcomes rather than one query each: the
+        // pair is read together and neither column is worth a second round trip.
+        $outcomes = Application::whereIn('opportunity_id', $opportunityIds)
+            ->whereIn('application_status', [ApplicationStatus::APPROVED, ApplicationStatus::AWARDED])
+            ->selectRaw('opportunity_id, application_status, COUNT(*) as total')
+            ->groupBy('opportunity_id', 'application_status')
+            ->get();
+
+        $approved = [];
+        $awarded = [];
+
+        foreach ($outcomes as $row) {
+            if ($row->application_status === ApplicationStatus::AWARDED) {
+                $awarded[$row->opportunity_id] = (int) $row->total;
+            } else {
+                $approved[$row->opportunity_id] = (int) $row->total;
+            }
+        }
 
         return $opportunities->map(static fn (Opportunity $o) => [
             'opportunity' => $o,
             'views' => (int) $o->view_count,
             'saves' => (int) $o->saved_by_count,
             'applications' => (int) $o->applications_count,
+            // Per listing the two are shown side by side rather than rolled up,
+            // so a provider can see selections still waiting to be funded.
+            'approved' => (int) ($approved[$o->opportunity_id] ?? 0),
             'awarded' => (int) ($awarded[$o->opportunity_id] ?? 0),
         ])->all();
     }
@@ -181,7 +216,7 @@ class ProviderAnalyticsService
     {
         return [
             'days' => $days,
-            'funnel' => $this->funnel(0, 0, 0, 0),
+            'funnel' => $this->funnel(0, 0, 0, 0, 0),
             'statusCounts' => [],
             'viewTrend' => $this->viewTrend([0], $days),
             'byListing' => [],

@@ -32,6 +32,7 @@ class RecommendationController extends Controller
             'minimumScore' => $minimumScore,
             'savedIds' => $this->savedScholarshipService->savedIds($user),
             'appliedIds' => $this->applicationService->appliedIds($user),
+            'awards' => $this->applicationService->awardsByOpportunity($user),
         ]);
     }
 }

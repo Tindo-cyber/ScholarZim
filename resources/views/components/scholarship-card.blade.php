@@ -3,6 +3,10 @@
     'score' => null,
     'saved' => false,
     'applied' => false,
+    // The viewer's awarded application for this listing, if they have one.
+    // Defaults to null so a page that has no reason to load awards renders
+    // unchanged rather than erroring on a missing prop.
+    'award' => null,
     'showSave' => true,
     'showApply' => true,
 ])
@@ -88,7 +92,13 @@
             @if($showApply)
                 @auth
                     @if(auth()->user()->isApplicant())
-                        @if($applied)
+                        @if($award)
+                            {{-- Won, not merely applied for. It links at the award. --}}
+                            <a class="text-decoration-none"
+                               href="{{ route('applications.confirmation', $award->application_id) }}">
+                                <x-status-badge label="Scholarship awarded" tone="success" icon="stars" />
+                            </a>
+                        @elseif($applied)
                             <x-status-badge label="Applied" tone="success" icon="check-circle" />
                         @else
                             <a class="btn btn-sm btn-primary" href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply</a>

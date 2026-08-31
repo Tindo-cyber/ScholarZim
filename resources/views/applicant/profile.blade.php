@@ -73,6 +73,24 @@
                                                :options="$provinces" :value="$profile->province"
                                                placeholder="Select" />
                             </div>
+                            <div class="col-md-3">
+                                <x-form.input name="district" label="District"
+                                              :value="$profile->district"
+                                              hint="Optional. Some awards target one district." />
+                            </div>
+                            <div class="col-md-3">
+                                {{--
+                                    Its own field, not a province. A number of
+                                    Zimbabwean awards are aimed specifically at
+                                    rural students, and until now there was no
+                                    way for anyone to say which they are.
+                                --}}
+                                <x-form.select name="locality" label="Home area"
+                                               :options="collect($localities)->mapWithKeys(fn ($l) => [$l => ucfirst(strtolower($l))])->all()"
+                                               :value="$profile->locality"
+                                               placeholder="Select"
+                                               hint="Rural or urban - used only to match awards aimed at one or the other." />
+                            </div>
                             <div class="col-md-6">
                                 <x-form.input name="date_of_birth" label="Date of birth" type="date"
                                               :value="$profile->date_of_birth?->format('Y-m-d')"

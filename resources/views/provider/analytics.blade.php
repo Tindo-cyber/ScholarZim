@@ -30,14 +30,17 @@
     </x-page-header>
 
     <div class="row g-3 mb-4">
+        {{-- col-xl rather than col-xl-3: the funnel has five stages since
+             approval and the award became separate facts. --}}
         @foreach($overview['funnel'] as $stage)
-            <div class="col-6 col-xl-3">
+            <div class="col-6 col-xl">
                 <x-stat-card :label="$stage['label']"
                              :value="number_format($stage['value'])"
                              :icon="match($stage['label']) {
                                  'Views' => 'eye',
                                  'Saves' => 'bookmark',
                                  'Applications' => 'inbox',
+                                 'Awarded' => 'stars',
                                  default => 'check-circle',
                              }"
                              :tone="match($stage['label']) {
@@ -106,6 +109,7 @@
                                     <th scope="col" class="text-end">Views</th>
                                     <th scope="col" class="text-end">Saves</th>
                                     <th scope="col" class="text-end">Applications</th>
+                                    <th scope="col" class="text-end">Approved</th>
                                     <th scope="col" class="text-end">Awarded</th>
                                     <th scope="col" class="text-end">Conversion</th>
                                 </tr>
@@ -120,13 +124,14 @@
                                                     {{ $row['opportunity']->title }}
                                                 </a>
                                                 <span class="small text-secondary">
-                                                    {{ $row['opportunity']->moderationLabel() }}
+                                                    {{ $row['opportunity']->lifecycleLabel() }}
                                                 </span>
                                             </span>
                                         </td>
                                         <td data-label="Views" class="text-end">{{ number_format($row['views']) }}</td>
                                         <td data-label="Saves" class="text-end">{{ number_format($row['saves']) }}</td>
                                         <td data-label="Applications" class="text-end">{{ number_format($row['applications']) }}</td>
+                                        <td data-label="Approved" class="text-end">{{ number_format($row['approved']) }}</td>
                                         <td data-label="Awarded" class="text-end">{{ number_format($row['awarded']) }}</td>
                                         <td data-label="Conversion" class="text-end">
                                             {{ $row['views'] > 0

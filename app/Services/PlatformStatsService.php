@@ -22,7 +22,11 @@ class PlatformStatsService
             'activeScholarships' => $this->opportunityService->countActive(),
             'students' => User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::APPLICANT))->count(),
             'providers' => User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::PROVIDER))->count(),
-            'awardsMade' => Application::where('application_status', ApplicationStatus::APPROVED)->count(),
+            // Awards actually granted, not applications approved. The two used
+            // to be the same number because the platform had one status for
+            // both; a public "awards made" counter that includes selections
+            // nobody has funded yet overstates what the platform has delivered.
+            'awardsMade' => Application::where('application_status', ApplicationStatus::AWARDED)->count(),
             'closingSoon' => $this->opportunityService->countUpcomingDeadlines(30),
         ]);
     }
@@ -39,6 +43,7 @@ class PlatformStatsService
             'activeOpportunities' => Opportunity::query()->publiclyVisible()->count(),
             'totalApplications' => Application::count(),
             'approvedApplications' => Application::where('application_status', ApplicationStatus::APPROVED)->count(),
+            'awardedApplications' => Application::where('application_status', ApplicationStatus::AWARDED)->count(),
             'pendingApplications' => Application::whereIn('application_status', [
                 ApplicationStatus::SUBMITTED,
                 ApplicationStatus::UNDER_REVIEW,

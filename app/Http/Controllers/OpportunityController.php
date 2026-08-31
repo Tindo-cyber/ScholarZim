@@ -31,6 +31,7 @@ class OpportunityController extends Controller
             'filters' => $filters,
             'savedIds' => $this->savedScholarshipService->savedIds($request->user()),
             'appliedIds' => $this->applicationService->appliedIds($request->user()),
+            'awards' => $this->applicationService->awardsByOpportunity($request->user()),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Opportunity;
 use App\Services\NotificationService;
 use App\Support\NotificationType;
+use App\Support\OpportunityLifecycle;
 use App\Support\OpportunityStatus;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
@@ -29,6 +30,13 @@ class ArchiveExpiredOpportunities extends Command
             ->get();
 
         foreach ($expired as $opportunity) {
+            // Guarded rather than assumed: the query selects ACTIVE rows, and
+            // this keeps that true if the query is ever widened. A withdrawn
+            // listing must not be quietly re-labelled as merely closed.
+            if (! OpportunityLifecycle::canTransitionPublication($opportunity->status, OpportunityStatus::CLOSED)) {
+                continue;
+            }
+
             $opportunity->update(['status' => OpportunityStatus::CLOSED]);
 
             if ($opportunity->provider) {

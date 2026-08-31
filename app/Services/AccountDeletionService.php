@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\ApplicantProfile;
 use App\Models\Application;
 use App\Models\EmailVerificationToken;
 use App\Models\Notification;
@@ -11,6 +12,8 @@ use App\Models\SavedScholarship;
 use App\Models\SavedSearch;
 use App\Models\User;
 use App\Support\AuditAction;
+use App\Support\OpportunityModerationStatus;
+use App\Support\OpportunityStatus;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
@@ -35,8 +38,10 @@ use RuntimeException;
  */
 class AccountDeletionService
 {
-    public function __construct(private readonly AuditService $auditService)
-    {
+    public function __construct(
+        private readonly AuditService $auditService,
+        private readonly FileStorageService $fileStorage,
+    ) {
     }
 
     /**
@@ -51,8 +56,14 @@ class AccountDeletionService
             throw new RuntimeException('The super admin account cannot be deleted.');
         }
 
+        // A listing blocks deletion unless the provider withdrew it or an
+        // administrator declined it. Asked across both axes now that withdrawal
+        // lives on the publication column: checking moderation alone would have
+        // counted a withdrawn listing as live, because withdrawing no longer
+        // overwrites the approval it used to erase.
         $liveListings = Opportunity::where('provider_user_id', $user->user_id)
-            ->whereIn('moderation_status', ['PENDING', 'APPROVED'])
+            ->where('status', '!=', OpportunityStatus::WITHDRAWN)
+            ->where('moderation_status', '!=', OpportunityModerationStatus::REJECTED)
             ->count();
 
         if ($liveListings > 0) {
@@ -75,6 +86,10 @@ class AccountDeletionService
             ($selfService ? 'Deleted their own account' : 'Deleted account') . ' ' . $email
         );
 
+        // Collected before the transaction, because the rows that point at these
+        // files are about to be deleted and the paths would go with them.
+        $documentPaths = $this->documentPathsFor($user);
+
         DB::transaction(function () use ($user, $userId) {
             Notification::where('user_id', $userId)->delete();
             SavedScholarship::where('user_id', $userId)->delete();
@@ -93,5 +108,66 @@ class AccountDeletionService
 
             $user->delete();
         });
+
+        // Files last, and only once the account is genuinely gone. Deleting them
+        // first would destroy a student's documents on the way to a deletion that
+        // might still fail and roll back, leaving an account whose paperwork had
+        // already been shredded.
+        //
+        // Deleting the rows used to be the whole of it, which left every upload -
+        // national IDs, passports, results certificates - sitting in storage
+        // belonging to an account that no longer existed, with nothing left
+        // referring to them and so nothing that would ever find them again.
+        $removed = 0;
+
+        foreach ($documentPaths as $path) {
+            if ($this->fileStorage->exists($path)) {
+                $this->fileStorage->delete($path);
+                $removed++;
+            }
+        }
+
+        // Anything recorded against them that the column sweep above missed.
+        $removed += $this->fileStorage->deleteAllForUser($user);
+
+        $this->auditService->log(
+            $actorEmail,
+            AuditAction::DOCUMENTS_PURGED,
+            'USER',
+            $userId,
+            'Removed ' . $removed . ' uploaded file(s) belonging to ' . $email
+        );
+    }
+
+    /**
+     * Every stored path this account owns, gathered from the columns that hold
+     * them.
+     *
+     * Read from the owning rows rather than only from document_files, because
+     * uploads that predate the metadata table have no record there - and a
+     * deletion that only removed the files it had paperwork for would quietly
+     * leave the oldest documents behind.
+     *
+     * @return array<int, string>
+     */
+    private function documentPathsFor(User $user): array
+    {
+        $paths = [];
+
+        $profile = $user->applicantProfile;
+
+        if ($profile !== null) {
+            foreach (ApplicantProfile::DOCUMENT_TYPES as $prefix) {
+                $paths[] = $profile->{$prefix . '_path'};
+            }
+        }
+
+        $paths[] = $user->providerProfile?->certificate_path;
+
+        foreach (Application::where('user_id', $user->user_id)->pluck('document_path') as $path) {
+            $paths[] = $path;
+        }
+
+        return array_values(array_filter(array_unique($paths), static fn ($p) => filled($p)));
     }
 }

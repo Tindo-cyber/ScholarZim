@@ -13,6 +13,11 @@ final class AccountStatus
     {
     }
 
+    public static function isSuspended(?string $status): bool
+    {
+        return strcasecmp((string) $status, self::SUSPENDED) === 0;
+    }
+
     public static function displayLabel(?string $status): string
     {
         return match (strtoupper((string) $status)) {
