@@ -29,6 +29,11 @@ class Kernel extends HttpKernel
     /**
      * The application's route middleware groups.
      *
+     * Only `web`. The `api` group went with the public JSON API: it referenced a
+     * `throttle:api` limiter that RouteServiceProvider no longer registers, so
+     * leaving it would have handed the next api route a 500 instead of a
+     * missing-route error.
+     *
      * @var array<string, array<int, class-string|string>>
      */
     protected $middlewareGroups = [
@@ -49,14 +54,6 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             \App\Http\Middleware\SecurityHeaders::class,
-        ],
-
-        'api' => [
-            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
-            // Same rule for token callers: a suspended account's API token stops
-            // working immediately instead of outliving the suspension.
-            \App\Http\Middleware\BlockSuspendedAccounts::class,
-            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];
 

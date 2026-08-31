@@ -236,6 +236,23 @@ Credentials are read from the environment through `config/services.php` (`MAILGU
 `MAILGUN_SECRET`, `MAILGUN_ENDPOINT`) and are never committed: both tracked templates ship
 placeholders, and `.env` and `.env.docker` are gitignored.
 
+### Where the links in those emails point
+
+`EmailService` builds every link with Laravel's `url()` helper, so **the address comes from
+`APP_URL`, not from the mail transport**. The two are independent, and that trips people up:
+
+> Mailgun can deliver a verification email perfectly while the app it links back to is only
+> running on your laptop. Sending and linking are separate concerns.
+
+So a verification mail sent from a local machine with `APP_URL=http://localhost:8000`
+contains `http://localhost:8000/verify-email/<token>` — which works for you and for nobody
+else. On Render, `APP_URL` is set in the dashboard (`render.yaml` marks it `sync: false`) and
+the same code emits `https://<your-app>.onrender.com/verify-email/<token>`.
+
+The production URL is never hard-coded in PHP. If a verification or reset link ever points
+at the wrong host, `APP_URL` is the only thing to change — and run `php artisan config:clear`
+afterwards if the config was cached.
+
 What gets emailed:
 
 | Trigger | Recipient |
