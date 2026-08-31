@@ -5,7 +5,6 @@ namespace App\Services\ScholarFit\Matchers;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\AcademicRecord;
 use App\Services\ScholarFit\DimensionResult;
-use App\Services\ScholarFit\EligibilityEvaluator;
 
 /**
  * How strong the applicant's results are - graded against the listing's own bar
@@ -31,7 +30,7 @@ final class AcademicMatcher
                 $weight,
                 'No academic results on your profile',
                 'Add O/A-Level points, subject grades, or degree class to your profile',
-                EligibilityEvaluator::PROFILE_FIELD,
+                DimensionResult::TARGET_PROFILE,
                 'academic_results'
             );
         }

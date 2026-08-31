@@ -40,11 +40,11 @@ flowchart TB
 | Runtime | PHP 8.1+ (developed against 8.4) |
 | Framework | Laravel 10 |
 | UI | Blade, Bootstrap 5, Vite (ScholarZim's own CSS/JS only) |
-| Security | Laravel auth (form login, bcrypt, role middleware), in-house TOTP second factor, Sanctum tokens for the API |
+| Security | Laravel auth (form login, bcrypt, role middleware), CSRF, per-record ownership checks in the service layer |
 | Persistence | Eloquent ORM, MySQL 8, Laravel migrations |
-| Background work | Database queue (mail and notifications), Laravel scheduler (four daily jobs) |
+| Background work | Database queue (mail and notifications), Laravel scheduler (two daily jobs) |
 | Reports | dompdf (PDF), PhpSpreadsheet (Excel) |
-| Email | Laravel Mail — MailHog locally, SMTP or a mail API in production |
+| Email | Laravel Mail — Mailgun HTTP API in production, MailHog under local Docker, `log` locally without Docker |
 
 ## Runtime processes
 
@@ -135,7 +135,5 @@ Demo seeding is a separate switch (`SCHOLARZIM_DEMO_SEED=true`) rather than an e
 
 ## Future work (out of scope)
 
-- Real SMS gateway integration (`app/Services/SmsService.php` logs the message today)
 - Monetization / billing
-- Full REST API parity with MVC
 - Mobile native client

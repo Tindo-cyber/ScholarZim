@@ -12,26 +12,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Daily reminder jobs, carried over from the Spring @Scheduled beans.
+        // Two daily jobs. Both keep information in front of a student correct
+        // rather than nagging them: one warns about a deadline on something they
+        // are already tracking, the other retires listings whose date has passed.
         $schedule->command('scholarzim:deadline-reminders')
             ->dailyAt('08:00')
-            ->withoutOverlapping()
-            ->onOneServer();
-
-        $schedule->command('scholarzim:profile-reminders')
-            ->dailyAt('09:00')
-            ->withoutOverlapping()
-            ->onOneServer();
-
-        // Runs before the deadline nudge so a student who is told about a new
-        // match in the morning is not also told it closes tomorrow, out of order.
-        $schedule->command('scholarzim:search-alerts')
-            ->dailyAt('07:30')
-            ->withoutOverlapping()
-            ->onOneServer();
-
-        $schedule->command('scholarzim:interview-reminders')
-            ->dailyAt('08:30')
             ->withoutOverlapping()
             ->onOneServer();
 

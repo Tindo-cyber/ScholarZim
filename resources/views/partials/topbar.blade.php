@@ -85,7 +85,6 @@
                         <li><a class="dropdown-item" href="{{ route('applicant.profile') }}">My profile</a></li>
                     @endif
                     <li><a class="dropdown-item" href="{{ route('account.security') }}">Security &amp; privacy</a></li>
-                    <li><a class="dropdown-item" href="{{ route('account.export') }}">Export my data</a></li>
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <form method="POST" action="{{ route('logout') }}" class="m-0">

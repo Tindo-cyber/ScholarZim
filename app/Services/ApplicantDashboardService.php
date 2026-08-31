@@ -22,16 +22,11 @@ class ApplicantDashboardService
 
         return [
             'applications' => (clone $applications)->count(),
-            'inProgress' => (clone $applications)->whereIn('application_status', [
-                ApplicationStatus::SUBMITTED,
-                ApplicationStatus::UNDER_REVIEW,
-                ApplicationStatus::DOCUMENTS_REQUESTED,
-                ApplicationStatus::SHORTLISTED,
-                ApplicationStatus::INTERVIEW,
-                ApplicationStatus::WAITLISTED,
-            ])->count(),
-            'approved' => (clone $applications)
-                ->where('application_status', ApplicationStatus::APPROVED)
+            'inProgress' => (clone $applications)
+                ->where('application_status', ApplicationStatus::PENDING)
+                ->count(),
+            'accepted' => (clone $applications)
+                ->where('application_status', ApplicationStatus::ACCEPTED)
                 ->count(),
             'saved' => $this->savedScholarshipService->count($user),
             'profileCompletion' => $user->applicantProfile?->completionPercentage() ?? 0,

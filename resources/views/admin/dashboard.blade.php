@@ -28,10 +28,10 @@
                          :hint="$stats['pendingApplications'] . ' awaiting a decision'" />
         </div>
         <div class="col-6 col-xl-3">
-            {{-- Awards granted, with selections still awaiting one as the hint. --}}
-            <x-stat-card label="Awards made" :value="number_format($stats['awardedApplications'])"
+            {{-- Accepting an application is granting the scholarship. --}}
+            <x-stat-card label="Scholarships granted" :value="number_format($stats['acceptedApplications'])"
                          icon="stars" tone="success"
-                         :hint="$stats['approvedApplications'] . ' approved, not yet awarded'" />
+                         :hint="$stats['rejectedApplications'] . ' not successful'" />
         </div>
     </div>
 

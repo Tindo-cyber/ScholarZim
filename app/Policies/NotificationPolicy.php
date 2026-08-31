@@ -9,7 +9,7 @@ use App\Models\User;
  * A notification belongs to exactly one recipient.
  *
  * Reading someone else's would leak the thing it is about - that they applied
- * somewhere, were rejected, or were invited to interview - so the addressee is
+ * somewhere, were accepted, or were rejected - so the addressee is
  * the only party, with no administrative override.
  */
 class NotificationPolicy

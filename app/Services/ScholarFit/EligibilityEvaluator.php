@@ -6,196 +6,127 @@ use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 
 /**
- * Layer 1: the gate.
+ * The requirements a provider stated that this applicant does not meet.
  *
- * These are the requirements a provider set as conditions of entry, and they are
- * the five columns the schema actually models as requirements. Failing any one
- * of them ends the assessment - no amount of soft matching compensates, because
- * a 90% next to "you may not apply" is not a helpful number, it is a false one.
+ * Five plain checks against the five columns the schema models as requirements.
+ * The result is one flat list of sentences: either the applicant meets what the
+ * listing asks for, or here is what they do not.
  *
- * `education_level` is deliberately NOT a gate. On this schema it is the level a
- * listing is aimed at rather than a bar an applicant must clear: every listing
- * carries one, providers pick it from the same dropdown applicants use, and
- * treating it as a requirement would disqualify a diploma student from every
- * undergraduate award in the catalogue rather than ranking them below the better
- * fits. It is scored hard in Layer 2 instead, where a mismatch costs the single
- * largest block of marks but still leaves the listing visible and explained.
+ * This used to keep two lists - "blockers" the applicant definitely fails and
+ * "prompts" for fields they had simply not filled in - and merge them back
+ * together for display anyway. One list says the same thing without the
+ * bookkeeping: a requirement we cannot confirm is a requirement not yet met, and
+ * the sentence tells the student which of the two it is.
  *
- * The distinction between "fails a rule" and "has not told us yet" is preserved
- * from v1 and matters: a blank field is not evidence of ineligibility, so it
- * produces a prompt to go and fill it in, never a refusal.
+ * `education_level` is deliberately not checked here. On this schema it is the
+ * level a listing is aimed at rather than a bar an applicant must clear, so it
+ * is scored by EducationMatcher, where a mismatch costs marks but still leaves
+ * the listing visible and explained.
+ *
+ * What this is not: a decision. ScholarFit says how well a profile fits a
+ * listing. Whether a student gets the scholarship is the provider's call, made
+ * on the review screen.
  */
 final class EligibilityEvaluator
 {
-    public const PROFILE_FIELD = 'profile';
-
-    public const PROFILE_DOCUMENTS = 'documents';
-
     /**
-     * @return array{
-     *     blockers: array<int, array{text: string, target: ?string, cta: ?string}>,
-     *     prompts: array<int, array{text: string, target: ?string, cta: ?string}>
-     * }
+     * @return array<int, string> empty when the applicant meets every stated
+     *                            requirement
      */
     public function evaluate(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
     {
-        $blockers = [];
-        $prompts = [];
-
-        $this->checkPoints($opportunity, $record, $blockers, $prompts);
-        $this->checkAge($profile, $opportunity, $blockers, $prompts);
-        $this->checkCitizenship($profile, $opportunity, $blockers, $prompts);
-        $this->checkProvince($profile, $opportunity, $blockers, $prompts);
-        $this->checkCertificate($profile, $opportunity, $blockers);
-
-        return ['blockers' => $blockers, 'prompts' => $prompts];
+        return array_values(array_filter([
+            $this->points($opportunity, $record),
+            $this->age($profile, $opportunity),
+            $this->citizenship($profile, $opportunity),
+            $this->province($profile, $opportunity),
+            $this->certificate($profile, $opportunity),
+        ]));
     }
 
-    private function checkPoints(
-        Opportunity $opportunity,
-        AcademicRecord $record,
-        array &$blockers,
-        array &$prompts
-    ): void {
+    private function points(Opportunity $opportunity, AcademicRecord $record): ?string
+    {
         if ($opportunity->min_academic_points === null) {
-            return;
+            return null;
         }
 
         if (! $record->hasComparablePoints()) {
-            $prompts[] = $this->entry(
-                'This award needs at least ' . $opportunity->min_academic_points
-                    . ' points - state your points on your profile so we can check',
-                self::PROFILE_FIELD,
-                'academic_results'
-            );
-
-            return;
+            return 'This award needs at least ' . $opportunity->min_academic_points
+                . ' points - add your points to your profile so we can check.';
         }
 
         if ($record->points < $opportunity->min_academic_points) {
-            $blockers[] = $this->entry(
-                'Minimum academic points required: ' . $opportunity->min_academic_points
-                    . '. Applicant points: ' . $record->points . '.',
-                self::PROFILE_FIELD,
-                'academic_results'
-            );
+            return 'Minimum academic points required: ' . $opportunity->min_academic_points
+                . '. Applicant points: ' . $record->points . '.';
         }
+
+        return null;
     }
 
-    private function checkAge(
-        ApplicantProfile $profile,
-        Opportunity $opportunity,
-        array &$blockers,
-        array &$prompts
-    ): void {
+    private function age(ApplicantProfile $profile, Opportunity $opportunity): ?string
+    {
         if ($opportunity->max_age === null) {
-            return;
+            return null;
         }
 
         $age = $profile->age();
 
         if ($age === null) {
-            $prompts[] = $this->entry(
-                'This award has an age limit of ' . $opportunity->max_age
-                    . ' - add your date of birth so we can check it',
-                self::PROFILE_FIELD,
-                'date_of_birth'
-            );
-
-            return;
+            return 'This award has an age limit of ' . $opportunity->max_age
+                . ' - add your date of birth so we can check it.';
         }
 
         if ($age > $opportunity->max_age) {
-            $blockers[] = $this->entry(
-                'Open to applicants aged ' . $opportunity->max_age . ' and under; you are ' . $age . '.',
-                null,
-                null
-            );
+            return 'Open to applicants aged ' . $opportunity->max_age . ' and under; you are ' . $age . '.';
         }
+
+        return null;
     }
 
-    private function checkCitizenship(
-        ApplicantProfile $profile,
-        Opportunity $opportunity,
-        array &$blockers,
-        array &$prompts
-    ): void {
+    private function citizenship(ApplicantProfile $profile, Opportunity $opportunity): ?string
+    {
         if (blank($opportunity->required_citizenship)) {
-            return;
+            return null;
         }
 
         if (blank($profile->citizenship)) {
-            $prompts[] = $this->entry(
-                'This award is limited to ' . $opportunity->required_citizenship
-                    . ' citizens - add your citizenship to your profile',
-                self::PROFILE_FIELD,
-                'citizenship'
-            );
-
-            return;
+            return 'This award is limited to ' . $opportunity->required_citizenship
+                . ' citizens - add your citizenship to your profile.';
         }
 
         if (strcasecmp(trim($profile->citizenship), trim($opportunity->required_citizenship)) !== 0) {
-            $blockers[] = $this->entry(
-                'Open to ' . $opportunity->required_citizenship
-                    . ' citizens only; your profile states ' . $profile->citizenship . '.',
-                self::PROFILE_FIELD,
-                'citizenship'
-            );
+            return 'Open to ' . $opportunity->required_citizenship
+                . ' citizens only; your profile states ' . $profile->citizenship . '.';
         }
+
+        return null;
     }
 
-    private function checkProvince(
-        ApplicantProfile $profile,
-        Opportunity $opportunity,
-        array &$blockers,
-        array &$prompts
-    ): void {
+    private function province(ApplicantProfile $profile, Opportunity $opportunity): ?string
+    {
         if (blank($opportunity->required_province)) {
-            return;
+            return null;
         }
 
         if (blank($profile->province)) {
-            $prompts[] = $this->entry(
-                'This award is limited to ' . $opportunity->required_province
-                    . ' - add your province to your profile',
-                self::PROFILE_FIELD,
-                'province'
-            );
-
-            return;
+            return 'This award is limited to ' . $opportunity->required_province
+                . ' - add your province to your profile.';
         }
 
         if (strcasecmp(trim($profile->province), trim($opportunity->required_province)) !== 0) {
-            $blockers[] = $this->entry(
-                'Open to applicants from ' . $opportunity->required_province
-                    . ' only; your profile states ' . $profile->province . '.',
-                self::PROFILE_FIELD,
-                'province'
-            );
+            return 'Open to applicants from ' . $opportunity->required_province
+                . ' only; your profile states ' . $profile->province . '.';
         }
+
+        return null;
     }
 
-    private function checkCertificate(
-        ApplicantProfile $profile,
-        Opportunity $opportunity,
-        array &$blockers
-    ): void {
-        // No prompt branch: unlike the others there is no ambiguity about
-        // whether the applicant "has told us yet" - the file is either uploaded
-        // or it is not, and the fix is the same either way.
-        if ($opportunity->requires_results_certificate && ! $profile->hasResultsCertificate()) {
-            $blockers[] = $this->entry(
-                'This provider requires a results certificate before you can apply.',
-                self::PROFILE_DOCUMENTS,
-                'documents'
-            );
-        }
-    }
-
-    /** @return array{text: string, target: ?string, cta: ?string} */
-    private function entry(string $text, ?string $target, ?string $anchor): array
+    private function certificate(ApplicantProfile $profile, Opportunity $opportunity): ?string
     {
-        return ['text' => $text, 'target' => $target, 'cta' => $anchor];
+        if ($opportunity->requires_results_certificate && ! $profile->hasResultsCertificate()) {
+            return 'This provider requires a results certificate before you can apply.';
+        }
+
+        return null;
     }
 }

@@ -165,7 +165,7 @@ class QueryProfileTest extends TestCase
             Application::create([
                 'user_id' => $applicant->user_id,
                 'opportunity_id' => $opportunity->opportunity_id,
-                'application_status' => ApplicationStatus::SUBMITTED,
+                'application_status' => ApplicationStatus::PENDING,
                 'submitted_at' => Carbon::now()->subDays($i),
             ]);
         }
@@ -179,7 +179,7 @@ class QueryProfileTest extends TestCase
             Application::create([
                 'user_id' => $this->student->user_id,
                 'opportunity_id' => $opportunity->opportunity_id,
-                'application_status' => ApplicationStatus::SUBMITTED,
+                'application_status' => ApplicationStatus::PENDING,
                 'submitted_at' => Carbon::now()->subDays($i),
             ]);
         }
@@ -190,7 +190,7 @@ class QueryProfileTest extends TestCase
         for ($i = 0; $i < $count; $i++) {
             Notification::create([
                 'user_id' => $this->student->user_id,
-                'type' => NotificationType::APPLICATION_APPROVED,
+                'type' => NotificationType::APPLICATION_ACCEPTED,
                 'message' => 'Message ' . $i,
                 'link' => '/my-applications',
                 'is_read' => false,

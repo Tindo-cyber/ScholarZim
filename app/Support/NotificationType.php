@@ -4,23 +4,49 @@ namespace App\Support;
 
 final class NotificationType
 {
-    public const APPLICATION_APPROVED = 'APPLICATION_APPROVED';
-
-    // The APPLICATION_ prefix is what routes this into the Applications email
-    // category in NotificationPresentation::category(), so an award follows the
-    // same preference toggle as every other decision on the application.
-    public const APPLICATION_AWARDED = 'APPLICATION_AWARDED';
-    public const APPLICATION_REJECTED = 'APPLICATION_REJECTED';
+    /*
+     * Application workflow. Three things happen to an application, so there are
+     * three notifications for the applicant - submitted, accepted, rejected -
+     * plus the two that tell a provider something arrived or was taken back.
+     *
+     * The APPLICATION_ prefix is load-bearing: it is what routes these into the
+     * Applications email category in NotificationPresentation::category(), and
+     * therefore what the email_notify_applications preference gates.
+     */
     public const APPLICATION_SUBMITTED = 'APPLICATION_SUBMITTED';
-    public const APPLICATION_UNDER_REVIEW = 'APPLICATION_UNDER_REVIEW';
-    public const APPLICATION_WAITLISTED = 'APPLICATION_WAITLISTED';
-    public const APPLICATION_INTERVIEW = 'APPLICATION_INTERVIEW';
-    public const NEW_APPLICATION = 'NEW_APPLICATION';
-    public const DOCUMENTS_REQUESTED = 'DOCUMENTS_REQUESTED';
-    public const INFO_REQUESTED = 'INFO_REQUESTED';
-    public const INFO_PROVIDED = 'INFO_PROVIDED';
+
+    public const APPLICATION_ACCEPTED = 'APPLICATION_ACCEPTED';
+
+    public const APPLICATION_REJECTED = 'APPLICATION_REJECTED';
+
     public const APPLICATION_WITHDRAWN = 'APPLICATION_WITHDRAWN';
-    public const INTERVIEW_REMINDER = 'INTERVIEW_REMINDER';
+
+    public const NEW_APPLICATION = 'NEW_APPLICATION';
+
+    /*
+     * Types written before the workflow was simplified. Stored notification rows
+     * still carry them, so they are kept purely so those rows keep their icon,
+     * tone and email category instead of falling through to the defaults.
+     * Nothing new is ever created with one.
+     */
+    public const LEGACY_APPLICATION_APPROVED = 'APPLICATION_APPROVED';
+
+    public const LEGACY_APPLICATION_AWARDED = 'APPLICATION_AWARDED';
+
+    public const LEGACY_APPLICATION_UNDER_REVIEW = 'APPLICATION_UNDER_REVIEW';
+
+    public const LEGACY_APPLICATION_WAITLISTED = 'APPLICATION_WAITLISTED';
+
+    public const LEGACY_APPLICATION_INTERVIEW = 'APPLICATION_INTERVIEW';
+
+    public const LEGACY_DOCUMENTS_REQUESTED = 'DOCUMENTS_REQUESTED';
+
+    public const LEGACY_INFO_REQUESTED = 'INFO_REQUESTED';
+
+    public const LEGACY_INFO_PROVIDED = 'INFO_PROVIDED';
+
+    public const LEGACY_INTERVIEW_REMINDER = 'INTERVIEW_REMINDER';
+
     public const NEW_OPPORTUNITY = 'NEW_OPPORTUNITY';
     public const DEADLINE_REMINDER = 'DEADLINE_REMINDER';
     public const PROFILE_INCOMPLETE = 'PROFILE_INCOMPLETE';
@@ -42,20 +68,13 @@ final class NotificationType
     // the same email preference that gates every other listing announcement.
     public const SCHOLARSHIP_SEARCH_MATCH = 'SCHOLARSHIP_SEARCH_MATCH';
 
+    /** Every type the platform can still produce. */
     public const ALL = [
         self::APPLICATION_SUBMITTED,
-        self::APPLICATION_UNDER_REVIEW,
-        self::APPLICATION_WAITLISTED,
-        self::APPLICATION_INTERVIEW,
-        self::NEW_APPLICATION,
-        self::APPLICATION_APPROVED,
-        self::APPLICATION_AWARDED,
+        self::APPLICATION_ACCEPTED,
         self::APPLICATION_REJECTED,
-        self::DOCUMENTS_REQUESTED,
-        self::INFO_REQUESTED,
-        self::INFO_PROVIDED,
         self::APPLICATION_WITHDRAWN,
-        self::INTERVIEW_REMINDER,
+        self::NEW_APPLICATION,
         self::DEADLINE_REMINDER,
         self::NEW_OPPORTUNITY,
         self::PROFILE_INCOMPLETE,

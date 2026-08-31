@@ -52,7 +52,6 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             // Same rule for token callers: a suspended account's API token stops
             // working immediately instead of outliving the suspension.

@@ -243,7 +243,7 @@ Supervisor runs three programs, not one:
 | Program | Why it matters |
 |---------|----------------|
 | nginx + PHP-FPM | Serves requests |
-| `schedule:run` tick | Fires the four daily jobs (search alerts, deadline, interview, and profile reminders) |
+| `schedule:run` tick | Fires the two daily jobs (deadline reminders, and archiving expired listings) |
 | `queue:work` | Delivers queued mail and notifications |
 
 If mail is being written but never arriving, the worker is the first thing to check:

@@ -5,12 +5,9 @@
 - **Form-based login** with server-side sessions (no JWT in browser MVC flow).
 - **bcrypt** password hashing via Laravel's `Hash` facade.
 - **Account states:** `ACTIVE`, `PENDING_APPROVAL`, `REJECTED`, `SUSPENDED` — non-active accounts cannot authenticate.
-- **Password reset:** UUID token, 1-hour expiry, single use; email delivery through Laravel Mail — **MailHog** in dev/demo (SMTP `:1025`, UI `:8025`) or SMTP/a mail API in prod. Failed delivery writes `EMAIL_DELIVERY_FAILED` to the audit log.
-- **Two-factor authentication (TOTP, RFC 6238)**, optional per account and strongly recommended for administrators, who can see every user on the platform.
-  - Enabling is a two-step handshake: a pending secret is stored, and two-factor only becomes active once a code generated from it is verified. Anything else lets an administrator lock themselves out with a secret their phone never stored.
-  - At sign-in, a correct password grants **no session at all**: the user id is parked in the session and only becomes an authenticated session once a valid code arrives. A stolen password alone never produces a signed-in session, not even briefly.
-  - The secret and the eight single-use recovery codes are encrypted at rest by the model's `encrypted` casts, so a database dump alone does not hand over a second factor. Codes are compared with `hash_equals`, so a timing signal cannot reveal how much of a code was right.
-  - The challenge is rate-limited to 5 attempts per minute per user and IP; failures write `TWO_FACTOR_CHALLENGE_FAILED` to the audit log.
+- **Password reset:** UUID token, 1-hour expiry, single use. Delivered through Laravel Mail: the **Mailgun HTTP API** in production, **MailHog** under local Docker (SMTP `:1025`, UI `:8025`), `log` for a local clone without Docker. Failed delivery writes `EMAIL_DELIVERY_FAILED` to the audit log.
+- **Email verification:** UUID token, single use, retired when a new one is issued. Delivered by the same path.
+- **No second factor.** TOTP was removed as outside the project's objectives. The `two_factor_*` columns remain on `users` as unused legacy columns and stay in the model's `$hidden` list so a legacy row can never be serialised into a response.
 - **Session management.** `AuthenticateSession` is in the `web` middleware group, so "sign out all other sessions" on the account security page genuinely ends every other session on every device. It works by rotating the password hash the sessions carry, which is why it asks for the current password first.
 ## Authorization
 
@@ -21,9 +18,9 @@
 | `/provider/**`, `/opportunities/create` | ROLE_PROVIDER |
 | `/admin/**` | ROLE_ADMIN |
 | `/applications/*/document`, `/applications/*/results-certificate` | Authenticated + ownership checks in service layer |
-| `/api/v1/scholarships`, `/api/v1/stats`, `/api/v1/facets`, `/api/public/**` | Public, rate-limited |
-| `/api/v1/me/**` | Sanctum bearer token or the web session |
-| `/health`, `/developers` | Public |
+| `/health` | Public |
+
+There is no public JSON API: `/api/**`, its Sanctum tokens and the developer portal were removed. The Mailgun **email** API is unrelated and unchanged.
 
 Enforced by route middleware groups (`auth`, `role:ROLE_*`, and `account.active` for publishing routes) in `routes/web.php`. Ownership checks that depend on the record — an applicant's own application, a provider's own listing — live in the service layer.
 
@@ -54,10 +51,7 @@ Laravel's `throttle` middleware, keyed per client IP:
 | `POST /register/provider` | 5 per hour |
 | `POST /forgot-password` | 5 per minute |
 | `POST /resend-verification` | 3 per minute |
-| `POST /two-factor` (challenge) | 10 per minute, plus 5 per minute per user/IP in the controller |
-| `POST /account/two-factor/confirm` | 10 per minute |
-| `GET /api/v1/scholarships` and the rest of the public catalogue | 60 per minute |
-| `GET /api/v1/me/**` | 120 per minute |
+
 
 **Limitation:** the default cache driver is per-instance, so limits are not shared across multiple app instances (future work: a Redis-backed cache store).
 
@@ -130,10 +124,8 @@ Production: set `SESSION_SECURE_COOKIE=true` so session cookies are only sent ov
 
 ## Known limitations (future work)
 
-- **SMS notifications** — `SmsService` exists and is called by the deadline reminder job, but logs the message rather than dispatching it (no gateway).
 - **Cluster rate limiting** — per-instance cache only.
 - **Framework support window** — Laravel 10 is past its security-support window; `composer audit` reports open framework advisories with no 10.x fix. Upgrading to a supported release is the remedy.
 - **Ephemeral uploads on free Render** — attach a persistent disk (or object storage) so certificates survive redeploys.
 - **Admin PDF/Excel reports** — current exporters load full tables into memory; fine for FYP scale; paginate or stream before large production datasets.
-- **QR codes for two-factor** — setup shows the key for manual entry rather than a scannable code, to avoid an image-generation dependency. Every authenticator app accepts a typed key.
 - **`style-src 'unsafe-inline'`** — inline `style="..."` attributes remain across a number of views; extracting them is future work.

@@ -2,185 +2,183 @@
 
 namespace App\Support;
 
+/**
+ * The three states an application can be in, plus the applicant's own way out.
+ *
+ * A student applies, the application is PENDING, and the provider either
+ * ACCEPTS or REJECTS it with a written reason. That is the whole lifecycle:
+ * "accepted" means the provider has granted the scholarship, so there is no
+ * second step after it and nothing for the student to confirm.
+ *
+ * WITHDRAWN is kept because pulling out is the applicant's decision and the
+ * columns and screens for it already exist, but it is not a provider decision
+ * and it is not part of the review path.
+ *
+ * The LEGACY_* constants below are database compatibility only. Rows written
+ * before the workflow was simplified still carry those values, and canonical()
+ * maps each of them onto one of the three live states. Nothing in the UI or in
+ * new business logic may use them.
+ */
 final class ApplicationStatus
 {
-    public const SUBMITTED = 'SUBMITTED';
-    public const UNDER_REVIEW = 'UNDER_REVIEW';
-    public const DOCUMENTS_REQUESTED = 'DOCUMENTS_REQUESTED';
-    public const INFO_REQUESTED = 'INFO_REQUESTED';
-    public const SHORTLISTED = 'SHORTLISTED';
-    public const INTERVIEW = 'INTERVIEW';
-    public const APPROVED = 'APPROVED';
+    public const PENDING = 'PENDING';
+
+    public const ACCEPTED = 'ACCEPTED';
+
     public const REJECTED = 'REJECTED';
-    public const WAITLISTED = 'WAITLISTED';
+
     public const WITHDRAWN = 'WITHDRAWN';
-    public const PENDING = 'PENDING'; // legacy
 
     /**
-     * The scholarship has actually been granted.
+     * Statuses written by earlier versions of the platform.
      *
-     * APPROVED and AWARDED are two different facts and the platform had only one
-     * word for both: a provider selecting an applicant, and the award being made
-     * to them. Keeping them apart is what lets a provider see who they picked but
-     * have not yet funded, and what makes "awards made" a real number rather than
-     * a count of intentions.
+     * The 2024_01_01_000028 migration rewrites existing rows onto the three live
+     * states, so these should not appear in a migrated database. They are kept
+     * so a row that escaped it - a hand-restored backup, a database that has not
+     * been migrated yet - still renders and still reviews correctly rather than
+     * showing as "Unknown" and refusing every transition.
      */
-    public const AWARDED = 'AWARDED';
+    public const LEGACY_SUBMITTED = 'SUBMITTED';
 
-    private const LABELS = [
-        self::SUBMITTED => 'Submitted',
-        self::UNDER_REVIEW => 'Under review',
-        self::DOCUMENTS_REQUESTED => 'Documents requested',
-        self::INFO_REQUESTED => 'Information requested',
-        self::SHORTLISTED => 'Shortlisted',
-        self::INTERVIEW => 'Interview',
-        self::APPROVED => 'Approved',
-        self::AWARDED => 'Awarded',
-        self::REJECTED => 'Rejected',
-        self::WAITLISTED => 'Waitlisted',
-        self::WITHDRAWN => 'Withdrawn',
-        self::PENDING => 'Pending',
-    ];
+    public const LEGACY_UNDER_REVIEW = 'UNDER_REVIEW';
 
-    /** Order a provider can move an application through, shown in the review form. */
-    public const REVIEWABLE = [
-        self::UNDER_REVIEW,
-        self::DOCUMENTS_REQUESTED,
-        self::INFO_REQUESTED,
-        self::SHORTLISTED,
-        self::INTERVIEW,
-        self::WAITLISTED,
-        self::APPROVED,
+    public const LEGACY_DOCUMENTS_REQUESTED = 'DOCUMENTS_REQUESTED';
+
+    public const LEGACY_INFO_REQUESTED = 'INFO_REQUESTED';
+
+    public const LEGACY_SHORTLISTED = 'SHORTLISTED';
+
+    public const LEGACY_INTERVIEW = 'INTERVIEW';
+
+    public const LEGACY_WAITLISTED = 'WAITLISTED';
+
+    public const LEGACY_APPROVED = 'APPROVED';
+
+    public const LEGACY_AWARDED = 'AWARDED';
+
+    /** The provider's two decisions. Both are final and both need a reason. */
+    public const DECISIONS = [
+        self::ACCEPTED,
         self::REJECTED,
     ];
 
-    /**
-     * The status tabs on the provider inbox and on "my applications".
-     *
-     * Deliberately not REVIEWABLE. Awarding is not a review decision - it has its
-     * own action, its own authorisation, and its own single source status - so it
-     * must not appear in the review dropdown or in the bulk action, both of which
-     * are built from REVIEWABLE. It is still something both sides need to filter
-     * by, which is what this list is for.
-     */
+    /** Status tabs on the provider inbox and on "my applications". */
     public const FILTERABLE = [
-        ...self::REVIEWABLE,
-        self::AWARDED,
+        self::PENDING,
+        self::ACCEPTED,
+        self::REJECTED,
+        self::WITHDRAWN,
+    ];
+
+    private const LABELS = [
+        self::PENDING => 'Pending',
+        self::ACCEPTED => 'Accepted',
+        self::REJECTED => 'Rejected',
+        self::WITHDRAWN => 'Withdrawn',
     ];
 
     /**
-     * States that bounce the application back to the applicant with something to
-     * answer. Both open the reply box on the confirmation page; neither is a
-     * decision, so the application stays in the provider's queue.
+     * Legacy value => the live state it means now.
+     *
+     * Everything the provider used to be able to set before deciding was a way
+     * of saying "still looking at it", so it collapses to PENDING. APPROVED and
+     * AWARDED were two words for one fact - the provider picked this applicant -
+     * which is exactly the distinction the simplified workflow removes, so both
+     * become ACCEPTED.
      */
-    public const AWAITING_APPLICANT = [
-        self::DOCUMENTS_REQUESTED,
-        self::INFO_REQUESTED,
+    private const LEGACY_MAP = [
+        self::LEGACY_SUBMITTED => self::PENDING,
+        self::LEGACY_UNDER_REVIEW => self::PENDING,
+        self::LEGACY_DOCUMENTS_REQUESTED => self::PENDING,
+        self::LEGACY_INFO_REQUESTED => self::PENDING,
+        self::LEGACY_SHORTLISTED => self::PENDING,
+        self::LEGACY_INTERVIEW => self::PENDING,
+        self::LEGACY_WAITLISTED => self::PENDING,
+        self::LEGACY_APPROVED => self::ACCEPTED,
+        self::LEGACY_AWARDED => self::ACCEPTED,
     ];
 
     private function __construct()
     {
     }
 
+    /**
+     * The live status a stored value means.
+     *
+     * A blank status reads as PENDING: the column is nullable and predates the
+     * lifecycle, and an application nobody has decided on is pending by
+     * definition. An unrecognised value reads as PENDING for the same reason -
+     * it is safer to leave it reviewable than to strand it.
+     */
+    public static function canonical(?string $status): string
+    {
+        if (blank($status)) {
+            return self::PENDING;
+        }
+
+        if (isset(self::LABELS[$status])) {
+            return $status;
+        }
+
+        return self::LEGACY_MAP[$status] ?? self::PENDING;
+    }
+
+    /** True once the provider has decided, or the applicant has pulled out. */
     public static function isTerminal(?string $status): bool
     {
-        return $status === self::APPROVED
-            || $status === self::AWARDED
-            || $status === self::REJECTED
-            || $status === self::WITHDRAWN;
+        return self::canonical($status) !== self::PENDING;
     }
 
-    /** True while the applicant still owes the provider an answer. */
-    public static function awaitsApplicant(?string $status): bool
+    /** True for the two provider decisions - not for a withdrawal. */
+    public static function isDecision(?string $status): bool
     {
-        return $status !== null && in_array($status, self::AWAITING_APPLICANT, true);
-    }
-
-    /**
-     * An applicant may pull out at any point before a decision lands. Once it is
-     * approved or rejected there is nothing left to withdraw from.
-     *
-     * Delegates so this rule has exactly one definition: ApplicationStateMachine
-     * decides who may move an application where, and withdrawal is one of those
-     * moves rather than a separate rule that could drift away from the matrix.
-     */
-    public static function isWithdrawable(?string $status): bool
-    {
-        return ApplicationStateMachine::canWithdraw($status);
+        return in_array(self::canonical($status), self::DECISIONS, true);
     }
 
     public static function displayLabel(?string $status): string
     {
-        if (blank($status)) {
-            return 'Unknown';
-        }
-
-        return self::LABELS[$status] ?? strtolower(str_replace('_', ' ', $status));
+        return self::LABELS[self::canonical($status)];
     }
 
     public static function badgeTone(?string $status): string
     {
-        return match ($status) {
-            self::APPROVED, self::AWARDED => 'success',
+        return match (self::canonical($status)) {
+            self::ACCEPTED => 'success',
             self::REJECTED => 'danger',
             self::WITHDRAWN => 'secondary',
-            self::SHORTLISTED, self::INTERVIEW => 'info',
-            self::UNDER_REVIEW, self::DOCUMENTS_REQUESTED,
-            self::INFO_REQUESTED, self::WAITLISTED => 'warning',
-            self::SUBMITTED, self::PENDING => 'primary',
-            default => 'secondary',
+            default => 'primary',
         };
     }
 
     /**
-     * Progress rail shown on the confirmation and my-applications pages.
-     * Terminal states collapse the rail to their own end point.
+     * Progress rail shown on the confirmation and review pages.
+     *
+     * Three steps, because there are three: the student applied, the provider
+     * looked at it, and the provider decided. A decided application shows its
+     * own outcome as the last step rather than a generic one.
      */
     public static function timeline(?string $status): array
     {
-        $stages = [self::SUBMITTED, self::UNDER_REVIEW, self::SHORTLISTED, self::APPROVED];
-        $reachedIndex = array_search($status, $stages, true);
-
-        // The award is a fifth step, but only for an application that reached it.
-        // Appending it to the rail unconditionally would hang an unreachable
-        // stage off every application on the platform, including the rejected
-        // ones, so it is drawn as its own completed rail instead.
-        if ($status === self::AWARDED) {
-            return [
-                ['label' => 'Submitted', 'done' => true],
+        return match (self::canonical($status)) {
+            self::ACCEPTED => [
+                ['label' => 'Applied', 'done' => true],
                 ['label' => 'Reviewed', 'done' => true],
-                ['label' => 'Approved', 'done' => true],
-                ['label' => 'Awarded', 'done' => true, 'tone' => 'success'],
-            ];
-        }
-
-        if ($status === self::REJECTED) {
-            return [
-                ['label' => 'Submitted', 'done' => true],
-                ['label' => 'Reviewed', 'done' => true],
-                ['label' => 'Not selected', 'done' => true, 'tone' => 'danger'],
-            ];
-        }
-
-        if ($status === self::WITHDRAWN) {
-            return [
-                ['label' => 'Submitted', 'done' => true],
-                ['label' => 'Withdrawn', 'done' => true, 'tone' => 'secondary'],
-            ];
-        }
-
-        if ($reachedIndex === false) {
-            $midStages = [self::DOCUMENTS_REQUESTED, self::INFO_REQUESTED, self::INTERVIEW, self::WAITLISTED];
-            $reachedIndex = in_array($status, $midStages, true) ? 1 : 0;
-        }
-
-        return array_map(
-            static fn (string $stage, int $index) => [
-                'label' => self::displayLabel($stage),
-                'done' => $index <= $reachedIndex,
+                ['label' => 'Accepted', 'done' => true, 'tone' => 'success'],
             ],
-            $stages,
-            array_keys($stages)
-        );
+            self::REJECTED => [
+                ['label' => 'Applied', 'done' => true],
+                ['label' => 'Reviewed', 'done' => true],
+                ['label' => 'Not successful', 'done' => true, 'tone' => 'danger'],
+            ],
+            self::WITHDRAWN => [
+                ['label' => 'Applied', 'done' => true],
+                ['label' => 'Withdrawn', 'done' => true, 'tone' => 'secondary'],
+            ],
+            default => [
+                ['label' => 'Applied', 'done' => true],
+                ['label' => 'Under review', 'done' => false],
+                ['label' => 'Decision', 'done' => false],
+            ],
+        };
     }
 }

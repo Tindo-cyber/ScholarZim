@@ -68,7 +68,7 @@ class ScholarFitEngineTest extends TestCase
     {
         $scored = $this->engine()->evaluate($this->profile(), $this->opportunity());
 
-        $this->assertTrue($scored->isEligible());
+        $this->assertTrue($scored->meetsRequirements());
         $this->assertSame(100, $scored->matchScore);
     }
 
@@ -80,7 +80,7 @@ class ScholarFitEngineTest extends TestCase
             $this->opportunity(['deadline' => Carbon::today()->addDays(200)])
         );
 
-        $this->assertTrue($scored->isEligible());
+        $this->assertTrue($scored->meetsRequirements());
         $this->assertGreaterThanOrEqual(70, $scored->matchScore);
         $this->assertLessThan(100, $scored->matchScore);
     }
@@ -98,7 +98,7 @@ class ScholarFitEngineTest extends TestCase
             $this->opportunity(['education_level' => 'High School (O-Level)'])
         );
 
-        $this->assertTrue($scored->isEligible(), 'a poor fit is not the same as a closed door');
+        $this->assertTrue($scored->meetsRequirements(), 'a poor fit is not the same as a closed door');
         $this->assertLessThan(40, $scored->matchScore);
     }
 
@@ -113,7 +113,7 @@ class ScholarFitEngineTest extends TestCase
             $this->opportunity(['required_citizenship' => 'Botswana'])
         );
 
-        $this->assertFalse($blocked->isEligible());
+        $this->assertFalse($blocked->meetsRequirements());
         $this->assertSame(0, $blocked->matchScore, 'soft factors must not compensate for a hard failure');
     }
 
@@ -373,7 +373,7 @@ class ScholarFitEngineTest extends TestCase
             $this->opportunity(['requires_results_certificate' => true])
         );
 
-        $this->assertFalse($scored->isEligible());
+        $this->assertFalse($scored->meetsRequirements());
         $this->assertSame(0, $scored->matchScore);
     }
 
@@ -387,7 +387,7 @@ class ScholarFitEngineTest extends TestCase
             $this->opportunity(['max_age' => 25])
         );
 
-        $this->assertFalse($scored->isEligible());
+        $this->assertFalse($scored->meetsRequirements());
         $this->assertStringContainsString('aged 25 and under', $scored->explain());
     }
 
@@ -399,7 +399,7 @@ class ScholarFitEngineTest extends TestCase
             $this->opportunity(['min_academic_points' => 15])
         );
 
-        $this->assertFalse($scored->isEligible());
+        $this->assertFalse($scored->meetsRequirements());
         $this->assertStringContainsString('Minimum academic points required: 15', $scored->explain());
         $this->assertStringContainsString('Applicant points: 7', $scored->explain());
     }
@@ -497,7 +497,6 @@ class ScholarFitEngineTest extends TestCase
         $explanation = $scored->explain();
 
         $this->assertStringContainsString('Match Score: ' . $scored->matchScore . '%', $explanation);
-        $this->assertStringContainsString('Eligibility: Passed', $explanation);
 
         // Every dimension's own line must quote its own contribution, and those
         // contributions must add up to the headline.
@@ -510,7 +509,7 @@ class ScholarFitEngineTest extends TestCase
         $this->assertSame($scored->matchScore, $summed, 'the printed parts must equal the whole');
     }
 
-    public function test_an_ineligible_explanation_states_the_reason_and_no_score(): void
+    public function test_an_unmet_requirement_states_the_reason_and_no_score(): void
     {
         $scored = $this->engine()->evaluate(
             $this->profile(['academic_results' => '5 points']),
@@ -519,7 +518,7 @@ class ScholarFitEngineTest extends TestCase
 
         $explanation = $scored->explain();
 
-        $this->assertStringContainsString('Not eligible', $explanation);
+        $this->assertStringContainsString('Requirements not met', $explanation);
         $this->assertStringContainsString('Reason:', $explanation);
         $this->assertStringNotContainsString('Match Score:', $explanation);
     }

@@ -13,22 +13,23 @@ use App\Services\ScholarFit\Matchers\LocationMatcher;
 use App\Services\SettingsService;
 
 /**
- * ScholarFit: a deterministic, explainable scoring engine.
+ * ScholarFit: a deterministic, explainable matching engine.
+ *
+ * It answers one question - how well does this scholarship match this student's
+ * profile? - and nothing else. It does not decide who gets a scholarship; that
+ * is the provider's decision, made on the review screen with a written reason.
  *
  * Not machine learning, and not described as AI anywhere in the product. Every
- * score here is arithmetic over stated rules, which is what lets the same inputs
- * be replayed months later and lets a student be told exactly why they scored
- * what they scored.
+ * score is arithmetic over stated rules, which is what lets the same inputs be
+ * replayed months later and lets a student be told exactly why they scored what
+ * they scored.
  *
- * Two layers, kept apart on purpose:
- *
- *   Layer 1, EligibilityEvaluator, is a gate. A requirement the provider set and
- *   the applicant fails ends the assessment at zero.
- *
- *   Layer 2, the six matchers, ranks the applicants who got through. Each
- *   returns a ratio of its own weight together with the sentence explaining it,
- *   so no soft dimension can compensate for a hard failure - the gate has
- *   already closed by the time any of them run.
+ * Six weighted dimensions - academic, education level, field, location,
+ * deadline, certificate - each returning a fraction of its own weight together
+ * with the sentence explaining it, so the score and its explanation can never
+ * drift apart. Alongside them, a plain list of requirements the listing states
+ * and the profile does not meet; a listing with any of those is not recommended,
+ * though the student can still open it and read exactly why.
  *
  * The total is normalised by construction rather than by clamping: weights sum
  * to 100 (SettingsService refuses an override that does not) and every ratio is
@@ -41,25 +42,32 @@ class ScholarFitEngine
      *
      * v1 was the ported Spring heuristic: binary academic scoring, exact-string
      * field matching, rural encoded as a province, and an explanation assembled
-     * from a different set of facts than the score. v2 is the two-layer engine
-     * in this namespace.
+     * from a different set of facts than the score. v2 is the weighted engine in
+     * this namespace.
      *
-     * Configurable weights already invalidate cached rankings through
-     * SettingsService::scoringVersion(), but a change to the code here moves no
-     * setting at all, so every cached ranking would keep being served with
-     * scores this engine would no longer produce. RecommendationService folds
-     * this constant into its cache key for exactly that reason.
-     *
-     * Bump it in the same commit as any change to how a score is calculated.
+     * Bump it in the same commit as any change to how a score is calculated, so
+     * a stored or quoted score can be read in the context that produced it.
      */
     public const ALGORITHM_VERSION = 2;
 
     /** The version as it appears in explanations, logs and tests. */
     public const VERSION_LABEL = 'ScholarFit v2';
 
+    /**
+     * The configured weights, read once per engine.
+     *
+     * SettingsService::get() caches through Cache::remember, which treats a
+     * stored null as a miss - and "no administrator override" is exactly null -
+     * so every call went to platform_settings. Ranking a catalogue calls
+     * evaluate() once per listing, which turned a 30-listing sweep into 30
+     * settings queries. Weights cannot change part-way through a ranking, so
+     * reading them once per instance is both cheaper and more consistent.
+     */
+    private ?array $cachedWeights = null;
+
     public function __construct(
         private readonly SettingsService $settings,
-        private readonly EligibilityEvaluator $eligibility = new EligibilityEvaluator(),
+        private readonly EligibilityEvaluator $requirements = new EligibilityEvaluator(),
         private readonly AcademicMatcher $academic = new AcademicMatcher(),
         private readonly EducationMatcher $education = new EducationMatcher(),
         private readonly FieldMatcher $field = new FieldMatcher(),
@@ -71,17 +79,9 @@ class ScholarFitEngine
 
     public function evaluate(ApplicantProfile $profile, Opportunity $opportunity): ScoredOpportunity
     {
-        $weights = $this->settings->scholarFitWeights();
+        $weights = $this->cachedWeights ??= $this->settings->scholarFitWeights();
         $record = AcademicRecord::fromProfile($profile);
 
-        // Layer 1 first, and its result is never mixed into the arithmetic
-        // below: a blocker zeroes the score outright rather than subtracting
-        // from it.
-        $gate = $this->eligibility->evaluate($profile, $opportunity, $record);
-
-        // Layer 2. Every dimension is scored even when the gate has closed, so
-        // an ineligible applicant can still be shown where they stand and what
-        // would change it - the score is zero, the breakdown is not a blank.
         $dimensions = [
             $this->academic->match($record, $opportunity, (int) $weights['academic']),
             $this->education->match($profile, $opportunity, (int) $weights['education_level']),
@@ -94,7 +94,7 @@ class ScholarFitEngine
         $breakdown = new MatchBreakdown();
         $breakdown->weights = $weights;
         $breakdown->dimensionResults = $dimensions;
-        $breakdown->disqualifiers = $gate['blockers'];
+        $breakdown->unmetRequirements = $this->requirements->evaluate($profile, $opportunity, $record);
         $breakdown->scoringVersion = self::VERSION_LABEL;
 
         $earned = 0;
@@ -102,15 +102,19 @@ class ScholarFitEngine
             $earned += $dimension->points();
         }
 
-        $matchScore = $breakdown->isEligible() ? $earned : 0;
+        // A stated requirement the profile does not meet zeroes the score rather
+        // than shaving marks off it: a 90% next to "you may not apply" is not a
+        // helpful number, it is a false one. The breakdown is still filled in, so
+        // the student sees where they stand and what would change it.
+        $matchScore = $breakdown->meetsRequirements() ? $earned : 0;
 
-        // Prompts from the gate and fixes from the dimensions are the same kind
-        // of thing to a reader - "here is what to go and do" - so they are
-        // presented as one list, gate first because it is the blocking one.
-        $breakdown->fixes = $this->collectFixes($gate['prompts'], $dimensions);
-        $breakdown->missingRequirements = array_column($breakdown->fixes, 'text');
-        $breakdown->confidenceLevel = $this->confidenceLevel($matchScore, $breakdown->isEligible());
-        $breakdown->confidenceLabel = $this->confidenceLabel($matchScore, $breakdown->isEligible());
+        $breakdown->fixes = $this->collectFixes($dimensions);
+        $breakdown->missingRequirements = array_merge(
+            $breakdown->unmetRequirements,
+            array_column($breakdown->fixes, 'text')
+        );
+        $breakdown->confidenceLabel = $breakdown->confidenceLabelFor($matchScore);
+        $breakdown->confidenceLevel = $breakdown->confidenceLevelFor($matchScore);
         $breakdown->explanation = $breakdown->summaryLine($matchScore);
 
         return new ScoredOpportunity($opportunity, $matchScore, $breakdown);
@@ -129,7 +133,7 @@ class ScholarFitEngine
 
         // Ties broken by opportunity id so repeated runs over the same
         // catalogue produce byte-identical orderings - a ranking that shuffles
-        // between page loads is not reproducible and cannot be cached honestly.
+        // between page loads is not reproducible.
         usort($scored, static function (ScoredOpportunity $a, ScoredOpportunity $b) {
             return [$b->matchScore, $a->opportunity->opportunity_id]
                 <=> [$a->matchScore, $b->opportunity->opportunity_id];
@@ -139,62 +143,30 @@ class ScholarFitEngine
     }
 
     /**
-     * @param  array<int, array{text: string, target: ?string, cta: ?string}>  $prompts
+     * What the student could go and do about the dimensions that scored badly,
+     * each carrying the field it points at. Deduplicated by wording.
+     *
      * @param  array<int, DimensionResult>  $dimensions
      * @return array<int, array{text: string, target: ?string, cta: ?string}>
      */
-    private function collectFixes(array $prompts, array $dimensions): array
+    private function collectFixes(array $dimensions): array
     {
-        $fixes = $prompts;
+        $fixes = [];
+        $seen = [];
 
         foreach ($dimensions as $dimension) {
-            if ($dimension->hasFix()) {
-                $fixes[] = [
-                    'text' => $dimension->fix,
-                    'target' => $dimension->fixTarget,
-                    'cta' => $dimension->fixAnchor,
-                ];
-            }
-        }
-
-        $seen = [];
-        $unique = [];
-
-        foreach ($fixes as $fix) {
-            if (isset($seen[$fix['text']])) {
+            if (! $dimension->hasFix() || isset($seen[$dimension->fix])) {
                 continue;
             }
 
-            $seen[$fix['text']] = true;
-            $unique[] = $fix;
+            $seen[$dimension->fix] = true;
+            $fixes[] = [
+                'text' => $dimension->fix,
+                'target' => $dimension->fixTarget,
+                'cta' => $dimension->fixAnchor,
+            ];
         }
 
-        return $unique;
-    }
-
-    private function confidenceLevel(int $matchScore, bool $eligible): string
-    {
-        if (! $eligible) {
-            return 'NONE';
-        }
-
-        return match (true) {
-            $matchScore >= (int) config('scholarfit.confidence.high') => 'HIGH',
-            $matchScore >= (int) config('scholarfit.confidence.medium') => 'MEDIUM',
-            default => 'LOW',
-        };
-    }
-
-    private function confidenceLabel(int $matchScore, bool $eligible): string
-    {
-        if (! $eligible) {
-            return 'Not eligible';
-        }
-
-        return match (true) {
-            $matchScore >= (int) config('scholarfit.confidence.high') => 'High confidence',
-            $matchScore >= (int) config('scholarfit.confidence.medium') => 'Moderate confidence',
-            default => 'Low confidence',
-        };
+        return $fixes;
     }
 }

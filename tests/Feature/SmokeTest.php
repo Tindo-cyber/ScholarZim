@@ -49,7 +49,6 @@ class SmokeTest extends TestCase
         $this->get('/register')->assertOk();
         $this->get('/register/provider')->assertOk();
         $this->get('/forgot-password')->assertOk();
-        $this->get('/developers')->assertOk();
         // Liveness answers for the process alone - it deliberately reports no
         // dependency, because a restart is the only thing a failure here can
         // ask for and restarting cannot fix a database.
@@ -70,7 +69,6 @@ class SmokeTest extends TestCase
         $this->actingAs($user)->get('/applicant/profile')->assertOk();
         $this->actingAs($user)->get('/applicant/recommendations')->assertOk();
         $this->actingAs($user)->get('/applicant/saved')->assertOk();
-        $this->actingAs($user)->get('/applicant/saved-searches')->assertOk();
         $this->actingAs($user)->get('/my-applications')->assertOk();
         $this->actingAs($user)->get('/opportunities')->assertOk();
         $this->actingAs($user)->get('/notifications')->assertOk();

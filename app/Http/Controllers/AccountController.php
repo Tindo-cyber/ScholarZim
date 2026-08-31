@@ -4,9 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\AccountDeletionService;
 use App\Services\AuditService;
-use App\Services\TwoFactorService;
-use App\Models\DocumentFile;
-use App\Models\User;
 use App\Support\AuditAction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -18,19 +15,13 @@ class AccountController extends Controller
     public function __construct(
         private readonly AuditService $auditService,
         private readonly AccountDeletionService $accountDeletion,
-        private readonly TwoFactorService $twoFactor,
     ) {
     }
 
     public function security(Request $request)
     {
-        $user = $request->user();
-
         return view('account.security', [
-            'user' => $user,
-            'twoFactorEnabled' => $user->hasTwoFactorEnabled(),
-            'recoveryRemaining' => $this->twoFactor->remainingRecoveryCodes($user),
-            'apiTokens' => $user->tokens()->orderByDesc('created_at')->get(),
+            'user' => $request->user(),
         ]);
     }
 
@@ -96,51 +87,6 @@ class AccountController extends Controller
         return back()->with('successMessage', 'All other sessions were signed out.');
     }
 
-    /** Issues a personal access token for the public API. */
-    public function createApiToken(Request $request)
-    {
-        $data = $request->validate([
-            'token_name' => ['required', 'string', 'max:60'],
-        ]);
-
-        $user = $request->user();
-
-        // The plain-text token exists exactly once, here. It is flashed to the
-        // next request and never stored, which is why the page says to copy it now.
-        $token = $user->createToken($data['token_name'], ['read']);
-
-        $this->auditService->log(
-            $user->email,
-            AuditAction::API_TOKEN_CREATED,
-            'USER',
-            $user->user_id,
-            'Created the API token "' . $data['token_name'] . '"'
-        );
-
-        return back()->with('newApiToken', $token->plainTextToken);
-    }
-
-    public function revokeApiToken(Request $request, int $tokenId)
-    {
-        $user = $request->user();
-        $token = $user->tokens()->where('id', $tokenId)->first();
-
-        abort_if($token === null, 404);
-
-        $name = $token->name;
-        $token->delete();
-
-        $this->auditService->log(
-            $user->email,
-            AuditAction::API_TOKEN_REVOKED,
-            'USER',
-            $user->user_id,
-            'Revoked the API token "' . $name . '"'
-        );
-
-        return back()->with('successMessage', 'Token "' . $name . '" was revoked.');
-    }
-
     /**
      * Self-service account deletion.
      *
@@ -171,90 +117,5 @@ class AccountController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/')->with('successMessage', 'Your account and its data have been deleted.');
-    }
-
-    /** Data-portability export required by the compliance page. */
-    public function exportData(Request $request)
-    {
-        $user = $request->user()->load(['applicantProfile', 'providerProfile', 'applications.opportunity', 'savedScholarships']);
-
-        // toArray() on the profiles used to be the whole export, which dumped
-        // every column - including results_certificate_path, cv_path,
-        // passport_path, recommendation_letter_path and certificate_path. Those
-        // are internal storage locations. They are not reachable over the web,
-        // so publishing them is not an exploit on its own, but an export a user
-        // can forward to anybody is the wrong place to describe where private
-        // documents live on the server.
-        //
-        // Documents are listed by what they are, not by where they are kept: the
-        // name the user uploaded, when, and how big - enough for a data-subject
-        // request, nothing that helps anyone reach the bytes.
-        $payload = [
-            'exported_at' => now()->toIso8601String(),
-            'account' => $user->only(['user_id', 'full_name', 'email', 'phone', 'account_status']),
-            'profile' => $this->exportableProfile($user),
-            'documents' => $this->exportableDocuments($user),
-            'applications' => $user->applications->map(fn ($a) => [
-                'scholarship' => $a->opportunity?->title,
-                'status' => $a->statusLabel(),
-                'submitted_at' => $a->submitted_at?->toIso8601String(),
-            ]),
-            'saved_scholarships' => $user->savedScholarships->pluck('opportunity_id'),
-        ];
-
-        return response()->json($payload)
-            ->header('Content-Disposition', 'attachment; filename="scholarzim-export.json"')
-            // The body is the user's own personal data; nothing should keep a copy.
-            ->header('Cache-Control', 'no-store, private');
-    }
-
-    /**
-     * The profile as data about the person, with the storage columns left out.
-     *
-     * An allow-list rather than an exclude-list: a column added later is absent
-     * from the export until somebody decides it belongs there, which fails safe.
-     * The opposite - listing what to hide - leaks every field nobody remembered.
-     */
-    private function exportableProfile(User $user): ?array
-    {
-        $profile = $user->applicantProfile;
-
-        if ($profile === null) {
-            return null;
-        }
-
-        return $profile->only([
-            'education_level',
-            'institution_name',
-            'field_of_study',
-            'country',
-            'province',
-            'district',
-            'locality',
-            'date_of_birth',
-            'citizenship',
-            'academic_results',
-            'biography',
-        ]);
-    }
-
-    /**
-     * What the user has uploaded, described rather than located.
-     *
-     * @return array<int, array<string, mixed>>
-     */
-    private function exportableDocuments(User $user): array
-    {
-        return DocumentFile::where('uploaded_by_user_id', $user->user_id)
-            ->orderBy('created_at')
-            ->get()
-            ->map(static fn (DocumentFile $file) => [
-                'filename' => $file->original_filename,
-                'type' => $file->mime_type,
-                'size_bytes' => $file->size_bytes,
-                'checksum_sha256' => $file->checksum,
-                'uploaded_at' => $file->created_at?->toIso8601String(),
-            ])
-            ->all();
     }
 }

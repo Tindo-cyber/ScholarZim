@@ -1,8 +1,27 @@
 # ScholarZim (Laravel 10)
 
 Laravel 10 port of the ScholarZim scholarship platform, previously a Spring Boot
-application. The database schema, column names, and business rules are carried over
-unchanged, so the same MySQL database can back either application.
+application. The database schema and column names are carried over, so the same MySQL
+database can back either application.
+
+## What the platform does
+
+Five objectives, and every feature in the codebase serves at least one of them:
+
+1. **Discovery** — students search, filter and save scholarship opportunities.
+2. **ScholarFit** — a recommendation mechanism that matches students to opportunities from
+   their profile. It recommends; it never decides.
+3. **Applications** — students submit and track applications.
+4. **Providers** — verified providers publish opportunities and manage the applications to
+   them.
+5. **Security and administration** — authentication, roles, provider verification, listing
+   moderation, and admin controls.
+
+The core journey, end to end:
+
+> A student searches, filters and saves listings, gets ScholarFit recommendations, and
+> applies → the application is **Pending** → the provider **accepts** or **rejects** it with
+> a written reason → the student is notified by email and in the app.
 
 ## Requirements
 
@@ -49,12 +68,12 @@ Seeded accounts (all password `ChangeMe123`):
 | Business services  | `app/Services`                                        |
 | ScholarFit scoring | `app/Services/ScholarFit`                             |
 | Constants/enums    | `app/Support`                                         |
-| Controllers        | `app/Http/Controllers` (Admin, Applicant, Provider, Auth, Api) |
+| Controllers        | `app/Http/Controllers` (Admin, Applicant, Provider, Auth) |
 | Role guards        | `app/Http/Middleware/EnsureUserHasRole.php`           |
 | Response hardening | `app/Http/Middleware/SecurityHeaders.php`             |
 | Scheduled jobs     | `app/Console/Commands`, wired in `app/Console/Kernel.php` |
 | Report exports     | `app/Services/ReportService.php`, `app/Services/ExcelReportService.php` |
-| Routes             | `routes/web.php`, `routes/api.php`                    |
+| Routes             | `routes/web.php`                                      |
 | Layouts            | `resources/views/layouts` (app, public, auth)         |
 | Components         | `resources/views/components`                          |
 | Views              | `resources/views/{public,auth,applicant,provider,admin,applications,opportunities,notifications,account}` |
@@ -62,7 +81,37 @@ Seeded accounts (all password `ChangeMe123`):
 | Container config   | `docker/` (nginx, php.ini, supervisor, entrypoint)    |
 | Runtime settings   | `config/scholarfit.php` + `app/Services/SettingsService.php` |
 | Front-end sources  | `resources/css`, `resources/js` (bundled by Vite)     |
-| API description    | `resources/api/openapi.json`                          |
+
+## The application workflow
+
+The whole of it, in one line:
+
+> A student applies → the application is **Pending** → the provider **accepts** or
+> **rejects** it with a written reason → the student is notified → done.
+
+There are three application statuses and no others: `PENDING`, `ACCEPTED`, `REJECTED`.
+**Accepting an application is granting the scholarship** — there is no separate award step
+afterwards, nothing further for the provider to click, and nothing for the student to
+confirm. Both decisions are final: an accepted application can never become rejected, and a
+rejected one can never become accepted.
+
+`WITHDRAWN` exists alongside those three, but it is the applicant's own action rather than
+a provider decision, and it is the only status that leaves the listing open to a fresh
+application.
+
+| Who | Can set | From |
+|-----|---------|------|
+| Provider | `ACCEPTED`, `REJECTED` (reason required) | `PENDING` |
+| Applicant | `WITHDRAWN` | `PENDING` |
+| Applicant | `PENDING` (re-applying) | `WITHDRAWN` |
+
+`app/Support/ApplicationStateMachine.php` is the single place those rules live;
+`ApplicationService::decide()` is the only way an application is ever decided. Statuses
+written by earlier versions of the platform (`SUBMITTED`, `UNDER_REVIEW`, `SHORTLISTED`,
+`INTERVIEW`, `WAITLISTED`, `DOCUMENTS_REQUESTED`, `INFO_REQUESTED`, `APPROVED`, `AWARDED`)
+are mapped onto the three live ones by `ApplicationStatus::canonical()` and rewritten in the
+database by migration `2024_01_01_000028`. They are kept as `LEGACY_*` constants for
+database compatibility only and appear nowhere in the UI or in new business logic.
 
 ## Rules worth knowing
 
@@ -73,22 +122,32 @@ Seeded accounts (all password `ChangeMe123`):
 - **Provider accounts start inactive.** A provider can sign in and see their dashboard
   while verification is pending, but the publishing routes require an active account
   (`account.active` middleware).
-- **Decisions need a reason.** Approving or rejecting an application requires written
-  feedback; it is shown to the applicant verbatim.
+- **Decisions need a reason.** Accepting or rejecting an application requires written
+  feedback; it is shown to the applicant verbatim, in the notification and on their
+  application page.
+- **One student + one scholarship = one application.** Enforced in
+  `ApplicationService::submit()` and by the `uk_applications_user_opportunity` unique key.
+  Pending, accepted and rejected all block a second attempt; only a withdrawal reopens the
+  listing, and re-applying reuses the same row rather than inserting a second one.
 - **Uploads never sit in `public/`.** Files go to the private disk and are served through
   `FileDownloadController`, so every read is authorised and sensitive reads are audited.
 - **Email preferences gate email only.** In-app notifications are always written; the
   three category toggles decide what gets emailed.
-- **Eligibility disqualifies; weights only score.** A provider's hard rule that an
-  applicant provably fails zeroes the match and drops the listing out of their
-  recommendations — a high percentage next to "you are not eligible" would be a lie. A rule
-  the profile cannot be tested against is a prompt, not a refusal.
+- **ScholarFit recommends; the provider decides.** The match percentage answers "how well
+  does this scholarship fit this student's profile?" and nothing else. It never decides
+  who gets a scholarship — that is the provider's Accept/Reject, made by a person with a
+  written reason.
+- **Stated requirements zero the match.** A requirement the listing states and the profile
+  does not meet drops the listing out of that student's recommendations rather than
+  reducing its score, because a high percentage next to "you do not meet this rule" would
+  be a lie. A requirement the provider did not set is never held against anyone.
 - **Withdrawal is the applicant's own decision**, so it does not lock them out: a withdrawn
   application can be replaced with a fresh one while the listing is still open. The row
   stays either way, so the provider sees the seat released rather than the record vanishing.
-- **Bulk is a shortcut for the click, not for the rules.** Every application or listing in a
-  batch goes through the same single-item path: the same ownership checks, the same
-  written-reason requirement, the same notifications, the same audit entries.
+- **One application decision at a time.** There is no bulk accept or reject: a decision
+  carries a written reason that a student reads verbatim, so it is made on one application
+  by a person looking at it. Administrators can still moderate *listings* in bulk, which
+  carries no per-student message.
 
 ## Admin reports
 
@@ -112,29 +171,25 @@ Daily jobs, driven by Laravel's scheduler:
 
 | Command | Runs | What it does |
 |---------|------|--------------|
-| `scholarzim:search-alerts` | 07:30 | Tells applicants when a newly published listing matches a search they saved |
-| `scholarzim:deadline-reminders` | 08:00 | Notifies applicants with a live application to a scholarship closing within 3 days, and anyone who saved it but has not applied |
-| `scholarzim:interview-reminders` | 08:30 | Reminds both sides about an interview happening within the next day |
-| `scholarzim:profile-reminders` | 09:00 | Nudges active applicants whose profile or results certificate is incomplete |
+| `scholarzim:deadline-reminders` | 08:00 | Notifies applicants with a pending application to a scholarship closing within 3 days, and anyone who saved it but has not applied |
+| `scholarzim:archive-expired-opportunities` | 00:30 | Retires listings whose deadline has passed, so the catalogue only shows what can still be applied for |
 
-All are idempotent — one reminder per user per record — so a repeated run sends nothing
-twice — the deadline and profile jobs check for an existing notification, the interview job
-stamps `interview_reminded_at` (cleared on a reschedule, so a new date earns a new
-reminder), and the alert job keeps a per-search high-water mark of the last listing id it
-mentioned. Any can be invoked directly for a demo. In production the container supervises
+Both are idempotent — one reminder per user per record — so a repeated run sends nothing
+twice: the deadline job checks for an existing notification before writing one. Any can be invoked directly for a demo. In production the container supervises
 `schedule:run`; locally, run it yourself:
 
 ```bash
 php artisan schedule:run
 ```
 
-`SmsService` is called by the deadline job but logs the message rather than dispatching it;
-the delivery path is wired end to end and awaits a gateway.
-
 ## ScholarFit
 
+ScholarFit is the recommendation component: given a student's profile and a listing, it
+answers **"how well do these match?"** as a percentage. It is a decision *support* tool, not
+the decision — the provider accepts or rejects, by hand, with a reason.
+
 `app/Services/ScholarFit/ScholarFitEngine.php` scores a profile against a listing out of
-100. It keeps two kinds of criteria deliberately apart:
+100.
 
 **Weighted dimensions** decide how good a match is; a miss costs points. The defaults are
 the original weights — academic record 20, education level 25, field of study 25, location
@@ -144,18 +199,64 @@ administrator can retune them at `/admin/scholarfit`; the override is stored in
 file, so deleting the row restores the shipped weighting. The six must total 100, since
 every score is presented to students as a percentage.
 
-**Hard eligibility rules** decide whether the applicant may apply at all; a miss zeroes the
-score. A provider sets them per listing (minimum A-Level points, an age ceiling, required
-citizenship or province, a results certificate on file). A rule the provider did not set is
-never a disqualification, and neither is a rule the profile has no data to test — that
-becomes a prompt to fill the field in, because a blank field is not evidence of
-ineligibility.
+**Stated requirements** are checked alongside them by
+`app/Services/ScholarFit/EligibilityEvaluator.php`: minimum A-Level points, an age ceiling,
+a required citizenship or province, a results certificate on file. Each is one plain check
+producing one plain sentence, and any unmet requirement forces the match to 0% and keeps
+the listing out of that student's recommendations. A requirement the provider did not set
+is never held against anyone.
 
-The engine returns a per-dimension breakdown, the criteria met, and what is holding the
-score back. Each shortfall carries the profile field that fixes it, so the UI renders it as
-a link rather than a complaint. Rankings are cached per applicant, keyed on their profile's
-timestamp, the catalogue version, and the weights in force, so no cached score can outlive
-any of them.
+The engine returns a per-dimension breakdown, the score, and what is holding it back. Each
+dimension shortfall carries the profile field that fixes it, so the UI renders it as a link
+rather than a complaint. Rankings are computed on demand rather than cached — a catalogue
+sweep is two queries and a sort, which is cheaper than proving a cached ranking is still
+true.
+
+## Email
+
+Every outbound message goes through one path:
+
+```
+EmailService  ->  ScholarZimMail (queued)  ->  the mailer in config/mail.php
+```
+
+Which transport is used where — three setups, no ambiguity:
+
+| Where | `MAIL_MAILER` | Transport | Set by |
+|-------|---------------|-----------|--------|
+| **Production** | `mailgun` | Mailgun HTTP API | `.env.prod.example` + `docker-compose.prod.yml` |
+| **Local Docker** | `smtp` | Bundled MailHog, UI at http://localhost:8025 | `docker-compose.yml` (overrides the file) |
+| **Local, no Docker** | `log` (recommended) | Written to `storage/logs` | you, in `.env` |
+
+`.env.example` defaults to `mailgun` because that is the production path; on a fresh clone
+without a Mailgun key, set `MAIL_MAILER=log` and read the verification link out of the log.
+`docker compose up` needs no change — it overrides the variable itself.
+
+Credentials are read from the environment through `config/services.php` (`MAILGUN_DOMAIN`,
+`MAILGUN_SECRET`, `MAILGUN_ENDPOINT`) and are never committed: both tracked templates ship
+placeholders, and `.env` and `.env.docker` are gitignored.
+
+What gets emailed:
+
+| Trigger | Recipient |
+|---------|-----------|
+| Student registers | Verification link to the student |
+| Password reset requested | Reset link to the requester |
+| Provider registers | Verification queue notice to every administrator |
+| Provider approved or rejected | The provider |
+| Student applies | The listing's provider |
+| Application accepted | The student |
+| Application rejected | The student, with the provider's reason |
+| Listing approved / rejected / closing soon | Provider or matching applicants |
+
+`EmailService` returns whether delivery succeeded rather than only logging it, so the paths
+where the email *is* the deliverable — verification, password reset — can report a failure
+instead of claiming success. Notification paths deliberately ignore the result: one bounced
+recipient must not fail an administrator's action.
+
+Delivery is queued (`QUEUE_CONNECTION=database`), so nothing is sent without a worker
+running. `TransactionalEmailTest` fakes the transport and asserts each message above is
+actually handed to the mailer.
 
 ## Front end
 
@@ -219,7 +320,7 @@ Design details worth knowing:
 - Every layout opens with a skip link, and the off-canvas sidebar is `visibility: hidden`
   when closed so its links leave the tab order rather than merely moving off-screen.
 - A print stylesheet strips the navigation and controls and prints link URLs, for students
-  taking an application to an interview.
+  who need a paper copy of an application or a decision.
 
 ## Tests
 
@@ -227,29 +328,35 @@ Design details worth knowing:
 php artisan test
 ```
 
-111 tests, 389 assertions.
+488 tests, 1,476 assertions (one skipped on Windows only).
 
 - `SmokeTest` renders every authenticated page for each role and checks the role guards.
 - `WorkflowTest` covers the moderation gate, the apply-once rule, provider decisions, and
   ScholarFit ranking.
-- `ApplicationLifecycleTest` covers withdrawal, re-application after it, the provider's
-  question and the applicant's answer, and bulk decisions (including that bulk does not
-  loosen the written-reason rule or cross provider boundaries).
-- `ScholarFitEligibilityTest` is the scoring truth table: which rules disqualify, which
-  only prompt, and that scores actually follow the configured weights.
+- `ApplicationDecisionTest` covers the whole simplified workflow: applying, the pending
+  start, the duplicate rule, accept and reject with a reason, that a reason is required,
+  that neither decision can become the other, that no second award step exists, the two
+  notifications, and what each side sees.
+- `ApplicationStateMachineTest` and `ApplicationStateTransitionTest` prove the transition
+  rules and that the endpoints are actually behind them.
+- `ApplicationLifecycleTest` covers withdrawal and re-application after it.
+- `ScholarshipDiscoveryTest` covers Objective 1: browsing, keyword search, filtering by
+  field and level, and saving/unsaving a scholarship.
+- `TransactionalEmailTest` asserts at the mailer that the provider is emailed when a student
+  applies, the student is emailed on acceptance and rejection, administrators are emailed
+  when a provider registers, and that no mail credential is hard-coded.
+- `RecommendationTest` covers what reaches the recommendations page: usable percentages,
+  best-first order, and the listings deliberately left out.
+- `ScholarFitEligibilityTest` is the scoring truth table: which requirements zero a match,
+  what a blank profile field says, and that scores follow the configured weights.
 - `AwardAndDiscoveryTest` covers award values, value sorting and filtering, and the view
-  counter behind the provider funnel.
-- `SavedSearchAlertTest` covers saved searches and the alert job, including that saving a
-  search does not replay the back catalogue and that a repeat run sends nothing twice.
-- `TwoFactorTest` covers setup, the sign-in challenge, and single-use recovery codes.
-- `AccountSecurityTest` covers API tokens, signing out other sessions, and account deletion
-  (including the provider refusal while listings are live).
-- `ApiV1Test` covers the versioned API, token auth, and that the catalogue never exposes
-  more than the public site.
+  counter behind the provider's numbers.
+- `AccountSecurityTest` covers signing out other sessions and account deletion (including
+  the provider refusal while listings are live).
 - `AdminSettingsTest` covers the ScholarFit weight editor and bulk moderation.
 - `ReportExportTest` downloads every PDF and Excel export, asserting real file signatures
   and that non-admins are refused.
-- `ReminderJobTest` covers all three reminder jobs, including idempotency and the deadline
+- `ReminderJobTest` covers the reminder jobs, including idempotency and the deadline
   window boundary.
 - `SourceAssetTest` covers the no-build asset fallback, its whitelist, a stale `public/hot`
   not reaching the page, and the fallback script list not drifting from `app.js`.
@@ -275,22 +382,15 @@ never ships in the runtime image.
 See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for production, and [SUBMISSION.md](SUBMISSION.md)
 for the documentation index.
 
-## Public API
-
-`/api/v1` is read-only. The catalogue (`/scholarships`, `/stats`, `/facets`) is open and
-rate-limited; `/me`, `/me/applications`, and `/me/recommendations` take a Sanctum bearer
-token created on the account security page. Everything reads through the same service the
-site does, so the API can never expose more than an anonymous visitor already sees.
-
-The OpenAPI description is at `/api/v1/openapi.json` (source in `resources/api`), rendered
-for humans at `/developers`. The unversioned `/api/public/*` paths the dashboard shell was
-written against still answer, pointing at the same controllers.
-
 ## Notes
 
 - Mail and notifications are queued (`QUEUE_CONNECTION=database`). Approving a listing fans
   a notification out to every matching applicant; doing that inline made the administrator
-  wait on one SMTP round trip per recipient. Nothing is delivered without a worker running.
+  wait on one API round trip per recipient. Nothing is delivered without a worker running.
+- There is **no public JSON API**. It was removed along with its Sanctum tokens, developer
+  portal and OpenAPI description: none of the five objectives needs it, and it was a second
+  surface onto the same data. This is unrelated to the Mailgun **email** API above, which
+  is required and untouched.
 - `/health` is a cheap liveness probe — one database round trip — so the platform's health
   check is not the heaviest request on the box.
 - Composer's audit check is disabled for this project (`audit.block-insecure=false`),

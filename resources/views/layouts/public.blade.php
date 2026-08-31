@@ -93,11 +93,6 @@
                     <li><a class="link-secondary text-decoration-none" href="{{ route('login') }}">Provider sign in</a></li>
                 </ul>
             </div>
-            <div class="col-lg-4">
-                <h6 class="fw-semibold mb-3">Developers</h6>
-                <p class="text-secondary mb-2">Public listings are available as JSON.</p>
-                <code class="small">GET /api/public/scholarships</code>
-            </div>
         </div>
 
         <hr class="my-4">

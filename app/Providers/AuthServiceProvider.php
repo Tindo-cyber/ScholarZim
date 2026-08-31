@@ -6,13 +6,11 @@ use App\Models\Application;
 use App\Models\Notification;
 use App\Models\Opportunity;
 use App\Models\SavedScholarship;
-use App\Models\SavedSearch;
 use App\Policies\ApplicationPolicy;
 use App\Policies\NotificationPolicy;
 use App\Policies\OpportunityPolicy;
 use App\Policies\ReportPolicy;
 use App\Policies\SavedScholarshipPolicy;
-use App\Policies\SavedSearchPolicy;
 use Illuminate\Foundation\Support\Providers\AuthServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Gate;
 
@@ -27,7 +25,6 @@ class AuthServiceProvider extends ServiceProvider
         Application::class => ApplicationPolicy::class,
         Opportunity::class => OpportunityPolicy::class,
         SavedScholarship::class => SavedScholarshipPolicy::class,
-        SavedSearch::class => SavedSearchPolicy::class,
         Notification::class => NotificationPolicy::class,
     ];
 

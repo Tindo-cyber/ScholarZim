@@ -40,7 +40,7 @@ class DashboardController extends Controller
             // student cannot unsave from here and re-saving is the only outcome.
             'savedIds' => $this->savedScholarshipService->savedIds($user),
             'appliedIds' => $this->applicationService->appliedIds($user),
-            'awards' => $this->applicationService->awardsByOpportunity($user),
+            'accepted' => $this->applicationService->acceptedByOpportunity($user),
         ]);
     }
 }

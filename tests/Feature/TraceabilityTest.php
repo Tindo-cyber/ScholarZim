@@ -147,19 +147,19 @@ class TraceabilityTest extends TestCase
     /** A status change records what it replaced, not only what it set. */
     public function test_a_status_change_records_the_old_and_new_values(): void
     {
-        $application = $this->application(ApplicationStatus::UNDER_REVIEW);
+        $application = $this->application(ApplicationStatus::PENDING);
 
-        app(ApplicationService::class)->updateStatus(
+        app(ApplicationService::class)->decide(
             $application->application_id,
-            ApplicationStatus::APPROVED,
+            ApplicationStatus::ACCEPTED,
             'Outstanding academic record.',
             $this->provider
         );
 
         $entry = AuditLog::where('action', AuditAction::STATUS_UPDATE)->latest('audit_id')->firstOrFail();
 
-        $this->assertSame(ApplicationStatus::UNDER_REVIEW, $entry->old_values['application_status']);
-        $this->assertSame(ApplicationStatus::APPROVED, $entry->new_values['application_status']);
+        $this->assertSame(ApplicationStatus::PENDING, $entry->old_values['application_status']);
+        $this->assertSame(ApplicationStatus::ACCEPTED, $entry->new_values['application_status']);
         $this->assertSame('Outstanding academic record.', $entry->reason);
         $this->assertTrue($entry->hasValueChanges());
     }

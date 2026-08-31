@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Services\ApplicantProfileService;
 use App\Services\ApplicationService;
-use App\Services\CalendarService;
 use App\Services\OpportunityService;
 use App\Services\RecommendationService;
 use App\Support\ApplicationStatus;
@@ -17,7 +16,6 @@ class ApplicationController extends Controller
         private readonly OpportunityService $opportunityService,
         private readonly ApplicantProfileService $profileService,
         private readonly RecommendationService $recommendationService,
-        private readonly CalendarService $calendarService,
     ) {
     }
 
@@ -132,45 +130,6 @@ class ApplicationController extends Controller
             ->with('successMessage', 'Your application was withdrawn and the provider notified.');
     }
 
-    /** Answers a provider's question or document request without leaving the page. */
-    public function respondToInfoRequest(Request $request, int $applicationId)
-    {
-        $data = $request->validate([
-            'response' => ['required', 'string', 'min:10', 'max:3000'],
-        ]);
-
-        try {
-            $this->applicationService->respondToInfoRequest($applicationId, $request->user(), $data['response']);
-        } catch (\RuntimeException $e) {
-            return back()->with('errorMessage', $e->getMessage());
-        }
-
-        return back()->with('successMessage', 'Your response was sent to the provider.');
-    }
-
-    /**
-     * The scheduled interview as a calendar file.
-     *
-     * Served as a download rather than a link to a hosted calendar so it works
-     * on a phone with no account signed in - which is how most students here
-     * will open it.
-     */
-    public function interviewCalendar(Request $request, int $applicationId)
-    {
-        $application = $this->applicationService->findForApplicant($applicationId, $request->user());
-
-        try {
-            $ics = $this->calendarService->interviewInvite($application);
-        } catch (\RuntimeException $e) {
-            return back()->with('errorMessage', $e->getMessage());
-        }
-
-        return response($ics, 200, [
-            'Content-Type' => 'text/calendar; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="' . $this->calendarService->filename($application) . '"',
-        ]);
-    }
-
     public function confirmation(Request $request, int $applicationId)
     {
         $application = $this->applicationService->findForApplicant($applicationId, $request->user());
@@ -178,7 +137,6 @@ class ApplicationController extends Controller
         return view('applications.confirmation', [
             'application' => $application,
             'timeline' => ApplicationStatus::timeline($application->application_status),
-            'awaitingResponse' => $application->awaitsApplicantResponse(),
         ]);
     }
 }

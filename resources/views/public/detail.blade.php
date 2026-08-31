@@ -168,7 +168,7 @@
                             <div class="col-md-4">
                                 <x-scholarship-card :opportunity="$item" :show-save="false"
                                                     :applied="in_array($item->opportunity_id, $appliedIds, true)"
-                                                    :award="$awards[$item->opportunity_id] ?? null" />
+                                                    :accepted="$accepted[$item->opportunity_id] ?? null" />
                             </div>
                         @endforeach
                     </div>
@@ -180,29 +180,29 @@
                     <div class="card-body">
 
                         @if($fit)
-                            @if(! $fit->isEligible())
+                            @if(! $fit->meetsRequirements())
                                 {{--
-                                    A hard rule failed, so no percentage is shown at
-                                    all. A number next to "not eligible" only invites
-                                    the reader to argue with it.
+                                    A stated requirement is not met, so no
+                                    percentage is shown at all. A number next to
+                                    "you do not meet this rule" only invites the
+                                    reader to argue with it.
                                 --}}
                                 <div class="alert alert-danger" role="alert">
                                     <div class="d-flex gap-2 align-items-start">
                                         <x-icon name="x-circle" :size="20" class="flex-shrink-0 mt-1" />
                                         <div>
-                                            <div class="fw-semibold mb-1">You are not eligible for this award</div>
+                                            <div class="fw-semibold mb-1">
+                                                You do not meet this award's requirements
+                                            </div>
                                             <ul class="mb-0 ps-3 small">
-                                                @foreach($fit->breakdown->disqualifiers as $blocker)
-                                                    <li>
-                                                        {{ $blocker['text'] }}
-                                                        @if($blocker['target'] === 'profile')
-                                                            <a href="{{ route('applicant.profile') }}#field-{{ $blocker['cta'] }}">Update your profile</a>
-                                                        @elseif($blocker['target'] === 'documents')
-                                                            <a href="{{ route('applicant.profile') }}#documents">Upload it</a>
-                                                        @endif
-                                                    </li>
+                                                @foreach($fit->breakdown->unmetRequirements as $requirement)
+                                                    <li>{{ $requirement }}</li>
                                                 @endforeach
                                             </ul>
+                                            <p class="small mb-0 mt-2">
+                                                <a href="{{ route('applicant.profile') }}">Update your profile</a>
+                                                if any of these are out of date.
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -266,26 +266,29 @@
                         <div class="d-grid gap-2">
                             @auth
                                 @if(auth()->user()->isApplicant())
-                                    @if($award)
+                                    @if($acceptedApplication)
                                         {{--
                                             Neither Apply nor Quick apply: the
-                                            student already holds this award, and
-                                            the server refuses a second
-                                            application either way. The listing
-                                            itself stays readable - it is theirs
-                                            now, so hiding it would be perverse.
+                                            student already holds this
+                                            scholarship, and the server refuses a
+                                            second application either way. The
+                                            listing itself stays readable - it is
+                                            theirs now, so hiding it would be
+                                            perverse.
                                         --}}
                                         <div class="alert alert-success mb-0 text-center">
                                             <div class="fw-semibold d-flex align-items-center justify-content-center gap-2">
-                                                <x-icon name="stars" :size="18" /> Scholarship awarded
+                                                <x-icon name="stars" :size="18" /> Application accepted
                                             </div>
-                                            @if($award->awarded_at)
-                                                <div class="small mt-1">Awarded on {{ $award->awarded_at->format('d F Y') }}</div>
+                                            @if($acceptedApplication->decided_at)
+                                                <div class="small mt-1">
+                                                    Accepted on {{ $acceptedApplication->decided_at->format('d F Y') }}
+                                                </div>
                                             @endif
                                         </div>
                                         <a class="btn btn-outline-success"
-                                           href="{{ route('applications.confirmation', $award->application_id) }}">
-                                            View your award
+                                           href="{{ route('applications.confirmation', $acceptedApplication->application_id) }}">
+                                            View your application
                                         </a>
                                     @elseif($hasApplied)
                                         <button class="btn btn-success btn-lg" type="button" disabled>

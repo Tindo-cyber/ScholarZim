@@ -20,6 +20,11 @@ namespace App\Services\ScholarFit;
  */
 final class DimensionResult
 {
+    /** Where a fix points: a field on the profile form, or the documents panel. */
+    public const TARGET_PROFILE = 'profile';
+
+    public const TARGET_DOCUMENTS = 'documents';
+
     private function __construct(
         public readonly string $key,
         public readonly string $label,

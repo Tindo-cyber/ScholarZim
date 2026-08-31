@@ -125,20 +125,21 @@
                     </div>
                 </div>
 
-                @if(! $fit->isEligible())
+                @if(! $fit->meetsRequirements())
                     {{--
-                        A hard rule failed. The wizard still lets them through -
-                        the provider sets the rule and the provider decides - but
-                        it says so plainly before they spend time on a statement.
+                        A stated requirement is not met. The wizard still lets
+                        them through - the provider sets the rule and the
+                        provider decides - but it says so plainly before they
+                        spend time on a statement.
                     --}}
                     <div class="card border-danger">
                         <div class="card-header bg-danger-subtle">
-                            <h2 class="h6 fw-semibold mb-0">You do not meet this award's rules</h2>
+                            <h2 class="h6 fw-semibold mb-0">You do not meet this award's requirements</h2>
                         </div>
                         <div class="card-body">
                             <ul class="small mb-0 ps-3 d-grid gap-1">
-                                @foreach($fit->breakdown->disqualifiers as $blocker)
-                                    <li>{{ $blocker['text'] }}</li>
+                                @foreach($fit->breakdown->unmetRequirements as $requirement)
+                                    <li>{{ $requirement }}</li>
                                 @endforeach
                             </ul>
                         </div>

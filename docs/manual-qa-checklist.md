@@ -38,7 +38,6 @@ Run `php artisan test` in the project root first — all automated tests should 
 ## Alerts, withdrawal, and questions
 
 - [ ] Saving a search from the browse page stores exactly the filters on screen
-- [ ] `scholarzim:search-alerts` sends nothing immediately after a search is saved
 - [ ] After a matching listing is approved, one alert arrives; a second run sends nothing
 - [ ] Provider "Information requested" puts a reply box on the applicant's page
 - [ ] The applicant's answer appears on the provider's review screen
@@ -50,13 +49,11 @@ Run `php artisan test` in the project root first — all automated tests should 
 - [ ] Select-all ticks every row; the button count matches the selection
 - [ ] A bulk decline without a reason is refused, exactly like a single decline
 - [ ] A batch containing one already-reviewed row still processes the rest, and says so
-- [ ] Interviews are not offered as a bulk option
 
 ## Security and ops
 
 - [ ] `/uploads/**` is not publicly accessible (redirect or auth required)
 - [ ] Dark mode: dashboards and auth screens remain readable (no washed-out WebP overlays)
-- [ ] Two-factor: a correct password lands on the challenge page, not the dashboard
 - [ ] A recovery code signs in once, and the remaining count drops
 - [ ] "Sign out all other sessions" ends a session open in a second browser
 - [ ] Account deletion refuses without the typed email; refuses for a provider with live listings
@@ -82,7 +79,6 @@ Run `php artisan test` in the project root first — all automated tests should 
 - [ ] Provider dashboard loads; application status changes (approve/reject) notify applicant
 - [ ] Applicant dashboard and my-applications list load correctly
 - [ ] Sorting and filter chips survive paging (the ordering is not lost on page 2)
-- [ ] `/developers` renders and `/api/v1/openapi.json` is valid JSON naming this host
 - [ ] With `npm run build` run, pages load hashed assets from `/build`; without it, the
       unminified fallback still renders
 

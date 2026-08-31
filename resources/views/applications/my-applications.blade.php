@@ -74,37 +74,28 @@
                                         <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
 
                                         {{--
-                                            An unanswered question is the one thing on this
-                                            page the student has to act on, so it is called
-                                            out rather than left as a status word.
+                                            The provider's reason is the substance of a
+                                            decision, so it is shown here rather than only
+                                            on the detail page.
                                         --}}
-                                        @if($application->isAwarded())
+                                        @if($application->isAccepted())
                                             <span class="d-block small text-success fw-semibold mt-1">
-                                                Awarded {{ $application->awarded_at?->format('d M Y') }}
-                                            </span>
-                                        @elseif($application->awaitsApplicantResponse())
-                                            <a class="d-block small fw-semibold mt-1"
-                                               href="{{ route('applications.confirmation', $application->application_id) }}">
-                                                Waiting on your response
-                                            </a>
-                                        @elseif($application->application_status === \App\Support\ApplicationStatus::INTERVIEW && $application->interview_at)
-                                            <span class="d-block small text-secondary mt-1">
-                                                {{ $application->interview_at->format('d M Y \a\t g:i A') }}
+                                                Accepted {{ $application->decided_at?->format('d M Y') }}
                                             </span>
                                         @elseif($application->isWithdrawn() && $application->withdrawn_at)
                                             <span class="d-block small text-secondary mt-1">
                                                 Withdrawn {{ $application->withdrawn_at->format('d M Y') }}
                                             </span>
-                                        @elseif($application->rejection_reason)
-                                            <span class="d-block small text-secondary mt-1">{{ $application->rejection_reason }}</span>
+                                        @endif
+
+                                        @if($application->isDecided() && $application->decision_reason)
+                                            <span class="d-block small text-secondary mt-1">{{ $application->decision_reason }}</span>
                                         @endif
                                     </span>
                                 </td>
                                 <td data-label="" class="text-end">
-                                    <a class="btn btn-sm {{ $application->awaitsApplicantResponse() ? 'btn-primary' : 'btn-outline-secondary' }}"
-                                       href="{{ route('applications.confirmation', $application->application_id) }}">
-                                        {{ $application->awaitsApplicantResponse() ? 'Respond' : 'View' }}
-                                    </a>
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       href="{{ route('applications.confirmation', $application->application_id) }}">View</a>
                                 </td>
                             </tr>
                         @endforeach

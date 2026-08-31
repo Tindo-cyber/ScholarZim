@@ -5,7 +5,6 @@ namespace App\Services\ScholarFit\Matchers;
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\DimensionResult;
-use App\Services\ScholarFit\EligibilityEvaluator;
 use App\Services\ScholarFit\Taxonomy\EducationLadder;
 
 /**
@@ -33,7 +32,7 @@ final class EducationMatcher
                 $weight,
                 'No education level on your profile',
                 'Complete your education level on your profile',
-                EligibilityEvaluator::PROFILE_FIELD,
+                DimensionResult::TARGET_PROFILE,
                 'education_level'
             );
         }
@@ -66,7 +65,7 @@ final class EducationMatcher
                     ? 'Exact match: ' . $targetLevel
                     : 'Requires ' . $targetLevel . '; your profile shows ' . $profileLevel,
                 $same ? null : 'Requires ' . $targetLevel . ' - your profile shows ' . $profileLevel,
-                $same ? null : EligibilityEvaluator::PROFILE_FIELD,
+                $same ? null : DimensionResult::TARGET_PROFILE,
                 $same ? null : 'education_level'
             );
         }
@@ -100,7 +99,7 @@ final class EducationMatcher
                 $weight,
                 'Requires ' . $targetLevel . '; your profile shows ' . $profileLevel,
                 'Requires ' . $targetLevel . ' - your profile shows ' . $profileLevel,
-                EligibilityEvaluator::PROFILE_FIELD,
+                DimensionResult::TARGET_PROFILE,
                 'education_level'
             ),
         };

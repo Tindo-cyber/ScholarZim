@@ -24,7 +24,6 @@
                     <x-nav-item :href="route('opportunities.index')" icon="search" :active="request()->routeIs('opportunities.index')">Browse scholarships</x-nav-item>
                     <x-nav-item :href="route('applications.mine')" icon="file-text" :active="request()->routeIs('applications.mine')">My applications</x-nav-item>
                     <x-nav-item :href="route('applicant.saved')" icon="bookmark" :active="request()->routeIs('applicant.saved')">Saved</x-nav-item>
-                    <x-nav-item :href="route('applicant.savedSearches')" icon="bell" :active="request()->routeIs('applicant.savedSearches*')">Search alerts</x-nav-item>
                     <x-nav-item :href="route('applicant.profile')" icon="person" :active="request()->routeIs('applicant.profile')">My profile</x-nav-item>
                 @endif
 

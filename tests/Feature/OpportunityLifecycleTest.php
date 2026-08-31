@@ -401,7 +401,7 @@ class OpportunityLifecycleTest extends TestCase
         $application = Application::create([
             'user_id' => $this->student->user_id,
             'opportunity_id' => $opportunity->opportunity_id,
-            'application_status' => ApplicationStatus::UNDER_REVIEW,
+            'application_status' => ApplicationStatus::PENDING,
             'submitted_at' => Carbon::now()->subDay(),
         ]);
 

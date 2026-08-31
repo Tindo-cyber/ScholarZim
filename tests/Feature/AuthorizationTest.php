@@ -6,7 +6,6 @@ use App\Models\Application;
 use App\Models\Notification;
 use App\Models\Opportunity;
 use App\Models\SavedScholarship;
-use App\Models\SavedSearch;
 use App\Models\User;
 use App\Policies\ApplicationPolicy;
 use App\Policies\DocumentPolicy;
@@ -14,7 +13,6 @@ use App\Policies\NotificationPolicy;
 use App\Policies\OpportunityPolicy;
 use App\Policies\ReportPolicy;
 use App\Policies\SavedScholarshipPolicy;
-use App\Policies\SavedSearchPolicy;
 use App\Services\OpportunityModerationService;
 use App\Support\AccountStatus;
 use App\Support\ApplicationStatus;
@@ -84,7 +82,7 @@ class AuthorizationTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(
-            ApplicationStatus::SUBMITTED,
+            ApplicationStatus::PENDING,
             $application->fresh()->application_status,
             'the application must be untouched'
         );
@@ -117,40 +115,6 @@ class AuthorizationTest extends TestCase
             ->assertNotFound();
 
         $this->assertFalse($notification->fresh()->is_read);
-    }
-
-    public function test_an_applicant_cannot_delete_another_applicants_saved_search(): void
-    {
-        $search = SavedSearch::create([
-            'user_id' => $this->applicantA->user_id,
-            'name' => 'Engineering awards',
-            'filters' => ['field_of_study' => 'Engineering'],
-            'alerts_enabled' => true,
-            'created_at' => Carbon::now(),
-        ]);
-
-        $this->as($this->applicantB)
-            ->delete('/applicant/saved-searches/' . $search->saved_search_id)
-            ->assertNotFound();
-
-        $this->assertDatabaseHas('saved_searches', ['saved_search_id' => $search->saved_search_id]);
-    }
-
-    public function test_an_applicant_cannot_toggle_another_applicants_alerts(): void
-    {
-        $search = SavedSearch::create([
-            'user_id' => $this->applicantA->user_id,
-            'name' => 'Engineering awards',
-            'filters' => [],
-            'alerts_enabled' => false,
-            'created_at' => Carbon::now(),
-        ]);
-
-        $this->as($this->applicantB)
-            ->post('/applicant/saved-searches/' . $search->saved_search_id . '/toggle')
-            ->assertNotFound();
-
-        $this->assertFalse((bool) $search->fresh()->alerts_enabled);
     }
 
     /** A saved list is per-user, so B removing "A's" save must not touch A's row. */
@@ -207,7 +171,7 @@ class AuthorizationTest extends TestCase
             ])
             ->assertForbidden();
 
-        $this->assertSame(ApplicationStatus::SUBMITTED, $application->fresh()->application_status);
+        $this->assertSame(ApplicationStatus::PENDING, $application->fresh()->application_status);
     }
 
     public function test_a_provider_cannot_download_another_providers_applicant_documents(): void
@@ -333,12 +297,12 @@ class AuthorizationTest extends TestCase
 
         $this->as($this->applicantA)
             ->post('/provider/applications/' . $application->application_id . '/review', [
-                'status' => ApplicationStatus::APPROVED,
+                'status' => ApplicationStatus::ACCEPTED,
                 'reason' => 'Approving myself.',
             ])
             ->assertForbidden();
 
-        $this->assertSame(ApplicationStatus::SUBMITTED, $application->fresh()->application_status);
+        $this->assertSame(ApplicationStatus::PENDING, $application->fresh()->application_status);
     }
 
     // -------------------------------------------------- legitimate access --
@@ -434,16 +398,16 @@ class AuthorizationTest extends TestCase
         ];
     }
 
-    /** A suspended account's API access stops too, rather than outliving it. */
-    public function test_a_suspended_account_loses_api_access(): void
+    /** Suspension takes effect on the live session, not only at the next sign-in. */
+    public function test_a_suspended_account_loses_its_live_session(): void
     {
         $this->as($this->applicantA)
-            ->getJson('/api/v1/me')
+            ->get('/my-applications')
             ->assertOk();
 
         $this->applicantA->update(['account_status' => AccountStatus::SUSPENDED]);
 
-        $this->getJson('/api/v1/me')->assertForbidden();
+        $this->get('/my-applications')->assertRedirect();
     }
 
     public function test_an_administrator_cannot_suspend_themselves(): void
@@ -498,14 +462,10 @@ class AuthorizationTest extends TestCase
     public function test_saved_data_and_notification_policies_are_owner_only(): void
     {
         $saved = new SavedScholarship(['user_id' => $this->applicantA->user_id]);
-        $search = new SavedSearch(['user_id' => $this->applicantA->user_id]);
         $notification = new Notification(['user_id' => $this->applicantA->user_id]);
 
         $this->assertTrue((new SavedScholarshipPolicy())->delete($this->applicantA, $saved));
         $this->assertFalse((new SavedScholarshipPolicy())->delete($this->applicantB, $saved));
-
-        $this->assertTrue((new SavedSearchPolicy())->toggleAlerts($this->applicantA, $search));
-        $this->assertFalse((new SavedSearchPolicy())->toggleAlerts($this->applicantB, $search));
 
         $this->assertTrue((new NotificationPolicy())->view($this->applicantA, $notification));
         $this->assertFalse((new NotificationPolicy())->view($this->applicantB, $notification));
@@ -585,7 +545,7 @@ class AuthorizationTest extends TestCase
         return Application::create([
             'user_id' => $applicant->user_id,
             'opportunity_id' => $opportunity->opportunity_id,
-            'application_status' => ApplicationStatus::SUBMITTED,
+            'application_status' => ApplicationStatus::PENDING,
             'submitted_at' => Carbon::now()->subDay(),
         ]);
     }

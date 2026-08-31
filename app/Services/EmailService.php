@@ -115,11 +115,14 @@ class EmailService
     private function subjectFor(string $type): string
     {
         return match ($type) {
-            'APPLICATION_APPROVED' => 'Your scholarship application was approved',
-            'APPLICATION_AWARDED' => 'You have been awarded a scholarship',
+            'APPLICATION_SUBMITTED' => 'Your application was submitted',
+            'APPLICATION_ACCEPTED' => 'Your scholarship application was accepted',
             'APPLICATION_REJECTED' => 'Update on your scholarship application',
-            'APPLICATION_INTERVIEW' => 'You have been invited to an interview',
             'APPLICATION_WITHDRAWN' => 'An applicant withdrew their application',
+            // Subjects for notification rows written before the workflow was
+            // simplified; nothing new is sent with these types.
+            'APPLICATION_APPROVED', 'APPLICATION_AWARDED' => 'Your scholarship application was accepted',
+            'APPLICATION_INTERVIEW' => 'You have been invited to an interview',
             'INTERVIEW_REMINDER' => 'Your interview is tomorrow',
             'DOCUMENTS_REQUESTED' => 'Documents requested for your application',
             'INFO_REQUESTED' => 'A provider has a question about your application',

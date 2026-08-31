@@ -5,7 +5,6 @@ namespace App\Services\ScholarFit\Matchers;
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\DimensionResult;
-use App\Services\ScholarFit\EligibilityEvaluator;
 use App\Services\ScholarFit\Taxonomy\FieldTaxonomy;
 
 /**
@@ -32,7 +31,7 @@ final class FieldMatcher
                 $weight,
                 'No field of study on your profile',
                 'Add your field of study to your profile',
-                EligibilityEvaluator::PROFILE_FIELD,
+                DimensionResult::TARGET_PROFILE,
                 'field_of_study'
             );
         }
@@ -78,7 +77,7 @@ final class FieldMatcher
             'Targets ' . FieldTaxonomy::label($targetField)
                 . '; your profile shows ' . FieldTaxonomy::label($profileField),
             'Targets ' . $targetField . ' - your profile shows ' . $profileField,
-            EligibilityEvaluator::PROFILE_FIELD,
+            DimensionResult::TARGET_PROFILE,
             'field_of_study'
         );
     }

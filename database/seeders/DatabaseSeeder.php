@@ -156,7 +156,7 @@ class DatabaseSeeder extends Seeder
                     'provider_name' => $provider->full_name,
                     'description' => 'This award covers tuition and a study allowance for the full duration of the '
                         . 'programme. Applicants must be Zimbabwean citizens in financial need with a strong '
-                        . 'academic record. Shortlisted candidates are invited to an interview.',
+                        . 'academic record. Applications are reviewed by the provider, who accepts or declines each one with a reason.',
                     'education_level' => $level,
                     'target_field' => $field,
                     'funding_type' => $funding,
@@ -205,7 +205,7 @@ class DatabaseSeeder extends Seeder
         Application::updateOrCreate(
             ['user_id' => $applicant->user_id, 'opportunity_id' => $opportunity->opportunity_id],
             [
-                'application_status' => ApplicationStatus::UNDER_REVIEW,
+                'application_status' => ApplicationStatus::PENDING,
                 'submitted_at' => Carbon::now()->subDays(5),
                 'personal_statement' => 'I am applying because this award would let me finish my degree without '
                     . 'interrupting my studies to work. I intend to build software for Zimbabwean schools.',

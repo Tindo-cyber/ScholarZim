@@ -11,8 +11,7 @@
                   :filters="$filters"
                   :provider-names="$providerNames"
                   :target-fields="$targetFields"
-                  :result-count="$opportunities->total()"
-                  :can-save-search="true" />
+                  :result-count="$opportunities->total()" />
 
     @if($opportunities->isEmpty())
         <div class="card">
@@ -29,7 +28,7 @@
                     <x-scholarship-card :opportunity="$opportunity"
                                         :saved="in_array($opportunity->opportunity_id, $savedIds, true)"
                                         :applied="in_array($opportunity->opportunity_id, $appliedIds, true)"
-                                        :award="$awards[$opportunity->opportunity_id] ?? null" />
+                                        :accepted="$accepted[$opportunity->opportunity_id] ?? null" />
                 </div>
             @endforeach
         </div>

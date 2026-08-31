@@ -51,7 +51,7 @@ class NotificationDeliveryTest extends TestCase
     {
         $notification = $this->service()->notifyUser(
             $this->student,
-            NotificationType::APPLICATION_APPROVED,
+            NotificationType::APPLICATION_ACCEPTED,
             'Your application was approved.',
             '/applications/1/confirmation',
             1
@@ -60,7 +60,7 @@ class NotificationDeliveryTest extends TestCase
         $this->assertNotNull($notification);
         $this->assertDatabaseHas('notifications', [
             'user_id' => $this->student->user_id,
-            'type' => NotificationType::APPLICATION_APPROVED,
+            'type' => NotificationType::APPLICATION_ACCEPTED,
             'related_id' => 1,
             'is_read' => false,
         ]);
@@ -79,7 +79,7 @@ class NotificationDeliveryTest extends TestCase
 
         $result = $this->service()->notifyUser(
             $this->student,
-            NotificationType::APPLICATION_APPROVED,
+            NotificationType::APPLICATION_ACCEPTED,
             'Your application was approved.'
         );
 
@@ -122,8 +122,8 @@ class NotificationDeliveryTest extends TestCase
     public static function preferenceMatrix(): array
     {
         return [
-            'applications on' => ['email_notify_applications', NotificationType::APPLICATION_APPROVED, true, true],
-            'applications off' => ['email_notify_applications', NotificationType::APPLICATION_APPROVED, false, false],
+            'applications on' => ['email_notify_applications', NotificationType::APPLICATION_ACCEPTED, true, true],
+            'applications off' => ['email_notify_applications', NotificationType::APPLICATION_ACCEPTED, false, false],
             'scholarships on' => ['email_notify_scholarships', NotificationType::NEW_OPPORTUNITY, true, true],
             'scholarships off' => ['email_notify_scholarships', NotificationType::NEW_OPPORTUNITY, false, false],
             'system on' => ['email_notify_system', NotificationType::PROFILE_INCOMPLETE, true, true],
@@ -310,16 +310,16 @@ class NotificationDeliveryTest extends TestCase
     }
 
     /**
-     * The default stays deliberately repeatable. A provider asking a second time
-     * for a document is a new request the applicant has to see, so notifyUser()
-     * must not quietly become idempotent.
+     * The default stays deliberately repeatable. A student re-applying to a
+     * listing they withdrew from is a new submission they have to see, so
+     * notifyUser() must not quietly become idempotent.
      */
     public function test_the_default_path_still_allows_a_deliberate_repeat(): void
     {
-        $this->service()->notifyUser($this->student, NotificationType::DOCUMENTS_REQUESTED, 'Send your transcript.', null, 5);
-        $this->service()->notifyUser($this->student, NotificationType::DOCUMENTS_REQUESTED, 'Still waiting on it.', null, 5);
+        $this->service()->notifyUser($this->student, NotificationType::APPLICATION_SUBMITTED, 'Application sent.', null, 5);
+        $this->service()->notifyUser($this->student, NotificationType::APPLICATION_SUBMITTED, 'Application sent again.', null, 5);
 
-        $this->assertSame(2, Notification::where('type', NotificationType::DOCUMENTS_REQUESTED)->count());
+        $this->assertSame(2, Notification::where('type', NotificationType::APPLICATION_SUBMITTED)->count());
     }
 
     /** The scheduled reminders stay idempotent across repeated runs. */
@@ -334,22 +334,22 @@ class NotificationDeliveryTest extends TestCase
     }
 
     /**
-     * The tally a sweep reports must count people actually nudged, not people
+     * The tally a sweep reports must count people actually notified, not people
      * considered. Suppressing a duplicate and still counting it would make a
      * repeat run look like it had done work.
      */
     public function test_a_repeat_sweep_reports_that_it_sent_nothing(): void
     {
-        $this->artisan('scholarzim:profile-reminders')->assertSuccessful();
-        $afterFirst = Notification::where('type', NotificationType::PROFILE_INCOMPLETE)->count();
+        $this->artisan('scholarzim:deadline-reminders')->assertSuccessful();
+        $afterFirst = Notification::where('type', NotificationType::DEADLINE_REMINDER)->count();
 
-        $this->artisan('scholarzim:profile-reminders')
+        $this->artisan('scholarzim:deadline-reminders')
             ->expectsOutputToContain('0 reminder(s) sent')
             ->assertSuccessful();
 
         $this->assertSame(
             $afterFirst,
-            Notification::where('type', NotificationType::PROFILE_INCOMPLETE)->count()
+            Notification::where('type', NotificationType::DEADLINE_REMINDER)->count()
         );
     }
 
@@ -359,7 +359,7 @@ class NotificationDeliveryTest extends TestCase
     {
         Mail::fake();
 
-        $this->service()->notifyUser($this->student, NotificationType::APPLICATION_APPROVED, 'Approved.');
+        $this->service()->notifyUser($this->student, NotificationType::APPLICATION_ACCEPTED, 'Approved.');
 
         Mail::assertQueued(ScholarZimMail::class);
         Mail::assertNothingSent();
@@ -401,7 +401,7 @@ class NotificationDeliveryTest extends TestCase
 
         try {
             DB::transaction(function () {
-                $this->service()->notifyUser($this->student, NotificationType::APPLICATION_APPROVED, 'Approved.');
+                $this->service()->notifyUser($this->student, NotificationType::APPLICATION_ACCEPTED, 'Approved.');
 
                 throw new \RuntimeException('rolled back after notifying');
             });
@@ -426,7 +426,7 @@ class NotificationDeliveryTest extends TestCase
     private function seedNotifications(int $applications = 0, int $scholarships = 0, int $system = 0): void
     {
         $plan = [
-            NotificationType::APPLICATION_APPROVED => $applications,
+            NotificationType::APPLICATION_ACCEPTED => $applications,
             NotificationType::NEW_OPPORTUNITY => $scholarships,
             NotificationType::PROFILE_INCOMPLETE => $system,
         ];
@@ -435,7 +435,7 @@ class NotificationDeliveryTest extends TestCase
         // them in front of the application rows on an unfiltered first page.
         $order = 0;
 
-        foreach ([NotificationType::APPLICATION_APPROVED, NotificationType::PROFILE_INCOMPLETE, NotificationType::NEW_OPPORTUNITY] as $type) {
+        foreach ([NotificationType::APPLICATION_ACCEPTED, NotificationType::PROFILE_INCOMPLETE, NotificationType::NEW_OPPORTUNITY] as $type) {
             for ($i = 0; $i < $plan[$type]; $i++) {
                 Notification::create([
                     'user_id' => $this->student->user_id,

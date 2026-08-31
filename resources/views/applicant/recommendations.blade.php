@@ -96,10 +96,10 @@
                             </div>
 
                             <div class="col-md-3 d-grid gap-2">
-                                @if($awards[$opportunity->opportunity_id] ?? null)
+                                @if($accepted[$opportunity->opportunity_id] ?? null)
                                     <a class="text-decoration-none"
-                                       href="{{ route('applications.confirmation', $awards[$opportunity->opportunity_id]->application_id) }}">
-                                        <x-status-badge label="Scholarship awarded" tone="success" icon="stars" class="justify-content-center" />
+                                       href="{{ route('applications.confirmation', $accepted[$opportunity->opportunity_id]->application_id) }}">
+                                        <x-status-badge label="Accepted" tone="success" icon="stars" class="justify-content-center" />
                                     </a>
                                 @elseif(in_array($opportunity->opportunity_id, $appliedIds, true))
                                     <x-status-badge label="Applied" tone="success" icon="check-circle" class="justify-content-center" />

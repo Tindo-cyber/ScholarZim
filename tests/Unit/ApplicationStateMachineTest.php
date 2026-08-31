@@ -3,370 +3,248 @@
 namespace Tests\Unit;
 
 use App\Exceptions\InvalidApplicationTransition;
-use App\Support\ApplicationStateMachine as Machine;
-use App\Support\ApplicationStatus as Status;
+use App\Support\ApplicationStateMachine;
+use App\Support\ApplicationStatus;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 /**
- * The transition matrix itself, checked without a database in front of it.
+ * The lifecycle, as rules rather than as HTTP.
  *
- * The pairs are enumerated rather than spot-checked: the point of moving these
- * rules into one class was that nobody could say what the rules were, so the
- * test states all of them and fails the moment the matrix quietly widens.
+ *     PENDING -> ACCEPTED   (provider)
+ *     PENDING -> REJECTED   (provider)
+ *     PENDING -> WITHDRAWN  (applicant)
+ *     WITHDRAWN -> PENDING  (applicant re-applies)
+ *
+ * and nothing else. In particular there is no award step after acceptance, and
+ * neither decision can become the other.
  */
 class ApplicationStateMachineTest extends TestCase
 {
-    /** Every status an application can sit in and still be worked on. */
-    private const LIVE = [
-        Status::SUBMITTED,
-        Status::PENDING,
-        Status::UNDER_REVIEW,
-        Status::DOCUMENTS_REQUESTED,
-        Status::INFO_REQUESTED,
-        Status::SHORTLISTED,
-        Status::INTERVIEW,
-        Status::WAITLISTED,
-    ];
+    private const PROVIDER = ApplicationStateMachine::ACTOR_PROVIDER;
 
-    private const TERMINAL = [
-        Status::APPROVED,
-        Status::AWARDED,
-        Status::REJECTED,
-        Status::WITHDRAWN,
-    ];
+    private const APPLICANT = ApplicationStateMachine::ACTOR_APPLICANT;
 
-    /**
-     * Terminal states with genuinely nothing left. APPROVED is excluded: it is
-     * finished as far as review goes, but the award is still ahead of it.
-     */
-    private const ABSORBING = [
-        Status::AWARDED,
-        Status::REJECTED,
-        Status::WITHDRAWN,
-    ];
+    // ------------------------------------------------- the provider decides --
 
-    // ---------------------------------------------------------------- valid --
-
-    /**
-     * Every live status can reach every review status, self-transitions
-     * included. That breadth is deliberate and load-bearing: providers triage
-     * straight out of the inbox, and saving the same status again is how a
-     * question is re-asked and an interview rescheduled.
-     */
-    #[DataProvider('validProviderTransitions')]
-    public function test_a_provider_may_move_a_live_application_to_any_review_status(string $from, string $to): void
+    public function test_a_provider_can_accept_or_reject_a_pending_application(): void
     {
-        $this->assertTrue(
-            Machine::canTransition($from, $to, Machine::ACTOR_PROVIDER),
-            $from . ' -> ' . $to . ' should be allowed for a provider'
-        );
+        $this->assertTrue(ApplicationStateMachine::canTransition(
+            ApplicationStatus::PENDING,
+            ApplicationStatus::ACCEPTED,
+            self::PROVIDER
+        ));
+
+        $this->assertTrue(ApplicationStateMachine::canTransition(
+            ApplicationStatus::PENDING,
+            ApplicationStatus::REJECTED,
+            self::PROVIDER
+        ));
     }
 
-    public static function validProviderTransitions(): array
-    {
-        $cases = [];
-
-        foreach (self::LIVE as $from) {
-            foreach (Status::REVIEWABLE as $to) {
-                $cases[$from . ' -> ' . $to] = [$from, $to];
-            }
-        }
-
-        return $cases;
-    }
-
-    /** An applicant may pull out of anything that has not been decided. */
-    #[DataProvider('liveStatuses')]
-    public function test_an_applicant_may_withdraw_from_any_live_status(string $from): void
-    {
-        $this->assertTrue(Machine::canTransition($from, Status::WITHDRAWN, Machine::ACTOR_APPLICANT));
-        $this->assertTrue(Machine::canWithdraw($from));
-    }
-
-    public static function liveStatuses(): array
-    {
-        return array_map(static fn (string $s) => [$s], array_combine(self::LIVE, self::LIVE));
-    }
-
-    // ------------------------------------------------------------- terminal --
-
-    /** Nothing a provider can do reaches a finished application. */
-    #[DataProvider('terminalProviderAttempts')]
-    public function test_a_provider_cannot_touch_a_terminal_application(string $from, string $to): void
-    {
-        $this->assertFalse(
-            Machine::canTransition($from, $to, Machine::ACTOR_PROVIDER),
-            $from . ' is terminal and must not accept ' . $to
-        );
-    }
-
-    public static function terminalProviderAttempts(): array
-    {
-        $cases = [];
-
-        foreach (self::TERMINAL as $from) {
-            foreach (Status::REVIEWABLE as $to) {
-                $cases[$from . ' -> ' . $to] = [$from, $to];
-            }
-        }
-
-        return $cases;
-    }
-
-    #[DataProvider('absorbingStatuses')]
-    public function test_an_absorbing_application_offers_a_provider_nothing(string $status): void
-    {
-        $this->assertSame([], Machine::allowedFor($status, Machine::ACTOR_PROVIDER));
-    }
-
-    /** The one move left on an approved application, and the only way to reach it. */
-    public function test_an_approved_application_offers_a_provider_the_award_and_nothing_else(): void
+    public function test_accept_and_reject_are_the_only_moves_a_provider_is_offered(): void
     {
         $this->assertSame(
-            [Status::AWARDED],
-            Machine::allowedFor(Status::APPROVED, Machine::ACTOR_PROVIDER)
+            [ApplicationStatus::ACCEPTED, ApplicationStatus::REJECTED],
+            ApplicationStateMachine::allowedFor(ApplicationStatus::PENDING, self::PROVIDER)
         );
     }
 
-    public static function terminalStatuses(): array
+    /** The point of the whole simplification: acceptance is the last step. */
+    public function test_an_accepted_application_has_nowhere_left_to_go(): void
     {
-        return array_map(static fn (string $s) => [$s], array_combine(self::TERMINAL, self::TERMINAL));
+        $this->assertSame([], ApplicationStateMachine::transitionsFrom(ApplicationStatus::ACCEPTED));
+        $this->assertSame([], ApplicationStateMachine::allowedFor(ApplicationStatus::ACCEPTED, self::PROVIDER));
+        $this->assertFalse(ApplicationStateMachine::canDecide(ApplicationStatus::ACCEPTED));
     }
 
-    public static function absorbingStatuses(): array
+    public function test_an_accepted_application_cannot_become_rejected(): void
     {
-        return array_map(static fn (string $s) => [$s], array_combine(self::ABSORBING, self::ABSORBING));
+        $this->assertFalse(ApplicationStateMachine::canTransition(
+            ApplicationStatus::ACCEPTED,
+            ApplicationStatus::REJECTED,
+            self::PROVIDER
+        ));
     }
 
-    /** A decided application cannot be withdrawn out from under the decision. */
-    #[DataProvider('terminalStatuses')]
-    public function test_a_terminal_application_can_no_longer_be_withdrawn(string $status): void
+    public function test_a_rejected_application_cannot_become_accepted(): void
     {
-        $this->assertFalse(Machine::canWithdraw($status));
-        $this->assertFalse(Machine::canTransition($status, Status::WITHDRAWN, Machine::ACTOR_APPLICANT));
+        $this->assertFalse(ApplicationStateMachine::canTransition(
+            ApplicationStatus::REJECTED,
+            ApplicationStatus::ACCEPTED,
+            self::PROVIDER
+        ));
     }
 
-    // ----------------------------------------------------------------- award --
-
-    public function test_an_approved_application_can_be_awarded_by_its_provider(): void
+    #[DataProvider('decisions')]
+    public function test_a_decided_application_offers_a_provider_nothing(string $status): void
     {
-        $this->assertTrue(Machine::canTransition(Status::APPROVED, Status::AWARDED, Machine::ACTOR_PROVIDER));
-        $this->assertTrue(Machine::canAward(Status::APPROVED));
+        $this->assertSame([], ApplicationStateMachine::allowedFor($status, self::PROVIDER));
     }
 
-    /**
-     * Approval is where the decision, its written reason, and the applicant's
-     * notification are recorded. Awarding from anywhere else would grant a
-     * scholarship with none of them on the record.
-     */
-    #[DataProvider('nonApprovedStatuses')]
-    public function test_an_award_can_only_be_granted_from_approved(string $from): void
-    {
-        $this->assertFalse(
-            Machine::canTransition($from, Status::AWARDED, Machine::ACTOR_PROVIDER),
-            $from . ' must not be awardable'
-        );
-        $this->assertFalse(Machine::canAward($from));
-    }
-
-    public static function nonApprovedStatuses(): array
-    {
-        $statuses = array_merge(self::LIVE, [Status::AWARDED, Status::REJECTED, Status::WITHDRAWN]);
-
-        return array_map(static fn (string $s) => [$s], array_combine($statuses, $statuses));
-    }
-
-    /** The award is the provider's to grant, never the student's to take. */
-    public function test_an_applicant_can_never_award_their_own_application(): void
-    {
-        $this->assertFalse(Machine::canTransition(Status::APPROVED, Status::AWARDED, Machine::ACTOR_APPLICANT));
-        $this->assertSame([], Machine::allowedFor(Status::APPROVED, Machine::ACTOR_APPLICANT));
-    }
-
-    /**
-     * An award is final. Every route back into review, plus the two ways out
-     * that exist elsewhere in the lifecycle, are refused.
-     */
-    #[DataProvider('backwardTargets')]
-    public function test_an_awarded_application_cannot_be_moved_backwards(string $to): void
-    {
-        $this->assertFalse(Machine::canTransition(Status::AWARDED, $to, Machine::ACTOR_PROVIDER));
-        $this->assertFalse(Machine::canTransition(Status::AWARDED, $to, Machine::ACTOR_APPLICANT));
-    }
-
-    public static function backwardTargets(): array
-    {
-        $targets = [
-            Status::UNDER_REVIEW,
-            Status::DOCUMENTS_REQUESTED,
-            Status::INFO_REQUESTED,
-            Status::SHORTLISTED,
-            Status::INTERVIEW,
-            Status::APPROVED,
-            Status::WAITLISTED,
-            Status::REJECTED,
-            Status::WITHDRAWN,
-            Status::SUBMITTED,
-            Status::AWARDED,
-        ];
-
-        return array_map(static fn (string $s) => [$s], array_combine($targets, $targets));
-    }
-
-    /** Having won it is not a reason to apply for it again. */
-    public function test_an_awarded_application_cannot_be_submitted_again(): void
-    {
-        $this->assertFalse(Machine::allowsReapplication(Status::AWARDED));
-        $this->assertNotContains(Status::AWARDED, Machine::reappliableStatuses());
-    }
-
-    // ---------------------------------------------------------------- actors --
-
-    /**
-     * Withdrawal is the applicant's decision alone. A provider who wants rid of
-     * an application rejects it, on the record, with a reason.
-     */
-    #[DataProvider('liveStatuses')]
-    public function test_a_provider_can_never_withdraw_an_application(string $from): void
-    {
-        $this->assertFalse(Machine::canTransition($from, Status::WITHDRAWN, Machine::ACTOR_PROVIDER));
-    }
-
-    /** Nor can a provider push an application back to an intake status. */
-    #[DataProvider('liveStatuses')]
-    public function test_a_provider_cannot_reset_an_application_to_intake(string $from): void
-    {
-        $this->assertFalse(Machine::canTransition($from, Status::SUBMITTED, Machine::ACTOR_PROVIDER));
-        $this->assertFalse(Machine::canTransition($from, Status::PENDING, Machine::ACTOR_PROVIDER));
-    }
-
-    /** The half of the lifecycle the provider owns is closed to the applicant. */
-    #[DataProvider('applicantForbiddenTargets')]
-    public function test_an_applicant_cannot_set_a_review_status(string $from, string $to): void
-    {
-        $this->assertFalse(
-            Machine::canTransition($from, $to, Machine::ACTOR_APPLICANT),
-            'an applicant must not be able to set ' . $to
-        );
-    }
-
-    public static function applicantForbiddenTargets(): array
-    {
-        $cases = [];
-
-        foreach (self::LIVE as $from) {
-            foreach (Status::REVIEWABLE as $to) {
-                $cases[$from . ' -> ' . $to] = [$from, $to];
-            }
-        }
-
-        return $cases;
-    }
-
-    // --------------------------------------------------------- reapplication --
-
-    /**
-     * A rejection is a closed door they may knock on next intake, and a
-     * withdrawal was their own decision to step back. Neither locks the listing.
-     */
-    #[DataProvider('reappliableStatuses')]
-    public function test_a_rejected_or_withdrawn_application_may_be_submitted_again(string $from): void
-    {
-        $this->assertTrue(Machine::allowsReapplication($from));
-        $this->assertTrue(Machine::canTransition($from, Status::SUBMITTED, Machine::ACTOR_APPLICANT));
-    }
-
-    public static function reappliableStatuses(): array
+    public static function decisions(): array
     {
         return [
-            Status::REJECTED => [Status::REJECTED],
-            Status::WITHDRAWN => [Status::WITHDRAWN],
+            'accepted' => [ApplicationStatus::ACCEPTED],
+            'rejected' => [ApplicationStatus::REJECTED],
         ];
     }
 
-    /** An award already granted is not something to apply for a second time. */
-    public function test_an_approved_application_cannot_be_submitted_again(): void
+    // ------------------------------------------------------ actor separation --
+
+    #[DataProvider('decisions')]
+    public function test_an_applicant_can_never_set_a_decision(string $decision): void
     {
-        $this->assertFalse(Machine::allowsReapplication(Status::APPROVED));
-        $this->assertFalse(Machine::canTransition(Status::APPROVED, Status::SUBMITTED, Machine::ACTOR_APPLICANT));
+        $this->assertFalse(ApplicationStateMachine::canTransition(
+            ApplicationStatus::PENDING,
+            $decision,
+            self::APPLICANT
+        ));
     }
 
-    /** Re-applying is the applicant's move; a provider cannot reopen a rejection. */
-    #[DataProvider('reappliableStatuses')]
-    public function test_a_provider_cannot_reopen_a_closed_application(string $from): void
+    public function test_a_provider_can_never_withdraw_an_application(): void
     {
-        $this->assertFalse(Machine::canTransition($from, Status::SUBMITTED, Machine::ACTOR_PROVIDER));
-        $this->assertFalse(Machine::canTransition($from, Status::UNDER_REVIEW, Machine::ACTOR_PROVIDER));
+        $this->assertFalse(ApplicationStateMachine::canTransition(
+            ApplicationStatus::PENDING,
+            ApplicationStatus::WITHDRAWN,
+            self::PROVIDER
+        ));
     }
 
-    /** A live application is not a re-application candidate - it is still open. */
-    #[DataProvider('liveStatuses')]
-    public function test_a_live_application_blocks_a_second_one(string $status): void
+    public function test_a_provider_cannot_reset_an_application_to_pending(): void
     {
-        $this->assertFalse(Machine::allowsReapplication($status));
+        $this->assertFalse(ApplicationStateMachine::canTransition(
+            ApplicationStatus::WITHDRAWN,
+            ApplicationStatus::PENDING,
+            self::PROVIDER
+        ));
     }
 
-    // ------------------------------------------------------------- reporting --
+    // ------------------------------------------------------------ withdrawal --
+
+    public function test_an_applicant_may_withdraw_while_pending(): void
+    {
+        $this->assertTrue(ApplicationStateMachine::canWithdraw(ApplicationStatus::PENDING));
+    }
+
+    #[DataProvider('decisions')]
+    public function test_a_decided_application_can_no_longer_be_withdrawn(string $status): void
+    {
+        $this->assertFalse(ApplicationStateMachine::canWithdraw($status));
+    }
+
+    // -------------------------------------------------------- re-application --
+
+    /** One student plus one scholarship is one application. */
+    #[DataProvider('blockingStatuses')]
+    public function test_a_live_or_decided_application_blocks_a_second_one(string $status): void
+    {
+        $this->assertFalse(ApplicationStateMachine::allowsReapplication($status));
+    }
+
+    public static function blockingStatuses(): array
+    {
+        return [
+            'pending' => [ApplicationStatus::PENDING],
+            'accepted' => [ApplicationStatus::ACCEPTED],
+            'rejected' => [ApplicationStatus::REJECTED],
+        ];
+    }
+
+    public function test_only_a_withdrawal_leaves_the_listing_open_again(): void
+    {
+        $this->assertTrue(ApplicationStateMachine::allowsReapplication(ApplicationStatus::WITHDRAWN));
+        $this->assertSame(
+            [ApplicationStatus::WITHDRAWN],
+            ApplicationStateMachine::reappliableStatuses()
+        );
+    }
+
+    // ------------------------------------------------------------- refusals --
 
     public function test_a_refused_move_names_the_rule_that_stopped_it(): void
     {
-        // Terminal: the status it is leaving is what makes this impossible.
         try {
-            Machine::assertCanTransition(Status::APPROVED, Status::REJECTED, Machine::ACTOR_PROVIDER);
-            $this->fail('an approved application must not be re-decided');
+            ApplicationStateMachine::assertCanTransition(
+                ApplicationStatus::ACCEPTED,
+                ApplicationStatus::REJECTED,
+                self::PROVIDER
+            );
+            $this->fail('A decided application must refuse a second decision.');
         } catch (InvalidApplicationTransition $e) {
-            $this->assertStringContainsString('already approved', $e->getMessage());
+            $this->assertStringContainsString('already accepted', $e->getMessage());
         }
 
-        // Actor: the move exists, but not for this actor.
         try {
-            Machine::assertCanTransition(Status::UNDER_REVIEW, Status::WITHDRAWN, Machine::ACTOR_PROVIDER);
-            $this->fail('a provider must not withdraw an application');
+            ApplicationStateMachine::assertCanTransition(
+                ApplicationStatus::PENDING,
+                ApplicationStatus::ACCEPTED,
+                self::APPLICANT
+            );
+            $this->fail('An applicant must not be able to accept their own application.');
         } catch (InvalidApplicationTransition $e) {
-            $this->assertStringContainsString('provider may not', $e->getMessage());
-        }
-
-        // Matrix: right actor, wrong move.
-        try {
-            Machine::assertCanTransition(Status::REJECTED, Status::WITHDRAWN, Machine::ACTOR_APPLICANT);
-            $this->fail('a rejected application must not be withdrawable');
-        } catch (InvalidApplicationTransition $e) {
-            $this->assertStringContainsString('cannot be moved to', $e->getMessage());
+            $this->assertStringContainsString('applicant may not', $e->getMessage());
         }
     }
 
     public function test_a_permitted_move_throws_nothing(): void
     {
-        Machine::assertCanTransition(Status::SUBMITTED, Status::SHORTLISTED, Machine::ACTOR_PROVIDER);
-        Machine::assertCanTransition(Status::INTERVIEW, Status::INTERVIEW, Machine::ACTOR_PROVIDER);
-        Machine::assertCanTransition(Status::WAITLISTED, Status::WITHDRAWN, Machine::ACTOR_APPLICANT);
+        ApplicationStateMachine::assertCanTransition(
+            ApplicationStatus::PENDING,
+            ApplicationStatus::ACCEPTED,
+            self::PROVIDER
+        );
 
-        $this->expectNotToPerformAssertions();
+        ApplicationStateMachine::assertCanTransition(
+            ApplicationStatus::PENDING,
+            ApplicationStatus::WITHDRAWN,
+            self::APPLICANT
+        );
+
+        $this->addToAssertionCount(2);
     }
 
-    // ---------------------------------------------------------------- legacy --
+    // -------------------------------------------------------- legacy statuses --
 
     /**
-     * application_status is nullable and predates this lifecycle, so rows with
-     * no status - or one written by an older version of the app - stay workable
-     * rather than becoming permanently stuck.
+     * Rows written before the simplification are read through the same rules.
+     * Everything that meant "still being looked at" reviews as PENDING, and the
+     * old APPROVED/AWARDED pair is one accepted application.
      */
-    #[DataProvider('unrecognisedStatuses')]
-    public function test_an_unknown_or_missing_status_is_treated_as_freshly_submitted(?string $status): void
+    #[DataProvider('legacyLiveStatuses')]
+    public function test_a_legacy_live_status_is_still_decidable(?string $status): void
     {
-        $this->assertTrue(Machine::canTransition($status, Status::UNDER_REVIEW, Machine::ACTOR_PROVIDER));
-        $this->assertTrue(Machine::canWithdraw($status));
-        $this->assertFalse(Machine::allowsReapplication($status));
+        $this->assertTrue(ApplicationStateMachine::canDecide($status));
+        $this->assertTrue(ApplicationStateMachine::canWithdraw($status));
     }
 
-    public static function unrecognisedStatuses(): array
+    public static function legacyLiveStatuses(): array
     {
         return [
+            'submitted' => ['SUBMITTED'],
+            'under review' => ['UNDER_REVIEW'],
+            'shortlisted' => ['SHORTLISTED'],
+            'interview' => ['INTERVIEW'],
+            'waitlisted' => ['WAITLISTED'],
+            'documents requested' => ['DOCUMENTS_REQUESTED'],
             'null' => [null],
-            'empty' => [''],
-            'legacy PENDING' => [Status::PENDING],
             'unrecognised' => ['SOMETHING_ELSE'],
+        ];
+    }
+
+    #[DataProvider('legacyAcceptedStatuses')]
+    public function test_a_legacy_approved_or_awarded_status_is_final(string $status): void
+    {
+        $this->assertFalse(ApplicationStateMachine::canDecide($status));
+        $this->assertFalse(ApplicationStateMachine::canWithdraw($status));
+        $this->assertFalse(ApplicationStateMachine::allowsReapplication($status));
+    }
+
+    public static function legacyAcceptedStatuses(): array
+    {
+        return [
+            'approved' => ['APPROVED'],
+            'awarded' => ['AWARDED'],
         ];
     }
 }

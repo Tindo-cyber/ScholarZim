@@ -103,7 +103,7 @@ class DatabaseIntegrityTest extends TestCase
 
         Notification::create([
             'user_id' => $this->student->user_id,
-            'type' => NotificationType::APPLICATION_APPROVED,
+            'type' => NotificationType::APPLICATION_ACCEPTED,
             'message' => 'Kept through suspension.',
             'is_read' => false,
             'created_at' => Carbon::now(),
@@ -128,7 +128,7 @@ class DatabaseIntegrityTest extends TestCase
 
         DB::table('notifications')->insert([
             'user_id' => null,
-            'type' => NotificationType::APPLICATION_APPROVED,
+            'type' => NotificationType::APPLICATION_ACCEPTED,
             'message' => 'Owned by nobody.',
             'is_read' => false,
             'created_at' => Carbon::now(),
@@ -159,7 +159,7 @@ class DatabaseIntegrityTest extends TestCase
 
         DB::table('notifications')->insert([
             'user_id' => 999999,
-            'type' => NotificationType::APPLICATION_APPROVED,
+            'type' => NotificationType::APPLICATION_ACCEPTED,
             'message' => 'Orphan.',
             'is_read' => false,
             'created_at' => Carbon::now(),

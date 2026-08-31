@@ -48,10 +48,8 @@ automatically, alongside a queue worker; locally, run them on demand:
 
 ```bash
 php artisan schedule:run
-php artisan scholarzim:search-alerts         # or invoke a job directly
-php artisan scholarzim:deadline-reminders
-php artisan scholarzim:interview-reminders
-php artisan scholarzim:profile-reminders
+php artisan scholarzim:deadline-reminders            # or invoke a job directly
+php artisan scholarzim:archive-expired-opportunities
 ```
 
 ## Run tests
@@ -79,10 +77,9 @@ Expect 111 tests / 389 assertions passing.
 
 PHP 8.1+ (developed against 8.4) · Laravel 10 · Blade · Bootstrap 5 · Vite · MySQL 8 · Eloquent migrations · PHPUnit · Composer · npm
 
-Reports are generated with dompdf (PDF) and PhpSpreadsheet (Excel). API tokens use Laravel
-Sanctum. The TOTP second factor is implemented in-house (RFC 6238) rather than pulled in as
-a dependency — the algorithm is sixty lines of HMAC-SHA1 and every authenticator app
-implements it identically.
+Reports are generated with dompdf (PDF) and PhpSpreadsheet (Excel). Transactional email
+goes out through the Mailgun HTTP API via Symfony's Mailgun transport, with credentials read
+from the environment.
 
 ## Repository layout
 
@@ -109,6 +106,4 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Set `APP_ENV=production` with envi
 - Demo data is disabled in production (`SCHOLARZIM_DEMO_SEED=false`).
 - SMS notifications log the message rather than dispatching it — the delivery path is wired end to end and awaits a gateway. In-app and email notifications are functional.
 - Email is queued. Nothing is delivered without a worker (`php artisan queue:work`); the Docker image supervises one.
-- The REST API (`/api/v1`, described at `/developers`) is read-only: it exposes the public catalogue plus an applicant's own applications and recommendations behind a Sanctum token. The full admin/provider surface is server-rendered only.
-- Two-factor authentication shows the setup key for manual entry rather than a QR code, so no image-generation dependency is needed; every authenticator app supports entering a key by hand.
 - This codebase is a port of an earlier Spring Boot implementation. The schema, column names, and business rules carried over unchanged.

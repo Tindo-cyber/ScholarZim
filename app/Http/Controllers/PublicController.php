@@ -36,7 +36,7 @@ class PublicController extends Controller
             // An award is a subset of "applied", and the cards say which subset:
             // "Applied" on a scholarship the student has actually won reads as
             // though nothing has happened yet.
-            'awards' => $this->applicationService->awardsByOpportunity($request->user()),
+            'accepted' => $this->applicationService->acceptedByOpportunity($request->user()),
         ]);
     }
 
@@ -52,7 +52,7 @@ class PublicController extends Controller
             'filters' => $filters,
             'savedIds' => $this->savedScholarshipService->savedIds($request->user()),
             'appliedIds' => $this->applicationService->appliedIds($request->user()),
-            'awards' => $this->applicationService->awardsByOpportunity($request->user()),
+            'accepted' => $this->applicationService->acceptedByOpportunity($request->user()),
         ]);
     }
 
@@ -70,7 +70,7 @@ class PublicController extends Controller
             $this->opportunityService->recordView($opportunity);
         }
 
-        $awards = $this->applicationService->awardsByOpportunity($user);
+        $accepted = $this->applicationService->acceptedByOpportunity($user);
 
         return view('public.detail', [
             'opportunity' => $opportunity,
@@ -84,10 +84,10 @@ class PublicController extends Controller
                 'field_of_study' => $opportunity->target_field,
             ])->where('opportunity_id', '!=', $id)->take(3),
             'appliedIds' => $this->applicationService->appliedIds($user),
-            'awards' => $awards,
+            'accepted' => $accepted,
             // The award for this listing specifically, which is what replaces
             // Apply and Quick apply on the page for the student who holds it.
-            'award' => $awards[$id] ?? null,
+            'acceptedApplication' => $accepted[$id] ?? null,
         ]);
     }
 

@@ -35,7 +35,7 @@
             <x-stat-card label="Applications" :value="number_format($stats['totalApplications'])" icon="file-text" tone="warning" />
         </div>
         <div class="col-6 col-xl-3">
-            <x-stat-card label="Approved" :value="number_format($stats['approvedApplications'])" icon="check-circle" tone="success" />
+            <x-stat-card label="Accepted" :value="number_format($stats['acceptedApplications'])" icon="check-circle" tone="success" />
         </div>
     </div>
 

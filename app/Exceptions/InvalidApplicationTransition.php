@@ -9,10 +9,9 @@ use RuntimeException;
  * A refused application status change, phrased for the person who attempted it
  * rather than for a log file.
  *
- * Extends RuntimeException on purpose: the applicant-facing controllers and
- * ApplicationService::bulkUpdateStatus() already treat a RuntimeException as
- * "business rule said no, tell the user", so every existing caller reports this
- * correctly without being taught about a new exception type.
+ * Extends RuntimeException on purpose: the applicant-facing controllers already
+ * treat a RuntimeException as "business rule said no, tell the user", so every
+ * caller reports this correctly without being taught about a new exception type.
  */
 class InvalidApplicationTransition extends RuntimeException
 {

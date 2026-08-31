@@ -23,7 +23,6 @@ class OpportunityService
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly AuditService $auditService,
-        private readonly RecommendationService $recommendations,
     ) {
     }
 
@@ -532,16 +531,14 @@ class OpportunityService
     }
 
     /**
-     * Everything cached about the catalogue: the filter facets, and every
-     * applicant's ScholarFit ranking, which was computed against the set of
-     * listings that just changed.
+     * The filter facets, which are the only thing about the catalogue that is
+     * cached. ScholarFit rankings are computed on demand, so a listing changing
+     * needs nothing done to them.
      */
     public function forgetFacetCaches(): void
     {
         Cache::forget('opportunities.provider_names');
         Cache::forget('opportunities.target_fields');
-
-        $this->recommendations->invalidateCatalog();
     }
 
     private function normalizeCountry(?string $value): string

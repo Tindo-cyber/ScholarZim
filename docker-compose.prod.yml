@@ -53,11 +53,21 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       QUEUE_CONNECTION: ${QUEUE_CONNECTION:-database}
-      MAIL_MAILER: ${MAIL_MAILER:-smtp}
-      MAIL_HOST: ${MAIL_HOST}
+      # Mailgun HTTP API is the documented production transport (see
+      # .env.prod.example). This service declares its environment explicitly and
+      # loads no env_file, so any variable not named here simply never reaches
+      # the container: MAIL_MAILER=mailgun without the three MAILGUN_* values
+      # below starts the app with a transport that has no credentials and fails
+      # on the first verification email.
+      MAIL_MAILER: ${MAIL_MAILER:-mailgun}
+      MAILGUN_DOMAIN: ${MAILGUN_DOMAIN}
+      MAILGUN_SECRET: ${MAILGUN_SECRET}
+      MAILGUN_ENDPOINT: ${MAILGUN_ENDPOINT:-api.mailgun.net}
+      # SMTP fallback, used only when MAIL_MAILER is set to smtp.
+      MAIL_HOST: ${MAIL_HOST:-}
       MAIL_PORT: ${MAIL_PORT:-587}
-      MAIL_USERNAME: ${MAIL_USERNAME}
-      MAIL_PASSWORD: ${MAIL_PASSWORD}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
       MAIL_ENCRYPTION: ${MAIL_ENCRYPTION:-tls}
       MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-noreply@scholarzim.co.zw}
       MAIL_FROM_NAME: ${MAIL_FROM_NAME:-ScholarZim}

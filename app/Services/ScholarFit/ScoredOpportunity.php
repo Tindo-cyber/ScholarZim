@@ -14,24 +14,23 @@ class ScoredOpportunity
     ) {
     }
 
-    /** False when the applicant fails a hard eligibility rule the provider set. */
-    public function isEligible(): bool
+    /** False when the listing states a requirement this profile does not meet. */
+    public function meetsRequirements(): bool
     {
-        return $this->breakdown->isEligible();
+        return $this->breakdown->meetsRequirements();
     }
 
     /**
      * Why this score is what it is, rendered from the same DimensionResult
      * objects the score was summed from.
      *
-     * Eligible:
+     * Requirements met:
      *   Match Score: 86%
      *   Academic: 18/20 - 16 points against a 12-point requirement
      *   ...
-     *   Eligibility: Passed
      *
-     * Not eligible:
-     *   Not eligible
+     * Requirements not met:
+     *   Requirements not met
      *   Reason:
      *   Minimum academic points required: 15. Applicant points: 12.
      */
@@ -54,7 +53,7 @@ class ScoredOpportunity
 
     public function scoreTone(): string
     {
-        if (! $this->isEligible()) {
+        if (! $this->meetsRequirements()) {
             return 'danger';
         }
 

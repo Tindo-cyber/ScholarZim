@@ -5,7 +5,6 @@ namespace App\Services\ScholarFit\Matchers;
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\DimensionResult;
-use App\Services\ScholarFit\EligibilityEvaluator;
 
 /**
  * Whether the applicant is ready to apply, document-wise.
@@ -47,7 +46,7 @@ final class CertificateMatcher
             $weight,
             'No results certificate uploaded',
             'Upload your results certificate before applying',
-            EligibilityEvaluator::PROFILE_DOCUMENTS,
+            DimensionResult::TARGET_DOCUMENTS,
             'documents'
         );
     }

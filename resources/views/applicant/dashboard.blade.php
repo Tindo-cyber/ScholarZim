@@ -32,7 +32,7 @@
             <x-stat-card label="In progress" :value="$stats['inProgress']" icon="hourglass-split" tone="warning" />
         </div>
         <div class="col-6 col-xl-3">
-            <x-stat-card label="Approved" :value="$stats['approved']" icon="check-circle" tone="success" />
+            <x-stat-card label="Accepted" :value="$stats['accepted']" icon="check-circle" tone="success" />
         </div>
         <div class="col-6 col-xl-3">
             <x-stat-card label="Saved" :value="$stats['saved']" icon="bookmark" tone="info"
@@ -63,7 +63,7 @@
                                     <x-scholarship-card :opportunity="$match->opportunity" :score="$match->matchScore"
                                                         :saved="in_array($match->opportunity->opportunity_id, $savedIds, true)"
                                                         :applied="in_array($match->opportunity->opportunity_id, $appliedIds, true)"
-                                                        :award="$awards[$match->opportunity->opportunity_id] ?? null" />
+                                                        :accepted="$accepted[$match->opportunity->opportunity_id] ?? null" />
                                 </div>
                             @endforeach
                         </div>

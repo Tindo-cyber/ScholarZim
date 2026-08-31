@@ -57,7 +57,7 @@ class ScholarFitEligibilityTest extends TestCase
             'requires_results_certificate' => true,
         ]));
 
-        $this->assertTrue($scored->isEligible());
+        $this->assertTrue($scored->meetsRequirements());
         $this->assertGreaterThan(75, $scored->matchScore);
     }
 
@@ -68,9 +68,12 @@ class ScholarFitEligibilityTest extends TestCase
             $this->opportunity(['min_academic_points' => 12])
         );
 
-        $this->assertFalse($scored->isEligible());
+        $this->assertFalse($scored->meetsRequirements());
         $this->assertSame(0, $scored->matchScore);
-        $this->assertStringContainsStringIgnoringCase('not eligible', $scored->breakdown->explanation);
+        $this->assertStringContainsStringIgnoringCase(
+            'requirements not met',
+            $scored->breakdown->explanation
+        );
     }
 
     public function test_being_over_the_age_limit_disqualifies_outright(): void
@@ -80,7 +83,7 @@ class ScholarFitEligibilityTest extends TestCase
             $this->opportunity(['max_age' => 25])
         );
 
-        $this->assertFalse($scored->isEligible());
+        $this->assertFalse($scored->meetsRequirements());
         $this->assertSame(0, $scored->matchScore);
     }
 
@@ -96,27 +99,26 @@ class ScholarFitEligibilityTest extends TestCase
             $this->opportunity(['required_province' => 'Masvingo'])
         );
 
-        $this->assertFalse($wrongCitizenship->isEligible());
-        $this->assertFalse($wrongProvince->isEligible());
+        $this->assertFalse($wrongCitizenship->meetsRequirements());
+        $this->assertFalse($wrongProvince->meetsRequirements());
     }
 
     /**
-     * The important half of the rule: a blank field is not evidence of
-     * ineligibility, so it produces a prompt rather than a refusal.
+     * A requirement we cannot confirm is a requirement not yet met, and the
+     * sentence says which of the two it is: the student is told what to add
+     * rather than that they failed something.
      */
-    public function test_a_missing_field_prompts_instead_of_disqualifying(): void
+    public function test_a_missing_field_says_what_to_add(): void
     {
         $scored = $this->engine()->evaluate(
             $this->profile(['date_of_birth' => null, 'citizenship' => null]),
             $this->opportunity(['max_age' => 25, 'required_citizenship' => 'Zimbabwean'])
         );
 
-        $this->assertTrue($scored->isEligible());
-        $this->assertGreaterThan(0, $scored->matchScore);
+        $missing = implode(' ', $scored->breakdown->unmetRequirements);
 
-        $missing = implode(' ', $scored->breakdown->missingRequirements);
-        $this->assertStringContainsString('date of birth', $missing);
-        $this->assertStringContainsString('citizenship', $missing);
+        $this->assertStringContainsString('add your date of birth', $missing);
+        $this->assertStringContainsString('add your citizenship', $missing);
     }
 
     public function test_a_rule_the_provider_did_not_set_is_never_a_disqualification(): void
@@ -126,7 +128,7 @@ class ScholarFitEligibilityTest extends TestCase
             $this->opportunity()
         );
 
-        $this->assertTrue($scored->isEligible());
+        $this->assertTrue($scored->meetsRequirements());
     }
 
     /** Every shortfall must say where to go and fix it, not just what is wrong. */
@@ -141,11 +143,12 @@ class ScholarFitEligibilityTest extends TestCase
 
         $this->assertContains('profile', $targets);
         $this->assertContains('documents', $targets);
-        $this->assertSame(
-            count($scored->breakdown->missingRequirements),
-            count($scored->breakdown->fixes),
-            'Every plain-text shortfall should have a linkable counterpart.'
-        );
+
+        // Every dimension shortfall appears in the flat list the API and the
+        // reports read, so the two can never describe different things.
+        foreach ($scored->breakdown->fixes as $fix) {
+            $this->assertContains($fix['text'], $scored->breakdown->missingRequirements);
+        }
     }
 
     /** Weights come from config, so retuning the platform actually retunes it. */

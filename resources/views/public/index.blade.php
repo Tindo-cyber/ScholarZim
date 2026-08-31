@@ -115,7 +115,7 @@
                             <x-scholarship-card :opportunity="$opportunity"
                                                 :saved="in_array($opportunity->opportunity_id, $savedIds, true)"
                                                 :applied="in_array($opportunity->opportunity_id, $appliedIds, true)"
-                                                :award="$awards[$opportunity->opportunity_id] ?? null" />
+                                                :accepted="$accepted[$opportunity->opportunity_id] ?? null" />
                         </div>
                     @endforeach
                 </div>
@@ -243,7 +243,7 @@
                             ],
                             [
                                 'What happens after I submit an application?',
-                                'Your application status updates on your dashboard as the provider reviews it — submitted, under review, and a final decision — so you always know where you stand without needing to email anyone.',
+                                'Your application status updates on your dashboard as the provider reviews it — pending, then accepted or rejected with their reason — so you always know where you stand without needing to email anyone.',
                             ],
                             [
                                 'Can I save scholarships to apply for later?',

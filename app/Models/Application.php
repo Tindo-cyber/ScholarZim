@@ -16,6 +16,14 @@ class Application extends Model
 
     public $timestamps = false;
 
+    /**
+     * The simplified workflow writes only these.
+     *
+     * The table still carries columns from the old multi-stage lifecycle
+     * (interview_at, the info-request pair, interview_reminded_at, awarded_at).
+     * They are left in place so historical rows keep their data, but they are
+     * deliberately not fillable: nothing in the current workflow may write them.
+     */
     protected $fillable = [
         'user_id',
         'opportunity_id',
@@ -24,26 +32,16 @@ class Application extends Model
         'personal_statement',
         'document_filename',
         'document_path',
-        'rejection_reason',
-        'interview_at',
+        'decision_reason',
+        'decided_at',
         'withdrawn_at',
         'withdrawal_reason',
-        'info_request',
-        'info_requested_at',
-        'info_response',
-        'info_responded_at',
-        'interview_reminded_at',
-        'awarded_at',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
-        'interview_at' => 'datetime',
+        'decided_at' => 'datetime',
         'withdrawn_at' => 'datetime',
-        'info_requested_at' => 'datetime',
-        'info_responded_at' => 'datetime',
-        'interview_reminded_at' => 'datetime',
-        'awarded_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -64,14 +62,12 @@ class Application extends Model
      * It is a scope rather than a list of statuses copied into each caller
      * because it had been answered two different ways: ApplicationService asked
      * the state machine, while RecommendationService counted every application
-     * regardless of status. The second answer permanently buried every listing a
-     * student had ever been rejected from or withdrawn from - the very listings
-     * the reapplication rule invites them back to.
+     * regardless of status.
      *
-     * A NULL status blocks. The state machine reads an unset status as freshly
-     * submitted, and `NULL NOT IN (...)` is NULL rather than true in SQL, so
-     * saying so explicitly is what keeps the query and the state machine
-     * agreeing about the same row.
+     * A NULL status blocks. The state machine reads an unset status as pending,
+     * and `NULL NOT IN (...)` is NULL rather than true in SQL, so saying so
+     * explicitly is what keeps the query and the state machine agreeing about
+     * the same row.
      */
     public function scopeBlockingReapplication(Builder $query): Builder
     {
@@ -87,6 +83,12 @@ class Application extends Model
         return ! ApplicationStateMachine::allowsReapplication($this->application_status);
     }
 
+    /** The live status, with any legacy value mapped onto it. */
+    public function status(): string
+    {
+        return ApplicationStatus::canonical($this->application_status);
+    }
+
     public function statusLabel(): string
     {
         return ApplicationStatus::displayLabel($this->application_status);
@@ -97,19 +99,35 @@ class Application extends Model
         return ApplicationStatus::badgeTone($this->application_status);
     }
 
-    public function isTerminal(): bool
+    public function isPending(): bool
     {
-        return ApplicationStatus::isTerminal($this->application_status);
+        return $this->status() === ApplicationStatus::PENDING;
+    }
+
+    public function isAccepted(): bool
+    {
+        return $this->status() === ApplicationStatus::ACCEPTED;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status() === ApplicationStatus::REJECTED;
     }
 
     public function isWithdrawn(): bool
     {
-        return $this->application_status === ApplicationStatus::WITHDRAWN;
+        return $this->status() === ApplicationStatus::WITHDRAWN;
     }
 
-    public function isAwarded(): bool
+    /** The provider has accepted or rejected, so nothing more will happen. */
+    public function isDecided(): bool
     {
-        return $this->application_status === ApplicationStatus::AWARDED;
+        return ApplicationStatus::isDecision($this->application_status);
+    }
+
+    public function isTerminal(): bool
+    {
+        return ApplicationStatus::isTerminal($this->application_status);
     }
 
     public function canBeWithdrawn(): bool
@@ -117,27 +135,9 @@ class Application extends Model
         return ApplicationStateMachine::canWithdraw($this->application_status);
     }
 
-    /** Whether the provider may grant the award from where this application sits. */
-    public function canBeAwarded(): bool
+    /** Whether the provider still has a decision to make on this application. */
+    public function awaitsDecision(): bool
     {
-        return ApplicationStateMachine::canAward($this->application_status);
-    }
-
-    /**
-     * The provider asked something and the applicant has not answered it yet.
-     * A later answer sets info_responded_at, which closes the reply box even
-     * though the status only moves when the provider acts on the answer.
-     */
-    public function awaitsApplicantResponse(): bool
-    {
-        return ApplicationStatus::awaitsApplicant($this->application_status)
-            && $this->info_requested_at !== null
-            && ($this->info_responded_at === null
-                || $this->info_responded_at->lt($this->info_requested_at));
-    }
-
-    public function hasUpcomingInterview(): bool
-    {
-        return $this->interview_at !== null && $this->interview_at->isFuture();
+        return ApplicationStateMachine::canDecide($this->application_status);
     }
 }

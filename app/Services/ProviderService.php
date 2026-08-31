@@ -27,12 +27,11 @@ class ProviderService
                 ->where('moderation_status', OpportunityModerationStatus::PENDING)
                 ->count(),
             'applicationsReceived' => (clone $applications)->count(),
-            'pendingApplications' => (clone $applications)->whereIn('application_status', [
-                ApplicationStatus::SUBMITTED,
-                ApplicationStatus::UNDER_REVIEW,
-            ])->count(),
-            'approvedApplications' => (clone $applications)
-                ->where('application_status', ApplicationStatus::APPROVED)
+            'pendingApplications' => (clone $applications)
+                ->where('application_status', ApplicationStatus::PENDING)
+                ->count(),
+            'acceptedApplications' => (clone $applications)
+                ->where('application_status', ApplicationStatus::ACCEPTED)
                 ->count(),
         ];
     }

@@ -424,28 +424,6 @@ class DocumentSecurityTest extends TestCase
         ]);
     }
 
-    /**
-     * The export describes documents rather than locating them. Storage paths
-     * used to be included wholesale via toArray().
-     */
-    public function test_the_data_export_does_not_disclose_storage_paths(): void
-    {
-        $path = app(ApplicantProfileService::class)
-            ->storeDocument($this->student, 'results', $this->pdf('results.pdf'))
-            ->fresh()
-            ->results_certificate_path;
-
-        $body = $this->actingAs($this->student)->get('/account/export-data')->assertOk()->getContent();
-
-        $this->assertStringNotContainsString($path, $body, 'the export must not name where files are kept');
-        $this->assertStringNotContainsString('results_certificate_path', $body);
-        $this->assertStringNotContainsString('certificate_path', $body);
-
-        // It still tells the user what they uploaded.
-        $this->assertStringContainsString('results.pdf', $body);
-        $this->assertStringContainsString('checksum_sha256', $body);
-    }
-
     public function test_replacing_a_document_removes_the_superseded_file_and_its_record(): void
     {
         $profiles = app(ApplicantProfileService::class);
@@ -489,7 +467,7 @@ class DocumentSecurityTest extends TestCase
         return Application::updateOrCreate(
             ['user_id' => $this->student->user_id, 'opportunity_id' => $opportunity->opportunity_id],
             [
-                'application_status' => ApplicationStatus::SUBMITTED,
+                'application_status' => ApplicationStatus::PENDING,
                 'submitted_at' => Carbon::now()->subDay(),
                 'document_path' => $path,
                 'document_filename' => 'transcript.pdf',

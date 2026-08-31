@@ -5,7 +5,6 @@ namespace App\Services\ScholarFit\Matchers;
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\DimensionResult;
-use App\Services\ScholarFit\EligibilityEvaluator;
 use App\Services\ScholarFit\Taxonomy\Locality;
 
 /**
@@ -54,7 +53,7 @@ final class LocationMatcher
                 $weight,
                 'No country on your profile',
                 'Add your country on your profile',
-                EligibilityEvaluator::PROFILE_FIELD,
+                DimensionResult::TARGET_PROFILE,
                 'country'
             );
         }

@@ -85,9 +85,7 @@ class AwardAndDiscoveryTest extends TestCase
         $this->publish('Small Award', 500);
         $this->publish('Large Award', 9000);
 
-        $response = $this->getJson('/api/v1/scholarships?sort=award_desc');
-
-        $titles = collect($response->json('data'))->pluck('title')->all();
+        $titles = $this->searchTitles(['sort' => 'award_desc']);
 
         $this->assertSame('Large Award', $titles[0]);
         $this->assertLessThan(
@@ -104,13 +102,28 @@ class AwardAndDiscoveryTest extends TestCase
     {
         $this->publish('Stated Value Award', 2000);
 
-        $titles = collect($this->getJson('/api/v1/scholarships?min_award=1000')->json('data'))
-            ->pluck('title')
-            ->all();
+        $titles = $this->searchTitles(['min_award' => 1000]);
 
         $this->assertContains('Stated Value Award', $titles);
         // Every seeded listing leaves its value unstated.
         $this->assertNotContains('Zimbabwe Tech Futures Undergraduate Bursary', $titles);
+    }
+
+    /**
+     * Titles from the catalogue search, in the order it returns them.
+     *
+     * Reads the search service the browse pages use. It used to read the public
+     * JSON API, which was removed - the sorting and filtering being asserted are
+     * the catalogue's, not that endpoint's, so they belong here.
+     *
+     * @return array<int, string>
+     */
+    private function searchTitles(array $filters): array
+    {
+        return app(\App\Services\OpportunityService::class)
+            ->searchAll($filters)
+            ->pluck('title')
+            ->all();
     }
 
     public function test_an_unrecognised_sort_falls_back_to_the_default(): void

@@ -28,7 +28,7 @@
                 <div class="col-md-6 col-xl-4">
                     <x-scholarship-card :opportunity="$entry->opportunity" :saved="true"
                                         :applied="in_array($entry->opportunity->opportunity_id, $appliedIds, true)"
-                                        :award="$awards[$entry->opportunity->opportunity_id] ?? null" />
+                                        :accepted="$accepted[$entry->opportunity->opportunity_id] ?? null" />
                 </div>
             @endforeach
         </div>

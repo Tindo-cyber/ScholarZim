@@ -57,7 +57,7 @@ class SettingsService
         $defaults = config('scholarfit.weights');
 
         // Unknown criteria are refused rather than dropped. Silently ignoring
-        // them meant an administrator could set "interview" to 40, be shown a
+        // them meant an administrator could set an unknown criterion to 40, be shown a
         // saved-successfully message, and have the engine keep scoring on the
         // six dimensions it actually knows about.
         $unknown = array_diff(array_keys($weights), array_keys($defaults));

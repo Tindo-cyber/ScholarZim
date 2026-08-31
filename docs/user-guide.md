@@ -23,21 +23,20 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ### While an application is open
 
-- If the provider asks a question or wants more documents, it appears on the application
-  page with a reply box. Answer there — the provider is told straight away.
-- Invited to an interview? **Add to calendar** downloads a `.ics` file that works on a
-  phone with no account signed in. You are also reminded the day before.
-- Changed your mind? **Withdraw application** tells the provider the place is free. You can
-  apply again later while the scholarship is still open.
+- Your application sits at **Pending** until the provider reviews it. There is nothing more
+  to do in the meantime.
+- When they decide, you get an email and a notification. The application page then shows
+  **Accepted** or **Rejected**, together with the reason they wrote.
+- An acceptance is the end of it: the scholarship is yours and there is nothing further to
+  confirm.
+- Changed your mind before a decision? **Withdraw application** tells the provider the place
+  is free. You can apply again later while the scholarship is still open.
 
-### Saved scholarships and search alerts
+### Saved scholarships
 
 - Save opportunities from the browse page for later review (`/applicant/saved`).
-- Filter the list to what you are actually looking for, then press **Alert me about this
-  search** and give it a name. Once a day we check for newly published scholarships that
-  match, and tell you about them (`/applicant/saved-searches`).
-- You are only told about listings published *after* you saved the search, so you never get
-  the back catalogue in one go. Up to ten saved searches per account.
+- Saving is a bookmark — nothing is emailed about it, and you can unsave at any time.
+- You are reminded when a scholarship you saved or applied to is closing within three days.
 
 ### Understanding your match score
 
@@ -54,15 +53,11 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ### Account
 
-- **Settings** → `/account/security` — password, two-factor authentication, email
-  preferences, API tokens, data export, and account deletion.
-- **Two-factor authentication** adds a code from an authenticator app on top of your
-  password. Save the recovery codes shown during setup: each works once, and they are the
-  only way back in if you lose your phone.
+- **Settings** → `/account/security` — password, email preferences, sessions, and account
+  deletion.
 - **Sign out all other sessions** ends every session except the one you are using — useful
   after signing in on a library or lab computer.
-- **Messages** → notification inbox for application updates, deadline reminders, and search
-  alerts.
+- **Messages** → notification inbox for application updates and deadline reminders.
 
 ---
 
@@ -96,18 +91,20 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ### Reviewing applications
 
-- Set **Information requested** or **Documents requested** with a question, and the
-  applicant gets a reply box on their own page. The application stays in your queue and the
-  status stays where you put it — you decide when their answer moves it on.
-- Tick several applications in the inbox and use the bar underneath to move them all at
-  once. Approving, declining, or asking for anything still requires a written message, and
-  each applicant is notified individually. Interviews are scheduled one at a time, since
-  each needs its own date.
+- Open an application from the inbox to see the student, their profile, their documents and
+  their ScholarFit match, then press **Accept** or **Reject**.
+- Both decisions require a written reason. The applicant reads it verbatim, in their email
+  and on their application page.
+- Both decisions are final. Accepting *is* granting the scholarship — there is no separate
+  award step, and a decision cannot be reversed afterwards.
+- Decisions are made one application at a time: a reason written for one student should not
+  be sent to a batch.
 
 ### Dashboard and analytics
 
 - `/provider/dashboard` — overview of opportunities and pending applications.
-- `/provider/analytics` — your funnel from views to saves to applications to awards, a view
+- `/provider/analytics` — views, saves, applications, and how many are pending, accepted or
+  rejected, plus a per-listing breakdown. A view
   trend, per-listing performance, and who is applying by field and level. Your own visits to
   your listings are not counted.
 
@@ -166,7 +163,6 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
   and narrow with the filters; each active filter appears as a chip you can remove on its
   own.
 - Register when ready to apply.
-- Developers: `/developers` documents the read-only JSON API.
 
 ![Landing page](../docs/screenshots/01-landing.png)
 

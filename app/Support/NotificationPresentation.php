@@ -33,10 +33,12 @@ final class NotificationPresentation
         if (str_starts_with($type, 'APPLICATION_')
             || in_array($type, [
                 NotificationType::NEW_APPLICATION,
-                NotificationType::DOCUMENTS_REQUESTED,
-                NotificationType::INFO_REQUESTED,
-                NotificationType::INFO_PROVIDED,
-                NotificationType::INTERVIEW_REMINDER,
+                // Legacy types, so notifications stored before the workflow was
+                // simplified still sit under the Applications email preference.
+                NotificationType::LEGACY_DOCUMENTS_REQUESTED,
+                NotificationType::LEGACY_INFO_REQUESTED,
+                NotificationType::LEGACY_INFO_PROVIDED,
+                NotificationType::LEGACY_INTERVIEW_REMINDER,
             ], true)) {
             return self::CATEGORY_APPLICATIONS;
         }
@@ -96,23 +98,24 @@ final class NotificationPresentation
     public static function icon(?string $type): string
     {
         return match ($type) {
-            NotificationType::APPLICATION_APPROVED, NotificationType::PROVIDER_APPROVED,
-            NotificationType::SCHOLARSHIP_APPROVED => 'check-circle',
-            NotificationType::APPLICATION_AWARDED => 'stars',
+            NotificationType::APPLICATION_ACCEPTED => 'stars',
+            NotificationType::PROVIDER_APPROVED,
+            NotificationType::SCHOLARSHIP_APPROVED,
+            NotificationType::LEGACY_APPLICATION_APPROVED => 'check-circle',
+            NotificationType::LEGACY_APPLICATION_AWARDED => 'stars',
             NotificationType::APPLICATION_REJECTED, NotificationType::PROVIDER_REJECTED,
             NotificationType::SCHOLARSHIP_REJECTED => 'x-circle',
             NotificationType::DEADLINE_REMINDER => 'clock-history',
-            NotificationType::DOCUMENTS_REQUESTED => 'paperclip',
-            NotificationType::INFO_REQUESTED => 'chat',
-            NotificationType::INFO_PROVIDED => 'chat',
             NotificationType::APPLICATION_WITHDRAWN => 'x-circle',
-            NotificationType::INTERVIEW_REMINDER => 'calendar',
             NotificationType::SCHOLARSHIP_SEARCH_MATCH => 'search',
             NotificationType::NEW_OPPORTUNITY => 'stars',
             NotificationType::NEW_APPLICATION, NotificationType::APPLICATION_SUBMITTED => 'inbox',
-            NotificationType::APPLICATION_UNDER_REVIEW => 'hourglass-split',
-            NotificationType::APPLICATION_WAITLISTED => 'list-ol',
-            NotificationType::APPLICATION_INTERVIEW => 'calendar',
+            NotificationType::LEGACY_DOCUMENTS_REQUESTED => 'paperclip',
+            NotificationType::LEGACY_INFO_REQUESTED, NotificationType::LEGACY_INFO_PROVIDED => 'chat',
+            NotificationType::LEGACY_INTERVIEW_REMINDER,
+            NotificationType::LEGACY_APPLICATION_INTERVIEW => 'calendar',
+            NotificationType::LEGACY_APPLICATION_UNDER_REVIEW => 'hourglass-split',
+            NotificationType::LEGACY_APPLICATION_WAITLISTED => 'list-ol',
             NotificationType::PROFILE_INCOMPLETE => 'person-exclamation',
             NotificationType::PROVIDER_APPLICATION, NotificationType::SCHOLARSHIP_PENDING_REVIEW => 'shield-check',
             NotificationType::SCHOLARSHIP_CLOSED => 'lock',
@@ -123,17 +126,21 @@ final class NotificationPresentation
     public static function tone(?string $type): string
     {
         return match ($type) {
-            NotificationType::APPLICATION_APPROVED, NotificationType::APPLICATION_AWARDED,
-            NotificationType::PROVIDER_APPROVED,
-            NotificationType::SCHOLARSHIP_APPROVED => 'success',
+            NotificationType::APPLICATION_ACCEPTED, NotificationType::PROVIDER_APPROVED,
+            NotificationType::SCHOLARSHIP_APPROVED,
+            NotificationType::LEGACY_APPLICATION_APPROVED,
+            NotificationType::LEGACY_APPLICATION_AWARDED => 'success',
             NotificationType::APPLICATION_REJECTED, NotificationType::PROVIDER_REJECTED,
             NotificationType::SCHOLARSHIP_REJECTED => 'danger',
-            NotificationType::DEADLINE_REMINDER, NotificationType::DOCUMENTS_REQUESTED,
-            NotificationType::PROFILE_INCOMPLETE, NotificationType::APPLICATION_WAITLISTED,
-            NotificationType::SCHOLARSHIP_CLOSED, NotificationType::INFO_REQUESTED,
-            NotificationType::INTERVIEW_REMINDER => 'warning',
+            NotificationType::DEADLINE_REMINDER, NotificationType::PROFILE_INCOMPLETE,
+            NotificationType::SCHOLARSHIP_CLOSED,
+            NotificationType::LEGACY_DOCUMENTS_REQUESTED,
+            NotificationType::LEGACY_APPLICATION_WAITLISTED,
+            NotificationType::LEGACY_INFO_REQUESTED,
+            NotificationType::LEGACY_INTERVIEW_REMINDER => 'warning',
             NotificationType::NEW_OPPORTUNITY, NotificationType::NEW_APPLICATION,
-            NotificationType::APPLICATION_INTERVIEW, NotificationType::INFO_PROVIDED,
+            NotificationType::LEGACY_APPLICATION_INTERVIEW,
+            NotificationType::LEGACY_INFO_PROVIDED,
             NotificationType::SCHOLARSHIP_SEARCH_MATCH => 'info',
             NotificationType::APPLICATION_WITHDRAWN => 'secondary',
             default => 'primary',

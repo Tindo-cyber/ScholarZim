@@ -74,7 +74,7 @@ class WorkflowTest extends TestCase
         $this->assertDatabaseHas('applications', [
             'user_id' => $user->user_id,
             'opportunity_id' => $opportunity->opportunity_id,
-            'application_status' => ApplicationStatus::SUBMITTED,
+            'application_status' => ApplicationStatus::PENDING,
         ]);
 
         // Second attempt is refused rather than creating a duplicate.
@@ -97,23 +97,23 @@ class WorkflowTest extends TestCase
         // Approving with no reason is rejected by validation.
         $this->actingAs($provider)
             ->post('/provider/applications/' . $application->application_id . '/review', [
-                'status' => ApplicationStatus::APPROVED,
+                'status' => ApplicationStatus::ACCEPTED,
             ])
             ->assertSessionHasErrors('reason');
 
         $this->actingAs($provider)
             ->post('/provider/applications/' . $application->application_id . '/review', [
-                'status' => ApplicationStatus::APPROVED,
+                'status' => ApplicationStatus::ACCEPTED,
                 'reason' => 'Outstanding academic record.',
             ])
             ->assertRedirect();
 
         $this->assertSame(
-            ApplicationStatus::APPROVED,
+            ApplicationStatus::ACCEPTED,
             $application->fresh()->application_status
         );
 
-        $this->assertDatabaseHas('notifications', ['type' => 'APPLICATION_APPROVED']);
+        $this->assertDatabaseHas('notifications', ['type' => 'APPLICATION_ACCEPTED']);
     }
 
     public function test_scholarfit_scores_a_strong_match_higher_than_a_weak_one(): void

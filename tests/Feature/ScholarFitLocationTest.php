@@ -107,7 +107,7 @@ class ScholarFitLocationTest extends TestCase
 
         $scored = $engine->evaluate($profile->fresh(), $opportunity);
 
-        $this->assertTrue($scored->isEligible(), 'a blank locality must never disqualify');
+        $this->assertTrue($scored->meetsRequirements(), 'a blank locality must never disqualify');
         $this->assertGreaterThan(0, $scored->breakdown->dimension('location')->points());
     }
 

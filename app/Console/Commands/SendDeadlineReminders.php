@@ -7,7 +7,6 @@ use App\Models\Opportunity;
 use App\Models\SavedScholarship;
 use App\Models\User;
 use App\Services\NotificationService;
-use App\Services\SmsService;
 use App\Support\ApplicationStatus;
 use App\Support\NotificationType;
 use App\Support\OpportunityStatus;
@@ -27,14 +26,12 @@ class SendDeadlineReminders extends Command
 
     private const REMINDER_WINDOW_DAYS = 3;
 
-    /** Statuses still worth chasing — terminal outcomes are left alone. */
+    /** Statuses still worth chasing — decided applications are left alone. */
     private const PENDING_STATUSES = [
-        ApplicationStatus::SUBMITTED,
-        ApplicationStatus::UNDER_REVIEW,
         ApplicationStatus::PENDING,
     ];
 
-    public function handle(NotificationService $notifications, SmsService $sms): int
+    public function handle(NotificationService $notifications): int
     {
         $this->info('Running deadline reminder job');
 
@@ -49,8 +46,8 @@ class SendDeadlineReminders extends Command
         foreach ($closingSoon as $opportunity) {
             $deadline = $opportunity->deadline?->toDateString() ?? '';
 
-            $sent += $this->remindPendingApplicants($opportunity, $deadline, $notifications, $sms);
-            $sent += $this->remindSavedNotApplied($opportunity, $deadline, $notifications, $sms);
+            $sent += $this->remindPendingApplicants($opportunity, $deadline, $notifications);
+            $sent += $this->remindSavedNotApplied($opportunity, $deadline, $notifications);
         }
 
         $this->info("Deadline reminder job finished — {$sent} reminder(s) sent");
@@ -61,8 +58,7 @@ class SendDeadlineReminders extends Command
     private function remindPendingApplicants(
         Opportunity $opportunity,
         string $deadline,
-        NotificationService $notifications,
-        SmsService $sms
+        NotificationService $notifications
     ): int {
         $sent = 0;
 
@@ -82,9 +78,7 @@ class SendDeadlineReminders extends Command
                 $opportunity,
                 'Deadline approaching for "' . $opportunity->title . '" (closes ' . $deadline . ').',
                 '/my-applications',
-                'ScholarZim: "' . $opportunity->title . '" closes ' . $deadline . '.',
-                $notifications,
-                $sms
+                $notifications
             );
         }
 
@@ -94,8 +88,7 @@ class SendDeadlineReminders extends Command
     private function remindSavedNotApplied(
         Opportunity $opportunity,
         string $deadline,
-        NotificationService $notifications,
-        SmsService $sms
+        NotificationService $notifications
     ): int {
         $sent = 0;
 
@@ -122,9 +115,7 @@ class SendDeadlineReminders extends Command
                 $opportunity,
                 'Saved scholarship "' . $opportunity->title . '" closes ' . $deadline . '. Apply before the deadline.',
                 '/apply/' . $opportunity->opportunity_id,
-                'ScholarZim: saved "' . $opportunity->title . '" closes ' . $deadline . '.',
-                $notifications,
-                $sms
+                $notifications
             );
         }
 
@@ -136,9 +127,7 @@ class SendDeadlineReminders extends Command
         Opportunity $opportunity,
         string $message,
         string $link,
-        string $smsMessage,
-        NotificationService $notifications,
-        SmsService $sms
+        NotificationService $notifications
     ): bool {
         $opportunityId = $opportunity->opportunity_id;
 
@@ -153,11 +142,6 @@ class SendDeadlineReminders extends Command
             $opportunityId
         );
 
-        if ($sent === null) {
-            return false;
-        }
-        $sms->sendDeadlineReminder($applicant->phone, $smsMessage);
-
-        return true;
+        return $sent !== null;
     }
 }

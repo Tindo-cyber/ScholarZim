@@ -33,25 +33,6 @@ class AccountSecurityTest extends TestCase
         $this->actingAs($this->student)->get('/account/security')->assertOk();
     }
 
-    public function test_a_token_is_shown_once_and_can_be_revoked(): void
-    {
-        $this->actingAs($this->student)
-            ->post('/account/api-tokens', ['token_name' => 'My phone app'])
-            ->assertRedirect()
-            ->assertSessionHas('newApiToken');
-
-        $token = $this->student->fresh()->tokens()->firstOrFail();
-
-        $this->assertSame('My phone app', $token->name);
-        $this->assertDatabaseHas('audit_log', ['action' => AuditAction::API_TOKEN_CREATED]);
-
-        $this->actingAs($this->student)
-            ->delete('/account/api-tokens/' . $token->id)
-            ->assertRedirect();
-
-        $this->assertSame(0, $this->student->fresh()->tokens()->count());
-    }
-
     public function test_signing_out_other_sessions_refuses_a_wrong_password(): void
     {
         $this->actingAs($this->student)
@@ -94,7 +75,7 @@ class AccountSecurityTest extends TestCase
         Application::create([
             'user_id' => $this->student->user_id,
             'opportunity_id' => $opportunity->opportunity_id,
-            'application_status' => ApplicationStatus::SUBMITTED,
+            'application_status' => ApplicationStatus::PENDING,
             'submitted_at' => Carbon::now(),
         ]);
 
@@ -155,11 +136,4 @@ class AccountSecurityTest extends TestCase
         $this->assertDatabaseMissing('users', ['user_id' => $provider->user_id]);
     }
 
-    public function test_the_data_export_still_downloads(): void
-    {
-        $this->actingAs($this->student)
-            ->get('/account/export-data')
-            ->assertOk()
-            ->assertHeader('content-disposition', 'attachment; filename="scholarzim-export.json"');
-    }
 }

@@ -20,6 +20,55 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
+
+            {{--
+                The decision first, because it is the only thing a student comes
+                back to this page for. Both outcomes read the same way: what
+                happened, and the provider's reason for it, word for word.
+            --}}
+            @if($application->isAccepted())
+                <div class="alert alert-success">
+                    <h2 class="h6 fw-semibold mb-1">Congratulations! Your application has been accepted.</h2>
+                    <p class="mb-0">
+                        {{ $application->opportunity?->awardingBody() ?? 'The provider' }} has granted you this
+                        scholarship{{ $application->decided_at ? ' on ' . $application->decided_at->format('d F Y') : '' }}.
+                        They will be in touch about what happens next.
+                    </p>
+                </div>
+            @elseif($application->isRejected())
+                <div class="alert alert-danger">
+                    <h2 class="h6 fw-semibold mb-1">Your application was not successful.</h2>
+                    <p class="mb-0">
+                        This decision is final for this scholarship, but there are others open to you.
+                    </p>
+                </div>
+            @elseif($application->isWithdrawn())
+                <div class="alert alert-secondary">
+                    <h2 class="h6 fw-semibold mb-1">You withdrew this application.</h2>
+                    <p class="mb-0">
+                        The provider was notified. You can apply again while the scholarship is still open.
+                    </p>
+                </div>
+            @else
+                <div class="alert alert-primary">
+                    <h2 class="h6 fw-semibold mb-1">Your application is pending.</h2>
+                    <p class="mb-0">
+                        The provider is reviewing it. You will be notified as soon as they decide.
+                    </p>
+                </div>
+            @endif
+
+            @if($application->isDecided() && $application->decision_reason)
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Reason from the provider</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0">{{ $application->decision_reason }}</p>
+                    </div>
+                </div>
+            @endif
+
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h6 fw-semibold mb-0">Your submission</h2>
@@ -45,108 +94,6 @@
                     @endif
                 </div>
             </div>
-
-            @if($application->isAwarded())
-                <div class="alert alert-success">
-                    <h3 class="h6 fw-semibold mb-1">Scholarship awarded</h3>
-                    <p class="mb-0">
-                        Congratulations &mdash; this scholarship has been awarded to you{{ $application->awarded_at ? ' on ' . $application->awarded_at->format('d F Y') : '' }}.
-                        The provider will be in touch about what happens next.
-                    </p>
-                </div>
-            @elseif($application->application_status === \App\Support\ApplicationStatus::INTERVIEW && $application->interview_at)
-                <div class="alert alert-info">
-                    <h3 class="h6 fw-semibold mb-1">You have been invited to interview</h3>
-                    <p class="mb-1">
-                        <strong>{{ $application->interview_at->format('l, d M Y \a\t g:i A') }}</strong>
-                    </p>
-                    @if($application->rejection_reason)
-                        <p class="mb-2">{{ $application->rejection_reason }}</p>
-                    @endif
-
-                    {{-- Times in the file are UTC, so the reader's calendar shows their own zone. --}}
-                    <a class="btn btn-sm btn-outline-primary d-inline-flex align-items-center gap-1"
-                       href="{{ route('applications.interview.ics', $application->application_id) }}">
-                        <x-icon name="calendar" :size="14" /> Add to calendar
-                    </a>
-                </div>
-            @elseif($application->rejection_reason)
-                <div class="alert alert-danger">
-                    <h3 class="h6 fw-semibold mb-1">Feedback from the provider</h3>
-                    <p class="mb-0">{{ $application->rejection_reason }}</p>
-                </div>
-            @endif
-        </div>
-
-            @if($awaitingResponse)
-                {{--
-                    The provider asked for something. This is the whole exchange:
-                    their question, and one box to answer it in - no email round
-                    trip, and the application stays exactly where it is.
-                --}}
-                <div class="card border-warning mb-4">
-                    <div class="card-header bg-warning-subtle d-flex align-items-center gap-2">
-                        <x-icon name="chat" :size="18" />
-                        <h2 class="h6 fw-semibold mb-0">
-                            {{ $application->application_status === \App\Support\ApplicationStatus::DOCUMENTS_REQUESTED
-                                ? 'The provider needs more documents'
-                                : 'The provider has a question' }}
-                        </h2>
-                    </div>
-                    <div class="card-body">
-                        <blockquote class="border-start border-3 ps-3 mb-4">
-                            <p class="mb-1">{{ $application->info_request }}</p>
-                            <footer class="small text-secondary">
-                                Asked {{ $application->info_requested_at?->diffForHumans() }}
-                            </footer>
-                        </blockquote>
-
-                        <form method="POST" action="{{ route('applications.respond', $application->application_id) }}">
-                            @csrf
-                            <div class="mb-3">
-                                <label class="form-label" for="info-response">Your answer</label>
-                                <textarea class="form-control @error('response') is-invalid @enderror"
-                                          id="info-response" name="response" rows="4" required
-                                          minlength="10" maxlength="3000"
-                                          placeholder="Answer the question, or say when you will send what they asked for."></textarea>
-                                @error('response')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            @if($application->application_status === \App\Support\ApplicationStatus::DOCUMENTS_REQUESTED)
-                                <p class="form-text mb-3">
-                                    Documents are uploaded on
-                                    <a href="{{ route('applicant.profile') }}#documents">your profile</a>; the
-                                    provider can see them as soon as they are there.
-                                </p>
-                            @endif
-
-                            <button class="btn btn-primary" type="submit">Send response</button>
-                        </form>
-                    </div>
-                </div>
-            @elseif($application->info_response)
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2 class="h6 fw-semibold mb-0">Your conversation with the provider</h2>
-                    </div>
-                    <div class="card-body">
-                        <blockquote class="border-start border-3 ps-3 mb-3">
-                            <p class="mb-1">{{ $application->info_request }}</p>
-                            <footer class="small text-secondary">
-                                Provider, {{ $application->info_requested_at?->diffForHumans() }}
-                            </footer>
-                        </blockquote>
-                        <blockquote class="border-start border-3 border-primary ps-3 mb-0">
-                            <p class="mb-1">{{ $application->info_response }}</p>
-                            <footer class="small text-secondary">
-                                You, {{ $application->info_responded_at?->diffForHumans() }}
-                            </footer>
-                        </blockquote>
-                    </div>
-                </div>
-            @endif
 
             @if($application->canBeWithdrawn())
                 <div class="card border-0 bg-body-tertiary">
@@ -174,7 +121,7 @@
                                         Why are you withdrawing? <span class="text-secondary">(optional)</span>
                                     </label>
                                     <input type="text" class="form-control" id="withdraw-reason" name="reason"
-                                           maxlength="500" placeholder="e.g. I accepted another award">
+                                           maxlength="500" placeholder="e.g. I accepted another scholarship">
                                 </div>
                                 <button class="btn btn-danger" type="submit">Yes, withdraw this application</button>
                             </form>
@@ -182,6 +129,7 @@
                     </div>
                 </div>
             @endif
+        </div>
 
         <div class="col-lg-4">
             <div class="card">

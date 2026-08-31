@@ -9,7 +9,6 @@
         "barryvdh/laravel-dompdf": "^3.1",
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^12.61.1",
-        "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10",
         "phpoffice/phpspreadsheet": "^5.9",
         "symfony/http-client": "^8.1",

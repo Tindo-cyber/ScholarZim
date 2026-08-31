@@ -63,7 +63,7 @@ class ApplicationConcurrencyTest extends TestCase
         Application::create([
             'user_id' => $this->student->user_id,
             'opportunity_id' => $opportunity->opportunity_id,
-            'application_status' => ApplicationStatus::SUBMITTED,
+            'application_status' => ApplicationStatus::PENDING,
             'submitted_at' => Carbon::now(),
         ]);
 
@@ -72,7 +72,7 @@ class ApplicationConcurrencyTest extends TestCase
         Application::create([
             'user_id' => $this->student->user_id,
             'opportunity_id' => $opportunity->opportunity_id,
-            'application_status' => ApplicationStatus::SUBMITTED,
+            'application_status' => ApplicationStatus::PENDING,
             'submitted_at' => Carbon::now(),
         ]);
     }
@@ -118,7 +118,7 @@ class ApplicationConcurrencyTest extends TestCase
             DB::table('applications')->insert([
                 'user_id' => $this->student->user_id,
                 'opportunity_id' => $opportunity->opportunity_id,
-                'application_status' => ApplicationStatus::SUBMITTED,
+                'application_status' => ApplicationStatus::PENDING,
                 'submitted_at' => Carbon::now(),
             ]);
         });
@@ -145,7 +145,7 @@ class ApplicationConcurrencyTest extends TestCase
     public function test_a_committed_application_blocks_a_second_submission(): void
     {
         $opportunity = $this->opportunity();
-        $this->application($opportunity, ApplicationStatus::SUBMITTED);
+        $this->application($opportunity, ApplicationStatus::PENDING);
 
         try {
             $this->service()->quickApply($opportunity->opportunity_id, $this->student);
@@ -166,7 +166,7 @@ class ApplicationConcurrencyTest extends TestCase
             DB::table('applications')->insert([
                 'user_id' => $this->student->user_id,
                 'opportunity_id' => $opportunity->opportunity_id,
-                'application_status' => ApplicationStatus::SUBMITTED,
+                'application_status' => ApplicationStatus::PENDING,
                 'submitted_at' => Carbon::now(),
             ]);
         });
@@ -181,7 +181,7 @@ class ApplicationConcurrencyTest extends TestCase
     public function test_a_second_reapplication_cannot_reopen_an_already_reopened_row(): void
     {
         $opportunity = $this->opportunity();
-        $this->application($opportunity, ApplicationStatus::REJECTED);
+        $this->application($opportunity, ApplicationStatus::WITHDRAWN);
 
         $this->service()->quickApply($opportunity->opportunity_id, $this->student);
 
@@ -280,7 +280,7 @@ class ApplicationConcurrencyTest extends TestCase
         );
         $firstPath = $first->document_path;
 
-        $first->update(['application_status' => ApplicationStatus::REJECTED]);
+        $first->update(['application_status' => ApplicationStatus::WITHDRAWN]);
 
         $second = $this->service()->submit(
             $opportunity->opportunity_id,
@@ -304,17 +304,17 @@ class ApplicationConcurrencyTest extends TestCase
      */
     public function test_a_second_decision_on_a_decided_application_neither_writes_nor_notifies(): void
     {
-        $application = $this->application($this->opportunity(), ApplicationStatus::UNDER_REVIEW);
+        $application = $this->application($this->opportunity(), ApplicationStatus::PENDING);
 
-        $this->service()->updateStatus(
+        $this->service()->decide(
             $application->application_id,
-            ApplicationStatus::APPROVED,
+            ApplicationStatus::ACCEPTED,
             'Outstanding record.',
             $this->provider
         );
 
         try {
-            $this->service()->updateStatus(
+            $this->service()->decide(
                 $application->application_id,
                 ApplicationStatus::REJECTED,
                 'Actually, no.',
@@ -322,15 +322,15 @@ class ApplicationConcurrencyTest extends TestCase
             );
             $this->fail('the second decision should have been refused');
         } catch (InvalidApplicationTransition $e) {
-            $this->assertStringContainsString('already approved', $e->getMessage());
+            $this->assertStringContainsString('already accepted', $e->getMessage());
         }
 
-        $this->assertSame(ApplicationStatus::APPROVED, $application->fresh()->application_status);
+        $this->assertSame(ApplicationStatus::ACCEPTED, $application->fresh()->application_status);
 
         $this->assertSame(
             1,
             Notification::where('user_id', $this->student->user_id)
-                ->where('type', NotificationType::APPLICATION_APPROVED)
+                ->where('type', NotificationType::APPLICATION_ACCEPTED)
                 ->count()
         );
         $this->assertSame(
@@ -353,7 +353,7 @@ class ApplicationConcurrencyTest extends TestCase
      */
     public function test_a_failed_status_change_rolls_back_and_stays_silent(): void
     {
-        $application = $this->application($this->opportunity(), ApplicationStatus::UNDER_REVIEW);
+        $application = $this->application($this->opportunity(), ApplicationStatus::PENDING);
 
         Application::updated(function () {
             throw new RuntimeException('failed after the status was written');
@@ -362,9 +362,9 @@ class ApplicationConcurrencyTest extends TestCase
         $before = Notification::count();
 
         try {
-            $this->service()->updateStatus(
+            $this->service()->decide(
                 $application->application_id,
-                ApplicationStatus::APPROVED,
+                ApplicationStatus::ACCEPTED,
                 'Outstanding record.',
                 $this->provider
             );
@@ -374,7 +374,7 @@ class ApplicationConcurrencyTest extends TestCase
         }
 
         $this->assertSame(
-            ApplicationStatus::UNDER_REVIEW,
+            ApplicationStatus::PENDING,
             $application->fresh()->application_status,
             'the status change must not survive its own failure'
         );
@@ -387,7 +387,7 @@ class ApplicationConcurrencyTest extends TestCase
     /** Withdrawing twice writes one withdrawal, one audit line, one notification. */
     public function test_a_second_withdrawal_is_refused_and_notifies_once(): void
     {
-        $application = $this->application($this->opportunity(), ApplicationStatus::UNDER_REVIEW);
+        $application = $this->application($this->opportunity(), ApplicationStatus::PENDING);
 
         $this->service()->withdraw($application->application_id, $this->student, 'Took another award.');
 
@@ -415,15 +415,15 @@ class ApplicationConcurrencyTest extends TestCase
      */
     public function test_a_decision_cannot_overwrite_a_withdrawal_it_never_saw(): void
     {
-        $application = $this->application($this->opportunity(), ApplicationStatus::UNDER_REVIEW);
+        $application = $this->application($this->opportunity(), ApplicationStatus::PENDING);
 
         $this->service()->withdraw($application->application_id, $this->student);
 
         $this->expectException(InvalidApplicationTransition::class);
 
-        $this->service()->updateStatus(
+        $this->service()->decide(
             $application->application_id,
-            ApplicationStatus::APPROVED,
+            ApplicationStatus::ACCEPTED,
             'Approving anyway.',
             $this->provider
         );
@@ -439,7 +439,7 @@ class ApplicationConcurrencyTest extends TestCase
      */
     public function test_a_status_change_whose_audit_cannot_be_written_is_rolled_back(): void
     {
-        $application = $this->application($this->opportunity(), ApplicationStatus::UNDER_REVIEW);
+        $application = $this->application($this->opportunity(), ApplicationStatus::PENDING);
 
         AuditLog::creating(function () {
             throw new RuntimeException('audit table unavailable');
@@ -448,9 +448,9 @@ class ApplicationConcurrencyTest extends TestCase
         $before = Notification::count();
 
         try {
-            $this->service()->updateStatus(
+            $this->service()->decide(
                 $application->application_id,
-                ApplicationStatus::APPROVED,
+                ApplicationStatus::ACCEPTED,
                 'Outstanding record.',
                 $this->provider
             );
@@ -460,41 +460,11 @@ class ApplicationConcurrencyTest extends TestCase
         }
 
         $this->assertSame(
-            ApplicationStatus::UNDER_REVIEW,
+            ApplicationStatus::PENDING,
             $application->fresh()->application_status,
             'the decision must not commit without its audit line'
         );
         $this->assertSame($before, Notification::count(), 'and the applicant must not be told about it');
-    }
-
-    /**
-     * The best-effort trail is still best effort where it has to be. The bulk
-     * summary is written after the per-application transactions have already
-     * committed, so failing it cannot unwind them - losing that one line beats
-     * pretending the batch never happened.
-     */
-    public function test_a_failed_bulk_summary_line_does_not_undo_the_batch(): void
-    {
-        $application = $this->application($this->opportunity(), ApplicationStatus::SUBMITTED);
-        $shortlisted = 0;
-
-        AuditLog::creating(function () use (&$shortlisted) {
-            // Let the per-application line through, fail only the summary.
-            if ($shortlisted > 0) {
-                throw new RuntimeException('audit table unavailable');
-            }
-            $shortlisted++;
-        });
-
-        $result = $this->service()->bulkUpdateStatus(
-            [$application->application_id],
-            ApplicationStatus::SHORTLISTED,
-            'Strong cohort.',
-            $this->provider
-        );
-
-        $this->assertSame(1, $result['updated']);
-        $this->assertSame(ApplicationStatus::SHORTLISTED, $application->fresh()->application_status);
     }
 
     // ------------------------------------------------- profile document swap --

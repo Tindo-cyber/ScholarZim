@@ -8,12 +8,7 @@ namespace App\Services\ScholarFit;
  *
  * Every number and every sentence here comes out of the DimensionResult objects
  * the matchers returned. Nothing is recomputed and nothing is described twice,
- * which is what stops the explanation drifting away from the score the way v1's
- * parallel `reasons` array did.
- *
- * The older accessors are kept because reports, the API and the Blade views read
- * them; they now read through to the same results rather than to a second set of
- * fields that had to be kept in step by hand.
+ * which is what stops the explanation drifting away from the score.
  */
 class MatchBreakdown
 {
@@ -21,28 +16,30 @@ class MatchBreakdown
     public array $dimensionResults = [];
 
     /**
-     * Plain-language list of what is holding the score back.
+     * Requirements the listing states that the applicant does not meet. A
+     * non-empty list forces the match score to zero: a percentage next to "you
+     * do not meet this rule" would be a false number, not a helpful one.
+     *
+     * @var array<int, string>
+     */
+    public array $unmetRequirements = [];
+
+    /**
+     * Everything holding this score back, as plain text: the unmet requirements
+     * first, then the dimensions that scored badly. Reports and the API read
+     * this, so it keeps a flat, stable shape.
      *
      * @var array<int, string>
      */
     public array $missingRequirements = [];
 
     /**
-     * The same list, each entry carrying where to go and fix it. The UI renders
-     * these as links; missingRequirements stays the flat text version so report
-     * exports and the API keep a stable shape.
+     * The dimension shortfalls again, each carrying where to go and fix it. The
+     * UI renders these as links.
      *
      * @var array<int, array{text: string, target: ?string, cta: ?string}>
      */
     public array $fixes = [];
-
-    /**
-     * Hard eligibility rules the applicant fails outright. Non-empty means the
-     * match score is forced to zero - a rule is a gate, not a weighting.
-     *
-     * @var array<int, array{text: string, target: ?string, cta: ?string}>
-     */
-    public array $disqualifiers = [];
 
     /** Dimension => maximum, as configured when this breakdown was scored. */
     public array $weights = [];
@@ -67,9 +64,10 @@ class MatchBreakdown
         return $total;
     }
 
-    public function isEligible(): bool
+    /** True when the applicant meets every requirement the listing states. */
+    public function meetsRequirements(): bool
     {
-        return $this->disqualifiers === [];
+        return $this->unmetRequirements === [];
     }
 
     /** Dimension rows rendered as the score breakdown bars. */
@@ -99,23 +97,47 @@ class MatchBreakdown
         return null;
     }
 
+    public function confidenceLevelFor(int $matchScore): string
+    {
+        if (! $this->meetsRequirements()) {
+            return 'NONE';
+        }
+
+        return match (true) {
+            $matchScore >= (int) config('scholarfit.confidence.high') => 'HIGH',
+            $matchScore >= (int) config('scholarfit.confidence.medium') => 'MEDIUM',
+            default => 'LOW',
+        };
+    }
+
+    public function confidenceLabelFor(int $matchScore): string
+    {
+        return match ($this->confidenceLevelFor($matchScore)) {
+            'NONE' => 'Requirements not met',
+            'HIGH' => 'High confidence',
+            'MEDIUM' => 'Moderate confidence',
+            default => 'Low confidence',
+        };
+    }
+
     /**
      * The full explanation, in the shape the applicant is shown.
      *
-     * Built from dimensionResults and disqualifiers alone. There is deliberately
-     * no second code path here: if the score changes, these lines change with
-     * it, because they are reading the same objects the score was summed from.
+     * Built from dimensionResults and unmetRequirements alone. There is
+     * deliberately no second code path here: if the score changes, these lines
+     * change with it, because they are reading the same objects the score was
+     * summed from.
      *
      * @return array<int, string>
      */
     public function explanationLines(int $matchScore): array
     {
-        if (! $this->isEligible()) {
-            $lines = ['Not eligible', ''];
-            $lines[] = count($this->disqualifiers) === 1 ? 'Reason:' : 'Reasons:';
+        if (! $this->meetsRequirements()) {
+            $lines = ['Requirements not met', ''];
+            $lines[] = count($this->unmetRequirements) === 1 ? 'Reason:' : 'Reasons:';
 
-            foreach ($this->disqualifiers as $blocker) {
-                $lines[] = $blocker['text'];
+            foreach ($this->unmetRequirements as $requirement) {
+                $lines[] = $requirement;
             }
 
             return $lines;
@@ -127,16 +149,14 @@ class MatchBreakdown
             $lines[] = $dimension->scoreLine() . ' - ' . $dimension->detail;
         }
 
-        $lines[] = 'Eligibility: Passed';
-
         return $lines;
     }
 
     /** The same explanation as a single sentence, for lists and exports. */
     public function summaryLine(int $matchScore): string
     {
-        if (! $this->isEligible()) {
-            return 'Not eligible: ' . implode(' ', array_column($this->disqualifiers, 'text'));
+        if (! $this->meetsRequirements()) {
+            return 'Requirements not met: ' . implode(' ', $this->unmetRequirements);
         }
 
         $strong = [];
@@ -185,7 +205,7 @@ class MatchBreakdown
 
     public function confidenceTone(): string
     {
-        if (! $this->isEligible()) {
+        if (! $this->meetsRequirements()) {
             return 'danger';
         }
 

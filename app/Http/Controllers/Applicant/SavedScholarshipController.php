@@ -21,7 +21,7 @@ class SavedScholarshipController extends Controller
         return view('applicant.saved', [
             'saved' => $this->savedScholarshipService->listSaved($request->user()),
             'appliedIds' => $this->applicationService->appliedIds($request->user()),
-            'awards' => $this->applicationService->awardsByOpportunity($request->user()),
+            'accepted' => $this->applicationService->acceptedByOpportunity($request->user()),
         ]);
     }
 

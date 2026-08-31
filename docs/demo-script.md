@@ -48,8 +48,6 @@ Run tests beforehand: `php artisan test` (29 tests should pass).
 3. Open any scholarship detail — show deadline, provider, funding type
 4. Use the **Sort by** control — deadline, then award value — and note the removable filter
    chips and the live result count above them
-5. Mention the API: `/developers` for the human-readable docs, `/api/v1/scholarships` and
-   `/api/v1/openapi.json` for the machine-readable ones
 
 ---
 
@@ -123,7 +121,6 @@ zero-value award.
 
 1. As the student, filter the scholarship list, then press **Alert me about this search**
    and name it
-2. In the terminal: `php artisan scholarzim:search-alerts` — nothing is sent, because
    everything already published counts as seen
 3. Approve a new matching listing as the admin, run the command again — one alert; run it
    a third time — nothing, because the high-water mark has moved
@@ -169,7 +166,6 @@ Cover briefly (see [security.md](security.md)):
 
 Worth demonstrating live if there is time:
 
-1. As the admin, open **Security & privacy** → **Set up two-factor**, add the key to an
    authenticator app, and confirm it
 2. Sign out and back in: the correct password now lands on a challenge page, **not** on the
    dashboard — no session is granted until the code is right

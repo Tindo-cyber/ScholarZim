@@ -9,7 +9,6 @@ use App\Models\Notification;
 use App\Models\Opportunity;
 use App\Models\PasswordResetToken;
 use App\Models\SavedScholarship;
-use App\Models\SavedSearch;
 use App\Models\User;
 use App\Support\AuditAction;
 use App\Support\OpportunityModerationStatus;
@@ -93,7 +92,10 @@ class AccountDeletionService
         DB::transaction(function () use ($user, $userId) {
             Notification::where('user_id', $userId)->delete();
             SavedScholarship::where('user_id', $userId)->delete();
-            SavedSearch::where('user_id', $userId)->delete();
+            // Tables left behind by removed features. Cleaned up by name
+            // rather than through a model, because the models are gone and a
+            // legacy row must still not outlive the account it belongs to.
+            DB::table('saved_searches')->where('user_id', $userId)->delete();
             Application::where('user_id', $userId)->delete();
             EmailVerificationToken::where('user_id', $userId)->delete();
             PasswordResetToken::where('user_id', $userId)->delete();
@@ -104,7 +106,10 @@ class AccountDeletionService
 
             $user->applicantProfile()->delete();
             $user->providerProfile()->delete();
-            $user->tokens()->delete();
+            DB::table('personal_access_tokens')
+                ->where('tokenable_type', User::class)
+                ->where('tokenable_id', $userId)
+                ->delete();
 
             $user->delete();
         });

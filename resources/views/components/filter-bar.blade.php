@@ -4,7 +4,6 @@
     'providerNames' => [],
     'targetFields' => [],
     'resultCount' => null,
-    'canSaveSearch' => false,
 ])
 
 @php
@@ -154,60 +153,7 @@
                 </a>
             @endforeach
 
-            @auth
-                @if($canSaveSearch && auth()->user()->isApplicant())
-                    <button class="btn btn-sm btn-outline-primary ms-auto" type="button"
-                            data-bs-toggle="collapse" data-bs-target="#save-search-panel"
-                            aria-expanded="false" aria-controls="save-search-panel">
-                        <x-icon name="bell" :size="14" /> Alert me about this search
-                    </button>
-                @endif
-            @endauth
         </div>
     @endif
 
-    @auth
-        @if($canSaveSearch && auth()->user()->isApplicant())
-            <div class="collapse mt-3" id="save-search-panel">
-                <form method="POST" action="{{ route('applicant.savedSearches.store') }}" class="card">
-                    @csrf
-
-                    {{--
-                        The filters ride along as hidden fields rather than being
-                        re-read from the referrer, so what is saved is exactly the
-                        search on screen.
-                    --}}
-                    @foreach(collect($filters)->filter(fn ($v) => filled($v)) as $key => $value)
-                        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
-                    @endforeach
-
-                    <div class="card-body">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-12 col-md-6">
-                                <label class="form-label" for="saved-search-name">Name this search</label>
-                                <input type="text" class="form-control" id="saved-search-name" name="name"
-                                       maxlength="120" required
-                                       placeholder="e.g. Masters computing, Zimbabwe">
-                            </div>
-                            <div class="col-12 col-md-3">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="saved-search-alerts"
-                                           name="alerts_enabled" value="1" checked>
-                                    <label class="form-check-label" for="saved-search-alerts">
-                                        Email me new matches
-                                    </label>
-                                </div>
-                            </div>
-                            <div class="col-12 col-md-3 d-grid">
-                                <button class="btn btn-primary" type="submit">Save search</button>
-                            </div>
-                        </div>
-                        <p class="form-text mb-0 mt-2">
-                            Checked once a day. You are only told about listings published after you saved it.
-                        </p>
-                    </div>
-                </form>
-            </div>
-        @endif
-    @endauth
 </div>
