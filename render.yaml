@@ -44,22 +44,48 @@ services:
       # in the image drains the jobs table.
       - key: QUEUE_CONNECTION
         value: database
-      # FYP demo: set to "true" in the Render dashboard to seed sample users/scholarships
+      # Never "true" here. The seeder creates admin@, provider@ and
+      # student@scholarzim.co.zw with a password that is written down in the
+      # README, and it uses updateOrCreate - so every restart would reset those
+      # accounts back to the published credentials on a public URL. It is a demo
+      # fixture for a local database, not something a deployed instance runs.
+      #
+      # The entrypoint refuses it under APP_ENV=production regardless of this
+      # value, and DatabaseSeeder refuses it a second time; this is the outermost
+      # of the three.
       - key: SCHOLARZIM_DEMO_SEED
-        value: "true"
-      # Aiven or any managed MySQL 8
+        value: "false"
+      # Aiven or any managed MySQL 8.
+      #
+      # Host, port, database, user and password all come from the Aiven service
+      # page and are set in the Render dashboard, never here - DB_PASSWORD is the
+      # one real credential in this file's worth of configuration.
+      #
+      # DB_PORT has no default on purpose. Aiven assigns a per-service port
+      # (16599 for this one), so a "3306" baked in here would be wrong for every
+      # Aiven service and would fail as a connection timeout rather than as
+      # anything that mentions a port.
       - key: DB_CONNECTION
         value: mysql
       - key: DB_HOST
         sync: false
       - key: DB_PORT
-        value: "3306"
+        sync: false
       - key: DB_DATABASE
         sync: false
       - key: DB_USERNAME
         sync: false
       - key: DB_PASSWORD
         sync: false
+      # Aiven requires TLS, and this is the CA that verifies it. The certificate
+      # itself is not an environment variable: upload it in the Render dashboard
+      # under Environment -> Secret Files, named aiven-ca.pem, and the runtime
+      # mounts it at the path below. Nothing about it is committed.
+      #
+      # Without this the connection is refused rather than silently downgraded,
+      # so a forgotten secret file fails loudly at boot.
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/secrets/aiven-ca.pem
       # Render blocks outbound SMTP on the free tier, so Mailgun's HTTP API is
       # the real send path. Set MAILGUN_DOMAIN and MAILGUN_SECRET in the
       # dashboard (from the Mailgun control panel); MAILGUN_ENDPOINT only
@@ -76,8 +102,42 @@ services:
         value: noreply@scholarzim.co.zw
       - key: MAIL_FROM_NAME
         value: ScholarZim
-      # Mount a Render persistent disk here so uploaded documents survive deploys
-    disk:
-      name: scholarzim-uploads
-      mountPath: /var/www/html/storage/app
-      sizeGB: 1
+
+# ---------------------------------------------------------------------------
+# UPLOADED FILES ARE NOT PERSISTENT ON THIS PLAN. READ BEFORE RELYING ON THEM.
+# ---------------------------------------------------------------------------
+#
+# There was a `disk:` block here mounting 1GB at /var/www/html/storage/app,
+# which is where FileStorageService writes (the `local` disk's root is
+# storage_path('app')). It has been removed because Render only attaches
+# persistent disks to *paid* instance types, and this service is `plan: free` -
+# the two together are not a valid blueprint, so the deploy would have failed
+# rather than quietly running without a disk.
+#
+# What that costs, stated plainly rather than left to be discovered:
+#
+#   - Everything under storage/app lives on the container's own filesystem and
+#     is gone on every deploy and every restart. That is applicant documents,
+#     results certificates, and provider registration certificates - the files
+#     objectives 3 and 4 are about.
+#   - A free instance also spins down after roughly 15 minutes with no traffic
+#     and comes back with a fresh filesystem, so an upload can disappear within
+#     the hour without anything being deployed at all.
+#   - Database rows in `document_files` will still reference paths whose files
+#     no longer exist. FileStorageService::exists() returns false for those, so
+#     the app reports a missing file rather than erroring - but the file is not
+#     coming back.
+#
+# This is fine for a demo where documents are re-uploaded during the session.
+# It is not fine for anything anyone is expected to keep.
+#
+# To restore persistence, move to a paid instance type and put the block back:
+#
+#     plan: starter
+#     disk:
+#       name: scholarzim-uploads
+#       mountPath: /var/www/html/storage/app
+#       sizeGB: 1
+#
+# Note that attaching a disk also disables zero-downtime deploys and pins the
+# service to a single instance; neither matters at this size.

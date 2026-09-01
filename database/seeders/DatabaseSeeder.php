@@ -18,11 +18,36 @@ use App\Support\RoleNames;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Hash;
+use RuntimeException;
 
 class DatabaseSeeder extends Seeder
 {
+    /**
+     * Demo fixtures for a local database: three accounts, a few listings, one
+     * application. Everything here is deliberately reproducible, which is also
+     * why it must never touch a live one - the accounts carry a password that is
+     * written down in the README, and updateOrCreate means a second run does not
+     * skip them, it resets them back to it.
+     *
+     * The refusal below is the innermost of three. docker/entrypoint.sh will not
+     * call this under APP_ENV=production, and render.yaml ships
+     * SCHOLARZIM_DEMO_SEED=false; this one catches the case neither can see,
+     * which is a person typing `php artisan db:seed` against production.
+     *
+     * It does not gate anything a deployment needs. The three role rows are
+     * inserted by the 2024_01_01_000001 migration, so a fresh production
+     * database is complete after `migrate` alone - ensureRoles() below is a
+     * local convenience, not the source of truth.
+     */
     public function run(): void
     {
+        if (app()->environment('production')) {
+            throw new RuntimeException(
+                'DatabaseSeeder creates demo accounts with a published password and will not run in production. '
+                . 'Roles are created by migrations, so nothing here is required for a deployment.'
+            );
+        }
+
         $this->ensureRoles();
 
         $this->admin();

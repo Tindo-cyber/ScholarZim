@@ -50,15 +50,70 @@ The health check is `/` — the public landing page. Laravel exposes no dedicate
 
 ### Aiven MySQL (recommended with Render)
 
-Aiven requires TLS. Laravel's MySQL driver negotiates it automatically for Aiven's default configuration, so only the host, port, database, user and password need setting. If the provider requires a CA bundle, add `MYSQL_ATTR_SSL_CA` pointing at the PEM file and reference it from `config/database.php`.
+Aiven requires TLS and verifies against its own CA, so five connection variables
+and one certificate are needed. Take the first five from the service's *Connection
+information* page in the Aiven console:
 
-### Render uploads disk (required for certificates)
+| Variable | Where it comes from |
+|----------|---------------------|
+| `DB_CONNECTION` | `mysql` (already set in `render.yaml`) |
+| `DB_HOST` | Aiven service host, e.g. `mysql-….aivencloud.com` |
+| `DB_PORT` | Aiven's **per-service** port — not 3306 |
+| `DB_DATABASE` | `defaultdb` unless you created another |
+| `DB_USERNAME` | `avnadmin` unless you created another |
+| `DB_PASSWORD` | Aiven service password — dashboard only, never a file |
+| `MYSQL_ATTR_SSL_CA` | Path to the CA, set in `render.yaml` to `/etc/secrets/aiven-ca.pem` |
 
-Uploaded documents live on the private `local` disk at `storage/app`. Without a persistent disk they vanish on every deploy, which breaks provider verification and applicant results certificates.
+`DB_PORT` deserves a moment: Aiven assigns a different port per service, and a
+wrong one fails as a connection timeout that says nothing about ports. It has no
+default in `render.yaml` for that reason — set it explicitly.
 
-`render.yaml` already declares the disk:
+**The certificate.** Download `ca.pem` from the Aiven console ("CA certificate"),
+then in the Render dashboard go to **Environment → Secret Files**, add a file named
+`aiven-ca.pem`, and paste the PEM in. Render mounts secret files at
+`/etc/secrets/<filename>` at runtime, which is exactly what `MYSQL_ATTR_SSL_CA`
+already points at. Nothing is committed and nothing is baked into the image.
+
+For local development against Aiven, put the same file at
+`storage/certs/aiven-ca.pem` (gitignored, and excluded from the Docker build
+context) and set `MYSQL_ATTR_SSL_CA=storage/certs/aiven-ca.pem` in `.env`. A
+relative path is resolved against the project root, so it works under both
+`php artisan` and php-fpm.
+
+Leave `MYSQL_ATTR_SSL_CA` unset for a local MySQL: with no value the SSL attribute
+is never passed to the driver and the connection behaves as it always has. With a
+value, a missing or wrong certificate is **refused** rather than downgraded to
+plaintext — a forgotten secret file fails loudly at boot instead of quietly
+sending credentials in the clear.
+
+Verify the connection without touching data:
+
+```bash
+php artisan tinker
+>>> DB::connection()->getPdo();                               # connects, or throws
+>>> DB::select('SHOW STATUS LIKE "Ssl_cipher"');              # non-empty Value = TLS is on
+>>> DB::select('SELECT VERSION() AS v, DATABASE() AS db');
+```
+
+An empty `Ssl_cipher` means the connection is plaintext — check that
+`MYSQL_ATTR_SSL_CA` is set and the file exists at that path.
+
+### Uploaded files are not persistent on the free plan
+
+Uploaded documents live on the private `local` disk at `storage/app`. Render only
+attaches persistent disks to **paid** instance types, and this service is
+`plan: free`, so `render.yaml` declares no disk — see the comment in that file.
+
+Everything under `storage/app` is therefore lost on every deploy and restart, and
+a free instance also spins down after roughly 15 minutes idle and returns with a
+fresh filesystem. That is applicant documents, results certificates and provider
+registration certificates. Rows in `document_files` will still point at paths whose
+files are gone; the app reports a missing file rather than erroring.
+
+To restore persistence, move to a paid instance type and put the disk back:
 
 ```yaml
+plan: starter
 disk:
   name: scholarzim-uploads
   mountPath: /var/www/html/storage/app
@@ -73,7 +128,9 @@ disk:
 | 500 with no detail | Expected in production — `APP_DEBUG=false` hides traces. Read the container logs; the app logs to stderr. |
 | `SQLSTATE[HY000] [2002] Connection refused` | Database host/port wrong, or the managed database has not finished provisioning. The entrypoint retries for 60 seconds before giving up. |
 | Migration fails midway | Inspect the `migrations` table, fix the cause, then redeploy. `php artisan migrate:status` shows exactly what ran. |
-| Uploads disappear after deploy | The persistent disk is not mounted at `/var/www/html/storage/app`. |
+| Uploads disappear after deploy | Expected on `plan: free` — there is no persistent disk. See "Uploaded files are not persistent" above. |
+| `SQLSTATE[HY000] [2002] Cannot connect to MySQL using SSL` | `MYSQL_ATTR_SSL_CA` points at a file that is missing or is not a valid CA. On Render check the Secret File is named `aiven-ca.pem`; locally check the path resolves from the project root. |
+| Connection times out against Aiven | `DB_PORT` is almost certainly still 3306. Aiven assigns a per-service port. |
 | Stale config or routes after a change | The entrypoint warms `config:cache`, `route:cache` and `view:cache`. Redeploy to rebuild them; never edit cached config in place. |
 
 ---
@@ -290,6 +347,12 @@ DB_PORT=3306
 DB_DATABASE=scholarzim
 DB_USERNAME=scholarzim
 DB_PASSWORD=...
+
+# TLS to a managed MySQL. Unset for a plain local/compose MySQL - with no value
+# no SSL attribute is passed and nothing changes. Set it and the server is
+# verified against this CA; a missing or wrong file is refused, never downgraded.
+# Render mounts Secret Files under /etc/secrets/; locally use storage/certs/.
+# MYSQL_ATTR_SSL_CA=/etc/secrets/aiven-ca.pem
 
 # Mail and notifications leave the request that triggered them. The image
 # supervises a worker; without one, queued mail is written and never sent.

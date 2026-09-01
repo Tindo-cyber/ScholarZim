@@ -2,6 +2,33 @@
 
 use Illuminate\Support\Str;
 
+/*
+ * The CA certificate used to verify a managed MySQL server's TLS certificate -
+ * Aiven, PlanetScale, or anything else that requires SSL. Unset for a local
+ * MySQL, which is why the connection's `options` are built with array_filter:
+ * with no value the PDO attribute is not passed at all and the driver connects
+ * exactly as it always has.
+ *
+ * A relative path is resolved against the project root rather than the working
+ * directory, because the working directory is not the same in every context the
+ * app runs in: `php artisan` starts in the project root, but php-fpm starts in
+ * public/. A path like `storage/certs/aiven-ca.pem` would therefore work from
+ * the console and fail under the web server, and the failure surfaces as
+ * "Cannot connect to MySQL using SSL" - which says nothing about a path. An
+ * absolute path (/etc/secrets/... on Render) is passed through untouched.
+ */
+$sslCertificateAuthority = env('MYSQL_ATTR_SSL_CA');
+
+if (is_string($sslCertificateAuthority) && $sslCertificateAuthority !== '') {
+    $isAbsolute = str_starts_with($sslCertificateAuthority, '/')
+        || str_starts_with($sslCertificateAuthority, '\\')
+        || (bool) preg_match('#^[A-Za-z]:[\\\\/]#', $sslCertificateAuthority);
+
+    if (! $isAbsolute) {
+        $sslCertificateAuthority = base_path($sslCertificateAuthority);
+    }
+}
+
 return [
 
     /*
@@ -58,8 +85,12 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => null,
+            // array_filter is what keeps local development unchanged: with no
+            // MYSQL_ATTR_SSL_CA the array is empty and no SSL attribute reaches
+            // the driver. Set it and the driver verifies the server against that
+            // CA - a wrong or missing file is refused rather than downgraded.
             'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_CA => $sslCertificateAuthority,
             ]) : [],
         ],
 

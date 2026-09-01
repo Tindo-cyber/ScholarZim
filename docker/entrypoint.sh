@@ -25,8 +25,25 @@ if [ "${SCHOLARZIM_RUN_MIGRATIONS:-true}" = "true" ]; then
     php artisan migrate --force --no-interaction
 fi
 
+# Demo seeding, and the two conditions it needs.
+#
+# The seeder creates admin@, provider@ and student@scholarzim.co.zw with a
+# password published in the README, and it uses updateOrCreate - so a restart
+# does not skip existing accounts, it resets them back to those credentials.
+# Against a production database on a public URL that is an administrative
+# takeover waiting to be typed in, and it would happen on every deploy.
+#
+# So the flag alone is not enough: production refuses regardless of it. That
+# way a misconfigured dashboard variable, a copied blueprint, or a stray
+# SCHOLARZIM_DEMO_SEED=true in the environment cannot seed a live instance.
+# DatabaseSeeder repeats the check for anyone who runs `php artisan db:seed`
+# by hand, where this script is not involved at all.
 if [ "${SCHOLARZIM_DEMO_SEED:-false}" = "true" ]; then
-    php artisan db:seed --force --no-interaction
+    if [ "${APP_ENV:-production}" = "production" ]; then
+        echo "SCHOLARZIM_DEMO_SEED is set but APP_ENV=production - refusing to seed demo accounts."
+    else
+        php artisan db:seed --force --no-interaction
+    fi
 fi
 
 php artisan storage:link --no-interaction 2>/dev/null || true

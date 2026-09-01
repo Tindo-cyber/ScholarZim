@@ -32,3 +32,9 @@ docs/
 docker-compose*.yml
 cookies.txt
 debug-*.log
+
+# Local CA certificates for managed MySQL. Never baked into an image - on
+# Render the certificate arrives as a mounted secret file instead.
+/storage/certs/*
+!/storage/certs/.gitignore
+!/storage/certs/README.md
