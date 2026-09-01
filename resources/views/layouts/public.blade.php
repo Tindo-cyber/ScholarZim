@@ -44,6 +44,7 @@
             </ul>
 
             <div class="d-flex flex-wrap align-items-center gap-2">
+                <x-install-app />
                 <x-theme-toggle />
 
                 @auth

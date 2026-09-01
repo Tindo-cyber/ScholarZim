@@ -51,7 +51,15 @@
                         <h2 class="h6 fw-semibold mb-0">{{ $title }}</h2>
                     </div>
                     <div class="card-body">
-                        <div class="d-flex align-items-end gap-2" style="height: 12rem;">
+                        {{--
+                            gap-1 below sm, gap-2 above. Twelve months of bars and
+                            twelve labels leave 11 gaps; at 8px each that is 88px of
+                            the 320px a small phone has, and the labels - unlike the
+                            bars - cannot shrink below their own text, so the row ran
+                            2px past the viewport. The two rows must carry the same
+                            gap or the labels stop lining up with their bars.
+                        --}}
+                        <div class="d-flex align-items-end gap-1 gap-sm-2" style="height: 12rem;">
                             @foreach($barChart($series) as $bar)
                                 <div class="flex-fill d-flex flex-column justify-content-end align-items-center h-100"
                                      title="{{ $bar['label'] }}: {{ $bar['value'] }}">
@@ -64,7 +72,7 @@
                             @endforeach
                         </div>
 
-                        <div class="d-flex gap-2 mt-2">
+                        <div class="d-flex gap-1 gap-sm-2 mt-2">
                             @foreach($series['labels'] as $label)
                                 <span class="flex-fill text-center text-secondary" style="font-size: .625rem;">
                                     {{ Str::before($label, ' ') }}

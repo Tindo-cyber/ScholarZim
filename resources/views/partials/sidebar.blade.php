@@ -55,6 +55,11 @@
                     @endif
                 </x-nav-item>
                 <x-nav-item :href="route('account.security')" icon="lock" :active="request()->routeIs('account.*')">Security &amp; privacy</x-nav-item>
+
+                {{-- Stays hidden unless the browser offers an install; see components/install-app. --}}
+                <li class="nav-item mt-2 px-2">
+                    <x-install-app class="btn btn-sm btn-outline-primary w-100 d-flex align-items-center justify-content-center gap-2" />
+                </li>
             </ul>
         </nav>
 

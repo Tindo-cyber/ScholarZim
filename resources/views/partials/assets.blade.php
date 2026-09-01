@@ -18,6 +18,27 @@
 <link rel="stylesheet" href="{{ asset('assets/bvite/css/bvite-theme.css') }}">
 
 {{--
+    Installable-app metadata. It lives here, in the one partial every layout
+    includes, for the same reason the stylesheets do: a browser only offers to
+    install a site whose manifest it found, and a layout that quietly omitted the
+    link would be installable everywhere except on the page a reader happened to
+    be on when they went looking for the button.
+
+    theme-color paints the Android status bar and the splash screen; the two
+    apple-mobile-web-app-* lines are what make an iOS home-screen launch open
+    without Safari's chrome, since iOS reads those rather than the manifest's
+    `display`. apple-touch-icon is likewise iOS-only - it ignores the manifest
+    icons - so it is the one icon that has to be named in the head.
+--}}
+<link rel="manifest" href="{{ route('pwa.manifest') }}">
+<meta name="theme-color" content="{{ \App\Support\Pwa::THEME_COLOR }}">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ScholarZim">
+<link rel="apple-touch-icon" href="{{ asset('assets/img/apple-touch-icon.png') }}">
+
+{{--
     ScholarZim's own CSS and JS, bundled by Vite so they are minified and
     content-hashed - a deploy can no longer serve a stale stylesheet out of a
     browser cache. The BVite vendor theme above ships compiled and is never

@@ -31,6 +31,7 @@ class SourceAssetController extends Controller
         'profile-form.js' => ['js/profile-form.js', 'text/javascript'],
         'scholarfit-weights.js' => ['js/scholarfit-weights.js', 'text/javascript'],
         'bulk-select.js' => ['js/bulk-select.js', 'text/javascript'],
+        'pwa.js' => ['js/pwa.js', 'text/javascript'],
     ];
 
     /** The scripts the fallback loads, in the order app.js imports them. */
@@ -39,6 +40,7 @@ class SourceAssetController extends Controller
         'profile-form.js',
         'scholarfit-weights.js',
         'bulk-select.js',
+        'pwa.js',
     ];
 
     public function show(string $asset): Response

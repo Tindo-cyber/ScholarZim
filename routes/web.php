@@ -42,6 +42,19 @@ Route::get('/assets/source/{asset}', [\App\Http\Controllers\SourceAssetControlle
     ->name('assets.source');
 
 /*
+ * Installable-app files. Public by necessity - a browser fetches the manifest
+ * and registers the worker before anyone signs in - and public by design: none
+ * of the three reads a session or returns a record. See PwaController.
+ *
+ * The worker is registered at the site root because a service worker may only
+ * control the path it was served from and below; moved into a subdirectory it
+ * would stop seeing the navigations it exists to answer.
+ */
+Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class, 'manifest'])->name('pwa.manifest');
+Route::get('/service-worker.js', [\App\Http\Controllers\PwaController::class, 'serviceWorker'])->name('pwa.service-worker');
+Route::get('/offline', [\App\Http\Controllers\PwaController::class, 'offline'])->name('pwa.offline');
+
+/*
 |--------------------------------------------------------------------------
 | Guest authentication
 |--------------------------------------------------------------------------

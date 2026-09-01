@@ -382,6 +382,31 @@ main {
     border-color: var(--bs-success-border-subtle) !important;
 }
 
+/* ---------- Wide gutters inside a full-width container ---------- */
+
+/*
+ * A .row with g-5 sets a 48px gutter and pulls -24px into its container, but a
+ * .container only ever carries 12px of padding. Bootstrap's contract is that
+ * the two match, and it holds up to md purely by accident of geometry: from md
+ * the container takes a fixed max-width and centres, so the extra 24px is
+ * absorbed by the margin either side. Below that the container is the full
+ * viewport, the row is 12px wider than the screen at each edge, and every phone
+ * gets a horizontal scrollbar on the landing page - measured at 320, 375, 390
+ * and 412, and clean again at 768.
+ *
+ * Capping the horizontal gutter is the fix rather than overflow-x: hidden,
+ * which would hide the symptom and take the sticky header's positioning context
+ * with it. Only --bs-gutter-x is touched: the columns are stacked at this width
+ * so the horizontal gutter is doing nothing visible, while the vertical rhythm
+ * g-5 was chosen for is left alone.
+ */
+@media (max-width: 767.98px) {
+    .row.g-5,
+    .row.gx-5 {
+        --bs-gutter-x: 1.5rem;
+    }
+}
+
 /* ---------- Tables that become cards on a phone ---------- */
 
 /*

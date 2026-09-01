@@ -339,13 +339,66 @@ Design details worth knowing:
 - A print stylesheet strips the navigation and controls and prints link URLs, for students
   who need a paper copy of an application or a decision.
 
+## Installing it as an app
+
+ScholarZim is a Progressive Web App. On a phone, Chrome's **Add to Home Screen** — or the
+**Install app** button that appears in the navigation once the browser offers it — installs
+it as a standalone app with its own icon and no browser chrome. It is the same site, the
+same server and the same database either way; installing changes how it is launched, not
+what it does.
+
+Three files make that work, all served by `PwaController` rather than dropped into
+`public/`, so their content types are correct and the worker can carry a build stamp:
+
+| Path | What it is |
+|------|------------|
+| `/manifest.webmanifest` | Name, theme colour, and the icons, from `App\Support\Pwa` |
+| `/service-worker.js` | `resources/pwa/service-worker.js`, with its version and precache list prepended |
+| `/offline` | The page shown when a navigation cannot reach the server |
+
+Icons are generated from the same geometry as the `<x-brand-mark />` component by
+`php artisan scholarzim:pwa-icons`, so the home-screen icon cannot drift from the mark in the
+navigation bar. They are committed, so a deploy does not have to run anything.
+
+**What is cached, and what deliberately is not.** The worker holds only files that are
+identical for every visitor: the vendor theme, the content-hashed Vite bundle, the icons and
+the offline page. **No HTML page is ever cached** — not a dashboard, not an application, not
+a provider's inbox. Pages are where the private data is, and a cached page outlives the
+session that was allowed to see it, which on a shared phone is the whole problem. So
+navigations always go to the network, and when the network is gone the reader gets the
+offline page rather than a stale copy of somebody's application history. Anything that is
+not a same-origin GET — every form post, every upload, every document download, every
+cross-origin request — is not intercepted at all.
+
+**Offline support is limited to that.** Signing in, registering, applying, provider
+decisions, admin actions, uploads, password reset and email verification all need the server
+and are not available offline. Nothing is queued for later; the offline page says so.
+
+Cache invalidation rides on the existing build. `Pwa::cacheVersion()` fingerprints the
+worker source plus every precached URL and the contents of any that are not already
+content-hashed, so a deploy changes the version, the old caches are deleted on activate, and
+an installed app cannot keep serving the previous build. There is no version constant to
+remember to bump.
+
+The service worker needs a secure context: it runs on `localhost` over plain HTTP for
+development and requires HTTPS in production, which Render terminates at its load balancer.
+No URL is hard-coded anywhere — the manifest and precache list are built with `url()` and
+`asset()`, so they follow `APP_URL` and the request host.
+
+To check it by hand in Chrome or Edge: open the site, then **DevTools → Application**.
+*Manifest* should list the name and icons with no errors, *Service workers* should show one
+activated worker scoped to `/`, and *Cache storage* should hold one `scholarzim-precache-*`
+entry containing `/offline` and the assets. Tick **Offline** in the Network panel and
+navigate: the offline page should appear, styled. The install button appears in the address
+bar (or under the browser menu) once the manifest and worker are both in place.
+
 ## Tests
 
 ```bash
 php artisan test
 ```
 
-488 tests, 1,476 assertions (one skipped on Windows only).
+532 tests, 1,743 assertions (one skipped on Windows only).
 
 - `SmokeTest` renders every authenticated page for each role and checks the role guards.
 - `WorkflowTest` covers the moderation gate, the apply-once rule, provider decisions, and
@@ -362,6 +415,13 @@ php artisan test
 - `TransactionalEmailTest` asserts at the mailer that the provider is emailed when a student
   applies, the student is emailed on acceptance and rejection, administrators are emailed
   when a provider registers, and that no mail credential is hard-coded.
+- `PwaTest` covers the installable layer: that the manifest is complete and correctly typed,
+  that every icon it names is on disk at the size it claims, that the worker is served from
+  the root with its version stamp, and that the version moves when a precached file changes.
+  Most of it is about what must *not* happen — that the precache holds nothing but public
+  static assets, that navigations are never written to a cache, that non-GET and
+  cross-origin requests are not intercepted, and that the offline page renders identically
+  signed in and signed out.
 - `RecommendationTest` covers what reaches the recommendations page: usable percentages,
   best-first order, and the listings deliberately left out.
 - `ScholarFitEligibilityTest` is the scoring truth table: which requirements zero a match,
