@@ -6,9 +6,66 @@ cd /var/www/html
 # APP_KEY is required before anything touches the session or encrypter. In
 # production it should come from the environment; this only covers the case
 # where the platform has not been given one yet.
-if [ -z "${APP_KEY}" ] && ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
-    echo "APP_KEY is not set — generating an ephemeral one (sessions will not survive a restart)."
-    php artisan key:generate --force --no-interaction || true
+#
+# The key is generated into the environment, not written to a file. The obvious
+# `key:generate --force` does not work here: it edits .env, and there is no .env
+# in the image (.dockerignore excludes it), so it failed, the `|| true` swallowed
+# the failure, and the container carried on with no key at all - after printing a
+# line claiming it had generated one. Every request then died on
+# MissingAppKeyException, including the health check, which is at least loud;
+# what was not loud was the log saying the opposite of what had happened.
+#
+# Exporting is enough to reach everything that matters: config:cache below bakes
+# the value into the cached config, and php-fpm is configured with clear_env=no
+# so workers inherit it either way.
+if [ -z "${APP_KEY:-}" ] && ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
+    APP_KEY="$(php artisan key:generate --show --no-interaction)"
+    export APP_KEY
+
+    echo "APP_KEY was not provided; generated an ephemeral one for this container."
+    echo "  Sessions end at the next restart, and separate instances would not share it."
+    echo "  Set APP_KEY in the platform environment for anything that outlives a deploy."
+fi
+
+# Put the database CA somewhere the web worker can actually read it.
+#
+# Render mounts Secret Files as root-only (-rw------- root root), and everything
+# in this script runs as root - so `migrate` opens the CA happily and the deploy
+# looks healthy. php-fpm then serves requests as www-data, which cannot read it,
+# and every request that touches the database dies on
+#
+#     PDOException: failed loading cafile stream: `/etc/secrets/aiven-ca.pem'
+#     SQLSTATE[HY000] [2002] Cannot connect to MySQL using SSL
+#
+# The failure is invisible from the deploy log: migrations report success, the
+# health check does not touch the database and returns 200, the platform calls
+# the service live - and every real page is a 500.
+#
+# So the certificate is copied to a path owned by www-data and mode 400, and the
+# app is pointed at the copy. This is not a weakening of TLS: it is the same CA,
+# still verified. A CA certificate is a public document - it is what the server
+# presents to prove itself - so a copy readable by the one account that needs it
+# discloses nothing. The credential is DB_PASSWORD, which is untouched.
+#
+# Done before config:cache below, so the cached config carries the new path.
+if [ -n "${MYSQL_ATTR_SSL_CA:-}" ] && [ -f "${MYSQL_ATTR_SSL_CA}" ]; then
+    readable_ca=/var/www/html/storage/certs/db-ca.pem
+
+    mkdir -p "$(dirname "${readable_ca}")"
+    cp "${MYSQL_ATTR_SSL_CA}" "${readable_ca}"
+    chown www-data:www-data "${readable_ca}"
+    chmod 400 "${readable_ca}"
+
+    if [ "${MYSQL_ATTR_SSL_CA}" != "${readable_ca}" ]; then
+        echo "Database CA copied from ${MYSQL_ATTR_SSL_CA} to ${readable_ca} for the web worker."
+    fi
+
+    MYSQL_ATTR_SSL_CA="${readable_ca}"
+    export MYSQL_ATTR_SSL_CA
+elif [ -n "${MYSQL_ATTR_SSL_CA:-}" ]; then
+    # Named but absent is worth saying out loud: the connection will be refused
+    # rather than downgraded, and the reason should not have to be guessed.
+    echo "WARNING: MYSQL_ATTR_SSL_CA is set to ${MYSQL_ATTR_SSL_CA} but no such file exists."
 fi
 
 # Wait for the database before migrating; the container often starts first.

@@ -124,6 +124,46 @@ class DatabaseSslConfigTest extends TestCase
         $this->assertStringNotContainsString('MYSQL_ATTR_SSL_CAPATH', $source);
     }
 
+    /**
+     * The entrypoint must hand the web worker a CA it can actually open.
+     *
+     * Render mounts Secret Files as `-rw------- root root`. Everything in the
+     * entrypoint runs as root, so `migrate` reads the CA and the deploy looks
+     * healthy; php-fpm then serves as www-data, cannot read it, and every
+     * request that touches the database dies on "failed loading cafile stream"
+     * behind a bare 500. The health check does not touch the database, so the
+     * platform reports the service live throughout - which is what made this
+     * cost an afternoon to find.
+     *
+     * A shell script cannot be exercised from PHPUnit, so this asserts the
+     * guard is present rather than that it works; the behaviour itself was
+     * verified against Render's exact permissions in a container. The value
+     * here is that deleting the guard breaks a test instead of breaking
+     * production silently.
+     */
+    public function test_the_entrypoint_gives_the_web_worker_a_readable_copy_of_the_ca(): void
+    {
+        $entrypoint = (string) file_get_contents(base_path('docker/entrypoint.sh'));
+
+        $this->assertStringContainsString('MYSQL_ATTR_SSL_CA', $entrypoint);
+        $this->assertStringContainsString('chown www-data:www-data "${readable_ca}"', $entrypoint);
+        $this->assertStringContainsString('export MYSQL_ATTR_SSL_CA', $entrypoint);
+
+        // The copy has to happen before config:cache, or the cached config
+        // still carries the unreadable path and the fix does nothing.
+        //
+        // Matched against the command rather than the bare string: the comment
+        // above the copy block explains why it comes first, and mentions
+        // config:cache by name, so a substring search finds the prose before
+        // the command and reports the order backwards.
+        $copyAt = strpos($entrypoint, 'readable_ca=/');
+        $cacheAt = strpos($entrypoint, 'php artisan config:cache');
+
+        $this->assertNotFalse($copyAt, 'the entrypoint no longer copies the CA');
+        $this->assertNotFalse($cacheAt, 'the entrypoint no longer caches config');
+        $this->assertLessThan($cacheAt, $copyAt, 'the CA copy must precede config:cache');
+    }
+
     /** Credentials come from the environment, never from the file. */
     public function test_the_connection_hard_codes_no_credentials(): void
     {

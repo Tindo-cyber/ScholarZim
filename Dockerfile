@@ -60,7 +60,26 @@ RUN chmod +x /usr/local/bin/entrypoint /usr/local/bin/wait-for-fpm
 
 # storage/ and bootstrap/cache must be writable by the FPM worker; storage/app
 # holds uploaded documents and is normally a mounted volume in production.
-RUN mkdir -p storage/framework/{cache/data,sessions,views} storage/logs storage/app \
+#
+# The paths are written out in full rather than as a brace list. Docker runs
+# each RUN through `/bin/sh -c`, which on Alpine is busybox ash, and busybox
+# does not expand braces - so `storage/framework/{cache/data,sessions,views}`
+# created one literal directory called `{cache/data,sessions,views}` and none of
+# the three that were meant. It looked correct in the Dockerfile and was wrong in
+# the image.
+#
+# Two of the three self-heal and hid the mistake: Laravel's FileStore and
+# BladeCompiler both call makeDirectory() before their first write, so the cache
+# and compiled-view directories get created on demand. FileSessionHandler does
+# not - its constructor only records the path - so storage/framework/sessions
+# stayed missing and every session write failed against a directory that was
+# never there.
+RUN mkdir -p \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs \
+        storage/app \
     && chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 8080
