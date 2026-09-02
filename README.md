@@ -1,7 +1,11 @@
-# ScholarZim (Laravel 10)
+# ScholarZim (Laravel 12)
 
-Laravel 10 port of the ScholarZim scholarship platform, previously a Spring Boot
-application. The database schema and column names are carried over, so the same MySQL
+Laravel port of the ScholarZim scholarship platform, previously a Spring Boot
+application. It runs on Laravel 12 while deliberately keeping the Laravel 10
+directory skeleton - `app/Http/Kernel.php`, `app/Console/Kernel.php` and explicit
+middleware registration rather than `bootstrap/app.php` closures. The framework is
+current; the layout is the one the project was written against, and moving it would
+be churn with no behavioural gain. The database schema and column names are carried over, so the same MySQL
 database can back either application.
 
 ## What the platform does
@@ -25,7 +29,7 @@ The core journey, end to end:
 
 ## Requirements
 
-- PHP 8.1+ (developed against 8.4)
+- PHP 8.4.1+ (`composer.json` requires `^8.4.1`; the Docker image is `php:8.4-fpm-alpine`)
 - Composer 2
 - Node 20+ and npm (front-end bundle only)
 - MySQL 8 (SQLite works for local runs and the test suite)
@@ -470,8 +474,9 @@ for the documentation index.
   is required and untouched.
 - `/health` is a cheap liveness probe — one database round trip — so the platform's health
   check is not the heaviest request on the box.
-- Composer's audit check is disabled for this project (`audit.block-insecure=false`),
-  because every Laravel 10 release now carries a published security advisory — Laravel 10
-  is past its security-support window. Upgrading to a supported major is the real fix.
+- `composer audit` currently reports **no advisories**. The `audit.block-insecure=false`
+  setting in `composer.json` is a leftover from when the project sat on Laravel 10, whose
+  every release carried an unfixable advisory. On a supported Laravel that escape hatch is
+  no longer earning its place and can be dropped whenever someone is next in that file.
 - Analytics month bucketing is driver-aware (MySQL / SQLite / Postgres); MySQL is the
   production target.

@@ -37,8 +37,8 @@ flowchart TB
 
 | Layer | Technology |
 |-------|------------|
-| Runtime | PHP 8.1+ (developed against 8.4) |
-| Framework | Laravel 10 |
+| Runtime | PHP 8.4.1+ (`^8.4.1`; image is `php:8.4-fpm-alpine`) |
+| Framework | Laravel 12 (on the Laravel 10 directory skeleton, deliberately) |
 | UI | Blade, Bootstrap 5, Vite (ScholarZim's own CSS/JS only) |
 | Security | Laravel auth (form login, bcrypt, role middleware), CSRF, per-record ownership checks in the service layer |
 | Persistence | Eloquent ORM, MySQL 8, Laravel migrations |

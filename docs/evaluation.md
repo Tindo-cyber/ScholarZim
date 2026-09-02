@@ -59,4 +59,4 @@ Fill in after a peer walkthrough:
 - SMS channel is log-only (no external gateway).
 - Browser E2E not automated (manual checklist used instead).
 - API layer covers public catalog and applicant features only.
-- Laravel 10 is past its security-support window, so the open framework advisories reported by `composer audit` have no 10.x fix available; the audit job is advisory-only until the app moves to a supported release.
+- `composer audit` reports no advisories; the `audit.block-insecure=false` setting in `composer.json` is a leftover from the Laravel 10 era and no longer reflects a real constraint.

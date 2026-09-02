@@ -75,7 +75,7 @@ Expect 111 tests / 389 assertions passing.
 
 ## Technology stack
 
-PHP 8.1+ (developed against 8.4) · Laravel 10 · Blade · Bootstrap 5 · Vite · MySQL 8 · Eloquent migrations · PHPUnit · Composer · npm
+PHP 8.4.1+ · Laravel 12 · Blade · Bootstrap 5 · Vite · MySQL 8 · Eloquent migrations · PHPUnit · Composer · npm
 
 Reports are generated with dompdf (PDF) and PhpSpreadsheet (Excel). Transactional email
 goes out through the Mailgun HTTP API via Symfony's Mailgun transport, with credentials read

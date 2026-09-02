@@ -125,7 +125,7 @@ Production: set `SESSION_SECURE_COOKIE=true` so session cookies are only sent ov
 ## Known limitations (future work)
 
 - **Cluster rate limiting** — per-instance cache only.
-- **Framework support window** — Laravel 10 is past its security-support window; `composer audit` reports open framework advisories with no 10.x fix. Upgrading to a supported release is the remedy.
+- **`composer audit` is non-blocking** — `audit.block-insecure=false` remains in `composer.json` from the Laravel 10 era, when every release carried an advisory with no fix to move to. The framework is now Laravel 12 and the audit reports nothing; the setting is stale rather than load-bearing and should be removed.
 - **Ephemeral uploads on free Render** — attach a persistent disk (or object storage) so certificates survive redeploys.
 - **Admin PDF/Excel reports** — current exporters load full tables into memory; fine for FYP scale; paginate or stream before large production datasets.
 - **`style-src 'unsafe-inline'`** — inline `style="..."` attributes remain across a number of views; extracting them is future work.

@@ -1,6 +1,6 @@
 # ScholarZim production deployment
 
-ScholarZim is a **Laravel 10 monolith** served by nginx + PHP-FPM in a single container. Deploy **one** web service + MySQL.
+ScholarZim is a **Laravel 12 monolith** served by nginx + PHP-FPM in a single container. Deploy **one** web service + MySQL.
 
 The image also supervises `php artisan schedule:run`, which is what keeps the daily deadline and profile reminder jobs firing — there is no separate worker to deploy.
 

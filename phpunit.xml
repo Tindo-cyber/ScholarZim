@@ -28,5 +28,26 @@
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
+
+        <!--
+            The seeded administrator, pinned so the suite does not depend on
+            whoever's .env it happens to run against.
+
+            DatabaseSeeder reads these through config('scholarzim.admin.*'), and
+            several tests sign that account in with the shared demo password. A
+            developer who sets SCHOLARZIM_ADMIN_PASSWORD locally - which is
+            exactly what anyone preparing a real deployment does - would
+            otherwise seed one password and have the tests assert another, and
+            the failure ("Those credentials do not match our records") points at
+            authentication rather than at the environment that actually caused it.
+        -->
+        <env name="SCHOLARZIM_ADMIN_EMAIL" value="admin@scholarzim.co.zw"/>
+        <env name="SCHOLARZIM_ADMIN_PASSWORD" value="ChangeMe123"/>
+
+        <!--
+            No CA certificate in the test environment: the suite runs on SQLite
+            and must never be steered by a MySQL TLS setting left in a local .env.
+        -->
+        <env name="MYSQL_ATTR_SSL_CA" value=""/>
     </php>
 </phpunit>
