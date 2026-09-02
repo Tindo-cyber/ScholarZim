@@ -53,7 +53,10 @@ COPY docker/nginx.conf /etc/nginx/nginx.conf
 COPY docker/php.ini /usr/local/etc/php/conf.d/scholarzim.ini
 COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint
-RUN chmod +x /usr/local/bin/entrypoint
+# nginx is started through this, so it cannot answer the platform's first
+# request before php-fpm has bound its socket. See docker/supervisord.conf.
+COPY docker/wait-for-fpm.sh /usr/local/bin/wait-for-fpm
+RUN chmod +x /usr/local/bin/entrypoint /usr/local/bin/wait-for-fpm
 
 # storage/ and bootstrap/cache must be writable by the FPM worker; storage/app
 # holds uploaded documents and is normally a mounted volume in production.
