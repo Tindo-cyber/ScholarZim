@@ -382,6 +382,71 @@ main {
     border-color: var(--bs-success-border-subtle) !important;
 }
 
+/* ---------- The public navbar, once it collapses ---------- */
+
+/*
+ * Below lg the four links and the two account buttons stack, and Bootstrap
+ * leaves them as one undifferentiated column hanging off the bottom of the bar:
+ * the menu reads as part of the header rather than as a panel over the page,
+ * and the buttons sit as a cramped inline row at the end of it.
+ *
+ * Measured before touching anything, so this is polish rather than repair: at
+ * 320-430px the bar is 73px, the links are 40px each with no gap, and nothing
+ * overflows. What follows separates the open menu from the bar, gives the two
+ * account actions a full-width target each, and caps the panel so it scrolls
+ * instead of pushing the hero off a short screen.
+ *
+ * All of it is inside the breakpoint, so the desktop bar is untouched.
+ */
+@media (max-width: 991.98px) {
+    .sz-public-nav .navbar-collapse {
+        /* A menu taller than the screen is worse than a menu that scrolls -
+         * on a short phone in landscape the last link would otherwise sit
+         * below the fold with nothing to suggest it is there. */
+        max-height: calc(100vh - 5.5rem);
+        overflow-y: auto;
+    }
+
+    /*
+     * One hairline between the links and the account actions, and nothing else.
+     *
+     * An earlier pass here added margins, padding and a second rule above the
+     * whole panel. It looked tidier in isolation and made the open menu 220px
+     * against the 198px it started at - taller, on the one measurement the
+     * complaint was actually about. Structure that costs height is the wrong
+     * trade in a menu whose only problem was height.
+     */
+    .sz-public-nav-actions {
+        width: 100%;
+        margin-top: .5rem;
+        padding-top: .5rem;
+        border-top: 1px solid var(--bs-border-color);
+        row-gap: .5rem;
+    }
+
+    /*
+     * The two account buttons share one row rather than stacking.
+     *
+     * Stacking them was the obvious move and it was wrong: each became a
+     * full-width block, the open menu went from 198px to 316px, and the hero
+     * was pushed further down than before - the opposite of the point. Side by
+     * side they stay one row tall and still give a target far wider than a
+     * thumb needs.
+     *
+     * Matched on `a.btn` rather than `.btn`: the theme toggle is a <button>
+     * carrying data-bs-toggle="dropdown" but not the .dropdown-toggle class, so
+     * a :not(.dropdown-toggle) exclusion silently missed it and stretched the
+     * icon to 128px, which pushed "Create free account" onto its own row and
+     * made the menu taller again. The two account actions are the only anchors
+     * in this row, so that is what to select.
+     */
+    .sz-public-nav-actions a.btn {
+        flex: 1 1 auto;
+        min-width: 7.5rem;
+        justify-content: center;
+    }
+}
+
 /* ---------- Wide gutters inside a full-width container ---------- */
 
 /*

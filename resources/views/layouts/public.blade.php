@@ -43,7 +43,7 @@
                 </li>
             </ul>
 
-            <div class="d-flex flex-wrap align-items-center gap-2">
+            <div class="sz-public-nav-actions d-flex flex-wrap align-items-center gap-2">
                 <x-install-app />
                 <x-theme-toggle />
 
