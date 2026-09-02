@@ -399,12 +399,46 @@ main {
  * All of it is inside the breakpoint, so the desktop bar is untouched.
  */
 @media (max-width: 991.98px) {
-    .sz-public-nav .navbar-collapse {
-        /* A menu taller than the screen is worse than a menu that scrolls -
-         * on a short phone in landscape the last link would otherwise sit
-         * below the fold with nothing to suggest it is there. */
-        max-height: calc(100vh - 5.5rem);
-        overflow-y: auto;
+    /*
+     * The theme control is a dropdown, and it lives inside this panel.
+     *
+     * There was a max-height/overflow-y:auto here to stop a long menu running
+     * off a short screen. It solved a problem nobody had - the open menu is
+     * 215px, which fits any phone - and caused one that everybody had:
+     * overflow-y establishes a clipping context, so the theme dropdown opened
+     * 114px past the panel's bottom edge and was cut off. The control appeared
+     * to do nothing, or almost nothing, when tapped.
+     *
+     * Nothing replaces it. A panel that is always shorter than the viewport
+     * does not need to scroll, and not clipping is what lets the dropdown out.
+     */
+
+    /*
+     * The theme button and its items are sized for a finger here. At 34x36 and
+     * 32px rows they were under the 44px guideline on the one device where
+     * pointing is least precise.
+     */
+    .sz-public-nav-actions .dropdown > .btn {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+    }
+
+    .sz-public-nav-actions .dropdown-item {
+        padding-top: .625rem;
+        padding-bottom: .625rem;
+    }
+
+    /*
+     * Align the theme menu to the left of its button rather than the right.
+     *
+     * .dropdown-menu-end is right-aligned, which is correct on the desktop bar
+     * where the control sits at the far right. Collapsed, the same control is
+     * the first thing in the actions row, so right-aligning put the menu's left
+     * edge at -4px and hung a sliver off the screen.
+     */
+    .sz-public-nav-actions .dropdown-menu {
+        right: auto;
+        left: 0;
     }
 
     /*
