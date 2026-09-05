@@ -6,7 +6,7 @@ This document supports viva/defense questions about how the system was verified.
 
 **Command:** `cd ScholarZim && php artisan test`
 
-**Last verified:** 2026-09-02 — 556 passed, 1 skipped, 0 failures (PHPUnit / Pest-style output).
+**Last verified:** 2026-09-05 — 597 passed, 2 warnings, 1 skipped, 0 failures, 1875 assertions.
 
 The exact count above will drift as the suite grows; the command is the source of truth, not
 this number. The skip is a Windows-only `finfo` limitation in one document-type test, not a
@@ -28,6 +28,8 @@ table went stale the first time a suite was renamed and nobody caught it:
 | Security | CSRF, security headers, HSTS behind a trusted proxy, document access control |
 | PWA | Manifest and service worker content, precache scope (no private pages, no non-GET requests cached), offline fallback |
 | Database / deployment | TLS certificate-authority path resolution, the container entrypoint's `APP_KEY` and CA-permission handling, empty-database safety for the public pages |
+| Storage configuration | The private disk's root is read from `FILESYSTEM_ROOT` rather than hard-coded; documents are written under whatever root is configured, a root change does not silently resolve an old file, a document copied to a new root resolves under its original relative path unchanged, and download authorization is unaffected by where the disk physically points |
+| Education pathway / eligibility | All fifteen brief-specified pathway scenarios (Primary→Form 1 through A-Level→PhD), a hard pathway failure as a real eligibility block (not a scoring penalty), a listing's own stricter minimum level, no GPA field anywhere, a transcript on file not manufacturing an academic score by itself, a missing locality never reducing a province-wide match, and a real HTTP submission refused for a pathway violation - not only excluded from recommendations |
 
 ## Continuous integration
 
@@ -61,10 +63,12 @@ Run before viva and record:
 
 Fill in after a peer walkthrough:
 
-1. An incomplete applicant profile is communicated as a checklist and a completeness badge,
-   not as a block on applying — confirm a reviewer understands the difference (the results
-   certificate affects ScholarFit score and can be required per-listing, but is not a
-   universal gate on submission).
+1. An incomplete applicant profile is communicated as a checklist and a completeness badge -
+   confirm a reviewer understands the difference between an unfinished but eligible profile
+   (applying is still allowed) and a genuinely ineligible one (education pathway, a listing's
+   stated requirements including a required certificate): the wizard does not offer a Submit
+   button for the latter, and `ApplicationService::submit()` refuses it server-side even if
+   reached directly.
 2. Provider review screen surfaces academic context before status change.
 3. Admin pending queue separates verification from day-to-day user management.
 4. Dark mode remains readable on dashboard and auth screens.

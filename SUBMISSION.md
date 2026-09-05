@@ -59,7 +59,9 @@ cd ScholarZim
 php artisan test
 ```
 
-Expect 111 tests / 389 assertions passing.
+See [docs/evaluation.md](docs/evaluation.md) for the last-verified pass count — it is not
+repeated here because it goes stale the moment the suite grows; the command above is the
+source of truth.
 
 ## Documentation index
 

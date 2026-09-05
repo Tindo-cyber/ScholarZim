@@ -113,6 +113,17 @@ if [ "${APP_ENV:-production}" != "local" ]; then
     php artisan view:cache
 fi
 
+# FILESYSTEM_ROOT (config/filesystems.php's "local" disk) is normally
+# storage/app and already covered by the chown below. When it is set to
+# somewhere else entirely - a Render Persistent Disk, or any other external
+# mount - that path needs the same treatment and the line below cannot reach
+# it: a freshly attached disk arrives root-owned, and php-fpm runs as
+# www-data. Safe to run every boot; an already-owned directory is a no-op.
+if [ -n "${FILESYSTEM_ROOT:-}" ]; then
+    mkdir -p "${FILESYSTEM_ROOT}"
+    chown -R www-data:www-data "${FILESYSTEM_ROOT}"
+fi
+
 chown -R www-data:www-data storage bootstrap/cache
 
 exec "$@"

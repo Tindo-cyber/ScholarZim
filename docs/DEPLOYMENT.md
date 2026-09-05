@@ -100,25 +100,55 @@ An empty `Ssl_cipher` means the connection is plaintext — check that
 
 ### Uploaded files are not persistent on the free plan
 
-Uploaded documents live on the private `local` disk at `storage/app`. Render only
-attaches persistent disks to **paid** instance types, and this service is
-`plan: free`, so `render.yaml` declares no disk — see the comment in that file.
+Uploaded documents live on the private `local` filesystem disk
+(`config/filesystems.php`, `App\Services\FileStorageService`), which by default
+resolves to `storage/app` inside the container. Render only attaches persistent
+disks to **paid** instance types, and this service is `plan: free`, so
+`render.yaml` declares no disk — see the comment block in that file.
 
-Everything under `storage/app` is therefore lost on every deploy and restart, and
-a free instance also spins down after roughly 15 minutes idle and returns with a
-fresh filesystem. That is applicant documents, results certificates and provider
-registration certificates. Rows in `document_files` will still point at paths whose
-files are gone; the app reports a missing file rather than erroring.
+Everything the disk writes is therefore lost on every deploy and restart, and a
+free instance also spins down after roughly 15 minutes idle and returns with a
+fresh filesystem. That is applicant documents, results certificates, transcripts
+and provider registration certificates. Rows in `document_files` (and the
+`*_path` columns on `applicant_profiles`, `provider_profiles`, `applications`)
+will still point at paths whose files are gone; the app reports a missing file
+rather than erroring — `FileStorageService::exists()` returns false and nothing
+crashes.
 
-To restore persistence, move to a paid instance type and put the disk back:
+**To restore persistence:** the disk's mount path no longer has to be
+`storage/app` — the app reads `FILESYSTEM_ROOT` to find the disk (see
+`config/filesystems.php`), so any mount path works as long as the env var names
+it. Move to a paid instance type, add the disk, and set the env var together:
 
 ```yaml
 plan: starter
+envVars:
+  - key: FILESYSTEM_ROOT
+    value: /var/data/scholarzim
 disk:
   name: scholarzim-uploads
-  mountPath: /var/www/html/storage/app
+  mountPath: /var/data/scholarzim
   sizeGB: 1
 ```
+
+`docker/entrypoint.sh` creates `FILESYSTEM_ROOT` and chowns it to the web
+worker on every boot when it is set, so a freshly attached (root-owned) disk
+is writable immediately — no manual `chmod`/`chown` on the box.
+
+Existing database rows need nothing done to them: every stored path
+(`document_files.path`, `applicant_profiles.results_certificate_path`, etc.) is
+relative, not absolute, so it resolves under whichever root the disk points at.
+What does need doing, if there are files worth keeping from a prior deploy, is
+moving the *bytes* — the disk starts empty, and Render gives no way to reach a
+free-plan container's filesystem after it has already recycled. In practice
+this means: attach the disk **before** the first real upload you need to keep,
+not after. If you ever need to move an existing populated root (e.g.
+migrating off a VPS's `storage/app` onto a newly attached disk), copy the
+directory tree across with the service stopped or in maintenance mode - `rsync
+-a` or `cp -a` the old root's contents into the new one, preserving the
+relative paths exactly - then set `FILESYSTEM_ROOT` and restart. Never delete
+the old copy until a spot-check confirms a few real documents open correctly
+through the app from the new location.
 
 ### Troubleshooting a failed deploy
 
@@ -129,6 +159,7 @@ disk:
 | `SQLSTATE[HY000] [2002] Connection refused` | Database host/port wrong, or the managed database has not finished provisioning. The entrypoint retries for 60 seconds before giving up. |
 | Migration fails midway | Inspect the `migrations` table, fix the cause, then redeploy. `php artisan migrate:status` shows exactly what ran. |
 | Uploads disappear after deploy | Expected on `plan: free` — there is no persistent disk. See "Uploaded files are not persistent" above. |
+| Uploads fail with a permission error after attaching a disk | `FILESYSTEM_ROOT` is set but the entrypoint never ran as root against it (e.g. a manual restart bypassing the image's normal boot). Redeploy so `docker/entrypoint.sh` chowns the mount to `www-data` again. |
 | `SQLSTATE[HY000] [2002] Cannot connect to MySQL using SSL` | `MYSQL_ATTR_SSL_CA` points at a file that is missing or is not a valid CA. On Render check the Secret File is named `aiven-ca.pem`; locally check the path resolves from the project root. |
 | Connection times out against Aiven | `DB_PORT` is almost certainly still 3306. Aiven assigns a per-service port. |
 | Stale config or routes after a change | The entrypoint warms `config:cache`, `route:cache` and `view:cache`. Redeploy to rebuild them; never edit cached config in place. |
@@ -347,6 +378,15 @@ DB_PORT=3306
 DB_DATABASE=scholarzim
 DB_USERNAME=scholarzim
 DB_PASSWORD=...
+
+# Where private documents are actually written (config/filesystems.php's
+# "local" disk - results certificates, transcripts, application attachments,
+# provider certificates). Unset, it defaults to storage/app inside the
+# container, which is what the Docker Compose volumes below already mount -
+# leave it unset for both the VPS stack and Render's free plan. Set it only
+# when the disk is mounted somewhere else, e.g. a Render Persistent Disk at
+# /var/data/scholarzim - see "Uploaded files are not persistent" above.
+# FILESYSTEM_ROOT=/var/data/scholarzim
 
 # TLS to a managed MySQL. Unset for a plain local/compose MySQL - with no value
 # no SSL attribute is passed and nothing changes. Set it and the server is

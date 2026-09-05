@@ -30,9 +30,36 @@ return [
 
     'disks' => [
 
+        /*
+         * Where every private document (results certificates, transcripts,
+         * provider registration certificates, application attachments) actually
+         * lives - see App\Services\FileStorageService::DISK.
+         *
+         * Defaults to storage_path('app'), exactly as before, so local
+         * development, the test suite, and the existing VPS Docker Compose
+         * stack (which bind-mounts ./storage/app) are unaffected by this
+         * setting existing at all.
+         *
+         * FILESYSTEM_ROOT lets a deployment point this disk at a mounted
+         * volume instead - a Render Persistent Disk, for example - without
+         * touching a line of application code. Every path recorded in the
+         * database (document_files.path, applicant_profiles.*_path,
+         * provider_profiles.certificate_path, applications.document_path) is
+         * relative to this root, never absolute, so redirecting the root does
+         * not invalidate a single existing row - it only changes where the
+         * bytes those rows describe are read from and written to. Moving the
+         * bytes themselves to the new root is a separate, one-time step; see
+         * docs/DEPLOYMENT.md.
+         *
+         * Left untouched: the "public" disk below and everything cache,
+         * session and log related, which all resolve through storage_path()
+         * directly rather than this config value - see config/cache.php,
+         * config/session.php and config/logging.php. Setting FILESYSTEM_ROOT
+         * moves only the document disk.
+         */
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app'),
+            'root' => env('FILESYSTEM_ROOT', storage_path('app')),
             'throw' => false,
         ],
 

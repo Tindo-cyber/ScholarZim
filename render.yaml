@@ -107,37 +107,55 @@ services:
 # UPLOADED FILES ARE NOT PERSISTENT ON THIS PLAN. READ BEFORE RELYING ON THEM.
 # ---------------------------------------------------------------------------
 #
-# There was a `disk:` block here mounting 1GB at /var/www/html/storage/app,
-# which is where FileStorageService writes (the `local` disk's root is
-# storage_path('app')). It has been removed because Render only attaches
-# persistent disks to *paid* instance types, and this service is `plan: free` -
-# the two together are not a valid blueprint, so the deploy would have failed
-# rather than quietly running without a disk.
+# There is no `disk:` block below, and none is active in this deployment.
+# Render only attaches persistent disks to *paid* instance types, and this
+# service is `plan: free` - the two together are not a valid blueprint, so
+# declaring one here would fail the deploy rather than quietly running
+# without it.
 #
 # What that costs, stated plainly rather than left to be discovered:
 #
-#   - Everything under storage/app lives on the container's own filesystem and
-#     is gone on every deploy and every restart. That is applicant documents,
-#     results certificates, and provider registration certificates - the files
-#     objectives 3 and 4 are about.
+#   - Everything the "local" filesystem disk writes - config/filesystems.php,
+#     App\Services\FileStorageService - lives on the container's own
+#     filesystem and is gone on every deploy and every restart. That is
+#     applicant documents, results certificates, transcripts, and provider
+#     registration certificates - the files objectives 3 and 4 are about.
 #   - A free instance also spins down after roughly 15 minutes with no traffic
 #     and comes back with a fresh filesystem, so an upload can disappear within
 #     the hour without anything being deployed at all.
-#   - Database rows in `document_files` will still reference paths whose files
-#     no longer exist. FileStorageService::exists() returns false for those, so
-#     the app reports a missing file rather than erroring - but the file is not
-#     coming back.
+#   - Database rows in `document_files` (and the *_path columns on
+#     applicant_profiles, provider_profiles, applications) will still
+#     reference paths whose files no longer exist. FileStorageService::exists()
+#     returns false for those, so the app reports a missing file rather than
+#     erroring - but the file is not coming back.
 #
 # This is fine for a demo where documents are re-uploaded during the session.
 # It is not fine for anything anyone is expected to keep.
 #
-# To restore persistence, move to a paid instance type and put the block back:
+# To restore persistence, move to a paid instance type, add the disk below,
+# and point FILESYSTEM_ROOT at its mount path - the application no longer
+# needs the disk mounted at storage/app specifically; any path works as long
+# as FILESYSTEM_ROOT names it. Uncomment all three pieces together:
 #
-#     plan: starter
-#     disk:
-#       name: scholarzim-uploads
-#       mountPath: /var/www/html/storage/app
-#       sizeGB: 1
+#   1. Change `plan: free` above to `plan: starter` (or higher).
+#   2. Add this env var to the envVars list above:
+#        - key: FILESYSTEM_ROOT
+#          value: /var/data/scholarzim
+#   3. Add this disk block at the same indentation as `envVars:` above:
+#        disk:
+#          name: scholarzim-uploads
+#          mountPath: /var/data/scholarzim
+#          sizeGB: 1
+#
+# docker/entrypoint.sh creates FILESYSTEM_ROOT and chowns it to the web
+# worker on every boot if it is set, so a freshly attached (root-owned) disk
+# becomes writable without any manual step.
+#
+# If uploads already exist under the container's own storage/app from a prior
+# free-plan deploy, they do not survive to be migrated - the plan gives no way
+# to reach that filesystem once the disk is attached and the instance
+# restarts. This only matters going forward: attach the disk before the first
+# real (non-demo) upload you need to keep, not after.
 #
 # Note that attaching a disk also disables zero-downtime deploys and pins the
 # service to a single instance; neither matters at this size.
