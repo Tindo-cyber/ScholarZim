@@ -102,13 +102,28 @@
                                :value="$value('required_province')"
                                placeholder="No restriction" />
             </div>
+            <div class="col-md-6">
+                <x-form.input name="target_locality" label="Target locality (optional)"
+                              :value="$value('target_locality')"
+                              placeholder="e.g. Gweru"
+                              hint="Only set this for a place-specific award. Leave blank for a province-wide or nationwide one - a blank locality on the student's own profile will never be treated as a match, so this never silently excludes students who simply haven't stated one." />
+            </div>
+            <div class="col-md-6">
+                <x-form.select name="target_settlement_type" label="Target settlement type (optional)"
+                               :options="$settlementTypes"
+                               :value="$value('target_settlement_type')"
+                               placeholder="No restriction" />
+            </div>
             <div class="col-12">
                 <div class="form-check mb-0">
                     <input class="form-check-input" type="checkbox" id="field-requires_results_certificate"
                            name="requires_results_certificate" value="1"
                            @checked($checked('requires_results_certificate'))>
                     <label class="form-check-label" for="field-requires_results_certificate">
-                        A results certificate must be on file before applying
+                        Proof of academic results must be on file before applying
+                        <span class="d-block text-secondary">
+                            A results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants.
+                        </span>
                     </label>
                 </div>
             </div>

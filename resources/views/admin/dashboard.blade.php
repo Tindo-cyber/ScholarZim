@@ -84,7 +84,7 @@
                                     <span class="min-w-0">
                                         <span class="fw-semibold d-block">{{ $opportunity->title }}</span>
                                         <span class="small text-secondary">
-                                            {{ $opportunity->education_level ?: 'Any level' }} &middot;
+                                            {{ $opportunity->education_level ? \App\Support\EducationLevel::label($opportunity->education_level) : 'Any level' }} &middot;
                                             {{ $opportunity->target_field ?: 'Any field' }} &middot;
                                             closes {{ $opportunity->deadline?->format('d M Y') ?? 'rolling' }}
                                         </span>

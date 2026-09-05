@@ -26,6 +26,7 @@ class Opportunity extends Model
         'description',
         'provider_name',
         'education_level',
+        'minimum_education_level',
         'funding_type',
         'country',
         'deadline',
@@ -49,8 +50,8 @@ class Opportunity extends Model
         'max_age',
         'required_citizenship',
         'required_province',
-        'target_district',
         'target_locality',
+        'target_settlement_type',
         'requires_results_certificate',
         'view_count',
     ];
@@ -121,10 +122,8 @@ class Opportunity extends Model
             $query->where('education_level', $level);
         }
 
-        if ($country = $value($filters['country'] ?? null)) {
-            $query->where(function (Builder $q) use ($country) {
-                $q->where('country', $country)->orWhere('target_country', $country);
-            });
+        if ($province = $value($filters['province'] ?? null)) {
+            $query->where('required_province', $province);
         }
 
         if ($field = $value($filters['field_of_study'] ?? null)) {
@@ -344,6 +343,8 @@ class Opportunity extends Model
             || $this->max_age !== null
             || filled($this->required_citizenship)
             || filled($this->required_province)
+            || filled($this->target_locality)
+            || filled($this->minimum_education_level)
             || (bool) $this->requires_results_certificate;
     }
 

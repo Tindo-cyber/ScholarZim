@@ -72,9 +72,9 @@
 
                         <div class="row g-3 mb-4">
                             @foreach([
-                                ['Education level', $opportunity->education_level, 'file-text'],
+                                ['Education level', \App\Support\EducationLevel::label($opportunity->education_level), 'file-text'],
                                 ['Field of study', $opportunity->target_field, 'stars'],
-                                ['Country', $opportunity->country, 'pin'],
+                                ['Location', $opportunity->target_locality ?: $opportunity->required_province, 'pin'],
                                 ['Deadline', $opportunity->deadline?->format('d M Y') ?? 'No deadline', 'calendar'],
                             ] as [$label, $value, $icon])
                                 <div class="col-6 col-md-3">
@@ -147,10 +147,22 @@
                                         <span>Applicants from {{ $opportunity->required_province }} only.</span>
                                     </li>
                                 @endif
+                                @if($opportunity->target_locality)
+                                    <li class="d-flex gap-2 align-items-start">
+                                        <x-icon name="check" :size="16" class="text-primary mt-1" />
+                                        <span>Limited to applicants from {{ $opportunity->target_locality }}.</span>
+                                    </li>
+                                @endif
+                                @if($opportunity->minimum_education_level)
+                                    <li class="d-flex gap-2 align-items-start">
+                                        <x-icon name="check" :size="16" class="text-primary mt-1" />
+                                        <span>Requires at least {{ \App\Support\EducationLevel::label($opportunity->minimum_education_level) }}.</span>
+                                    </li>
+                                @endif
                                 @if($opportunity->requires_results_certificate)
                                     <li class="d-flex gap-2 align-items-start">
                                         <x-icon name="check" :size="16" class="text-primary mt-1" />
-                                        <span>A results certificate must be on your profile before you apply.</span>
+                                        <span>Proof of academic results must be on your profile before you apply.</span>
                                     </li>
                                 @endif
                             </ul>

@@ -28,16 +28,36 @@ class ApplicantProfileService
     {
         $profile = $this->forUser($user);
 
+        $isPrimary = \App\Support\EducationLevel::isPrimary($data['education_level'] ?? null);
+
         $profile->update([
             'education_level' => $data['education_level'] ?? null,
             'institution_name' => $data['institution_name'] ?? null,
-            'field_of_study' => $data['field_of_study'] ?? null,
-            'country' => $data['country'] ?? null,
+            // Field of study and year of study are university-tier concepts;
+            // stored as null rather than whatever was left in the form when an
+            // applicant switches to a level neither applies to, so a profile
+            // never carries a "field of study" that no longer means anything
+            // for its own education level.
+            'field_of_study' => \App\Support\EducationLevel::usesFieldOfStudy($data['education_level'] ?? null)
+                ? ($data['field_of_study'] ?? null)
+                : null,
+            'year_of_study' => \App\Support\EducationLevel::usesFieldOfStudy($data['education_level'] ?? null)
+                ? ($data['year_of_study'] ?? null)
+                : null,
             'province' => $data['province'] ?? null,
-            'district' => $data['district'] ?? null,
             'locality' => $data['locality'] ?? null,
+            'settlement_type' => $data['settlement_type'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
             'citizenship' => $data['citizenship'] ?? null,
+            // Guardian fields are collected only for the Primary pathway;
+            // cleared otherwise so a profile that moves off Primary does not
+            // carry on displaying a guardian section it no longer needs.
+            'guardian_name' => $isPrimary ? ($data['guardian_name'] ?? null) : null,
+            'guardian_phone' => $isPrimary ? ($data['guardian_phone'] ?? null) : null,
+            'guardian_relationship' => $isPrimary ? ($data['guardian_relationship'] ?? null) : null,
+            'guardian_confirmed_at' => $isPrimary && filled($data['guardian_confirmed'] ?? null)
+                ? Carbon::now()
+                : ($isPrimary ? $profile->guardian_confirmed_at : null),
             'academic_results' => $data['academic_results'] ?? null,
             'biography' => $data['biography'] ?? null,
         ]);

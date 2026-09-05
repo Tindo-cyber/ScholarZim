@@ -69,20 +69,20 @@ return [
         /* Points at or above which a record stands on its own with no floor to beat. */
         'strong_points' => 12,
         'sound_points' => 6,
-        'strong_gpa' => 3.0,
-        'sound_gpa' => 2.0,
     ],
 
     /*
-     * Location tiers. The hierarchy is country -> province -> district ->
-     * locality, each narrower than the last, and each scored only when the
-     * listing actually targets it.
+     * Location tiers. Country dropped out of this hierarchy when ScholarZim
+     * became Zimbabwe-only - every applicant and every listing is implicitly
+     * Zimbabwean, so there is no longer a country tier to score. What remains
+     * is province -> locality (a specific place) -> settlement type (rural or
+     * urban), each narrower than the last and scored only when the listing
+     * actually targets it. The three must sum to 1.0.
      */
     'location' => [
-        'country' => 0.6,
-        'province' => 0.25,
-        'district' => 0.1,
-        'locality' => 0.05,
+        'province' => 0.7,
+        'locality' => 0.2,
+        'settlement_type' => 0.1,
     ],
 
     /*

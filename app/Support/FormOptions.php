@@ -4,38 +4,15 @@ namespace App\Support;
 
 final class FormOptions
 {
+    /**
+     * ScholarZim is a Zimbabwe-only platform, so this is a fact about the
+     * product rather than something an applicant or a provider chooses. It
+     * remains as a constant because a handful of places still read it as a
+     * default for a legacy `country`/`target_country` column value; nothing
+     * new should present it as a form field. See docs/user-guide.md and
+     * App\Support\EducationLevel for the fuller explanation.
+     */
     public const DEFAULT_COUNTRY = 'Zimbabwe';
-
-    public const PRIMARY_GRADES = [
-        'Primary — Grade 1',
-        'Primary — Grade 2',
-        'Primary — Grade 3',
-        'Primary — Grade 4',
-        'Primary — Grade 5',
-        'Primary — Grade 6',
-        'Primary — Grade 7',
-    ];
-
-    public const SECONDARY_FORMS = [
-        'Secondary — Form 1',
-        'Secondary — Form 2',
-        'Secondary — Form 3',
-        'Secondary — Form 4',
-        'Secondary — Form 5',
-        'Secondary — Form 6',
-    ];
-
-    public const TERTIARY_LEVELS = [
-        'High School (O-Level)',
-        'High School (A-Level)',
-        'Certificate',
-        'Diploma',
-        'Undergraduate',
-        'Honours Degree',
-        'Postgraduate',
-        'Masters',
-        'PhD',
-    ];
 
     public const FIELDS_OF_STUDY = [
         'Computer Science & IT',
@@ -74,6 +51,16 @@ final class FormOptions
         'Midlands',
     ];
 
+    /**
+     * Autocomplete suggestions for the institution field, not a restriction -
+     * `institution_name` is free text (see `ApplicantProfile`), because most
+     * ScholarZim applicants attend a school this list was never going to cover
+     * and forcing a choice from a fixed list would have locked them out of
+     * completing their profile at all. A handful of well-known schools are
+     * included alongside the universities and polytechnics so the suggestions
+     * are useful to a Primary or O/A-Level applicant too, not only a
+     * university one.
+     */
     public const INSTITUTIONS = [
         'University of Zimbabwe (UZ)',
         'National University of Science and Technology (NUST)',
@@ -91,6 +78,12 @@ final class FormOptions
         'Harare Polytechnic',
         'Gweru Polytechnic',
         'Mutare Polytechnic',
+        'Prince Edward School',
+        'Churchill High School',
+        'St George\'s College',
+        'Mount Pleasant High School',
+        'Founders High School',
+        'Girls High School',
     ];
 
     public const FUNDING_TYPES = [
@@ -145,36 +138,64 @@ final class FormOptions
     {
     }
 
-    /** Every level, primary through PhD, in the order the selects render them. */
+    /**
+     * Every level an applicant's own profile may hold, as value => label,
+     * canonical constant to display label - see App\Support\EducationLevel,
+     * which is the actual source of truth this defers to entirely. FORM_1 is
+     * excluded on purpose: it exists only as a scholarship target (a listing
+     * "for Form 1 entrants"), never as something an applicant's own current
+     * level is set to.
+     */
     public static function educationLevels(): array
     {
-        return array_merge(self::PRIMARY_GRADES, self::SECONDARY_FORMS, self::TERTIARY_LEVELS);
+        return array_combine(
+            EducationLevel::APPLICANT_LEVELS,
+            array_map(EducationLevel::label(...), EducationLevel::APPLICANT_LEVELS)
+        );
     }
 
     /**
-     * Levels where "academic results" means a school report (points, subjects)
-     * rather than a tertiary transcript/GPA — primary, secondary, and O/A-Level.
+     * Every level a scholarship may target - the same list plus FORM_1, which
+     * is a legitimate thing to aim a *listing* at even though no applicant's
+     * profile is ever set to it.
      */
-    public static function schoolLevels(): array
+    public static function targetEducationLevels(): array
     {
-        return array_merge(self::PRIMARY_GRADES, self::SECONDARY_FORMS, [
-            'High School (O-Level)',
-            'High School (A-Level)',
-        ]);
+        return array_combine(
+            EducationLevel::TARGET_LEVELS,
+            array_map(EducationLevel::label(...), EducationLevel::TARGET_LEVELS)
+        );
     }
 
-    public static function isSchoolLevel(?string $level): bool
-    {
-        return $level !== null && in_array($level, self::schoolLevels(), true);
-    }
-
-    /** Grouped variant so the selects can use optgroups. */
+    /** Grouped variant so the applicant-facing select can use optgroups. */
     public static function educationLevelGroups(): array
     {
         return [
-            'Primary' => self::PRIMARY_GRADES,
-            'Secondary' => self::SECONDARY_FORMS,
-            'Tertiary' => self::TERTIARY_LEVELS,
+            'Primary' => [EducationLevel::PRIMARY => EducationLevel::label(EducationLevel::PRIMARY)],
+            'Secondary' => [
+                EducationLevel::O_LEVEL => EducationLevel::label(EducationLevel::O_LEVEL),
+                EducationLevel::A_LEVEL => EducationLevel::label(EducationLevel::A_LEVEL),
+            ],
+            'Tertiary' => [
+                EducationLevel::CERTIFICATE => EducationLevel::label(EducationLevel::CERTIFICATE),
+                EducationLevel::DIPLOMA => EducationLevel::label(EducationLevel::DIPLOMA),
+                EducationLevel::UNDERGRADUATE => EducationLevel::label(EducationLevel::UNDERGRADUATE),
+            ],
+            'Postgraduate' => [
+                EducationLevel::HONOURS => EducationLevel::label(EducationLevel::HONOURS),
+                EducationLevel::POSTGRADUATE => EducationLevel::label(EducationLevel::POSTGRADUATE),
+                EducationLevel::MASTERS => EducationLevel::label(EducationLevel::MASTERS),
+                EducationLevel::PHD => EducationLevel::label(EducationLevel::PHD),
+            ],
         ];
+    }
+
+    /** The same groups, for a scholarship's target level - includes Form 1 as its own entry point. */
+    public static function targetEducationLevelGroups(): array
+    {
+        $groups = self::educationLevelGroups();
+        $groups['Primary'] = [EducationLevel::FORM_1 => EducationLevel::label(EducationLevel::FORM_1)];
+
+        return $groups;
     }
 }

@@ -11,6 +11,32 @@
     <div class="row g-4">
         <div class="col-xl-8">
 
+            @if($fit && ! $fit->meetsRequirements())
+                {{--
+                    The submission would be refused server-side regardless of
+                    what is filled in below, so the form itself is not shown -
+                    a "Submit" button that can never succeed is worse than no
+                    button at all.
+                --}}
+                <div class="card border-danger">
+                    <div class="card-header bg-danger-subtle">
+                        <h2 class="h6 fw-semibold mb-0">You cannot apply to this scholarship</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>Your profile does not meet this award's stated requirements:</p>
+                        <ul class="ps-3 d-grid gap-1 mb-3">
+                            @foreach($fit->breakdown->unmetRequirements as $requirement)
+                                <li>{{ $requirement }}</li>
+                            @endforeach
+                        </ul>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-primary" href="{{ route('applicant.profile') }}">Update my profile</a>
+                            <a class="btn btn-outline-secondary"
+                               href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
+                        </div>
+                    </div>
+                </div>
+            @else
             <form method="POST" action="{{ route('applications.submit', $opportunity->opportunity_id) }}"
                   enctype="multipart/form-data" novalidate>
                 @csrf
@@ -20,15 +46,20 @@
                         <h2 class="h6 fw-semibold mb-0">Step 1 &mdash; Confirm your details</h2>
                     </div>
                     <div class="card-body">
-                        <dl class="row mb-3">
-                            @foreach([
+                        @php
+                            $wizardFields = [
                                 'Name' => auth()->user()->full_name,
                                 'Email' => auth()->user()->email,
-                                'Education level' => $profile->education_level,
+                                'Education level' => \App\Support\EducationLevel::label($profile->education_level),
                                 'Institution' => $profile->institution_name,
-                                'Field of study' => $profile->field_of_study,
-                                'Academic results' => $profile->academic_results,
-                            ] as $label => $value)
+                            ];
+                            if (\App\Support\EducationLevel::usesFieldOfStudy($profile->education_level)) {
+                                $wizardFields['Field of study'] = $profile->field_of_study;
+                            }
+                            $wizardFields['Academic results'] = $profile->academic_results;
+                        @endphp
+                        <dl class="row mb-3">
+                            @foreach($wizardFields as $label => $value)
                                 <dt class="col-sm-4 text-secondary fw-normal small">{{ $label }}</dt>
                                 <dd class="col-sm-8 fw-semibold">{{ $value ?: 'Not provided' }}</dd>
                             @endforeach
@@ -114,10 +145,16 @@
                        href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
                 </div>
             </form>
+            @endif
         </div>
 
         <div class="col-xl-4">
-            @if($fit)
+            {{--
+                No percentage when a stated requirement is not met - the main
+                column already explains why in full, and a number next to
+                "you cannot apply" only invites the reader to argue with it.
+            --}}
+            @if($fit && $fit->meetsRequirements())
                 <div class="card mb-4">
                     <div class="card-body text-center">
                         <x-match-score :score="$fit->matchScore" :label="$fit->breakdown->confidenceLabel" size="lg" />
@@ -125,26 +162,7 @@
                     </div>
                 </div>
 
-                @if(! $fit->meetsRequirements())
-                    {{--
-                        A stated requirement is not met. The wizard still lets
-                        them through - the provider sets the rule and the
-                        provider decides - but it says so plainly before they
-                        spend time on a statement.
-                    --}}
-                    <div class="card border-danger">
-                        <div class="card-header bg-danger-subtle">
-                            <h2 class="h6 fw-semibold mb-0">You do not meet this award's requirements</h2>
-                        </div>
-                        <div class="card-body">
-                            <ul class="small mb-0 ps-3 d-grid gap-1">
-                                @foreach($fit->breakdown->unmetRequirements as $requirement)
-                                    <li>{{ $requirement }}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                @elseif($fit->breakdown->fixes)
+                @if($fit->breakdown->fixes)
                     <div class="card border-warning">
                         <div class="card-header bg-warning-subtle">
                             <h2 class="h6 fw-semibold mb-0">Before you submit</h2>

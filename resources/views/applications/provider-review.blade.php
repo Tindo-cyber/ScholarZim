@@ -43,17 +43,22 @@
                 </div>
                 <div class="card-body">
                     @if($applicantProfile)
-                        <dl class="row mb-3">
-                            @foreach([
-                                'Education level' => $applicantProfile->education_level,
+                        @php
+                            $profileFields = [
+                                'Education level' => \App\Support\EducationLevel::label($applicantProfile->education_level),
                                 'Institution' => $applicantProfile->institution_name,
-                                'Field of study' => $applicantProfile->field_of_study,
-                                'Country' => $applicantProfile->country,
-                                'Province' => $applicantProfile->province,
-                                'Citizenship' => $applicantProfile->citizenship,
-                                'Age' => $applicantProfile->age(),
-                                'Academic results' => $applicantProfile->academic_results,
-                            ] as $label => $value)
+                            ];
+                            if (\App\Support\EducationLevel::usesFieldOfStudy($applicantProfile->education_level)) {
+                                $profileFields['Field of study'] = $applicantProfile->field_of_study;
+                            }
+                            $profileFields['Province'] = $applicantProfile->province;
+                            $profileFields['Locality'] = $applicantProfile->locality;
+                            $profileFields['Citizenship'] = $applicantProfile->citizenship;
+                            $profileFields['Age'] = $applicantProfile->age();
+                            $profileFields['Academic results'] = $applicantProfile->academic_results;
+                        @endphp
+                        <dl class="row mb-3">
+                            @foreach($profileFields as $label => $value)
                                 <dt class="col-sm-4 text-secondary fw-normal small">{{ $label }}</dt>
                                 <dd class="col-sm-8 fw-semibold">{{ $value ?: 'Not provided' }}</dd>
                             @endforeach
@@ -78,6 +83,14 @@
                                    href="{{ route('files.applicantResults', $application->application_id) }}"
                                    target="_blank" rel="noopener">
                                     <x-icon name="eye" :size="14" />Results certificate
+                                </a>
+                            @endif
+
+                            @if($applicantProfile->hasTranscript())
+                                <a class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                                   href="{{ route('files.applicantTranscript', $application->application_id) }}"
+                                   target="_blank" rel="noopener">
+                                    <x-icon name="eye" :size="14" />Academic transcript
                                 </a>
                             @endif
                         </div>

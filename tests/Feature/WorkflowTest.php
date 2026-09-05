@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\OpportunityModerationService;
 use App\Services\ScholarFit\ScholarFitEngine;
 use App\Support\ApplicationStatus;
+use App\Support\EducationLevel;
 use App\Support\OpportunityModerationStatus;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -31,10 +32,9 @@ class WorkflowTest extends TestCase
         $this->actingAs($provider)->post('/opportunities/create', [
             'title' => 'Test Award',
             'description' => 'A test scholarship description that is long enough.',
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'target_field' => 'Engineering',
             'funding_type' => 'Full Scholarship',
-            'country' => 'Zimbabwe',
         ])->assertRedirect('/provider/dashboard');
 
         $created = Opportunity::where('title', 'Test Award')->firstOrFail();

@@ -59,6 +59,9 @@ class OpportunityService
             'max_age' => $intOrNull($data['max_age'] ?? null),
             'required_citizenship' => $stringOrNull($data['required_citizenship'] ?? null),
             'required_province' => $stringOrNull($data['required_province'] ?? null),
+            'minimum_education_level' => $stringOrNull($data['minimum_education_level'] ?? null),
+            'target_locality' => $stringOrNull($data['target_locality'] ?? null),
+            'target_settlement_type' => $stringOrNull($data['target_settlement_type'] ?? null),
             'requires_results_certificate' => (bool) ($data['requires_results_certificate'] ?? false),
         ];
     }

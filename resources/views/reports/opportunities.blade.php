@@ -8,7 +8,7 @@
             <th style="width:22%">Provider</th>
             <th style="width:14%">Education</th>
             <th style="width:14%">Field</th>
-            <th style="width:14%">Country</th>
+            <th style="width:14%">Location</th>
             <th style="width:14%">Deadline</th>
         </tr>
         </thead>
@@ -17,9 +17,9 @@
             <tr>
                 <td>{{ $opportunity->title ?: '—' }}</td>
                 <td>{{ $opportunity->provider_name ?: '—' }}</td>
-                <td>{{ $opportunity->education_level ?: '—' }}</td>
+                <td>{{ $opportunity->education_level ? \App\Support\EducationLevel::label($opportunity->education_level) : '—' }}</td>
                 <td>{{ $opportunity->target_field ?: '—' }}</td>
-                <td>{{ $opportunity->country ?: '—' }}</td>
+                <td>{{ $opportunity->target_locality ?: ($opportunity->required_province ?: '—') }}</td>
                 <td>{{ $opportunity->deadline?->format('d M Y') ?: '—' }}</td>
             </tr>
         @empty

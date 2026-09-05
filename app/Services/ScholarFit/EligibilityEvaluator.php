@@ -4,11 +4,12 @@ namespace App\Services\ScholarFit;
 
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
+use App\Services\ScholarFit\Taxonomy\EducationLadder;
+use App\Support\EducationLevel;
 
 /**
  * The requirements a provider stated that this applicant does not meet.
  *
- * Five plain checks against the five columns the schema models as requirements.
  * The result is one flat list of sentences: either the applicant meets what the
  * listing asks for, or here is what they do not.
  *
@@ -18,10 +19,16 @@ use App\Models\Opportunity;
  * bookkeeping: a requirement we cannot confirm is a requirement not yet met, and
  * the sentence tells the student which of the two it is.
  *
- * `education_level` is deliberately not checked here. On this schema it is the
- * level a listing is aimed at rather than a bar an applicant must clear, so it
- * is scored by EducationMatcher, where a mismatch costs marks but still leaves
- * the listing visible and explained.
+ * Two of the checks are about education level, and they ask different
+ * questions on purpose. `pathway()` asks whether the transition from this
+ * applicant's level to what the listing targets is possible *at all* - Primary
+ * to Masters never is, regardless of any single listing's configuration.
+ * `minimumLevel()` asks whether *this specific listing* accepts applicants at
+ * this level - an Undergraduate-targeted listing may or may not take O-Level
+ * applicants directly, and that is this listing's choice to state, not a fact
+ * about the education system. `EducationMatcher` is a third, separate thing
+ * again: it scores *how well* an already-eligible applicant's level fits,
+ * which is not this class's question at all.
  *
  * What this is not: a decision. ScholarFit says how well a profile fits a
  * listing. Whether a student gets the scholarship is the provider's call, made
@@ -36,12 +43,63 @@ final class EligibilityEvaluator
     public function evaluate(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
     {
         return array_values(array_filter([
+            $this->pathway($profile, $opportunity),
+            $this->minimumLevel($profile, $opportunity),
             $this->points($opportunity, $record),
             $this->age($profile, $opportunity),
             $this->citizenship($profile, $opportunity),
             $this->province($profile, $opportunity),
             $this->certificate($profile, $opportunity),
         ]));
+    }
+
+    /**
+     * Whether this applicant's current level could ever reach what the listing
+     * targets - the hard, non-negotiable pathway rule (Primary -> Masters is
+     * never valid, no matter how the listing is configured). See
+     * EducationPathway for the table this reads.
+     */
+    private function pathway(ApplicantProfile $profile, Opportunity $opportunity): ?string
+    {
+        if (blank($opportunity->education_level)) {
+            return null;
+        }
+
+        return EducationPathway::reason($profile->education_level, $opportunity->education_level);
+    }
+
+    /**
+     * Whether this *specific* listing accepts an applicant at this level, when
+     * the provider has stated a floor narrower than "whatever the general
+     * pathway allows". An Undergraduate-targeted listing that requires A-Level
+     * turns away an O-Level applicant here even though the pathway above is
+     * open - the general education system permits the transition, this
+     * particular scholarship does not.
+     */
+    private function minimumLevel(ApplicantProfile $profile, Opportunity $opportunity): ?string
+    {
+        if (blank($opportunity->minimum_education_level)) {
+            return null;
+        }
+
+        $applicantLevel = EducationLevel::canonical($profile->education_level);
+        $minimumLevel = EducationLevel::canonical($opportunity->minimum_education_level);
+
+        if ($applicantLevel === null || $minimumLevel === null || $applicantLevel === $minimumLevel) {
+            return null;
+        }
+
+        // Ranked by position on the same ladder EducationMatcher scores
+        // with - ordering is being borrowed here, not distance.
+        $applicantRank = EducationLadder::rung($applicantLevel);
+        $minimumRank = EducationLadder::rung($minimumLevel);
+
+        if ($applicantRank === null || $minimumRank === null || $applicantRank >= $minimumRank) {
+            return null;
+        }
+
+        return 'This scholarship requires at least ' . EducationLevel::label($opportunity->minimum_education_level)
+            . '. Your current education level is ' . EducationLevel::label($profile->education_level) . '.';
     }
 
     private function points(Opportunity $opportunity, AcademicRecord $record): ?string
@@ -123,10 +181,14 @@ final class EligibilityEvaluator
 
     private function certificate(ApplicantProfile $profile, Opportunity $opportunity): ?string
     {
-        if ($opportunity->requires_results_certificate && ! $profile->hasResultsCertificate()) {
-            return 'This provider requires a results certificate before you can apply.';
+        if (! $opportunity->requires_results_certificate || $profile->hasRequiredAcademicEvidence()) {
+            return null;
         }
 
-        return null;
+        $document = EducationLevel::usesSchoolResults($profile->education_level)
+            ? 'a results certificate'
+            : 'a transcript';
+
+        return 'This provider requires ' . $document . ' before you can apply.';
     }
 }

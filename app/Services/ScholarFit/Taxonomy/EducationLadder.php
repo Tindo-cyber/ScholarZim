@@ -77,6 +77,14 @@ final class EducationLadder
         return abs($left - $right);
     }
 
+    /**
+     * The underscore replacement matters as much as the rest: App\Support\
+     * EducationLevel's canonical constants ('A_LEVEL', 'O_LEVEL', 'FORM_1') are
+     * what every profile and listing stores going forward, and without folding
+     * the underscore to a space here they match nothing in RUNGS - rung()
+     * would silently return null for exactly the two levels most Zimbabwean
+     * secondary applicants are actually at.
+     */
     private static function normalise(?string $value): ?string
     {
         if ($value === null) {
@@ -84,7 +92,7 @@ final class EducationLadder
         }
 
         $clean = strtolower(trim($value));
-        $clean = str_replace(['(', ')', '-', '/', '&', ',', '.', '—'], ' ', $clean);
+        $clean = str_replace(['(', ')', '-', '/', '&', ',', '.', '—', '_'], ' ', $clean);
         $clean = (string) preg_replace('/\s+/', ' ', $clean);
         $clean = trim($clean);
 

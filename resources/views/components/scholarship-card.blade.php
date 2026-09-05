@@ -74,13 +74,13 @@
 
         <ul class="list-unstyled d-flex flex-wrap gap-3 small text-secondary mb-0">
             @if($opportunity->education_level)
-                <li class="d-flex align-items-center gap-1"><x-icon name="file-text" :size="14" />{{ $opportunity->education_level }}</li>
+                <li class="d-flex align-items-center gap-1"><x-icon name="file-text" :size="14" />{{ \App\Support\EducationLevel::label($opportunity->education_level) }}</li>
             @endif
             @if($opportunity->target_field)
                 <li class="d-flex align-items-center gap-1"><x-icon name="stars" :size="14" />{{ $opportunity->target_field }}</li>
             @endif
-            @if($opportunity->country)
-                <li class="d-flex align-items-center gap-1"><x-icon name="pin" :size="14" />{{ $opportunity->country }}</li>
+            @if($opportunity->target_locality || $opportunity->required_province)
+                <li class="d-flex align-items-center gap-1"><x-icon name="pin" :size="14" />{{ $opportunity->target_locality ?: $opportunity->required_province }}</li>
             @endif
             <li class="d-flex align-items-center gap-1">
                 <x-icon name="calendar" :size="14" />

@@ -46,10 +46,18 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <x-form.select name="education_level" label="Education level"
+                                <x-form.select name="education_level" label="Who this scholarship is for"
                                                :options="$educationLevels" :grouped="true"
                                                :value="$opportunity->education_level"
-                                               placeholder="Any level" />
+                                               placeholder="Any level"
+                                               hint="Form 1 is a transition award for pupils finishing Primary school." />
+                            </div>
+                            <div class="col-md-6">
+                                <x-form.select name="minimum_education_level" label="Minimum qualifying level (optional)"
+                                               :options="$minimumLevels" :grouped="true"
+                                               :value="$opportunity->minimum_education_level"
+                                               placeholder="Whatever the level above allows"
+                                               hint="Only set this if your listing is stricter than the general pathway - for example, an Undergraduate award that requires A-Level rather than accepting O-Level applicants directly." />
                             </div>
                             <div class="col-md-6">
                                 <x-form.input name="target_field" label="Field of study"
@@ -62,17 +70,12 @@
                                     @endforeach
                                 </datalist>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <x-form.select name="funding_type" label="Funding type"
                                                :options="$fundingTypes" :value="$opportunity->funding_type"
                                                placeholder="Not specified" />
                             </div>
-                            <div class="col-md-4">
-                                <x-form.select name="country" label="Country"
-                                               :options="$countries" :value="$opportunity->country ?: $defaultCountry"
-                                               :placeholder="null" />
-                            </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <x-form.input name="deadline" label="Application deadline" type="date"
                                               :value="$opportunity->deadline?->format('Y-m-d')"
                                               min="{{ now()->toDateString() }}"

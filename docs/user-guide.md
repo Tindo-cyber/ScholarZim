@@ -7,10 +7,13 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 ### Getting started
 
 1. Register at `/register` with your email and password.
-2. Complete your **academic profile** at `/applicant/profile`.
-3. Upload your **results certificate (PDF)**. It is not required to apply, but most
-   providers will not seriously consider an application without one, and a provider can
-   mark an individual scholarship as requiring one — an applicant without a certificate
+2. Complete your **profile** at `/applicant/profile`. The form only asks for what your
+   education level actually needs: a Primary pupil sees a guardian-details section instead of
+   a document upload; an O/A-Level student sees a results-certificate upload; anyone from
+   Certificate level upward sees a transcript upload, field of study and year of study. There
+   is no GPA field anywhere — providers see your actual results or transcript, not a number.
+3. Upload the document your level asks for. It is not required to apply everywhere, but a
+   provider can mark an individual scholarship as requiring it — an applicant without it
    sees "Requirements not met" on that listing rather than a score.
 4. Browse scholarships at `/scholarships` or your dashboard recommendations.
 
@@ -18,8 +21,11 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ### Applying
 
-- Click **Apply** on a scholarship. Nothing about your profile blocks this — an incomplete
-  profile is a weaker case to a provider, not a locked door.
+- Click **Apply** on a scholarship you are eligible for. Your current education level, the
+  level the scholarship targets, and any hard requirement it states are all checked again at
+  the moment you apply — not only when the recommendations list was built — so a listing you
+  are not eligible for refuses the submission with the same reason the listing page already
+  showed you, and the wizard does not even offer a Submit button for it.
 - Complete the application wizard (personal statement; optional supporting document).
 - Track status at `/my-applications`.
 
@@ -46,10 +52,14 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 - The percentage is how well your profile fits the listing across six weighted dimensions.
   Each one you miss costs points, and the panel says which.
-- **"You are not eligible"** is different. Some providers set hard rules — a minimum points
-  figure, an age limit, a citizenship or province requirement, a results certificate on
-  file. Failing one means you cannot be considered, so no percentage is shown and the
-  listing is left out of your recommendations.
+- **"You are not eligible"** is different. Two rules apply to every listing regardless of what
+  the provider configured: whether your current education level can ever reach what the
+  listing targets (a Primary pupil cannot apply for a Masters award, no matter how the listing
+  is set up), and whether this specific listing has raised its own minimum qualifying level.
+  On top of those, providers can set their own hard rules — a minimum points figure, an age
+  limit, a citizenship or province requirement, proof of academic results on file. Failing any
+  one of these means you cannot be considered, so no percentage is shown, the listing is left
+  out of your recommendations, and applying to it directly is refused.
 - If we simply do not have the information to check a rule, we ask for it rather than ruling
   you out. Filling in your date of birth and citizenship lets us check age and citizenship
   rules for you.
@@ -77,21 +87,32 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 - Create opportunities at `/opportunities/create`.
 - Review applications at `/provider/applications`.
-- View applicant academic summary and download **results certificate** for your opportunities only.
+- View the applicant's profile and download their results certificate or transcript — whichever
+  their education level actually uses — for your opportunities only.
 
 ### Describing an award
 
+- **Who this scholarship is for** — the education level it targets (Form 1 counts as a target
+  here even though no applicant's own profile is ever set to it — it is the Primary-to-secondary
+  transition award). A student whose current level can never reach the level you pick is
+  refused before anything else is checked, regardless of how the rest of the listing is set up.
+- **Minimum qualifying level** — optional, and only needed when your listing is stricter than
+  the general pathway: an Undergraduate award that should only take A-Level applicants
+  directly, for example, rather than accepting O-Level applicants the way the general pathway
+  otherwise would.
 - **What the award is worth** — the value, currency, and how many awards are on offer. This
   is the first thing a student compares, and it is what value sorting and the minimum-award
   filter read. A listing with no stated value still appears in search, but is excluded from
   both.
 - **Your own application page** — an optional link, shown alongside the ScholarZim
   application.
-- **Hard eligibility rules** — minimum A-Level points, an age ceiling, required citizenship
-  or province, and whether a results certificate must be on file. These **disqualify**
-  rather than score down: a student who fails one is told they are not eligible and the
-  listing is left out of their recommendations. Leave a rule blank unless it genuinely is
-  one; guidance belongs in the description, where it informs rather than blocks.
+- **Hard eligibility rules** — minimum A-Level points, an age ceiling, required citizenship,
+  province, an optional target locality (a specific place, e.g. Gweru) and settlement type
+  (rural or urban), and whether proof of academic results must be on file. These **disqualify**
+  rather than score down: a student who fails one is told they are not eligible, the listing
+  is left out of their recommendations, and applying to it directly is refused. Leave a rule
+  blank unless it genuinely is one; guidance belongs in the description, where it informs
+  rather than blocks.
 
 ### Reviewing applications
 

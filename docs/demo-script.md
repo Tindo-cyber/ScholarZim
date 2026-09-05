@@ -29,19 +29,26 @@ last-verified pass count — do not quote a number here, it goes stale the momen
 
 ## Demo accounts
 
-The seeder (`database/seeders/DatabaseSeeder.php`) creates these on every `--seed` run:
+The seeder (`database/seeders/DatabaseSeeder.php`) creates these on every `--seed` run. The six
+applicants deliberately span the education pathway `App\Services\ScholarFit\EducationPathway`
+enforces — Primary through Masters — so every rule below has a real profile behind it rather
+than a constructed one.
 
 | Role | Email | State | Use in demo |
 |------|-------|-------|--------------|
 | Admin | `admin@scholarzim.co.zw` | ACTIVE, super admin | Provider verification, moderation, audit log, reports, ScholarFit weights |
 | Provider (active) | `provider@scholarzim.co.zw` | ACTIVE, verified | Post listings, review applications |
 | Provider (pending) | `trust@scholarzim.co.zw` | PENDING | Live admin verification |
-| Applicant (complete profile) | `student@scholarzim.co.zw` | ACTIVE, full document set | Full apply flow, ScholarFit high match |
-| Applicant (incomplete profile) | `chipo.ncube@scholarzim.co.zw` | ACTIVE, no results certificate | Completeness checklist, a listing that requires a certificate |
+| Applicant, Undergraduate | `student@scholarzim.co.zw` | ACTIVE, full document set incl. transcript | Full apply flow, ScholarFit high match |
+| Applicant, A-Level (incomplete) | `chipo.ncube@scholarzim.co.zw` | ACTIVE, no documents at all | Completeness checklist, a pathway block, a certificate block |
+| Applicant, Primary | `kudzai.marufu@scholarzim.co.zw` | ACTIVE, guardian details on file | Guardian-assisted Form 1 pathway, everything else blocked |
+| Applicant, O-Level | `farai.sibanda@scholarzim.co.zw` | ACTIVE, results certificate | O-Level reaching A-Level and a qualifying Undergraduate award |
+| Applicant, A-Level | `tanaka.chirwa@scholarzim.co.zw` | ACTIVE, results certificate | A-Level meeting a listing's explicit minimum-level floor |
+| Applicant, Masters | `blessing.moyana@scholarzim.co.zw` | ACTIVE, transcript on file | Postgraduate academic evidence, Masters-targeted award |
 
-Five listings are published, one is sitting in the moderation queue
+Six listings are published, one is sitting in the moderation queue
 ("Bulawayo Mining Skills Scholarship"), and three applications already exist in different
-states — see Step 4.
+states — see Step 4. Password for every account: `ChangeMe123`.
 
 ---
 
@@ -56,44 +63,67 @@ states — see Step 4.
 
 ---
 
-## Step 2 — Applicant profile and ScholarFit (3 min)
+## Step 2 — The education pathway and progressive profile (4 min)
 
-**Talking point:** The certificate affects your match score and can be required by a specific
-provider; it does not block you from applying anywhere.
+**Talking point:** Current education level, target level, pathway, scholarship-specific rules
+and ScholarFit's match score are five separate things — see
+`App\Services\ScholarFit\EducationPathway` and `EligibilityEvaluator`. ScholarFit never prints a
+percentage next to a listing an applicant cannot actually apply to.
 
-1. Log in as **`chipo.ncube@scholarzim.co.zw`**
-2. Open `/applicant/profile` — the completeness badge reads **In progress**, and the checklist
-   names the missing results certificate, CV and recommendation letter
-3. Open **My matches** (`/applicant/recommendations`) — every listing shows a match
-   percentage and an explanation of the dimensions behind it, *except* one:
-   **"Harare Health Sciences Postgraduate Grant"** reads **Requirements not met**, because that
-   provider has marked the listing as requiring a certificate on file
-4. Log out, log back in as **`student@scholarzim.co.zw`** (complete profile) — the same
-   listing now scores normally, and **"Zimbabwe Tech Futures Undergraduate Bursary"** is his
-   strongest match
-5. Point out **"Rural Schools A-Level Support Fund"**: it reads Requirements not met for
-   `student@scholarzim.co.zw` (province-restricted to Manicaland, he is in Harare) and scores
-   normally for `chipo.ncube@scholarzim.co.zw` (she is in Manicaland) — the same rule, two
-   different outcomes, driven entirely by the profile
+1. Log in as **`kudzai.marufu@scholarzim.co.zw`** (Primary) and open `/applicant/profile` — the
+   form shows only what a Primary pupil's profile needs: no field of study, no academic-results
+   box, no document upload card, and a **Guardian details** card instead, already filled in.
+   Change the education level dropdown to **Undergraduate** in another tab (do not save) to show
+   the same form growing a field-of-study, transcript and year-of-study section live — this is
+   client-side progressive disclosure; the server enforces the same rules independently
+2. Open **My matches** — only **"Chinhoyi Form 1 Transition Bursary"** appears. Open
+   **"Zimbabwe Tech Futures Undergraduate Bursary"** directly instead: no percentage is shown at
+   all, just **"You cannot apply to this scholarship"** and the reason — Primary cannot reach
+   Undergraduate in one step, regardless of how the listing is configured
+3. Log out, log in as **`farai.sibanda@scholarzim.co.zw`** (O-Level). Open **My matches**:
+   **"Rural Schools A-Level Support Fund"** and **"Zimbabwe Tech Futures Undergraduate Bursary"**
+   both score normally — O-Level may reach A-Level, and this particular Undergraduate listing
+   accepts O-Level applicants directly. Open **"Midlands Engineering Excellence Award"**
+   instead (also Undergraduate-targeted): **not eligible** — that specific provider has set a
+   minimum qualifying level of A-Level, a rule narrower than the general pathway
+4. Log out, log in as **`tanaka.chirwa@scholarzim.co.zw`** (A-Level) and open the same
+   **"Midlands Engineering Excellence Award"** — she meets the floor exactly, and scores normally
+5. Log out, log in as **`chipo.ncube@scholarzim.co.zw`** (A-Level, no documents) — the
+   completeness badge reads **In progress**. Open **"Harare Health Sciences Postgraduate Grant"**
+   (Masters-targeted): not eligible, for two independent reasons at once — A-Level cannot reach
+   Masters, *and* that provider requires proof of academic results on file. Point out the reason
+   list names both
 
-**Talking point for both accounts:** applying is open regardless of profile completeness —
-click **Apply** on any listing as either account to show there is no redirect or block.
+**Talking point:** province and locality are separate, and a blank locality is never held
+against a student. Open **"Rural Schools A-Level Support Fund"** as `farai.sibanda@scholarzim.co.zw`
+(Manicaland, matches) and as `student@scholarzim.co.zw` (Harare, does not) — same rule, two
+outcomes, and neither account has ever been asked for a country.
 
 ---
 
-## Step 3 — Submitting and tracking an application (2 min)
+## Step 3 — Submitting and tracking an application (3 min)
 
-1. Still as **`student@scholarzim.co.zw`**, track his existing application at
-   `/my-applications` — **"Midlands Engineering Excellence Award"** sits at **Pending**
-2. Open any listing he has not applied to yet (everything except Midlands Engineering is
-   free) and apply — personal statement; a supporting document is optional
+**Talking point:** The pathway and eligibility rules shown in Step 2 are enforced by
+`ApplicationService::submit()` itself, not only by the recommendations list — a direct POST to
+the apply route is refused exactly the same way the UI already showed it would be.
+
+1. As **`student@scholarzim.co.zw`**, track his existing application at `/my-applications` —
+   **"Midlands Engineering Excellence Award"** sits at **Pending** (Undergraduate comfortably
+   clears that listing's A-Level floor)
+2. Open **"Zimbabwe Tech Futures Undergraduate Bursary"**, which he has not applied to, and
+   apply — personal statement; a supporting document is optional since his profile already
+   carries a transcript
 3. Try applying to the same listing again — blocked, one application per student per
    scholarship
-4. Log out, log in as **`chipo.ncube@scholarzim.co.zw`**, and open `/my-applications` — she
+4. Log out, log in as **`kudzai.marufu@scholarzim.co.zw`** and open
+   **"Chinhoyi Form 1 Transition Bursary"** — no documents are required at Primary level; apply
+   with one click via the listing card's **Apply** button
+5. Log out, log in as **`chipo.ncube@scholarzim.co.zw`**, and open `/my-applications` — she
    already has one of each remaining outcome: **"Rural Schools A-Level Support Fund"** is
    **Accepted**, with the provider's written reason shown; **"Agribusiness Innovation Research
-   Grant"** is **Rejected**, reason shown. Point out that both are final: neither can be
-   reopened, and reapplying is only possible after a **Withdrawal**.
+   Grant"** is **Rejected**, reason shown (an A-Level applicant on a PhD-targeted award — the same
+   pathway rule from Step 2, seen as history rather than live). Point out that both are final:
+   neither can be reopened, and reapplying is only possible after a **Withdrawal**.
 
 ---
 
@@ -104,8 +134,8 @@ written reason.
 
 1. Log out → log in as **`provider@scholarzim.co.zw`**
 2. Open `/provider/applications` — the pending application from Step 3 is there
-3. Open it: applicant profile, ScholarFit score, and (if on file) the results certificate are
-   all visible
+3. Open it: applicant profile, ScholarFit score, and (if on file) the applicant's results
+   certificate or transcript — whichever their education level actually uses — are all visible
 4. Try **Accept** or **Reject** with the reason left blank — refused
 5. Submit a real reason → the application leaves the pending queue; the applicant's
    notification and status update are immediate

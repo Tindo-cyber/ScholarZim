@@ -57,6 +57,25 @@ class FileDownloadController extends Controller
         return $this->fileStorage->respond($profile->results_certificate_path, $profile->results_certificate_filename ?: 'results-certificate');
     }
 
+    /** Academic transcript attached to an application, for the reviewing provider. */
+    public function applicantTranscript(Request $request, int $applicationId)
+    {
+        $user = $request->user();
+        $application = $this->applicationService->findForProvider($applicationId, $user);
+
+        $profile = $application->user?->applicantProfile;
+        abort_unless($profile && $this->fileStorage->exists($profile->transcript_path), 404);
+
+        $this->auditService->log(
+            $user->email,
+            AuditAction::VIEW_APPLICANT_TRANSCRIPT,
+            'APPLICANT_PROFILE',
+            $profile->profile_id
+        );
+
+        return $this->fileStorage->respond($profile->transcript_path, $profile->transcript_filename ?: 'transcript');
+    }
+
     /** Admin-only: the registration certificate a provider uploaded at signup. */
     public function providerCertificate(Request $request, int $userId)
     {

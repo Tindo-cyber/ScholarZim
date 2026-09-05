@@ -108,7 +108,7 @@ class PublicController extends Controller
         return [
             'keyword' => $request->input('keyword'),
             'education_level' => $request->input('education_level'),
-            'country' => $request->input('country'),
+            'province' => $request->input('province'),
             'field_of_study' => $request->input('field_of_study'),
             'provider' => $request->input('provider'),
             'funding_type' => $request->input('funding_type'),

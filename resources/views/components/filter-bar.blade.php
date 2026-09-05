@@ -19,7 +19,7 @@
         'keyword' => 'Search',
         'education_level' => 'Level',
         'field_of_study' => 'Field',
-        'country' => 'Country',
+        'province' => 'Province',
         'provider' => 'Awarding body',
         'funding_type' => 'Funding',
         'deadline_before' => 'Closes before',
@@ -45,8 +45,8 @@
                         <option value="">Any</option>
                         @foreach(FormOptions::educationLevelGroups() as $group => $levels)
                             <optgroup label="{{ $group }}">
-                                @foreach($levels as $level)
-                                    <option value="{{ $level }}" @selected(($filters['education_level'] ?? '') === $level)>{{ $level }}</option>
+                                @foreach($levels as $value => $label)
+                                    <option value="{{ $value }}" @selected(($filters['education_level'] ?? '') === $value)>{{ $label }}</option>
                                 @endforeach
                             </optgroup>
                         @endforeach
@@ -64,11 +64,11 @@
                 </div>
 
                 <div class="col-6 col-lg-2">
-                    <label class="form-label" for="filter-country">Country</label>
-                    <select class="form-select" id="filter-country" name="country">
+                    <label class="form-label" for="filter-province">Province</label>
+                    <select class="form-select" id="filter-province" name="province">
                         <option value="">Any</option>
-                        @foreach(FormOptions::COUNTRIES as $country)
-                            <option value="{{ $country }}" @selected(($filters['country'] ?? '') === $country)>{{ $country }}</option>
+                        @foreach(FormOptions::ZIMBABWE_PROVINCES as $province)
+                            <option value="{{ $province }}" @selected(($filters['province'] ?? '') === $province)>{{ $province }}</option>
                         @endforeach
                     </select>
                 </div>

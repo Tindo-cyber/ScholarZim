@@ -14,23 +14,26 @@ use App\Models\ApplicantProfile;
  * full academic marks for the same sentence.
  *
  * The field is free text because Zimbabwean applicants describe results in
- * genuinely different ways - "14 points", "3 A's", "2.1", "Upper Second" - and
+ * genuinely different ways - "14 points", "3 A's", "Upper Second" - and
  * forcing one format would lock out the students least likely to come back and
  * fix it. Reading it is therefore best-effort by design: whatever cannot be
  * understood is reported as unknown rather than guessed at.
+ *
+ * GPA is deliberately not one of the things read here. ScholarZim does not use
+ * GPA: not as a profile field, and not as a scoring input. A points-based
+ * O/A-Level record, a stated quality marker, or - for tertiary and above - the
+ * fact that a transcript is on file (via `ApplicantProfile::hasTranscript()`,
+ * read by CertificateMatcher, not this class) are the forms of evidence the
+ * platform actually asks Zimbabwean applicants for.
  */
 final class AcademicRecord
 {
     private const POINTS_PATTERN = '/(\d{1,2})\s*points?/i';
 
-    /** Optional fallback for international profiles that still quote a GPA. */
-    private const GPA_PATTERN = '/(?:gpa|grade point average)\s*[:=]?\s*(\d+(?:\.\d+)?)/i';
-
     private const QUALITY_MARKERS = ['distinction', 'first class', 'upper second', 'cum laude'];
 
     private function __construct(
         public readonly ?int $points,
-        public readonly ?float $gpa,
         public readonly bool $hasStrongMarker,
         public readonly bool $isPresent,
         public readonly bool $isSubstantive,
@@ -42,14 +45,13 @@ final class AcademicRecord
         $raw = $profile->academic_results;
 
         if (blank($raw)) {
-            return new self(null, null, false, false, false);
+            return new self(null, false, false, false);
         }
 
         $text = trim((string) $raw);
         $lower = strtolower($text);
 
         $points = preg_match(self::POINTS_PATTERN, $text, $m) === 1 ? (int) $m[1] : null;
-        $gpa = preg_match(self::GPA_PATTERN, $text, $g) === 1 ? (float) $g[1] : null;
 
         $strong = false;
         foreach (self::QUALITY_MARKERS as $marker) {
@@ -61,10 +63,9 @@ final class AcademicRecord
 
         return new self(
             $points,
-            $gpa,
             $strong,
             true,
-            self::looksSubstantive($text, $lower, $points, $gpa, $strong),
+            self::looksSubstantive($text, $lower, $points, $strong),
         );
     }
 
@@ -102,14 +103,6 @@ final class AcademicRecord
             };
         }
 
-        if ($this->gpa !== null) {
-            return match (true) {
-                $this->gpa >= $config['strong_gpa'] => (float) $config['strong_record'],
-                $this->gpa >= $config['sound_gpa'] => (float) $config['sound_record'],
-                default => (float) $config['thin_record'],
-            };
-        }
-
         return $this->isSubstantive
             ? (float) $config['sound_record']
             : (float) $config['thin_record'];
@@ -126,10 +119,6 @@ final class AcademicRecord
             return $this->points . ' points';
         }
 
-        if ($this->gpa !== null) {
-            return 'GPA ' . $this->gpa;
-        }
-
         return $this->hasStrongMarker ? 'Strong grades stated' : 'Results stated';
     }
 
@@ -142,10 +131,9 @@ final class AcademicRecord
         string $text,
         string $lower,
         ?int $points,
-        ?float $gpa,
         bool $strong
     ): bool {
-        if ($points !== null || $gpa !== null || $strong) {
+        if ($points !== null || $strong) {
             return true;
         }
 

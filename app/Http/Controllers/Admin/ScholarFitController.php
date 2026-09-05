@@ -7,6 +7,7 @@ use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\ScholarFitEngine;
 use App\Services\SettingsService;
+use App\Support\EducationLevel;
 use App\Support\FormOptions;
 use Illuminate\Http\Request;
 
@@ -90,20 +91,17 @@ class ScholarFitController extends Controller
     private function sampleScore(): array
     {
         $profile = new ApplicantProfile([
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'field_of_study' => FormOptions::FIELDS_OF_STUDY[0],
-            'country' => FormOptions::DEFAULT_COUNTRY,
             'province' => 'Harare',
-            'academic_results' => '12 points at A-Level',
-            'results_certificate_path' => 'sample/results.pdf',
+            'academic_results' => 'Upper second class standing',
+            'transcript_path' => 'sample/transcript.pdf',
         ]);
 
         $opportunity = new Opportunity([
             'title' => 'Sample listing',
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'target_field' => FormOptions::FIELDS_OF_STUDY[0],
-            'country' => FormOptions::DEFAULT_COUNTRY,
-            'target_country' => FormOptions::DEFAULT_COUNTRY,
             'deadline' => now()->addDays(10)->toDateString(),
         ]);
 

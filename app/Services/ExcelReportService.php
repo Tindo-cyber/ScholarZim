@@ -40,13 +40,13 @@ class ExcelReportService
     {
         return $this->build('Opportunities', [
             'Title', 'Provider', 'Education Level', 'Field',
-            'Country', 'Funding', 'Deadline', 'Status',
+            'Location', 'Funding', 'Deadline', 'Status',
         ], Opportunity::orderBy('opportunity_id')->cursor(), fn (Opportunity $opp) => [
             $opp->title,
             $opp->provider_name,
-            $opp->education_level,
+            $opp->education_level ? \App\Support\EducationLevel::label($opp->education_level) : null,
             $opp->target_field,
-            $opp->country,
+            $opp->target_locality ?: $opp->required_province,
             $opp->funding_type,
             $this->format($opp->deadline, self::DATE_FMT),
             $opp->status,

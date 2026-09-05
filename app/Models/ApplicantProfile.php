@@ -16,12 +16,17 @@ class ApplicantProfile extends Model
         'education_level',
         'institution_name',
         'field_of_study',
+        'year_of_study',
         'country',
         'province',
-        'district',
         'locality',
+        'settlement_type',
         'date_of_birth',
         'citizenship',
+        'guardian_name',
+        'guardian_phone',
+        'guardian_relationship',
+        'guardian_confirmed_at',
         'academic_results',
         'biography',
         'results_certificate_path',
@@ -36,14 +41,19 @@ class ApplicantProfile extends Model
         'recommendation_letter_path',
         'recommendation_letter_filename',
         'recommendation_letter_uploaded_at',
+        'transcript_path',
+        'transcript_filename',
+        'transcript_uploaded_at',
     ];
 
     protected $casts = [
         'date_of_birth' => 'date',
+        'guardian_confirmed_at' => 'datetime',
         'results_uploaded_at' => 'datetime',
         'cv_uploaded_at' => 'datetime',
         'passport_uploaded_at' => 'datetime',
         'recommendation_letter_uploaded_at' => 'datetime',
+        'transcript_uploaded_at' => 'datetime',
     ];
 
     /** documentType => column prefix, as used by the upload routes. */
@@ -52,6 +62,7 @@ class ApplicantProfile extends Model
         'cv' => 'cv',
         'passport' => 'passport',
         'recommendation' => 'recommendation_letter',
+        'transcript' => 'transcript',
     ];
 
     /** documentType => label shown to the applicant. */
@@ -60,6 +71,7 @@ class ApplicantProfile extends Model
         'cv' => 'CV / resume',
         'passport' => 'ID or passport',
         'recommendation' => 'Recommendation letter',
+        'transcript' => 'Academic transcript',
     ];
 
     /** documentType => name used when renaming an uploaded file. */
@@ -68,6 +80,7 @@ class ApplicantProfile extends Model
         'cv' => 'CV',
         'passport' => 'ID or Passport',
         'recommendation' => 'Recommendation Letter',
+        'transcript' => 'Academic Transcript',
     ];
 
     public function user(): BelongsTo
@@ -107,16 +120,45 @@ class ApplicantProfile extends Model
         return filled($this->results_certificate_path);
     }
 
+    public function hasTranscript(): bool
+    {
+        return filled($this->transcript_path);
+    }
+
     /**
-     * School-level students only need their results certificate; everyone
-     * past high school is asked for the full document set (CV, ID, results,
-     * and a recommendation letter) since there is no single "results" paper.
+     * The document that stands as this applicant's academic evidence: an
+     * O/A-Level results certificate for a school-level applicant, a transcript
+     * for anyone at Certificate level or above. There is no such thing as a
+     * Masters student's "results certificate" - asking for the wrong document
+     * is what the two-document split (results vs transcript) exists to avoid.
+     */
+    public function hasRequiredAcademicEvidence(): bool
+    {
+        return \App\Support\EducationLevel::usesSchoolResults($this->education_level)
+            ? $this->hasResultsCertificate()
+            : $this->hasTranscript();
+    }
+
+    /**
+     * O/A-Level applicants are asked for their results certificate; everyone
+     * from Certificate level upward is asked for the full document set (CV,
+     * ID, transcript, and a recommendation letter) in place of it, since a
+     * transcript is the tertiary-and-above equivalent of a school results
+     * paper, not an addition to it.
      */
     public function requiredDocumentTypes(): array
     {
-        return \App\Support\FormOptions::isSchoolLevel($this->education_level)
-            ? ['results']
-            : array_keys(self::DOCUMENT_TYPES);
+        if (\App\Support\EducationLevel::isPrimary($this->education_level)) {
+            // A Primary applicant applies through the guardian-assisted Form 1
+            // pathway; no document here is required to start that.
+            return [];
+        }
+
+        if (\App\Support\EducationLevel::usesSchoolResults($this->education_level)) {
+            return ['results'];
+        }
+
+        return ['cv', 'passport', 'recommendation', 'transcript'];
     }
 
     public function missingRequiredDocumentTypes(): array
@@ -142,26 +184,55 @@ class ApplicantProfile extends Model
      */
     public function completionChecklist(): array
     {
+        $isPrimary = \App\Support\EducationLevel::isPrimary($this->education_level);
+
         $items = [
             ['label' => 'Education level', 'value' => $this->education_level, 'anchor' => 'education_level',
                 'hint' => 'Sets which listings you are matched against.'],
             ['label' => 'Institution', 'value' => $this->institution_name, 'anchor' => 'institution_name',
                 'hint' => 'Shown to providers reviewing your application.'],
-            ['label' => 'Field of study', 'value' => $this->field_of_study, 'anchor' => 'field_of_study',
-                'hint' => 'Worth up to a quarter of your ScholarFit score.'],
-            ['label' => 'Province', 'value' => $this->province, 'anchor' => 'province',
-                'hint' => 'Some awards are restricted to one province.'],
-            ['label' => 'Date of birth', 'value' => $this->date_of_birth, 'anchor' => 'date_of_birth',
-                'hint' => 'Needed to check age limits on an award.'],
-            ['label' => 'Citizenship', 'value' => $this->citizenship, 'anchor' => 'citizenship',
-                'hint' => 'Needed to check citizenship rules on an award.'],
-            ['label' => 'Academic results', 'value' => $this->academic_results, 'anchor' => 'academic_results',
-                'hint' => 'Your points or degree class, in your own words.'],
-            ['label' => 'Short biography', 'value' => $this->biography, 'anchor' => 'biography',
-                'hint' => 'The first thing a provider reads about you.'],
-            ['label' => 'Results certificate', 'value' => $this->results_certificate_path, 'anchor' => 'documents',
-                'hint' => 'Required before most providers will consider you.'],
         ];
+
+        // Field of study is not a meaningful question below tertiary level - a
+        // Primary or O/A-Level applicant has no "field" to state, and asking
+        // for one anyway is exactly the university-shaped form the redesign
+        // was about removing.
+        if (\App\Support\EducationLevel::usesFieldOfStudy($this->education_level)) {
+            $items[] = ['label' => 'Field of study', 'value' => $this->field_of_study, 'anchor' => 'field_of_study',
+                'hint' => 'Worth up to a quarter of your ScholarFit score.'];
+        }
+
+        $items[] = ['label' => 'Province', 'value' => $this->province, 'anchor' => 'province',
+            'hint' => 'Some awards are restricted to one province.'];
+        $items[] = ['label' => 'Date of birth', 'value' => $this->date_of_birth, 'anchor' => 'date_of_birth',
+            'hint' => 'Needed to check age limits on an award.'];
+        $items[] = ['label' => 'Citizenship', 'value' => $this->citizenship, 'anchor' => 'citizenship',
+            'hint' => 'Needed to check citizenship rules on an award.'];
+
+        if ($isPrimary) {
+            // A Primary applicant's own results are not the relevant academic
+            // fact yet; whether a guardian is standing behind the application is.
+            $items[] = ['label' => 'Guardian details', 'value' => $this->guardian_name, 'anchor' => 'guardian',
+                'hint' => 'Required for the Form 1 pathway - Primary applicants apply with a guardian.'];
+        } else {
+            $items[] = ['label' => 'Academic results', 'value' => $this->academic_results, 'anchor' => 'academic_results',
+                'hint' => 'Your points or degree class, in your own words.'];
+        }
+
+        $items[] = ['label' => 'Short biography', 'value' => $this->biography, 'anchor' => 'biography',
+            'hint' => 'The first thing a provider reads about you.'];
+
+        if (! $isPrimary) {
+            $documentLabel = \App\Support\EducationLevel::usesSchoolResults($this->education_level)
+                ? 'Results certificate'
+                : 'Academic transcript';
+            $documentValue = \App\Support\EducationLevel::usesSchoolResults($this->education_level)
+                ? $this->results_certificate_path
+                : $this->transcript_path;
+
+            $items[] = ['label' => $documentLabel, 'value' => $documentValue, 'anchor' => 'documents',
+                'hint' => 'Required before most providers will consider you.'];
+        }
 
         return array_map(static fn (array $item) => [
             'label' => $item['label'],

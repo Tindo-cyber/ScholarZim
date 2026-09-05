@@ -204,11 +204,21 @@ file, so deleting the row restores the shipped weighting. The six must total 100
 every score is presented to students as a percentage.
 
 **Stated requirements** are checked alongside them by
-`app/Services/ScholarFit/EligibilityEvaluator.php`: minimum A-Level points, an age ceiling,
-a required citizenship or province, a results certificate on file. Each is one plain check
-producing one plain sentence, and any unmet requirement forces the match to 0% and keeps
-the listing out of that student's recommendations. A requirement the provider did not set
-is never held against anyone.
+`app/Services/ScholarFit/EligibilityEvaluator.php`, checked first and separately from the
+weighted score: whether the applicant's current education level can ever reach what the
+listing targets at all (`app/Services/ScholarFit/EducationPathway.php` — an explicit
+adjacency table, e.g. O-Level may reach Undergraduate but never Masters, checked
+independently of any single listing's configuration), whether *this specific* listing has
+raised its own minimum qualifying level narrower than the general pathway
+(`Opportunity::minimum_education_level`), minimum A-Level points, an age ceiling, a required
+citizenship or province, and proof of academic results on file (a results certificate for
+O/A-Level applicants, a transcript for everyone from Certificate level upward — there is no
+GPA field anywhere on the platform). Each is one plain check producing one plain sentence,
+and any unmet requirement forces the match to 0% and keeps the listing out of that student's
+recommendations — never a low percentage next to "you are not eligible". A requirement the
+provider did not set is never held against anyone, and this same evaluator runs again inside
+`ApplicationService::submit()`, so the gate is enforced on the actual submission, not only on
+what the recommendations list chooses to show.
 
 The engine returns a per-dimension breakdown, the score, and what is holding it back. Each
 dimension shortfall carries the profile field that fixes it, so the UI renders it as a link

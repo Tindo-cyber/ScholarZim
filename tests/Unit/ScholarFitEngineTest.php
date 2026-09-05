@@ -5,7 +5,8 @@ namespace Tests\Unit;
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\ScholarFitEngine;
-use App\Services\ScholarFit\Taxonomy\Locality;
+use App\Services\ScholarFit\Taxonomy\SettlementType;
+use App\Support\EducationLevel;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -33,25 +34,28 @@ class ScholarFitEngineTest extends TestCase
     private function profile(array $attributes = []): ApplicantProfile
     {
         return new ApplicantProfile(array_merge([
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'field_of_study' => 'Computer Science & IT',
-            'country' => 'Zimbabwe',
             'province' => 'Harare',
             // Stated, so a citizenship rule is genuinely tested rather than
             // deferred: a blank field is a prompt, not a refusal.
             'citizenship' => 'Zimbabwe',
             'academic_results' => '14 points at A-Level',
-            'results_certificate_path' => 'certs/results.pdf',
+            // Undergraduate's academic evidence is a transcript, not an O/A-Level
+            // results certificate - see ApplicantProfile::hasRequiredAcademicEvidence().
+            'transcript_path' => 'certs/transcript.pdf',
         ], $attributes));
     }
 
     private function opportunity(array $attributes = []): Opportunity
     {
         return new Opportunity(array_merge([
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'target_field' => 'Computer Science & IT',
-            'country' => 'Zimbabwe',
-            'target_country' => 'Zimbabwe',
+            // Matches the default profile's province, so the pair earns full
+            // location marks by default - country is no longer part of this
+            // score at all; see LocationMatcher's class docblock.
+            'required_province' => 'Harare',
             'deadline' => Carbon::today()->addDays(10),
         ], $attributes));
     }
@@ -76,7 +80,7 @@ class ScholarFitEngineTest extends TestCase
     public function test_a_strong_match_scores_well_without_being_perfect(): void
     {
         $scored = $this->engine()->evaluate(
-            $this->profile(['results_certificate_path' => null]),
+            $this->profile(['transcript_path' => null]),
             $this->opportunity(['deadline' => Carbon::today()->addDays(200)])
         );
 
@@ -88,14 +92,19 @@ class ScholarFitEngineTest extends TestCase
     /** 3. Eligible, but wrong on almost everything that matters. */
     public function test_a_weak_match_scores_low_but_stays_eligible(): void
     {
+        // Certificate is a valid pathway onto Undergraduate - see
+        // EducationPathway - so this stays eligible; it is simply a poor fit on
+        // every soft dimension, which is the thing under test. Province is left
+        // matching the default so location is not also a *hard* province
+        // failure - that would test something else entirely.
         $scored = $this->engine()->evaluate(
             $this->profile([
-                'education_level' => 'PhD',
+                'education_level' => EducationLevel::CERTIFICATE,
                 'field_of_study' => 'Law',
                 'academic_results' => null,
-                'results_certificate_path' => null,
+                'transcript_path' => null,
             ]),
-            $this->opportunity(['education_level' => 'High School (O-Level)'])
+            $this->opportunity()
         );
 
         $this->assertTrue($scored->meetsRequirements(), 'a poor fit is not the same as a closed door');
@@ -141,8 +150,9 @@ class ScholarFitEngineTest extends TestCase
         $bare = $this->opportunity([
             'education_level' => null,
             'target_field' => null,
-            'country' => null,
-            'target_country' => null,
+            'required_province' => null,
+            'target_locality' => null,
+            'target_settlement_type' => null,
             'deadline' => null,
         ]);
 
@@ -256,8 +266,8 @@ class ScholarFitEngineTest extends TestCase
 
     // ------------------------------------------------------------- location --
 
-    /** 13. */
-    public function test_an_exact_country_match_earns_full_location_marks(): void
+    /** 13. Zimbabwe is implicit; province is the first tier that actually varies. */
+    public function test_an_exact_province_match_earns_full_location_marks(): void
     {
         $this->assertSame(1.0, $this->ratio($this->profile(), $this->opportunity(), 'location'));
     }
@@ -282,41 +292,46 @@ class ScholarFitEngineTest extends TestCase
             'location'
         );
 
-        $this->assertLessThan(1.0, $ratio);
-        $this->assertGreaterThan(0.0, $ratio, 'the country still matched');
+        // Country is not a tier any more: a missed province with nothing else
+        // targeted earns nothing, not a partial credit propped up by "the
+        // country still matched".
+        $this->assertSame(0.0, $ratio);
     }
 
-    public function test_a_different_country_earns_no_location_marks(): void
+    /** No location targeting at all is unknown, not a match - see #6 for the same rule elsewhere. */
+    public function test_no_location_targeting_earns_neutral_marks(): void
     {
         $this->assertSame(
-            0.0,
-            $this->ratio($this->profile(['country' => 'Zambia']), $this->opportunity(), 'location')
+            (float) config('scholarfit.credit.neutral'),
+            $this->ratio($this->profile(), $this->opportunity(['required_province' => null]), 'location')
         );
     }
 
     /**
-     * 15. Rural/urban is its own attribute now. In v1 this was tested by setting
-     * province to "Rural", which is not a province and which the dropdown never
-     * offered - so the rule it exercised could not fire in production.
+     * 15. Rural/urban is its own attribute now, held on settlement_type - see
+     * App\Services\ScholarFit\Taxonomy\SettlementType. "Locality" means a
+     * specific place (e.g. Gweru); rural/urban is a separate, narrower tier
+     * from province, and both are additive with it on the default fixture,
+     * which already matches on province.
      */
     public function test_a_rural_listing_rewards_a_rural_applicant(): void
     {
-        $opportunity = $this->opportunity(['target_locality' => Locality::RURAL]);
+        $opportunity = $this->opportunity(['target_settlement_type' => SettlementType::RURAL]);
 
-        $rural = $this->ratio($this->profile(['locality' => Locality::RURAL]), $opportunity, 'location');
-        $urban = $this->ratio($this->profile(['locality' => Locality::URBAN]), $opportunity, 'location');
+        $rural = $this->ratio($this->profile(['settlement_type' => SettlementType::RURAL]), $opportunity, 'location');
+        $urban = $this->ratio($this->profile(['settlement_type' => SettlementType::URBAN]), $opportunity, 'location');
 
         $this->assertSame(1.0, $rural);
         $this->assertLessThan($rural, $urban);
     }
 
-    public function test_locality_is_not_a_province(): void
+    public function test_settlement_type_is_not_a_province(): void
     {
         // "Rural" written into the province field is simply an unmatched
-        // province now, not a hidden bonus.
+        // province now, not a hidden bonus on the settlement-type tier.
         $ratio = $this->ratio(
             $this->profile(['province' => 'Rural']),
-            $this->opportunity(['target_locality' => Locality::RURAL]),
+            $this->opportunity(['required_province' => null, 'target_settlement_type' => SettlementType::RURAL]),
             'location'
         );
 
@@ -362,14 +377,14 @@ class ScholarFitEngineTest extends TestCase
         $this->assertSame(1.0, $this->ratio($this->profile(), $this->opportunity(), 'certificate'));
         $this->assertSame(
             0.0,
-            $this->ratio($this->profile(['results_certificate_path' => null]), $this->opportunity(), 'certificate')
+            $this->ratio($this->profile(['transcript_path' => null]), $this->opportunity(), 'certificate')
         );
     }
 
     public function test_a_required_certificate_is_a_gate_not_a_deduction(): void
     {
         $scored = $this->engine()->evaluate(
-            $this->profile(['results_certificate_path' => null]),
+            $this->profile(['transcript_path' => null]),
             $this->opportunity(['requires_results_certificate' => true])
         );
 
@@ -462,10 +477,10 @@ class ScholarFitEngineTest extends TestCase
     {
         return [
             'perfect' => [[], []],
-            'empty profile' => [['education_level' => null, 'field_of_study' => null, 'country' => null,
-                'academic_results' => null, 'results_certificate_path' => null], []],
+            'empty profile' => [['education_level' => null, 'field_of_study' => null, 'province' => null,
+                'academic_results' => null, 'transcript_path' => null], []],
             'bare listing' => [[], ['education_level' => null, 'target_field' => null,
-                'country' => null, 'target_country' => null, 'deadline' => null]],
+                'required_province' => null, 'deadline' => null]],
             'blocked' => [[], ['required_citizenship' => 'Botswana']],
             'expired' => [[], ['deadline' => '2020-01-01']],
         ];

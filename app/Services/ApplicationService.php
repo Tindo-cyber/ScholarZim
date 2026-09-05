@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Services\ScholarFit\AcademicRecord;
+use App\Services\ScholarFit\EligibilityEvaluator;
 use App\Support\ApplicationStateMachine;
 use App\Support\ApplicationStatus;
 use App\Support\AuditAction;
@@ -33,6 +35,8 @@ class ApplicationService
         private readonly NotificationService $notificationService,
         private readonly AuditService $auditService,
         private readonly FileStorageService $fileStorage,
+        private readonly ApplicantProfileService $profileService,
+        private readonly EligibilityEvaluator $eligibilityEvaluator,
     ) {
     }
 
@@ -184,6 +188,20 @@ class ApplicationService
 
         if ($opportunity->deadline !== null && $opportunity->deadline->lt(Carbon::today())) {
             throw new RuntimeException('The deadline for this scholarship has passed.');
+        }
+
+        // The same hard requirements ScholarFit already showed the applicant on
+        // the listing page and the wizard, checked again here so the gate is
+        // real rather than advisory - a direct POST cannot buy its way past a
+        // pathway rule, a minimum level, or any other stated requirement just
+        // because the frontend happened not to enforce it.
+        $profile = $this->profileService->forUser($user);
+        $unmet = $this->eligibilityEvaluator->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile));
+
+        if ($unmet !== []) {
+            throw new RuntimeException(
+                "You do not meet this scholarship's requirements: " . implode(' ', $unmet)
+            );
         }
 
         // The upload happens before the transaction because writing a file is not

@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\OpportunityModerationService;
 use App\Services\OpportunityService;
 use App\Support\ApplicationStatus;
+use App\Support\EducationLevel;
 use App\Support\OpportunityLifecycle;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
@@ -113,10 +114,9 @@ class OpportunityLifecycleTest extends TestCase
         $this->actingAs($this->provider)->post('/opportunities/create', [
             'title' => 'Lifecycle Test Award',
             'description' => 'A description long enough to be accepted by validation.',
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'target_field' => 'Engineering',
             'funding_type' => 'Full Scholarship',
-            'country' => 'Zimbabwe',
         ])->assertRedirect();
 
         $created = Opportunity::where('title', 'Lifecycle Test Award')->firstOrFail();
@@ -541,10 +541,9 @@ class OpportunityLifecycleTest extends TestCase
         return array_merge([
             'title' => 'Lifecycle Fixture',
             'description' => 'A seeded fixture listing used by the lifecycle tests.',
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'target_field' => 'Engineering',
             'funding_type' => 'Full Scholarship',
-            'country' => 'Zimbabwe',
             'deadline' => Carbon::today()->addDays(30)->toDateString(),
         ], $overrides);
     }
@@ -559,10 +558,9 @@ class OpportunityLifecycleTest extends TestCase
         return array_merge([
             'title' => $opportunity->title,
             'description' => $opportunity->description,
-            'education_level' => $opportunity->education_level,
+            'education_level' => EducationLevel::canonical($opportunity->education_level) ?? $opportunity->education_level,
             'target_field' => $opportunity->target_field,
             'funding_type' => $opportunity->funding_type,
-            'country' => $opportunity->country,
             'deadline' => $opportunity->deadline?->toDateString(),
         ], $overrides);
     }

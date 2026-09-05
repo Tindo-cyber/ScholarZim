@@ -5,7 +5,8 @@ namespace Tests\Feature;
 use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\ScholarFit\ScholarFitEngine;
-use App\Services\ScholarFit\Taxonomy\Locality;
+use App\Services\ScholarFit\Taxonomy\SettlementType;
+use App\Support\EducationLevel;
 use App\Support\FormOptions;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -13,8 +14,9 @@ use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
- * Location as four separate things, reached the way a student actually reaches
- * it - through the profile form.
+ * Location as three separate things, reached the way a student actually reaches
+ * it - through the profile form: province, a specific locality (free text, e.g.
+ * "Gutu"), and settlement type (rural or urban, a closed vocabulary).
  *
  * This exists because of how v1's rural rule failed. The code read
  * `province === 'Rural'`, which looked like a working feature in review and
@@ -35,30 +37,38 @@ class ScholarFitLocationTest extends TestCase
         $this->student = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
     }
 
-    /** The form accepts district and locality, and they reach the profile. */
-    public function test_a_student_can_state_their_district_and_whether_they_are_rural(): void
+    /** The form accepts a free-text locality and a settlement type, and they reach the profile. */
+    public function test_a_student_can_state_their_locality_and_whether_they_are_rural(): void
     {
         $this->actingAs($this->student)
             ->post('/applicant/profile', $this->form([
                 'province' => 'Masvingo',
-                'district' => 'Gutu',
-                'locality' => Locality::RURAL,
+                'locality' => 'Gutu',
+                'settlement_type' => SettlementType::RURAL,
             ]))
             ->assertRedirect();
 
         $profile = $this->student->fresh()->applicantProfile;
 
         $this->assertSame('Masvingo', $profile->province);
-        $this->assertSame('Gutu', $profile->district);
-        $this->assertSame(Locality::RURAL, $profile->locality);
+        $this->assertSame('Gutu', $profile->locality);
+        $this->assertSame(SettlementType::RURAL, $profile->settlement_type);
     }
 
-    /** Locality is its own vocabulary, not free text and not a province. */
-    public function test_a_province_name_is_not_accepted_as_a_locality(): void
+    /** Settlement type is its own closed vocabulary, not free text and not a province. */
+    public function test_a_province_name_is_not_accepted_as_a_settlement_type(): void
     {
         $this->actingAs($this->student)
-            ->post('/applicant/profile', $this->form(['locality' => 'Masvingo']))
-            ->assertSessionHasErrors('locality');
+            ->post('/applicant/profile', $this->form(['settlement_type' => 'Masvingo']))
+            ->assertSessionHasErrors('settlement_type');
+    }
+
+    /** Locality, unlike settlement type, is free text - a province-shaped value is simply accepted as a place name. */
+    public function test_locality_accepts_free_text(): void
+    {
+        $this->actingAs($this->student)
+            ->post('/applicant/profile', $this->form(['locality' => 'Chegutu']))
+            ->assertSessionDoesntHaveErrors('locality');
     }
 
     public function test_rural_is_not_offered_as_a_province(): void
@@ -68,23 +78,23 @@ class ScholarFitLocationTest extends TestCase
 
     /**
      * The whole point of the column: a listing aimed at rural students scores
-     * one higher than an otherwise identical urban applicant.
+     * higher for one than for an otherwise identical urban applicant.
      */
     public function test_a_rural_targeted_award_ranks_a_rural_student_above_an_urban_one(): void
     {
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
         $opportunity->update([
-            'target_locality' => Locality::RURAL,
+            'target_settlement_type' => SettlementType::RURAL,
             'deadline' => Carbon::today()->addDays(20),
         ]);
 
         $engine = app(ScholarFitEngine::class);
         $profile = $this->student->applicantProfile;
 
-        $profile->update(['country' => 'Zimbabwe', 'locality' => Locality::RURAL]);
+        $profile->update(['settlement_type' => SettlementType::RURAL]);
         $rural = $engine->evaluate($profile->fresh(), $opportunity)->matchScore;
 
-        $profile->update(['locality' => Locality::URBAN]);
+        $profile->update(['settlement_type' => SettlementType::URBAN]);
         $urban = $engine->evaluate($profile->fresh(), $opportunity)->matchScore;
 
         $this->assertGreaterThan(
@@ -94,20 +104,20 @@ class ScholarFitLocationTest extends TestCase
         );
     }
 
-    /** An unstated locality is unknown, so it neither helps nor blocks. */
-    public function test_not_stating_a_locality_is_not_treated_as_urban(): void
+    /** An unstated settlement type is unknown, so it neither helps nor blocks. */
+    public function test_not_stating_a_settlement_type_is_not_treated_as_urban(): void
     {
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
-        $opportunity->update(['target_locality' => Locality::RURAL]);
+        $opportunity->update(['target_settlement_type' => SettlementType::RURAL]);
 
         $engine = app(ScholarFitEngine::class);
         $profile = $this->student->applicantProfile;
 
-        $profile->update(['country' => 'Zimbabwe', 'locality' => null]);
+        $profile->update(['settlement_type' => null]);
 
         $scored = $engine->evaluate($profile->fresh(), $opportunity);
 
-        $this->assertTrue($scored->meetsRequirements(), 'a blank locality must never disqualify');
+        $this->assertTrue($scored->meetsRequirements(), 'a blank settlement type must never disqualify');
         $this->assertGreaterThan(0, $scored->breakdown->dimension('location')->points());
     }
 
@@ -116,9 +126,8 @@ class ScholarFitLocationTest extends TestCase
     {
         return array_merge([
             'full_name' => $this->student->full_name,
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'field_of_study' => 'Computer Science & IT',
-            'country' => 'Zimbabwe',
         ], $overrides);
     }
 }

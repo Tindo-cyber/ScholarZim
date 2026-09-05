@@ -74,12 +74,13 @@ final class OpportunityLifecycle
         'title',
         'description',
         'education_level',
+        'minimum_education_level',
         'target_field',
         'funding_type',
         'country',
         'target_country',
-        'target_district',
         'target_locality',
+        'target_settlement_type',
         'min_academic_points',
         'max_age',
         'required_citizenship',
@@ -165,7 +166,18 @@ final class OpportunityLifecycle
                 continue;
             }
 
-            if (self::differs($opportunity->getAttribute($field), $value)) {
+            $current = $opportunity->getAttribute($field);
+
+            // A listing saved under a legacy spelling ('Undergraduate') compared
+            // against a resubmission of the very same level in its canonical
+            // form ('UNDERGRADUATE', which is what the form now sends) must read
+            // as unchanged, not as a fresh claim requiring re-approval.
+            if (in_array($field, ['education_level', 'minimum_education_level'], true)) {
+                $current = \App\Support\EducationLevel::canonical($current) ?? $current;
+                $value = \App\Support\EducationLevel::canonical($value) ?? $value;
+            }
+
+            if (self::differs($current, $value)) {
                 return true;
             }
         }

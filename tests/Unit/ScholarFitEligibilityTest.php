@@ -20,24 +20,23 @@ class ScholarFitEligibilityTest extends TestCase
     private function profile(array $attributes = []): ApplicantProfile
     {
         return new ApplicantProfile(array_merge([
-            'education_level' => 'Undergraduate',
+            'education_level' => \App\Support\EducationLevel::UNDERGRADUATE,
             'field_of_study' => 'Computer Science',
-            'country' => 'Zimbabwe',
             'province' => 'Harare',
             'citizenship' => 'Zimbabwean',
             'date_of_birth' => now()->subYears(21)->toDateString(),
             'academic_results' => '14 points at A-Level',
-            'results_certificate_path' => 'certs/results.pdf',
+            // Undergraduate's academic evidence is a transcript, not an
+            // O/A-Level results certificate.
+            'transcript_path' => 'certs/transcript.pdf',
         ], $attributes));
     }
 
     private function opportunity(array $attributes = []): Opportunity
     {
         return new Opportunity(array_merge([
-            'education_level' => 'Undergraduate',
+            'education_level' => \App\Support\EducationLevel::UNDERGRADUATE,
             'target_field' => 'Computer Science',
-            'country' => 'Zimbabwe',
-            'target_country' => 'Zimbabwe',
             'deadline' => null,
         ], $attributes));
     }
@@ -135,7 +134,7 @@ class ScholarFitEligibilityTest extends TestCase
     public function test_shortfalls_carry_a_link_target(): void
     {
         $scored = $this->engine()->evaluate(
-            $this->profile(['field_of_study' => null, 'results_certificate_path' => null]),
+            $this->profile(['field_of_study' => null, 'transcript_path' => null]),
             $this->opportunity()
         );
 

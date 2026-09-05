@@ -12,6 +12,7 @@ use App\Services\AuditService;
 use App\Services\OpportunityService;
 use App\Support\ApplicationStatus;
 use App\Support\AuditAction;
+use App\Support\EducationLevel;
 use App\Support\RequestContext;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -106,10 +107,9 @@ class TraceabilityTest extends TestCase
             ->post('/opportunities/create', [
                 'title' => 'Traceable Award',
                 'description' => 'A description long enough to pass validation checks.',
-                'education_level' => 'Undergraduate',
+                'education_level' => EducationLevel::UNDERGRADUATE,
                 'target_field' => 'Engineering',
                 'funding_type' => 'Full Scholarship',
-                'country' => 'Zimbabwe',
             ]);
 
         $response->assertRedirect();
@@ -129,10 +129,9 @@ class TraceabilityTest extends TestCase
             ->post('/opportunities/create', [
                 'title' => 'Context Award',
                 'description' => 'A description long enough to pass validation checks.',
-                'education_level' => 'Undergraduate',
+                'education_level' => EducationLevel::UNDERGRADUATE,
                 'target_field' => 'Engineering',
                 'funding_type' => 'Full Scholarship',
-                'country' => 'Zimbabwe',
             ])->assertRedirect();
 
         $entry = AuditLog::where('action', AuditAction::CREATE_OPPORTUNITY)->latest('audit_id')->firstOrFail();

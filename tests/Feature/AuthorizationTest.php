@@ -16,6 +16,7 @@ use App\Policies\SavedScholarshipPolicy;
 use App\Services\OpportunityModerationService;
 use App\Support\AccountStatus;
 use App\Support\ApplicationStatus;
+use App\Support\EducationLevel;
 use App\Support\NotificationType;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
@@ -196,9 +197,8 @@ class AuthorizationTest extends TestCase
             ->put('/opportunities/' . $listing->opportunity_id, [
                 'title' => 'Hijacked Award',
                 'description' => 'A description long enough to pass validation checks.',
-                'education_level' => 'Undergraduate',
+                'education_level' => EducationLevel::UNDERGRADUATE,
                 'funding_type' => 'Full Scholarship',
-                'country' => 'Zimbabwe',
                 'change_reason' => 'Taking this over.',
             ])
             ->assertRedirect();
@@ -264,10 +264,9 @@ class AuthorizationTest extends TestCase
         $this->as($this->providerA)->post('/opportunities/create', [
             'title' => 'Self Published Award',
             'description' => 'A description long enough to pass validation checks.',
-            'education_level' => 'Undergraduate',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'target_field' => 'Engineering',
             'funding_type' => 'Full Scholarship',
-            'country' => 'Zimbabwe',
         ])->assertRedirect();
 
         $created = Opportunity::where('title', 'Self Published Award')->firstOrFail();

@@ -8,13 +8,19 @@ use App\Services\ScholarFit\DimensionResult;
 use App\Services\ScholarFit\Taxonomy\EducationLadder;
 
 /**
- * How close the applicant's education level is to the one the listing targets.
+ * How close the applicant's education level is to the one the listing targets
+ * - a *ranking* question, asked only once eligibility has already said yes.
  *
- * Distance on the ladder replaces v1's enumerated pairs, which covered four
- * levels and misspelled one of them. Two rungs apart still earns something
- * because a diploma holder applying to an undergraduate award is a real if
- * imperfect candidate; three or more apart earns nothing, because a primary
- * pupil and a PhD applicant are not competing for the same money.
+ * This class does not decide whether an applicant may be considered for a
+ * listing; `EducationPathway` and `EligibilityEvaluator` do that, before this
+ * runs, using an explicit table rather than distance. What is left for this
+ * class is ranking the applicants who are already eligible: two rungs apart
+ * still earns something because a diploma holder applying to an undergraduate
+ * award is a real if imperfect candidate among other eligible candidates,
+ * while an exact match plainly ranks above a near one. Distance is a
+ * reasonable way to answer that question and a bad way to answer the
+ * eligibility question, which is the whole reason the two are separate
+ * classes now.
  */
 final class EducationMatcher
 {

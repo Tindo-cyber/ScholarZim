@@ -38,11 +38,11 @@ class OpportunityController extends Controller
     public function create()
     {
         return view('opportunities.create', [
-            'educationLevels' => FormOptions::educationLevelGroups(),
+            'educationLevels' => FormOptions::targetEducationLevelGroups(),
+            'minimumLevels' => FormOptions::educationLevelGroups(),
             'fields' => FormOptions::FIELDS_OF_STUDY,
-            'countries' => FormOptions::COUNTRIES,
+            'settlementTypes' => \App\Services\ScholarFit\Taxonomy\SettlementType::ALL,
             'fundingTypes' => FormOptions::FUNDING_TYPES,
-            'defaultCountry' => FormOptions::DEFAULT_COUNTRY,
             'targetFieldSuggestions' => $this->opportunityService->targetFields(),
             'awardingBodySuggestions' => $this->opportunityService->providerNames(),
             'currencies' => FormOptions::CURRENCIES,
@@ -58,10 +58,14 @@ class OpportunityController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:10000'],
             'provider_display_name' => ['nullable', 'string', 'max:255'],
-            'education_level' => ['nullable', Rule::in(FormOptions::educationLevels())],
+            'education_level' => ['nullable', Rule::in(\App\Support\EducationLevel::TARGET_LEVELS)],
+            // The floor a specific listing actually requires, separate from
+            // the level it targets - see EligibilityEvaluator::minimumLevel().
+            // FORM_1 is deliberately not a valid value here: nothing "requires
+            // at least Form 1", since Form 1 only ever appears as a target.
+            'minimum_education_level' => ['nullable', Rule::in(\App\Support\EducationLevel::APPLICANT_LEVELS)],
             'target_field' => ['nullable', 'string', 'max:255'],
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
-            'country' => ['nullable', 'string', 'max:100'],
             'deadline' => ['nullable', 'date', 'after_or_equal:today'],
             'award_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
@@ -72,6 +76,11 @@ class OpportunityController extends Controller
             'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
             'required_citizenship' => ['nullable', Rule::in(FormOptions::CITIZENSHIPS)],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
+            // A specific place (e.g. "Gweru"), free text for the same reason
+            // the applicant's own locality field is - no fixed list of every
+            // Zimbabwean town would be worth maintaining.
+            'target_locality' => ['nullable', 'string', 'max:100'],
+            'target_settlement_type' => ['nullable', Rule::in(\App\Services\ScholarFit\Taxonomy\SettlementType::ALL)],
             'requires_results_certificate' => ['nullable', 'boolean'],
         ]);
 
@@ -102,11 +111,11 @@ class OpportunityController extends Controller
 
         return view('opportunities.edit', [
             'opportunity' => $opportunity,
-            'educationLevels' => FormOptions::educationLevelGroups(),
+            'educationLevels' => FormOptions::targetEducationLevelGroups(),
+            'minimumLevels' => FormOptions::educationLevelGroups(),
             'fields' => FormOptions::FIELDS_OF_STUDY,
-            'countries' => FormOptions::COUNTRIES,
+            'settlementTypes' => \App\Services\ScholarFit\Taxonomy\SettlementType::ALL,
             'fundingTypes' => FormOptions::FUNDING_TYPES,
-            'defaultCountry' => FormOptions::DEFAULT_COUNTRY,
             'targetFieldSuggestions' => $this->opportunityService->targetFields(),
             'awardingBodySuggestions' => $this->opportunityService->providerNames(),
             'currencies' => FormOptions::CURRENCIES,
@@ -122,10 +131,14 @@ class OpportunityController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:10000'],
             'provider_display_name' => ['nullable', 'string', 'max:255'],
-            'education_level' => ['nullable', Rule::in(FormOptions::educationLevels())],
+            'education_level' => ['nullable', Rule::in(\App\Support\EducationLevel::TARGET_LEVELS)],
+            // The floor a specific listing actually requires, separate from
+            // the level it targets - see EligibilityEvaluator::minimumLevel().
+            // FORM_1 is deliberately not a valid value here: nothing "requires
+            // at least Form 1", since Form 1 only ever appears as a target.
+            'minimum_education_level' => ['nullable', Rule::in(\App\Support\EducationLevel::APPLICANT_LEVELS)],
             'target_field' => ['nullable', 'string', 'max:255'],
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
-            'country' => ['nullable', 'string', 'max:100'],
             'deadline' => ['nullable', 'date', 'after_or_equal:today'],
             'award_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
             'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
@@ -136,6 +149,11 @@ class OpportunityController extends Controller
             'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
             'required_citizenship' => ['nullable', Rule::in(FormOptions::CITIZENSHIPS)],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
+            // A specific place (e.g. "Gweru"), free text for the same reason
+            // the applicant's own locality field is - no fixed list of every
+            // Zimbabwean town would be worth maintaining.
+            'target_locality' => ['nullable', 'string', 'max:100'],
+            'target_settlement_type' => ['nullable', Rule::in(\App\Services\ScholarFit\Taxonomy\SettlementType::ALL)],
             'requires_results_certificate' => ['nullable', 'boolean'],
             'reason' => ['required', 'string', 'max:500'],
         ]);

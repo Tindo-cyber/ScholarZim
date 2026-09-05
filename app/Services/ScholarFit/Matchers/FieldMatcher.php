@@ -6,6 +6,7 @@ use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\DimensionResult;
 use App\Services\ScholarFit\Taxonomy\FieldTaxonomy;
+use App\Support\EducationLevel;
 
 /**
  * Whether the applicant and the listing are talking about the same subject.
@@ -22,6 +23,30 @@ final class FieldMatcher
         $credit = config('scholarfit.credit');
         $profileField = $profile->field_of_study;
         $targetField = $opportunity->target_field;
+
+        // Field of study is not a meaningful concept below tertiary level - a
+        // Primary or O/A-Level applicant has no "field" to be missing, so a
+        // blank value here is not an unfilled field, it is the correct answer.
+        // Scoring it as a zero would be exactly the university-shaped penalty
+        // this check exists to avoid: the same profile scores zero on this
+        // dimension against every single listing, purely for being at a level
+        // this dimension does not apply to.
+        //
+        // Gated on a *known* level, not merely "not known to use it" - a
+        // profile with no education_level at all is genuinely missing
+        // information, which is a different thing from correctly having
+        // nothing to report, and must still score the ordinary "no field" zero.
+        $knownLevel = EducationLevel::canonical($profile->education_level) !== null;
+
+        if (blank($profileField) && $knownLevel && ! EducationLevel::usesFieldOfStudy($profile->education_level)) {
+            return DimensionResult::make(
+                'field',
+                'Field',
+                (float) $credit['neutral'],
+                $weight,
+                'Field of study does not apply at your education level'
+            );
+        }
 
         if (blank($profileField)) {
             return DimensionResult::make(

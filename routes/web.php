@@ -192,6 +192,9 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER])->group(function () {
     Route::get('/provider/applications/{applicationId}/results-certificate', [FileDownloadController::class, 'applicantResults'])
         ->whereNumber('applicationId')
         ->name('files.applicantResults');
+    Route::get('/provider/applications/{applicationId}/transcript', [FileDownloadController::class, 'applicantTranscript'])
+        ->whereNumber('applicationId')
+        ->name('files.applicantTranscript');
 
     Route::middleware('account.active')->group(function () {
         Route::get('/opportunities/create', [OpportunityController::class, 'create'])->name('opportunities.create');

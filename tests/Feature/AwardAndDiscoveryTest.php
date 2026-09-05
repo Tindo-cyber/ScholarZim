@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Support\EducationLevel;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
 use Database\Seeders\DatabaseSeeder;
@@ -31,10 +32,9 @@ class AwardAndDiscoveryTest extends TestCase
             ->post('/opportunities/create', [
                 'title' => 'Fully Funded Engineering Award',
                 'description' => 'Covers tuition, accommodation, and a monthly stipend for four years.',
-                'education_level' => 'Undergraduate',
+                'education_level' => EducationLevel::UNDERGRADUATE,
                 'target_field' => 'Engineering',
                 'funding_type' => 'Full Scholarship',
-                'country' => 'Zimbabwe',
                 'award_amount' => '4500',
                 'award_currency' => 'USD',
                 'award_slots' => '10',
