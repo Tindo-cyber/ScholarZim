@@ -104,6 +104,8 @@ See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). Set `APP_ENV=production` with envi
 ## Author notes
 
 - Demo data is disabled in production (`SCHOLARZIM_DEMO_SEED=false`).
-- SMS notifications log the message rather than dispatching it — the delivery path is wired end to end and awaits a gateway. In-app and email notifications are functional.
+- SMS is not part of this system. It was scoped out along with 2FA, saved-search alerts and
+  bulk decisions when the project was narrowed to its five objectives; in-app and email are
+  the two notification channels.
 - Email is queued. Nothing is delivered without a worker (`php artisan queue:work`); the Docker image supervises one.
-- This codebase is a port of an earlier Spring Boot implementation. The schema, column names, and business rules carried over unchanged.
+- The schema, column names, and business rules were carried over unchanged from an earlier Spring Boot implementation of the same platform; this codebase itself is Laravel 12 throughout.

@@ -3,93 +3,106 @@
 Use this checklist before a demo, release, or after significant changes to verification flows.
 Run `php artisan test` in the project root first — all automated tests should pass.
 
+This file was corrected against the current codebase: several items below used to describe
+bulk application decisions, an "information requested" status, saved-search alerts, and
+two-factor authentication, none of which exist any more — they were scoped out on 2026-08-31
+along with SMS, alongside the public JSON API. Checking for them would be checking for
+something that was deliberately removed, not a regression.
+
 ---
 
-## Applicant results certificate
+## Applicant profile and results certificate
 
-- [ ] New applicant: profile save blocked without PDF; succeeds with a real PDF (≤ 5 MB)
-- [ ] Browse opportunity → **Apply** redirects to profile when no certificate is on file
-- [ ] After upload, apply wizard opens; step 2 optional document is separate from profile certificate
-- [ ] Replace certificate on profile; previous file is not reachable via public `/uploads/**`
+- [ ] A new applicant can save a profile with no results certificate — nothing blocks this
+- [ ] The profile page shows a completeness badge (In progress / Complete) and a checklist
+      naming exactly what is missing
+- [ ] Clicking **Apply** on any listing works regardless of profile completeness — there is no
+      redirect to the profile page
+- [ ] A listing a provider has marked as requiring a certificate shows **Requirements not
+      met** in recommendations for an applicant without one, and scores normally for one who
+      has it
+- [ ] Replacing a certificate on the profile makes the old file unreachable via a public path
 
 ## Provider verification
 
-- [ ] Provider registration requires PDF + organisation type + registration number
-- [ ] Pending provider cannot publish ACTIVE opportunities
-- [ ] Admin can approve/reject pending providers; certificate view/download works
-- [ ] Non-admin cannot access `/admin/providers/*/certificate`
+- [ ] Provider registration requires a certificate PDF, organisation type, and registration
+      number
+- [ ] A pending provider can sign in and see their dashboard, but cannot publish a listing
+- [ ] Admin can approve or reject a pending provider; the certificate can be viewed either way
+- [ ] A non-admin cannot reach the provider-certificate route directly by URL
 
 ## Provider review
 
-- [ ] Academic profile card shows level, institution, field, province, and results summary
-- [ ] **View results certificate** opens inline PDF for the opportunity owner
-- [ ] Unrelated provider receives 403 when attempting certificate download
+- [ ] The applicant's academic profile (level, institution, field, province, results summary)
+      is shown on the review page
+- [ ] The results certificate, if on file, opens inline for the listing's own provider
+- [ ] A different provider gets refused (403) attempting the same certificate URL
 
-## Award value and eligibility
+## Award value and ScholarFit eligibility
 
-- [ ] Posting a listing with an award value shows it on the card and the detail page
-- [ ] A blank award field stores nothing, not zero — the listing reads "Value not stated"
-- [ ] Sorting by award value puts stated values first and unstated ones last, both directions
-- [ ] A minimum-award filter excludes listings with no stated value
-- [ ] A student who fails a hard rule sees "You are not eligible" with the reason, no percentage
-- [ ] The same student does not see that listing in their recommendations
-- [ ] A student missing the field a rule tests (no date of birth) is prompted, not refused
+- [ ] Posting a listing with a stated award value shows it on the card and detail page
+- [ ] A blank award value stores nothing (not zero) and reads "Value not stated"
+- [ ] Sorting by award value puts stated values first, unstated ones last, in both directions
+- [ ] A student who fails a hard eligibility rule sees **Requirements not met** and the reason,
+      not a percentage, and that listing does not appear in their recommendations
+- [ ] A student missing the field a rule needs to check (e.g. no date of birth for an age
+      limit) is prompted to fill it in, not silently refused
 
-## Alerts, withdrawal, and questions
+## Application lifecycle
 
-- [ ] Saving a search from the browse page stores exactly the filters on screen
-- [ ] After a matching listing is approved, one alert arrives; a second run sends nothing
-- [ ] Provider "Information requested" puts a reply box on the applicant's page
-- [ ] The applicant's answer appears on the provider's review screen
-- [ ] Withdrawing an application notifies the provider and allows re-applying
-- [ ] An approved or rejected application can no longer be withdrawn
-
-## Bulk actions
-
-- [ ] Select-all ticks every row; the button count matches the selection
-- [ ] A bulk decline without a reason is refused, exactly like a single decline
-- [ ] A batch containing one already-reviewed row still processes the rest, and says so
+- [ ] One student cannot submit a second application to the same listing
+- [ ] A provider decision (Accept or Reject) is refused without a written reason
+- [ ] Accepted and Rejected are both final — neither can later become the other
+- [ ] Withdrawing a Pending application notifies the provider and frees the listing for a
+      fresh application from the same student
+- [ ] An Accepted or Rejected application cannot be withdrawn
 
 ## Security and ops
 
-- [ ] `/uploads/**` is not publicly accessible (redirect or auth required)
-- [ ] Dark mode: dashboards and auth screens remain readable (no washed-out WebP overlays)
-- [ ] A recovery code signs in once, and the remaining count drops
+- [ ] Uploaded documents are not reachable under a public path — every download goes through
+      an authenticated route
+- [ ] Dark mode: dashboards and auth screens remain readable
 - [ ] "Sign out all other sessions" ends a session open in a second browser
-- [ ] Account deletion refuses without the typed email; refuses for a provider with live listings
-- [ ] `/health` returns 200 with `"database": "up"`
-- [ ] Queued mail arrives with a worker running, and `queue:failed` is empty
-- [ ] Demo login `tanaka.moyo@student.co.zw` / `Password123!` can apply (demo cert seeded)
+- [ ] Account deletion refuses without the typed confirmation, and refuses for a provider with
+      live listings
+- [ ] `/health` returns 200
+- [ ] Queued mail is delivered once a worker is running (`php artisan queue:work`), and
+      `php artisan queue:failed` is empty
+- [ ] A student cannot open another student's application, document, or notification by
+      guessing its URL; a provider cannot do the same to another provider's applicant
 
 ## Design and accessibility
 
 - [ ] Tab from the top of any page: the first stop is "Skip to main content", and it works
-- [ ] At phone width, the applications and users tables read as cards with visible labels
+- [ ] At phone width, tables read as cards with visible labels rather than overflowing
 - [ ] At phone width with the sidebar closed, tabbing does not reach its links
-- [ ] A closing-soon listing shows a countdown chip that escalates inside 7 and 3 days
+- [ ] A closing-soon listing shows a countdown that escalates inside 7 and 3 days
 - [ ] Print preview of an application: no navigation, no buttons, link URLs shown
-- [ ] The profile completion ring matches the checklist beside it
+- [ ] The profile completion indicator matches the checklist beside it
 
 ## Regression
 
-- [ ] Student login and registration flows work
-- [ ] Provider login and pending-registration messaging work
+- [ ] Student and provider registration and login flows work
 - [ ] Forgot password / reset password flows work
-- [ ] Scholarships browse, filter, and save scholarship work
-- [ ] Provider dashboard loads; application status changes (approve/reject) notify applicant
-- [ ] Applicant dashboard and my-applications list load correctly
-- [ ] Sorting and filter chips survive paging (the ordering is not lost on page 2)
+- [ ] Scholarships browse, search, filter, and save work
+- [ ] Provider dashboard loads; an Accept/Reject decision notifies the applicant
+- [ ] Applicant dashboard and "my applications" list load correctly
+- [ ] Sorting and filter chips survive paging
 - [ ] With `npm run build` run, pages load hashed assets from `/build`; without it, the
       unminified fallback still renders
 
 ---
 
-## Notes
+## Demo accounts
 
-| Area | Demo account |
-|------|----------------|
-| Applicant | `tanaka.moyo@student.co.zw` / `Password123!` |
-| Provider | Use an approved demo provider from seeder |
-| Admin | Use admin account from local/dev configuration |
+Seeded by `database/seeders/DatabaseSeeder.php`, password `ChangeMe123` for all:
+
+| Role | Email | State |
+|------|-------|-------|
+| Admin | `admin@scholarzim.co.zw` | Active, super admin |
+| Provider (verified) | `provider@scholarzim.co.zw` | Active |
+| Provider (pending) | `trust@scholarzim.co.zw` | Pending verification |
+| Applicant (complete profile) | `student@scholarzim.co.zw` | Active, full document set |
+| Applicant (incomplete profile) | `chipo.ncube@scholarzim.co.zw` | Active, no results certificate |
 
 Record any failures with browser, role, URL, and steps to reproduce.

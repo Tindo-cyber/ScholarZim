@@ -402,7 +402,9 @@ bar (or under the browser menu) once the manifest and worker are both in place.
 php artisan test
 ```
 
-532 tests, 1,743 assertions (one skipped on Windows only).
+556 tests, 1,804 assertions (one skipped on Windows only — a `finfo` limitation in a single
+document-type test, not a coverage gap). Run `php artisan test` for the current number; this
+one will drift as the suite grows.
 
 - `SmokeTest` renders every authenticated page for each role and checks the role guards.
 - `WorkflowTest` covers the moderation gate, the apply-once rule, provider decisions, and
@@ -448,6 +450,18 @@ php artisan test
   the full stylesheet set, and that the overlay is still linked after the vendor theme.
 - `SecurityHeadersTest` asserts the CSP and hardening headers, and that `script-src` has
   not been relaxed.
+- `PublicPagesOnEmptyDatabaseTest` covers the day a fresh deployment goes live: the landing
+  page, catalogue, and health probe on a migrated-but-otherwise-empty database, with no
+  seeding. Every other test seeds first, which left this exact state uncovered.
+- `DatabaseSslConfigTest` and `ContainerEntrypointTest` cover the Aiven TLS connection path and
+  the container entrypoint's `APP_KEY`/CA-permission handling — both against the shape of the
+  config and script rather than a live socket, since the normal suite must not depend on a
+  reachable external database.
+- `ScopeGuardTest` asserts that SMS, two-factor authentication, saved-search alerts, bulk
+  application decisions, an intermediate application status, and the public JSON API all stay
+  absent. Each was deliberately removed when the project was narrowed to its five objectives;
+  this is the test that fails if one is quietly rebuilt from a stale brief or template instead
+  of the removal being revisited on purpose.
 
 ## Running in Docker
 

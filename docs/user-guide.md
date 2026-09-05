@@ -8,14 +8,18 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 1. Register at `/register` with your email and password.
 2. Complete your **academic profile** at `/applicant/profile`.
-3. Upload your **results certificate (PDF)** — required before applying to scholarships.
+3. Upload your **results certificate (PDF)**. It is not required to apply, but most
+   providers will not seriously consider an application without one, and a provider can
+   mark an individual scholarship as requiring one — an applicant without a certificate
+   sees "Requirements not met" on that listing rather than a score.
 4. Browse scholarships at `/scholarships` or your dashboard recommendations.
 
 ![Applicant profile](../docs/screenshots/04-applicant-profile.png)
 
 ### Applying
 
-- Click **Apply** on a scholarship. If your results certificate is missing, you will be redirected to your profile.
+- Click **Apply** on a scholarship. Nothing about your profile blocks this — an incomplete
+  profile is a weaker case to a provider, not a locked door.
 - Complete the application wizard (personal statement; optional supporting document).
 - Track status at `/my-applications`.
 
