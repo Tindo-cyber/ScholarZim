@@ -58,6 +58,37 @@ class EmailVerificationTest extends TestCase
         Mail::assertQueued(ScholarZimMail::class);
     }
 
+    /**
+     * Renders through ScholarZimMail::render() rather than a bare view() call,
+     * because those are not equivalent for this purpose: Illuminate\Mail\Mailer
+     * injects $data['message'] = (the Illuminate\Mail\Message being built) on
+     * every render *and* every send - a bare view() call never goes through
+     * Mailer at all, so it cannot see that collision. That gap is exactly how
+     * resources/views/emails/notification.blade.php spent a real deployment
+     * silently failing every send: its view read {{ $message }} expecting the
+     * notification text, Mailer overwrote it with that object first, and a bare
+     * view()-based test of the same shape never noticed. This is the version of
+     * that regression test for the verification email specifically - no
+     * Mail::fake(), the real Mailable, the real Mailer::render() path.
+     */
+    public function test_the_verification_view_actually_renders_through_the_real_mailer(): void
+    {
+        $mail = new ScholarZimMail(
+            'Verify your ScholarZim email address',
+            'emails.verify-email',
+            [
+                'actionUrl' => url('/verify-email/a-distinctive-diagnostic-token'),
+                'user' => (object) ['full_name' => $this->student->full_name],
+            ]
+        );
+
+        $html = $mail->render();
+
+        $this->assertStringContainsString('/verify-email/a-distinctive-diagnostic-token', $html);
+        $this->assertStringContainsString('Verify my email', $html);
+        $this->assertStringNotContainsString('Illuminate\\Mail\\Message', $html);
+    }
+
     /** The emailed link is the product; a broken one is a broken flow. */
     public function test_the_email_carries_a_link_that_verifies_the_address(): void
     {
