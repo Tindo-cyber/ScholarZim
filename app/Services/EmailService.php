@@ -40,7 +40,15 @@ class EmailService
             'emails.notification',
             [
                 'type' => $type,
-                'message' => $message,
+                // Never 'message': Illuminate\Mail\Mailer::send() unconditionally
+                // overwrites $data['message'] with the Illuminate\Mail\Message
+                // being built, right before the view renders - so a view data key
+                // of 'message' is silently replaced by that object, not the text
+                // handed in here. The view was reading the wrong thing on every
+                // call, throwing a TypeError from htmlspecialchars() (Message
+                // given, string expected) that this method's try/catch turned
+                // into a silent `false` - no crash, no visible error, no email.
+                'notificationMessage' => $message,
                 'actionUrl' => $link ? url($link) : null,
             ]
         );

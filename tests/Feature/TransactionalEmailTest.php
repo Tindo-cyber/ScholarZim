@@ -122,6 +122,39 @@ class TransactionalEmailTest extends TestCase
     }
 
     /**
+     * Every test above fakes the mailer, which proves the application handed a
+     * message to it and nothing more - Mail::fake() intercepts before the view
+     * is ever rendered, so a broken Blade template throws nowhere a fake can see.
+     * That gap is exactly how the notification view spent a real deployment
+     * throwing on every single send: it read $message expecting the text
+     * EmailService passed in, but Illuminate\Mail\Mailer::send() unconditionally
+     * overwrites $data['message'] with the Illuminate\Mail\Message being built,
+     * right before the view renders - so the view received an object, not the
+     * text, and {{ $message }} threw a TypeError out of htmlspecialchars() on
+     * every notification email, silently, since EmailService::send() catches
+     * \Throwable and returns false. This renders the mailable for real - no
+     * fake, no transport - the one thing that would have caught it.
+     */
+    public function test_the_notification_view_actually_renders_the_message_text(): void
+    {
+        $mail = new ScholarZimMail(
+            'You received a new application',
+            'emails.notification',
+            [
+                'type' => 'NEW_APPLICATION',
+                'notificationMessage' => 'A distinctive sentence no other email view would contain.',
+                'actionUrl' => url('/provider/applications'),
+                'user' => (object) ['full_name' => $this->provider->full_name],
+            ]
+        );
+
+        $html = $mail->render();
+
+        $this->assertStringContainsString('A distinctive sentence no other email view would contain.', $html);
+        $this->assertStringNotContainsString('Illuminate\\Mail\\Message', $html);
+    }
+
+    /**
      * The credentials for the mail transport come from the environment and are
      * never written into the repository. A hard-coded key here would be a
      * credential leak the moment the project is submitted or pushed.
