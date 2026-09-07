@@ -95,10 +95,13 @@ class MailQueueArchitectureTest extends TestCase
 
         $this->assertNotEmpty($logged, 'a permanently failed email must leave a log entry');
 
-        $entry = end($logged);
+        // Selected by message, not by position: failed() also writes an audit
+        // row, and AuditService logs its own warning when that write cannot
+        // complete - which it cannot here, since this case needs no database.
+        $entry = collect($logged)->firstWhere('message', 'Email permanently failed after all retries');
 
+        $this->assertNotNull($entry, 'the permanent failure must be logged');
         $this->assertSame('error', $entry->level);
-        $this->assertStringContainsString('Email permanently failed', $entry->message);
         $this->assertContains('stranded@example.test', $entry->context['recipients']);
         $this->assertStringContainsString('401', $entry->context['error']);
     }

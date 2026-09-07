@@ -3,11 +3,10 @@
 namespace App\Console\Commands;
 
 use App\Mail\ScholarZimMail;
+use App\Services\MailgunApiService;
+use App\Support\MailgunResult;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Mail;
-use Symfony\Component\HttpClient\Exception\TimeoutException;
-use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
-use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Answers "is mail actually going to work?" without waiting for a real user to
@@ -33,6 +32,11 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
  * accept mail addressed to a mailbox that does not exist and drop it later, so
  * "Queued. Thank you." is not evidence anybody received anything.
  *
+ * Everything here goes through MailgunApiService - the same class, credentials,
+ * URL and error mapping the queue worker uses in production. A diagnostic with
+ * its own HTTP path can pass while real mail fails, which makes it worse than
+ * having no diagnostic at all.
+ *
  * The domain lookup is a GET. Nothing here mutates Mailgun state, and no
  * message is ever sent unless --send is passed explicitly.
  */
@@ -46,17 +50,7 @@ class MailCheck extends Command
     /** Recognisable in a Mailgun log and in whatever inbox it lands in. */
     public const TEST_SUBJECT = 'ScholarZim Mail Diagnostic Test';
 
-    /** Long enough for a cold DNS lookup, short enough to fail a deploy check fast. */
-    private const API_TIMEOUT_SECONDS = 15;
-
-    /**
-     * The client is injected rather than built here so the suite can drive this
-     * against a MockHttpClient. AppServiceProvider binds it to HttpClient::create(),
-     * which is the same construction Symfony's Mailgun transport performs - so a
-     * TLS or proxy fault that would break real mail breaks this check too, rather
-     * than being papered over by a differently-configured client.
-     */
-    public function __construct(private readonly HttpClientInterface $http)
+    public function __construct(private readonly MailgunApiService $mailgun)
     {
         parent::__construct();
     }
@@ -82,19 +76,18 @@ class MailCheck extends Command
             return $this->handleNonMailgunMailer($mailer);
         }
 
-        $domain = (string) config('services.mailgun.domain');
-        $secret = (string) config('services.mailgun.secret');
-        $endpoint = $this->normaliseEndpoint((string) config('services.mailgun.endpoint'));
+        $domain = $this->mailgun->domain();
 
+        $this->detail('Delivery path', 'Mailgun HTTP API (no SMTP)');
         $this->detail('Mailgun domain', $domain !== '' ? $domain : '(not set)');
-        $this->detail('Mailgun endpoint', $endpoint);
+        $this->detail('Mailgun endpoint', $this->mailgun->endpoint());
         // The value is never printed - only whether one is present. A diagnostic
         // that leaks the credential it is checking is worse than no diagnostic:
         // this runs in deploy logs, which are retained and widely readable.
         $this->detail('MAILGUN_DOMAIN', $domain !== '' ? 'configured' : 'NOT CONFIGURED');
-        $this->detail('MAILGUN_SECRET', $secret !== '' ? 'configured (value hidden)' : 'NOT CONFIGURED');
+        $this->detail('MAILGUN_SECRET', $this->secretConfigured() ? 'configured (value hidden)' : 'NOT CONFIGURED');
 
-        if ($domain === '' || $secret === '') {
+        if (! $this->mailgun->isConfigured()) {
             $this->newLine();
             $this->error('Mailgun is selected but its credentials are incomplete.');
 
@@ -102,7 +95,7 @@ class MailCheck extends Command
                 $this->line('  Set MAILGUN_DOMAIN to the sending domain registered in Mailgun.');
             }
 
-            if ($secret === '') {
+            if (! $this->secretConfigured()) {
                 $this->line('  Set MAILGUN_SECRET to a Mailgun private/sending API key.');
             }
 
@@ -115,7 +108,7 @@ class MailCheck extends Command
         $this->newLine();
         $this->stage('2. Mailgun authentication and domain access');
 
-        if (! $this->checkMailgunDomain($endpoint, $domain, $secret)) {
+        if (! $this->checkMailgunDomain()) {
             return self::FAILURE;
         }
 
@@ -136,11 +129,13 @@ class MailCheck extends Command
     /**
      * smtp, log and array are all legitimate here - local Docker points at
      * MailHog, the test suite uses array - so a non-Mailgun mailer is reported
-     * and accepted rather than failed. There is simply no remote credential to
-     * verify, and saying so beats a green tick that checked nothing.
+     * and accepted rather than failed. ScholarZimMail defers to Laravel's own
+     * transport in that case, so there is no Mailgun credential to verify.
      */
     private function handleNonMailgunMailer(string $mailer): int
     {
+        $this->detail('Delivery path', "Laravel \"{$mailer}\" transport (Mailgun API not in use)");
+
         $this->newLine();
         $this->stage('2. Mailgun authentication and domain access');
         $this->line("  Skipped: MAIL_MAILER is \"{$mailer}\", not \"mailgun\".");
@@ -165,91 +160,35 @@ class MailCheck extends Command
     }
 
     /**
-     * Read-only GET /v3/domains/{domain}.
+     * Read-only GET /v3/domains/{domain}, through the production service.
      *
      * The status code is the diagnosis, and the codes mean genuinely different
      * things that the application itself cannot tell apart - every one of them
-     * surfaces as the same "Unable to send an email" in the log.
+     * used to surface as the same "Unable to send an email" in the log.
+     * MailgunApiService owns that mapping so the worker and this command cannot
+     * disagree about what a 403 means.
      */
-    private function checkMailgunDomain(string $endpoint, string $domain, string $secret): bool
+    private function checkMailgunDomain(): bool
     {
-        $url = "https://{$endpoint}/v3/domains/" . rawurlencode($domain);
+        $this->detail('Request', 'GET ' . $this->mailgun->domainUrl());
 
-        $this->detail('Request', "GET {$url}");
+        $result = $this->mailgun->fetchDomain();
 
-        try {
-            $response = $this->http->request('GET', $url, [
-                'auth_basic' => ['api', $secret],
-                'timeout' => self::API_TIMEOUT_SECONDS,
-            ]);
+        $this->detail('HTTP status', $result->status === null ? '(no response)' : (string) $result->status);
 
-            $status = $response->getStatusCode();
-            $body = $response->getContent(false);
-        } catch (TimeoutException $e) {
-            $this->newLine();
-            $this->error('Timed out after ' . self::API_TIMEOUT_SECONDS . 's talking to Mailgun.');
-            $this->line('  Mailgun may be unreachable from this host, or blocked by egress rules.');
-            $this->line('  Check MAILGUN_ENDPOINT: an EU-region domain must use api.eu.mailgun.net.');
-
-            return false;
-        } catch (TransportExceptionInterface $e) {
-            // The message is a transport diagnostic (DNS, TLS, proxy). It never
-            // contains the credential - that travels in an Authorization header
-            // Symfony does not echo back - so it is safe to show, and it is the
-            // only thing that distinguishes a CA failure from a dead network.
-            $this->newLine();
-            $this->error('Could not connect to Mailgun.');
-            $this->line('  ' . $e->getMessage());
-            $this->line('  Usually DNS, TLS trust or outbound network policy on this host.');
-
-            return false;
+        if (! $result->success) {
+            return $this->reportFailure($result);
         }
 
-        $this->detail('HTTP status', (string) $status);
+        $this->info('  Authenticated. Mailgun recognises this domain.');
 
-        return match (true) {
-            $status === 200 => $this->reportHealthyDomain($body),
-            $status === 401 => $this->reportFailure(
-                'Mailgun rejected the credential (401 Unauthorized).',
-                [
-                    'MAILGUN_SECRET is missing, mistyped, or has been rotated/revoked.',
-                    'Generate a fresh key in Mailgun and update it in the platform environment.',
-                    'This is the exact failure that reaches the log as "Unable to send an email: Forbidden (code 401)".',
-                ]
-            ),
-            $status === 403 => $this->reportFailure(
-                'Mailgun refused the request (403 Forbidden).',
-                [
-                    'The key authenticated but is not permitted to read this domain.',
-                    'A sending-only key, or a key belonging to a different account or subaccount.',
-                ]
-            ),
-            $status === 404 => $this->reportFailure(
-                "Mailgun has no domain called \"{$domain}\" (404 Not Found).",
-                [
-                    'MAILGUN_DOMAIN does not match a domain registered on this account.',
-                    'An EU-region domain also 404s here: set MAILGUN_ENDPOINT=api.eu.mailgun.net.',
-                ]
-            ),
-            $status >= 500 => $this->reportFailure(
-                "Mailgun returned a server error ({$status}).",
-                ['Mailgun-side fault. Configuration is probably fine; retry, then check Mailgun status.']
-            ),
-            default => $this->reportFailure(
-                "Unexpected response from Mailgun ({$status}).",
-                [trim(substr($body, 0, 300))]
-            ),
-        };
+        return $this->reportDomainDetails($result->payload);
     }
 
     /** A 200 carries the domain's own opinion of itself; it is worth reading out. */
-    private function reportHealthyDomain(string $body): bool
+    private function reportDomainDetails(?array $payload): bool
     {
-        $this->info('  Authenticated. Mailgun recognises this domain.');
-
-        $payload = json_decode($body, true);
-
-        if (! is_array($payload)) {
+        if ($payload === null) {
             return true;
         }
 
@@ -282,8 +221,6 @@ class MailCheck extends Command
             }
 
             $valid = (string) ($record['valid'] ?? 'unknown');
-            $name = (string) ($record['name'] ?? '');
-            $type = (string) ($record['record_type'] ?? '?');
 
             if ($valid !== 'valid') {
                 $invalid++;
@@ -292,8 +229,8 @@ class MailCheck extends Command
             $this->line(sprintf(
                 '    [%s] %-5s %s',
                 $valid === 'valid' ? 'ok' : '!!',
-                $type,
-                $name
+                (string) ($record['record_type'] ?? '?'),
+                (string) ($record['name'] ?? '')
             ));
         }
 
@@ -307,16 +244,12 @@ class MailCheck extends Command
     /**
      * Stage 3, and the only stage that puts a real message on the wire.
      *
-     * sendNow(), not send(). ScholarZimMail is ShouldQueue, so send() would
-     * write a jobs row and return - proving only that the database works, and
-     * reporting success for a mailer that is completely broken. A diagnostic
-     * that defers the thing it is diagnosing is worthless, so this bypasses the
-     * queue and submits synchronously. The queue path itself is exercised by
-     * every real send in production; what needs testing here is the transport.
-     *
-     * The app's own mailable is reused deliberately: same class, same view, same
-     * transport as production mail, so this proves the real path rather than a
-     * parallel one built for the test.
+     * The mailable is built and rendered exactly as production builds and
+     * renders it, then handed to the same MailgunApiService the queue worker
+     * uses. What this skips is only the queue hop: a diagnostic that wrote a
+     * jobs row and returned would prove the database works and report success
+     * for a completely broken transport. Rendering and submission - the
+     * interesting half - stay identical to the production path.
      */
     private function sendDiagnostic(string $recipient): int
     {
@@ -345,16 +278,58 @@ class MailCheck extends Command
         );
 
         try {
-            Mail::to($recipient)->sendNow($mailable);
+            $html = $mailable->render();
         } catch (\Throwable $e) {
             $this->newLine();
-            $this->error('Submission failed: ' . $e->getMessage());
+            $this->error('The email template failed to render: ' . $e->getMessage());
+            $this->line('  Nothing was submitted. This is a Blade fault, not a Mailgun one.');
+
+            return self::FAILURE;
+        }
+
+        // A non-Mailgun mailer is a real, wanted setup (MailHog locally), and a
+        // diagnostic for it has to exercise that transport rather than posting
+        // local test mail to a live provider.
+        if (config('mail.default') !== 'mailgun') {
+            return $this->sendThroughLaravelTransport($mailable, $recipient);
+        }
+
+        $result = $this->mailgun->send($recipient, null, self::TEST_SUBJECT, $html);
+
+        $this->detail('HTTP status', $result->status === null ? '(no response)' : (string) $result->status);
+
+        if (! $result->success) {
+            $this->reportFailure($result);
             $this->line('  This is the same failure a real verification email would hit.');
 
             return self::FAILURE;
         }
 
-        $this->info('  Submitted. The transport accepted the message without error.');
+        $this->detail('Mailgun message id', $result->messageId ?? '(not returned)');
+        $this->info('  Submitted. Mailgun accepted the message.');
+        $this->deliveryCaveat();
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * The MailHog / log / array path.
+     *
+     * sendNow(), not send(): ScholarZimMail is ShouldQueue, so send() would
+     * write a jobs row and report success without the transport being touched.
+     */
+    private function sendThroughLaravelTransport(ScholarZimMail $mailable, string $recipient): int
+    {
+        try {
+            Mail::to($recipient)->sendNow($mailable);
+        } catch (\Throwable $e) {
+            $this->newLine();
+            $this->error('Submission failed: ' . $e->getMessage());
+
+            return self::FAILURE;
+        }
+
+        $this->info('  Submitted through the Laravel "' . config('mail.default') . '" transport.');
         $this->deliveryCaveat();
 
         return self::SUCCESS;
@@ -377,35 +352,44 @@ class MailCheck extends Command
         $this->line('  "delivered" rather than dropped, bounced or suppressed.');
     }
 
-    private function reportFailure(string $headline, array $hints): bool
+    /**
+     * MailgunResult carries a safe, already-redacted explanation; the hints
+     * below turn it into something someone can act on without knowing the API.
+     */
+    private function reportFailure(MailgunResult $result): bool
     {
         $this->newLine();
-        $this->error($headline);
+        $this->error(sprintf('Mailgun request failed (%s).', $result->reason));
+        $this->line('  ' . (string) $result->error);
 
-        foreach ($hints as $hint) {
-            if ($hint !== '') {
-                $this->line('  ' . $hint);
-            }
+        foreach ($this->hintsFor($result->reason) as $hint) {
+            $this->line('  ' . $hint);
         }
 
         return false;
     }
 
-    /**
-     * config/services.php stores a bare host ("api.mailgun.net") and a separate
-     * scheme, but a hand-set MAILGUN_ENDPOINT very often arrives with the scheme
-     * already attached. Both are accepted rather than one silently producing
-     * "https://https://api.mailgun.net".
-     */
-    private function normaliseEndpoint(string $endpoint): string
+    /** @return array<int, string> */
+    private function hintsFor(string $reason): array
     {
-        $endpoint = trim($endpoint);
+        return match ($reason) {
+            'unauthorized' => [
+                'This is the exact failure that reaches the log as "Forbidden (code 401)".',
+                'Generate a fresh key in Mailgun and update it in the platform environment.',
+            ],
+            'not_found' => ['Check MAILGUN_DOMAIN against the domains listed in the Mailgun dashboard.'],
+            'timeout', 'connection_failed' => [
+                'Usually DNS, TLS trust or outbound network policy on this host.',
+            ],
+            'rate_limited' => ['Queued mail will retry with backoff; no configuration change is needed.'],
+            'server_error' => ['Retry, then check Mailgun status before changing anything here.'],
+            default => [],
+        };
+    }
 
-        if ($endpoint === '') {
-            return 'api.mailgun.net';
-        }
-
-        return rtrim(preg_replace('#^https?://#i', '', $endpoint), '/');
+    private function secretConfigured(): bool
+    {
+        return filled(config('services.mailgun.secret'));
     }
 
     private function stage(string $title): void

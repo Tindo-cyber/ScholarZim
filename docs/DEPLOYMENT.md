@@ -171,6 +171,17 @@ and messages are **queued in the database** and drained by the Supervisor `queue
 That gives four places a message can stop, and from inside the application they all look the
 same: the request succeeds and no email arrives.
 
+The exact path, with no SMTP anywhere in it:
+
+```
+EmailService -> queued ScholarZimMail -> queue worker
+             -> MailgunApiService -> https://api.mailgun.net/v3/{domain}/messages -> recipient
+```
+
+`ScholarZimMail::send()` is overridden, so the queue worker submits over HTTPS rather than
+handing the message to Laravel's mail transport. Both the queued path and `sendNow()` converge
+there, which is what guarantees exactly one Mailgun submission per email.
+
 Run this first, from a shell on the running instance:
 
 ```bash
@@ -198,6 +209,8 @@ in Mailgun, so mail to them is accepted and then discarded.
 | `404 Not Found` | `MAILGUN_DOMAIN` is not a domain on this account. An EU-region domain also 404s here: set `MAILGUN_ENDPOINT=api.eu.mailgun.net`. |
 | `mail:check` passes but nothing arrives | Submission works; the failure is later. Check **Sending → Logs** in Mailgun for `delivered` vs dropped/bounced/suppressed, then the recipient's spam folder. |
 | `mail:check --send` works but application emails do not | The queue, not the mailer. Check the Supervisor `queue` program is running and inspect the `jobs` and `failed_jobs` tables. |
+| `429` in the logs | Rate limited by Mailgun. No configuration change needed — queued mail retries with backoff. |
+| `400` / `422` in the logs | Mailgun rejected the message itself, usually a malformed recipient address. |
 
 Permanently failed messages are retried three times with a growing backoff (60s, 5m, 15m),
 then written to `failed_jobs`. `ScholarZimMail::failed()` also logs `Email permanently failed

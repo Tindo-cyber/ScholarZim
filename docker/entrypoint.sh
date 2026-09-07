@@ -54,7 +54,11 @@ if [ "${MAIL_MAILER:-}" = "mailgun" ]; then
     fi
 
     if [ -n "${MAILGUN_DOMAIN:-}" ] && [ -n "${MAILGUN_SECRET:-}" ]; then
-        echo "Mail: Mailgun credentials present for ${MAILGUN_DOMAIN}. Run 'php artisan mail:check' to verify them."
+        echo "Mailgun API configuration: configured (domain ${MAILGUN_DOMAIN}, endpoint ${MAILGUN_ENDPOINT:-api.mailgun.net})"
+        echo "  Run 'php artisan mail:check' to verify the credentials actually authenticate."
+    else
+        echo "Mailgun API configuration: missing"
+        echo "  The site will serve normally, but no email will be delivered."
     fi
 fi
 

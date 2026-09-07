@@ -3,9 +3,7 @@
 namespace Tests\Feature;
 
 use App\Console\Commands\MailCheck;
-use App\Mail\ScholarZimMail;
 use Illuminate\Contracts\Console\Kernel as ConsoleKernel;
-use Illuminate\Support\Facades\Mail;
 use Symfony\Component\HttpClient\Exception\TimeoutException;
 use Symfony\Component\HttpClient\Exception\TransportException;
 use Symfony\Component\HttpClient\MockHttpClient;
@@ -161,8 +159,8 @@ class MailCheckCommandTest extends TestCase
         [$exit, $output] = $this->runCheck();
 
         $this->assertSame(1, $exit);
-        $this->assertStringContainsString('401 Unauthorized', $output);
-        $this->assertStringContainsString('rotated/revoked', $output);
+        $this->assertStringContainsString('unauthorized', $output);
+        $this->assertStringContainsString('rotated', $output);
     }
 
     public function test_a_403_is_reported_separately_from_a_401(): void
@@ -172,8 +170,8 @@ class MailCheckCommandTest extends TestCase
         [$exit, $output] = $this->runCheck();
 
         $this->assertSame(1, $exit);
-        $this->assertStringContainsString('403 Forbidden', $output);
-        $this->assertStringContainsString('not permitted to read this domain', $output);
+        $this->assertStringContainsString('forbidden', $output);
+        $this->assertStringContainsString('not permitted to use this domain', $output);
     }
 
     public function test_a_404_is_reported_as_a_wrong_domain(): void
@@ -183,7 +181,7 @@ class MailCheckCommandTest extends TestCase
         [$exit, $output] = $this->runCheck();
 
         $this->assertSame(1, $exit);
-        $this->assertStringContainsString('404 Not Found', $output);
+        $this->assertStringContainsString('not_found', $output);
         $this->assertStringContainsString('api.eu.mailgun.net', $output);
     }
 
@@ -194,7 +192,7 @@ class MailCheckCommandTest extends TestCase
         [$exit, $output] = $this->runCheck();
 
         $this->assertSame(1, $exit);
-        $this->assertStringContainsString('Mailgun-side fault', $output);
+        $this->assertStringContainsString('Mailgun-side failure', $output);
     }
 
     public function test_a_timeout_is_reported_as_a_timeout(): void
@@ -206,8 +204,8 @@ class MailCheckCommandTest extends TestCase
         [$exit, $output] = $this->runCheck();
 
         $this->assertSame(1, $exit);
+        $this->assertStringContainsString('timeout', $output);
         $this->assertStringContainsString('Timed out', $output);
-        $this->assertStringContainsString('api.eu.mailgun.net', $output);
     }
 
     public function test_a_connection_failure_is_reported_as_a_connection_failure(): void
@@ -219,85 +217,84 @@ class MailCheckCommandTest extends TestCase
         [$exit, $output] = $this->runCheck();
 
         $this->assertSame(1, $exit);
-        $this->assertStringContainsString('Could not connect to Mailgun', $output);
+        $this->assertStringContainsString('connection_failed', $output);
         $this->assertStringContainsString('Could not resolve host', $output);
     }
 
     // ------------------------------------------------------------ --send  --
 
     /**
-     * Mail::fake() is what keeps this from putting a real message on the wire.
-     *
-     * The command uses sendNow() rather than send(). ScholarZimMail is
-     * ShouldQueue, so send() would write a jobs row and return - proving the
-     * database works and reporting success for a completely broken transport -
-     * so this asserts the message was *sent*, not queued.
+     * --send goes through MailgunApiService, the same class the queue worker
+     * uses. Two requests are expected: the read-only domain check, then the
+     * submission. Nothing leaves the process - MockHttpClient answers both.
      */
-    public function test_the_send_option_submits_through_the_application_mailable(): void
+    public function test_the_send_option_submits_through_the_mailgun_api(): void
     {
-        Mail::fake();
-        $this->fakeHttp($this->domainResponse());
+        $requests = [];
+        $this->fakeHttp($this->recordingClient($requests, [
+            $this->domainBody(200),
+            ['{"id":"<sent@mail.example.test>","message":"Queued. Thank you."}', 200],
+        ]));
 
         [$exit, $output] = $this->runCheck(['--send' => 'someone@example.test']);
 
         $this->assertSame(0, $exit);
-        $this->assertStringContainsString('Submitted.', $output);
-        $this->assertStringContainsString(MailCheck::TEST_SUBJECT, $output);
+        $this->assertStringContainsString('Mailgun accepted the message', $output);
+        $this->assertStringContainsString('sent@mail.example.test', $output);
 
-        Mail::assertSent(ScholarZimMail::class, function (ScholarZimMail $mail) {
-            // The fake captures the mailable before Laravel calls build(), and
-            // build() is where ScholarZimMail moves its constructor argument
-            // onto the Mailable's own $subject - so without this the subject
-            // assertion would read a null that says nothing about the message.
-            $mail->build();
+        $this->assertCount(2, $requests, 'one domain check, one submission');
+        $this->assertSame('GET', $requests[0]['method']);
+        $this->assertSame('POST', $requests[1]['method']);
+        $this->assertSame('https://api.mailgun.net/v3/mail.example.test/messages', $requests[1]['url']);
 
-            return $mail->hasTo('someone@example.test')
-                && $mail->hasSubject(MailCheck::TEST_SUBJECT);
-        });
+        parse_str((string) $requests[1]['body'], $fields);
 
-        Mail::assertNothingQueued();
+        $this->assertSame('someone@example.test', $fields['to']);
+        $this->assertSame(MailCheck::TEST_SUBJECT, $fields['subject']);
+        $this->assertNotEmpty($fields['html'], 'the Blade view should have been rendered');
     }
 
     public function test_nothing_is_sent_when_the_send_option_is_absent(): void
     {
-        Mail::fake();
-        $this->fakeHttp($this->domainResponse());
+        $requests = [];
+        $this->fakeHttp($this->recordingClient($requests, [$this->domainBody(200)]));
 
         [$exit] = $this->runCheck();
 
         $this->assertSame(0, $exit);
-        Mail::assertNothingSent();
-        Mail::assertNothingQueued();
+        $this->assertCount(1, $requests, 'only the read-only domain check');
+        $this->assertSame('GET', $requests[0]['method']);
     }
 
     public function test_an_invalid_send_address_fails_before_anything_is_sent(): void
     {
-        Mail::fake();
-        $this->fakeHttp($this->domainResponse());
+        $requests = [];
+        $this->fakeHttp($this->recordingClient($requests, [$this->domainBody(200)]));
 
         [$exit, $output] = $this->runCheck(['--send' => 'not-an-address']);
 
         $this->assertSame(1, $exit);
         $this->assertStringContainsString('is not a valid email address', $output);
-        Mail::assertNothingSent();
+        $this->assertCount(1, $requests, 'nothing may be submitted for an invalid address');
     }
 
     /**
-     * A transport that throws must fail the command. Silently returning 0 here
+     * A refused submission must fail the command. Silently returning 0 here
      * would reproduce the exact fault this command was written to expose.
      */
-    public function test_a_failing_transport_makes_the_send_fail(): void
+    public function test_a_refused_submission_makes_the_send_fail(): void
     {
-        $this->fakeHttp($this->domainResponse());
-
-        Mail::shouldReceive('to')
-            ->once()
-            ->andThrow(new \RuntimeException('Unable to send an email: Forbidden (code 401).'));
+        $requests = [];
+        $this->fakeHttp($this->recordingClient($requests, [
+            $this->domainBody(200),
+            ['{"message":"Forbidden"}', 401],
+        ]));
 
         [$exit, $output] = $this->runCheck(['--send' => 'someone@example.test']);
 
         $this->assertSame(1, $exit);
-        $this->assertStringContainsString('Submission failed', $output);
+        $this->assertStringContainsString('unauthorized', $output);
+        $this->assertStringContainsString('same failure a real verification email would hit', $output);
     }
 
     // ------------------------------------------------------------ contract --
@@ -327,8 +324,11 @@ class MailCheckCommandTest extends TestCase
      */
     public function test_the_mailgun_secret_never_appears_in_the_output(): void
     {
-        Mail::fake();
-        $this->fakeHttp($this->domainResponse());
+        $requests = [];
+        $this->fakeHttp($this->recordingClient($requests, [
+            $this->domainBody(200),
+            ['{"id":"<x@y>","message":"Queued. Thank you."}', 200],
+        ]));
 
         [, $output] = $this->runCheck(['--send' => 'someone@example.test']);
 
@@ -402,6 +402,40 @@ class MailCheckCommandTest extends TestCase
         $exit = $kernel->call('mail:check', $parameters);
 
         return [$exit, $kernel->output()];
+    }
+
+    /**
+     * Records every request and answers from a fixed sequence, so a test can
+     * assert both what was sent and how many times.
+     *
+     * @param array<int, array<string, mixed>> $requests captured by reference
+     * @param array<int, array{0: string, 1: int}> $responses body and status, in order
+     */
+    private function recordingClient(array &$requests, array $responses): MockHttpClient
+    {
+        $index = 0;
+
+        return new MockHttpClient(
+            function (string $method, string $url, array $options) use (&$requests, $responses, &$index): MockResponse {
+                $requests[] = ['method' => $method, 'url' => $url, 'body' => $options['body'] ?? null];
+
+                [$body, $status] = $responses[$index] ?? ['{}', 200];
+                $index++;
+
+                return new MockResponse($body, ['http_code' => $status]);
+            }
+        );
+    }
+
+    /** @return array{0: string, 1: int} */
+    private function domainBody(int $status): array
+    {
+        return [(string) json_encode([
+            'domain' => ['name' => self::FAKE_DOMAIN, 'state' => 'active'],
+            'sending_dns_records' => [
+                ['record_type' => 'TXT', 'name' => self::FAKE_DOMAIN, 'valid' => 'valid'],
+            ],
+        ]), $status];
     }
 
     private function domainResponse(): MockHttpClient

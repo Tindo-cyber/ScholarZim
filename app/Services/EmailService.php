@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\MailgunSubmissionException;
 use App\Mail\ScholarZimMail;
 use App\Models\User;
 use App\Support\AuditAction;
@@ -12,10 +13,26 @@ use Illuminate\Support\Facades\Mail;
  * All outbound mail goes through here so delivery failures are audited in one
  * place and never bubble up into a request that was otherwise successful.
  *
- * Mail is handed to ScholarZimMail, which is queued: the request that triggered
- * it returns without waiting on SMTP. With QUEUE_CONNECTION=sync - the test and
- * bare-development default - that is still immediate, so behaviour is unchanged
- * where no worker is running.
+ * The full path, and where each step happens:
+ *
+ *   EmailService          picks the subject and Blade view, builds the payload
+ *     -> ScholarZimMail   queued (ShouldQueue) onto the database queue
+ *       -> queue worker   Supervisor, `queue:work --queue=default`
+ *         -> ScholarZimMail::send()  renders the Blade view
+ *           -> MailgunApiService     POSTs to Mailgun's HTTP API
+ *             -> Mailgun             accepts, then delivers (or does not)
+ *
+ * There is no SMTP anywhere in that chain, and Laravel's own mail transport
+ * never delivers anything: ScholarZimMail overrides send(), so both the queued
+ * path and sendNow() converge on exactly one Mailgun submission per message.
+ * Mail::to()->send() below is used only to *enqueue* - for a ShouldQueue
+ * mailable it dispatches SendQueuedMailable and returns without touching a
+ * transport.
+ *
+ * The request that triggered the mail returns without waiting on any of it.
+ * With QUEUE_CONNECTION=sync - the test and bare-development default - the job
+ * runs inline instead, so a Mailgun failure surfaces here synchronously and the
+ * boolean below reflects it. Under the database queue it cannot: see send().
  *
  * Swallowing the failure is right for a notification - an administrator
  * approving a listing should not see an error because one of forty recipients
@@ -88,10 +105,24 @@ class EmailService
      * was built from, and an email that fails on wake-up because the account was
      * since renamed or deleted is worse than one addressed from a snapshot.
      *
-     * @return bool whether the message was handed to the mailer without error.
-     *              True means accepted for delivery, not delivered: with a queue
-     *              driver the send itself happens later in the worker, and the
-     *              transport can still reject it there.
+     * @return bool whether the message was accepted without error.
+     *
+     *              What "true" means depends on the queue driver, and the
+     *              difference is worth being precise about rather than glossing:
+     *
+     *                sync     - the job ran inline, so true means Mailgun
+     *                           itself accepted the message and false means it
+     *                           refused it, with the reason already logged and
+     *                           audited by ScholarZimMail.
+     *                database - true means the job was written to the queue.
+     *                           Mailgun has not been contacted yet. A rejection
+     *                           surfaces later, in the worker, and is recorded
+     *                           by ScholarZimMail::failed() once the retries are
+     *                           exhausted.
+     *
+     *              Neither ever means delivered. Mailgun accepting a message is
+     *              a promise to try, and it will accept mail addressed to a
+     *              mailbox that does not exist and drop it minutes later.
      */
     private function send(User $user, string $subject, string $view, array $data): bool
     {
@@ -106,13 +137,22 @@ class EmailService
                 ->send(new ScholarZimMail($subject, $view, $data + ['user' => $recipient]));
         } catch (\Throwable $e) {
             Log::warning('Email delivery failed', ['to' => $user->email, 'error' => $e->getMessage()]);
-            $this->auditService->log(
-                $user->email,
-                AuditAction::EMAIL_DELIVERY_FAILED,
-                'USER',
-                $user->user_id,
-                $e->getMessage()
-            );
+
+            // A Mailgun refusal has already been audited by
+            // ScholarZimMail::failed(), which is the only place that sees it
+            // under the database queue. On the sync driver the same exception
+            // keeps travelling up to here, and auditing it again would put two
+            // EMAIL_DELIVERY_FAILED rows against one email - a trail implying
+            // two lost messages where there was one.
+            if (! $e instanceof MailgunSubmissionException) {
+                $this->auditService->log(
+                    $user->email,
+                    AuditAction::EMAIL_DELIVERY_FAILED,
+                    'USER',
+                    $user->user_id,
+                    $e->getMessage()
+                );
+            }
 
             return false;
         }

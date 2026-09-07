@@ -231,16 +231,30 @@ true.
 Every outbound message goes through one path:
 
 ```
-EmailService  ->  ScholarZimMail (queued)  ->  the mailer in config/mail.php
+EmailService  ->  ScholarZimMail (queued)  ->  queue worker
+              ->  MailgunApiService        ->  Mailgun HTTP API  ->  recipient
 ```
+
+In production that path contains **no SMTP at all**. `ScholarZimMail` renders its
+Blade view and then submits the HTML straight to Mailgun's HTTP API through
+`MailgunApiService`; Laravel's own mail transport delivers nothing. Render blocks
+outbound SMTP on its free tier, so an SMTP transport there does not fail cleanly —
+it hangs until the worker times out. Going over HTTPS also means the status code
+Mailgun returns (401, 404, 429 …) survives into the log instead of being flattened
+into a single unhelpful "Unable to send an email".
 
 Which transport is used where — three setups, no ambiguity:
 
 | Where | `MAIL_MAILER` | Transport | Set by |
 |-------|---------------|-----------|--------|
-| **Production** | `mailgun` | Mailgun HTTP API | `.env.prod.example` + `docker-compose.prod.yml` |
+| **Production** | `mailgun` | `MailgunApiService` → Mailgun HTTP API | `.env.prod.example` + `docker-compose.prod.yml` |
 | **Local Docker** | `smtp` | Bundled MailHog, UI at http://localhost:8025 | `docker-compose.yml` (overrides the file) |
 | **Local, no Docker** | `log` (recommended) | Written to `storage/logs` | you, in `.env` |
+
+`MAIL_MAILER` is the switch: set to `mailgun` the message goes over the HTTP API, and set to
+anything else `ScholarZimMail` defers to Laravel's transport. That is deliberate — routing the
+other two through the API would post local development mail to a live provider from every
+developer's laptop.
 
 `.env.example` defaults to `mailgun` because that is the production path; on a fresh clone
 without a Mailgun key, set `MAIL_MAILER=log` and read the verification link out of the log.

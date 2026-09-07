@@ -140,6 +140,18 @@ class ContainerEntrypointTest extends TestCase
     }
 
     /**
+     * A safe one-line verdict, so the deploy log answers "is mail set up?"
+     * without anyone having to know which variables matter.
+     */
+    public function test_the_boot_states_whether_the_mailgun_api_is_configured(): void
+    {
+        $commands = $this->entrypointCommands();
+
+        $this->assertStringContainsString('Mailgun API configuration: configured', $commands);
+        $this->assertStringContainsString('Mailgun API configuration: missing', $commands);
+    }
+
+    /**
      * The value is never echoed, only whether one is present. Deploy logs are
      * retained and widely readable, so a diagnostic that prints the credential
      * it is checking is worse than no diagnostic at all.
