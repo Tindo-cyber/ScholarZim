@@ -7,12 +7,24 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Symfony\Component\HttpClient\HttpClient;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Bound for MailCheck, which talks to the Mailgun API directly.
         //
+        // HttpClient::create() is the same call Symfony's mailer makes when it
+        // builds the Mailgun transport, so the diagnostic and the real send path
+        // resolve to the same client - on Windows with no CA bundle configured
+        // that is NativeHttpClient rather than CurlHttpClient, and a check built
+        // on a different client would report a connection the mailer cannot make.
+        //
+        // An interface binding rather than a concrete one so the suite can swap
+        // in MockHttpClient without reaching the network.
+        $this->app->singleton(HttpClientInterface::class, static fn () => HttpClient::create());
     }
 
     public function boot(): void

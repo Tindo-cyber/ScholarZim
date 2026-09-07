@@ -103,4 +103,81 @@ class ContainerEntrypointTest extends TestCase
         $this->assertStringContainsString('APP_ENV:-production}" = "production"', $entrypoint);
         $this->assertStringContainsString('refusing to seed demo accounts', $entrypoint);
     }
+
+    /**
+     * render.yaml marks MAILGUN_DOMAIN and MAILGUN_SECRET as sync: false, so a
+     * deploy boots happily with neither set and every email fails 401 inside
+     * EmailService, which catches \Throwable and returns false. Nothing else in
+     * the system says the credential is missing.
+     */
+    public function test_the_boot_warns_about_missing_mailgun_credentials(): void
+    {
+        $commands = $this->entrypointCommands();
+
+        $this->assertStringContainsString('MAIL_MAILER:-}" = "mailgun"', $commands);
+        $this->assertStringContainsString('WARNING: MAIL_MAILER=mailgun but MAILGUN_DOMAIN is not configured.', $commands);
+        $this->assertStringContainsString('WARNING: MAIL_MAILER=mailgun but MAILGUN_SECRET is not configured.', $commands);
+    }
+
+    /**
+     * The warning must never become an exit.
+     *
+     * An email outage is a degraded service, not a broken one - the site is
+     * still worth serving without it. Terminating here would turn a missing
+     * mail credential into a container that will not boot, which on a platform
+     * that restarts failed containers is an outage loop over something no
+     * restart can fix.
+     */
+    public function test_the_mail_warning_does_not_terminate_the_container(): void
+    {
+        $commands = $this->entrypointCommands();
+
+        $mailBlock = $this->blockBetween($commands, 'MAIL_MAILER:-}" = "mailgun"', 'MYSQL_ATTR_SSL_CA');
+
+        $this->assertNotSame('', $mailBlock, 'the mail credential check should still be in the script');
+        $this->assertStringNotContainsString('exit 1', $mailBlock);
+        $this->assertDoesNotMatchRegularExpression('/\bexit\b/', $mailBlock);
+    }
+
+    /**
+     * The value is never echoed, only whether one is present. Deploy logs are
+     * retained and widely readable, so a diagnostic that prints the credential
+     * it is checking is worse than no diagnostic at all.
+     */
+    public function test_the_boot_never_echoes_the_mailgun_secret(): void
+    {
+        $echoed = array_filter(
+            preg_split('/\R/', $this->entrypointCommands()) ?: [],
+            // The literal name is fine - "Set MAILGUN_SECRET in the platform
+            // environment" is the actionable half of the warning. What must
+            // never appear is the expansion, which would print the value.
+            fn (string $line) => str_contains($line, 'echo')
+                && preg_match('/\$\{?MAILGUN_SECRET/', $line) === 1
+        );
+
+        $this->assertSame(
+            [],
+            $echoed,
+            'no echo in the entrypoint may expand MAILGUN_SECRET: ' . implode(' | ', $echoed)
+        );
+    }
+
+    /**
+     * Reads the commands between two markers, so an assertion about the mail
+     * block cannot accidentally pass or fail on an unrelated part of the script.
+     */
+    private function blockBetween(string $haystack, string $start, string $end): string
+    {
+        $from = strpos($haystack, $start);
+
+        if ($from === false) {
+            return '';
+        }
+
+        $to = strpos($haystack, $end, $from);
+
+        return $to === false
+            ? substr($haystack, $from)
+            : substr($haystack, $from, $to - $from);
+    }
 }

@@ -66,6 +66,7 @@ class HealthController extends Controller
                 Cache::put($probe, '1', 5);
                 Cache::forget($probe);
             }),
+            'mail' => $this->mailConfiguration(),
         ];
 
         $required = ['database'];
@@ -85,6 +86,40 @@ class HealthController extends Controller
             'time' => now()->toIso8601String(),
             'request_id' => RequestContext::id(),
         ], $ready ? 200 : 503);
+    }
+
+    /**
+     * Is a mailer configured well enough to have a chance of working?
+     *
+     * Deliberately not a probe, and deliberately not required. It reads config
+     * and nothing else - no socket, no Mailgun request - for three reasons:
+     * this endpoint is polled constantly by the platform and must stay cheap;
+     * an unauthenticated endpoint should not be a free oracle for whether a
+     * third party is up; and readiness that depended on Mailgun would drop
+     * healthy instances out of rotation, or restart-loop them, over an outage
+     * in a service that has nothing to do with serving a page.
+     *
+     * So it answers the one mail question that is genuinely local: has this
+     * instance been given the credentials it needs? That is the failure worth
+     * catching here, because it is a deploy mistake rather than an incident,
+     * and it is invisible everywhere else until a user does not get an email.
+     *
+     * Reported alongside the real probes but never in $required, and it returns
+     * its own vocabulary rather than up/down precisely so nobody mistakes it
+     * for a liveness signal about Mailgun.
+     */
+    private function mailConfiguration(): string
+    {
+        if (config('mail.default') !== 'mailgun') {
+            // smtp/log/array are all valid setups (local Docker, tests) with no
+            // remote credential to be missing.
+            return 'configured';
+        }
+
+        $complete = filled(config('services.mailgun.domain'))
+            && filled(config('services.mailgun.secret'));
+
+        return $complete ? 'configured' : 'missing_configuration';
     }
 
     /**

@@ -90,6 +90,14 @@ services:
       # the real send path. Set MAILGUN_DOMAIN and MAILGUN_SECRET in the
       # dashboard (from the Mailgun control panel); MAILGUN_ENDPOINT only
       # needs to change to api.eu.mailgun.net for an EU-region domain.
+      #
+      # Both are sync: false, which is correct - a secret does not belong in a
+      # blueprint - but it means a deploy boots perfectly happily with neither
+      # set and every email fails 401 inside EmailService, which catches the
+      # throwable and returns false. Nothing downstream notices. Two things now
+      # say so instead: docker/entrypoint.sh warns at boot, and
+      # `php artisan mail:check` verifies the credentials against Mailgun
+      # without sending anything (add --send=you@example.com for a real test).
       - key: MAIL_MAILER
         value: mailgun
       - key: MAILGUN_DOMAIN

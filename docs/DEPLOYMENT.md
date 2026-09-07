@@ -164,6 +164,46 @@ through the app from the new location.
 | Connection times out against Aiven | `DB_PORT` is almost certainly still 3306. Aiven assigns a per-service port. |
 | Stale config or routes after a change | The entrypoint warms `config:cache`, `route:cache` and `view:cache`. Redeploy to rebuild them; never edit cached config in place. |
 
+### Diagnosing email in production
+
+Production mail is the Mailgun **HTTP API** (Render blocks outbound SMTP on the free tier),
+and messages are **queued in the database** and drained by the Supervisor `queue` worker.
+That gives four places a message can stop, and from inside the application they all look the
+same: the request succeeds and no email arrives.
+
+Run this first, from a shell on the running instance:
+
+```bash
+php artisan mail:check
+```
+
+It prints the resolved configuration, then performs a read-only `GET /v3/domains/{domain}`
+against Mailgun. It never prints the secret, and it never sends anything. Exit code is `0`
+only if the checks pass, so it is safe to use in a deploy gate.
+
+To prove the whole path end to end, including submission:
+
+```bash
+php artisan mail:check --send=you@real-address.com
+```
+
+Use a **real external address**. The `@scholarzim.co.zw` demo accounts have no inbound routes
+in Mailgun, so mail to them is accepted and then discarded.
+
+| Symptom | Likely cause |
+|---------|--------------|
+| `mail:check` says `MAILGUN_SECRET: NOT CONFIGURED` | `render.yaml` marks it `sync: false`, so it must be set in the Render dashboard by hand. The boot log also warns about this. |
+| `401 Unauthorized` | The key is wrong, mistyped or has been rotated. This is what reaches the app log as `Unable to send an email: Forbidden (code 401)`. |
+| `403 Forbidden` | The key authenticates but cannot read this domain — a sending-only key, or one from another account/subaccount. |
+| `404 Not Found` | `MAILGUN_DOMAIN` is not a domain on this account. An EU-region domain also 404s here: set `MAILGUN_ENDPOINT=api.eu.mailgun.net`. |
+| `mail:check` passes but nothing arrives | Submission works; the failure is later. Check **Sending → Logs** in Mailgun for `delivered` vs dropped/bounced/suppressed, then the recipient's spam folder. |
+| `mail:check --send` works but application emails do not | The queue, not the mailer. Check the Supervisor `queue` program is running and inspect the `jobs` and `failed_jobs` tables. |
+
+Permanently failed messages are retried three times with a growing backoff (60s, 5m, 15m),
+then written to `failed_jobs`. `ScholarZimMail::failed()` also logs `Email permanently failed
+after all retries` at error level with the recipients and the transport error, so a lost
+message is traceable without unserialising the job payload.
+
 ---
 
 ## Alternative: DigitalOcean Droplet + Docker + Nginx

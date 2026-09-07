@@ -27,6 +27,37 @@ if [ -z "${APP_KEY:-}" ] && ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
     echo "  Set APP_KEY in the platform environment for anything that outlives a deploy."
 fi
 
+# Mail credentials, checked out loud but never enforced.
+#
+# render.yaml marks MAILGUN_DOMAIN and MAILGUN_SECRET as sync: false - correct,
+# since secrets do not belong in a blueprint, but it means a deploy boots
+# perfectly happily with neither of them set. Nothing then complains: the site
+# comes up, the health check passes, and every email fails with HTTP 401 inside
+# EmailService, which catches \Throwable and returns false. That combination
+# cost two days of "why is email not working" once already, and the whole cost
+# was that no line anywhere said the credential was missing.
+#
+# Warn, never exit. Mail being down is a degraded service; the site is still
+# worth serving without it, and killing the container over a missing mail
+# credential would turn a broken email into a broken platform. The value itself
+# is never echoed - only whether one is present - because deploy logs are
+# retained and widely readable.
+if [ "${MAIL_MAILER:-}" = "mailgun" ]; then
+    if [ -z "${MAILGUN_DOMAIN:-}" ]; then
+        echo "WARNING: MAIL_MAILER=mailgun but MAILGUN_DOMAIN is not configured." >&2
+        echo "  Every outbound email will fail. Set MAILGUN_DOMAIN in the platform environment." >&2
+    fi
+
+    if [ -z "${MAILGUN_SECRET:-}" ]; then
+        echo "WARNING: MAIL_MAILER=mailgun but MAILGUN_SECRET is not configured." >&2
+        echo "  Every outbound email will fail with HTTP 401. Set MAILGUN_SECRET in the platform environment." >&2
+    fi
+
+    if [ -n "${MAILGUN_DOMAIN:-}" ] && [ -n "${MAILGUN_SECRET:-}" ]; then
+        echo "Mail: Mailgun credentials present for ${MAILGUN_DOMAIN}. Run 'php artisan mail:check' to verify them."
+    fi
+fi
+
 # Put the database CA somewhere the web worker can actually read it.
 #
 # Render mounts Secret Files as root-only (-rw------- root root), and everything

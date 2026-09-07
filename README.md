@@ -250,6 +250,43 @@ Credentials are read from the environment through `config/services.php` (`MAILGU
 `MAILGUN_SECRET`, `MAILGUN_ENDPOINT`) and are never committed: both tracked templates ship
 placeholders, and `.env` and `.env.docker` are gitignored.
 
+In production the message is **queued to the database**, not sent inline: `ScholarZimMail`
+is `ShouldQueue`, `QUEUE_CONNECTION=database`, and the Supervisor `queue` program in the
+image drains the `default` queue. A request therefore never waits on Mailgun — but it also
+means **no worker, no email**. The rows simply accumulate in `jobs`.
+
+### Checking that mail actually works
+
+```bash
+php artisan mail:check                              # configuration + Mailgun connectivity
+php artisan mail:check --send=you@real-address.com  # the above, then a real test email
+```
+
+Without `--send` nothing is transmitted: the domain lookup is a read-only `GET`. The command
+prints the resolved mailer, domain, endpoint and from-address, says whether `MAILGUN_DOMAIN`
+and `MAILGUN_SECRET` are configured (never their values), and exits non-zero on failure so it
+can gate a deploy. It separates the failures that all look identical from inside the app —
+missing configuration, `401` (bad or rotated key), `403` (key cannot read this domain), `404`
+(wrong domain, or an EU domain needing `MAILGUN_ENDPOINT=api.eu.mailgun.net`), timeout, and
+connection failure.
+
+It reports four stages, and the fourth is the one worth reading twice:
+
+| Stage | What a pass proves |
+|-------|--------------------|
+| 1. Laravel configuration | A mailer and credentials are present |
+| 2. Mailgun authentication | The key works, for this domain |
+| 3. Mail submission | Mailgun accepted a real message (`--send` only) |
+| 4. Recipient delivery | **Nothing — this is not checked and cannot be** |
+
+Mailgun accepting a message means it is queued for delivery, not delivered. Confirm the
+final hop in the Mailgun dashboard under **Sending → Logs**.
+
+> **The demo accounts are not real inboxes.** `admin@`, `provider@` and `student@scholarzim.co.zw`
+> are demonstration identities. The domain has no inbound routes configured, so mail addressed
+> to them is accepted by the MX and discarded. Always use a real external address when testing
+> whether email arrives.
+
 ### Where the links in those emails point
 
 `EmailService` builds every link with Laravel's `url()` helper, so **the address comes from
