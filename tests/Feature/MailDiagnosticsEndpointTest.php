@@ -181,7 +181,7 @@ class MailDiagnosticsEndpointTest extends TestCase
 
     // ------------------------------------------------------------- helpers --
 
-    private function fakeMailgun(int $status, string $body = null): void
+    private function fakeMailgun(int $status, ?string $body = null): void
     {
         $body ??= (string) json_encode([
             'domain' => ['name' => 'mail.example.test', 'state' => 'active'],

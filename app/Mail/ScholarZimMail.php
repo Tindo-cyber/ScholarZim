@@ -138,6 +138,13 @@ class ScholarZimMail extends Mailable implements ShouldQueue
         );
 
         if ($result->success) {
+            // Info level, which render.yaml's LOG_LEVEL=warning discards - so
+            // this line is for local and staging, not production. That is the
+            // right trade: a successful send is already recorded twice where it
+            // matters (an audit row, and Mailgun's own event log, which is the
+            // only place that can say whether it was then *delivered*), and
+            // logging every accepted message at warning would bury the failures
+            // this whole path exists to make visible.
             Log::info('Email accepted by Mailgun', [
                 'to' => $recipient['address'],
                 'subject' => $this->subjectLine,
