@@ -240,6 +240,23 @@ class MailgunApiServiceTest extends TestCase
         ];
     }
 
+    /**
+     * The failure that cost the most time: MAILGUN_DOMAIN had a one-character
+     * typo, and because Mailgun scopes authorisation per domain, the send
+     * endpoint answered 401 "Forbidden" - identical to a rotated key. The
+     * message must name the domain, or it sends whoever reads it to the wrong
+     * variable.
+     */
+    public function test_a_401_names_the_domain_as_well_as_the_secret(): void
+    {
+        $result = $this->send(401, 'Forbidden');
+
+        $this->assertSame('unauthorized', $result->reason);
+        $this->assertStringContainsString(self::FAKE_DOMAIN, (string) $result->error);
+        $this->assertStringContainsString('MAILGUN_DOMAIN', (string) $result->error);
+        $this->assertStringContainsString('MAILGUN_SECRET', (string) $result->error);
+    }
+
     public function test_an_unexpected_status_is_reported_rather_than_guessed(): void
     {
         $result = $this->send(418, 'I am a teapot');

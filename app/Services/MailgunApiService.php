@@ -245,7 +245,21 @@ class MailgunApiService
             $status === 401 => MailgunResult::failed(
                 $status,
                 'unauthorized',
-                'Mailgun rejected the credential. MAILGUN_SECRET is missing, mistyped, or has been rotated. '
+                // Two different faults arrive as 401 here, and the wrong guess
+                // costs hours. Mailgun scopes authorisation per domain, so
+                // POSTing to /v3/{domain}/messages for a domain that is not on
+                // the account answers "Forbidden" with a 401 - identical to a
+                // bad key. A one-character typo in MAILGUN_DOMAIN therefore
+                // looks exactly like a rotated MAILGUN_SECRET. The domain is
+                // named first because it is the cheaper of the two to check:
+                // `mail:check` reads it back, and the read-only domain lookup
+                // distinguishes them outright by answering 404 instead.
+                sprintf(
+                    'Mailgun rejected the request for domain "%s". Either MAILGUN_DOMAIN is not a domain '
+                    . 'on this account (a typo here returns 401 on send, and 404 on the domain lookup), '
+                    . 'or MAILGUN_SECRET is missing, mistyped or rotated. ',
+                    $this->domain()
+                )
                 . $message
             ),
             $status === 403 => MailgunResult::failed(

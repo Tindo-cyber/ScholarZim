@@ -375,7 +375,9 @@ class MailCheck extends Command
         return match ($reason) {
             'unauthorized' => [
                 'This is the exact failure that reaches the log as "Forbidden (code 401)".',
-                'Generate a fresh key in Mailgun and update it in the platform environment.',
+                'Check MAILGUN_DOMAIN first: a domain that is not on the account returns 401 on send,',
+                'which is indistinguishable from a bad key. Stage 2 above answers 404 when that is the cause.',
+                'If the domain is right, generate a fresh key in Mailgun and update the platform environment.',
             ],
             'not_found' => ['Check MAILGUN_DOMAIN against the domains listed in the Mailgun dashboard.'],
             'timeout', 'connection_failed' => [
