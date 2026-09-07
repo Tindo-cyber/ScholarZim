@@ -50,7 +50,37 @@ class MailgunApiService
 
     public function domain(): string
     {
-        return trim((string) config('services.mailgun.domain'));
+        return $this->clean(config('services.mailgun.domain'));
+    }
+
+    /**
+     * Strips what a dashboard paste leaves behind.
+     *
+     * A platform environment variable is set by typing into a web form, and the
+     * three things that survive that unnoticed are a trailing newline, a leading
+     * or trailing space, and a pair of quotes copied along with the value from a
+     * .env file. None of them are visible when you look at the field afterwards
+     * and compare it against your local copy - they compare equal to the eye and
+     * produce a flat HTTP 401, which reads as "wrong key" and sends you looking
+     * in the wrong place entirely.
+     *
+     * Quotes are stripped only as a matched surrounding pair, so a value that
+     * legitimately contains one is left alone.
+     */
+    private function clean(mixed $value): string
+    {
+        $value = trim((string) $value);
+
+        if (strlen($value) >= 2) {
+            $first = $value[0];
+            $last = $value[strlen($value) - 1];
+
+            if (($first === '"' && $last === '"') || ($first === "'" && $last === "'")) {
+                $value = trim(substr($value, 1, -1));
+            }
+        }
+
+        return $value;
     }
 
     /**
@@ -62,7 +92,7 @@ class MailgunApiService
      */
     public function endpoint(): string
     {
-        $endpoint = trim((string) config('services.mailgun.endpoint'));
+        $endpoint = $this->clean(config('services.mailgun.endpoint'));
 
         if ($endpoint === '') {
             return self::DEFAULT_ENDPOINT;
@@ -284,7 +314,33 @@ class MailgunApiService
 
     private function secret(): string
     {
-        return trim((string) config('services.mailgun.secret'));
+        return $this->clean(config('services.mailgun.secret'));
+    }
+
+    /**
+     * A comparable, non-reversible description of the configured credential.
+     *
+     * Exists so a production instance can be asked "is your key the same one
+     * that works locally?" without the key being printed, transmitted or
+     * written anywhere. Length is what catches the invisible faults - a stray
+     * quote or newline changes it - and the hash prefix confirms the rest
+     * without being invertible for a 50-character random key.
+     *
+     * @return array<string, mixed>
+     */
+    public function credentialFingerprint(): array
+    {
+        $secret = $this->secret();
+        $raw = (string) config('services.mailgun.secret');
+
+        return [
+            'configured' => $secret !== '',
+            'length' => strlen($secret),
+            'sha256_prefix' => $secret === '' ? null : substr(hash('sha256', $secret), 0, 12),
+            // True when cleaning actually changed something - i.e. the stored
+            // value carried surrounding whitespace or quotes.
+            'needed_cleaning' => $secret !== $raw,
+        ];
     }
 
     private function formatAddress(string $email, ?string $name): string

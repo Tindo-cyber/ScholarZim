@@ -226,6 +226,11 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN])->prefix('admin')->name('
     Route::get('/analytics', [Admin\AnalyticsController::class, 'index'])->name('analytics');
     Route::get('/audit-log', [Admin\AuditLogController::class, 'index'])->name('audit');
 
+    // mail:check, for the deployment that has no shell to run it in. Read-only
+    // and administrator-only; it never sends a message and never returns the
+    // credential, only a fingerprint of it.
+    Route::get('/mail-diagnostics', Admin\MailDiagnosticsController::class)->name('mail.diagnostics');
+
     Route::get('/scholarfit', [Admin\ScholarFitController::class, 'index'])->name('scholarfit');
     Route::post('/scholarfit', [Admin\ScholarFitController::class, 'update'])->name('scholarfit.update');
     Route::post('/scholarfit/reset', [Admin\ScholarFitController::class, 'reset'])->name('scholarfit.reset');
