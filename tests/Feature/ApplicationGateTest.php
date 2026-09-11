@@ -72,8 +72,10 @@ class ApplicationGateTest extends TestCase
         ]);
     }
 
-    /** The general pathway allows this; nothing about this specific listing narrows it further. */
-    public function test_an_o_level_applicant_can_apply_to_an_undergraduate_award_that_accepts_o_level(): void
+    /** The general pathway allows O-Level -> Undergraduate; without an explicit
+     * minimum floor the applicant is eligible. A separate listing-level minimum
+     * can still turn them away. */
+    public function test_an_o_level_applicant_can_apply_to_an_undergraduate_award_without_a_minimum(): void
     {
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
@@ -171,7 +173,7 @@ class ApplicationGateTest extends TestCase
         $response = $this->actingAs($kudzai)->get('/apply/' . $opportunity->opportunity_id);
 
         $response->assertOk();
-        $response->assertSee('You cannot apply to this scholarship');
+        $response->assertSee('NOT ELIGIBLE');
         $response->assertDontSee('Submit application');
     }
 }

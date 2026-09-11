@@ -74,7 +74,11 @@ class ApplicationController extends Controller
 
         foreach ($missingDocumentTypes as $type) {
             if ($request->hasFile("documents.$type")) {
-                $this->profileService->storeDocument($request->user(), $type, $request->file("documents.$type"));
+                try {
+                    $this->profileService->storeDocument($request->user(), $type, $request->file("documents.$type"));
+                } catch (\RuntimeException $e) {
+                    return back()->withInput()->with('errorMessage', $e->getMessage());
+                }
             }
         }
 

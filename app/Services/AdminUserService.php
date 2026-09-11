@@ -181,6 +181,10 @@ class AdminUserService
     {
         $user = $this->requireNotSuperAdmin($userId);
 
+        if ($user->user_id === $admin->user_id) {
+            throw new RuntimeException('You cannot delete your own account.');
+        }
+
         $this->accountDeletion->delete($user, $admin->email);
     }
 

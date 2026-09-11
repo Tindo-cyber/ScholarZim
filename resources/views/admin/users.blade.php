@@ -81,7 +81,7 @@
                                                 :tone="\App\Support\AccountStatus::badgeTone($user->account_status)" />
                             </td>
                             <td class="text-end">
-                                @unless($user->is_super_admin)
+                                @unless($user->is_super_admin || $user->user_id === auth()->id())
                                     <div class="d-inline-flex gap-1">
                                         @if(strcasecmp((string) $user->account_status, \App\Support\AccountStatus::ACTIVE) === 0)
                                             <form method="POST" action="{{ route('admin.users.suspend', $user->user_id) }}" class="m-0">

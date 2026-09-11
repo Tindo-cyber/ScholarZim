@@ -48,7 +48,6 @@ class ApplicantProfileService
             'locality' => $data['locality'] ?? null,
             'settlement_type' => $data['settlement_type'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
-            'citizenship' => $data['citizenship'] ?? null,
             // Guardian fields are collected only for the Primary pathway;
             // cleared otherwise so a profile that moves off Primary does not
             // carry on displaying a guardian section it no longer needs.

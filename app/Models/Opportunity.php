@@ -48,7 +48,6 @@ class Opportunity extends Model
         'external_url',
         'min_academic_points',
         'max_age',
-        'required_citizenship',
         'required_province',
         'target_locality',
         'target_settlement_type',
@@ -341,7 +340,6 @@ class Opportunity extends Model
     {
         return $this->min_academic_points !== null
             || $this->max_age !== null
-            || filled($this->required_citizenship)
             || filled($this->required_province)
             || filled($this->target_locality)
             || filled($this->minimum_education_level)

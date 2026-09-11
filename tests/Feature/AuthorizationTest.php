@@ -422,6 +422,15 @@ class AuthorizationTest extends TestCase
         );
     }
 
+    public function test_an_administrator_cannot_delete_themselves(): void
+    {
+        $this->as($this->admin)
+            ->post('/admin/users/' . $this->admin->user_id . '/delete')
+            ->assertRedirect();
+
+        $this->assertDatabaseHas('users', ['user_id' => $this->admin->user_id]);
+    }
+
     // ----------------------------------------------------- the policies alone --
 
     public function test_the_policies_answer_the_matrix_directly(): void

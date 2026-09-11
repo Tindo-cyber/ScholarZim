@@ -108,12 +108,6 @@
                                               max="{{ now()->toDateString() }}"
                                               hint="Some awards have an age limit. Without this we cannot check one for you." />
                             </div>
-                            <div class="col-md-6">
-                                <x-form.select name="citizenship" label="Citizenship"
-                                               :options="$citizenships" :value="$profile->citizenship"
-                                               placeholder="Select"
-                                               hint="Most ScholarZim awards are open to Zimbabwean citizens; some regional awards are not restricted." />
-                            </div>
                         </div>
                     </div>
                 </div>

@@ -510,10 +510,9 @@ class DatabaseSeeder extends Seeder
         // An explicit provider-stated floor, narrower than the general pathway:
         // this listing targets Undergraduate but will not take an O-Level
         // applicant directly, only A-Level and above. Tanaka (A-Level) exactly
-        // meets it; Farai (O-Level) does not, even though the general pathway
-        // from O-Level to Undergraduate is otherwise open - see
-        // EligibilityEvaluator::minimumLevel(). Tendai's existing PENDING
-        // application here is unaffected: Undergraduate outranks the floor.
+        // meets it; Farai (O-Level) does not. The general pathway from O-Level
+        // to Undergraduate is also blocked - see EducationPathway - so this
+        // listing is unreachable for an O-Level applicant either way.
         Opportunity::where('title', 'Midlands Engineering Excellence Award')
             ->update(['minimum_education_level' => EducationLevel::A_LEVEL]);
 

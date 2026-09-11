@@ -51,7 +51,7 @@ class EducationPathwayTest extends TestCase
 
             'O Level -> A Level' => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL, true],
             'O Level -> Polytechnic (Diploma)' => [EducationLevel::O_LEVEL, EducationLevel::DIPLOMA, true],
-            'O Level -> eligible Undergraduate' => [EducationLevel::O_LEVEL, EducationLevel::UNDERGRADUATE, true],
+            'O Level -> Undergraduate' => [EducationLevel::O_LEVEL, EducationLevel::UNDERGRADUATE, true],
             'O Level -> Postgraduate' => [EducationLevel::O_LEVEL, EducationLevel::POSTGRADUATE, false],
             'O Level -> Masters' => [EducationLevel::O_LEVEL, EducationLevel::MASTERS, false],
             'O Level -> PhD' => [EducationLevel::O_LEVEL, EducationLevel::PHD, false],
@@ -137,16 +137,24 @@ class EducationPathwayTest extends TestCase
         $this->assertGreaterThan(0, $scored->matchScore);
     }
 
+    /** O-Level applicants may reach Undergraduate awards in the general pathway;
+     * a listing-specific minimum_education_level can still turn them away. */
+    public function test_o_level_can_reach_undergraduate_in_the_general_pathway(): void
+    {
+        $this->assertTrue(EducationPathway::isValid(EducationLevel::O_LEVEL, EducationLevel::UNDERGRADUATE));
+        $this->assertNull(EducationPathway::reason(EducationLevel::O_LEVEL, EducationLevel::UNDERGRADUATE));
+    }
+
     /**
      * A provider-stated floor narrower than the general pathway is a separate,
-     * per-listing rule - EducationPathway alone would allow O-Level here.
+     * per-listing rule - EducationPathway alone would allow Certificate here.
      */
     public function test_a_listings_own_minimum_level_can_be_stricter_than_the_general_pathway(): void
     {
-        $profile = new ApplicantProfile(['education_level' => EducationLevel::O_LEVEL]);
+        $profile = new ApplicantProfile(['education_level' => EducationLevel::CERTIFICATE]);
         $opportunity = new Opportunity([
             'education_level' => EducationLevel::UNDERGRADUATE,
-            'minimum_education_level' => EducationLevel::A_LEVEL,
+            'minimum_education_level' => EducationLevel::DIPLOMA,
         ]);
 
         $this->assertTrue(EducationPathway::isValid($profile->education_level, $opportunity->education_level));

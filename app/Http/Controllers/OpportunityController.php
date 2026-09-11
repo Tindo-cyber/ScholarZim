@@ -47,7 +47,6 @@ class OpportunityController extends Controller
             'awardingBodySuggestions' => $this->opportunityService->providerNames(),
             'currencies' => FormOptions::CURRENCIES,
             'defaultCurrency' => FormOptions::DEFAULT_CURRENCY,
-            'citizenships' => FormOptions::CITIZENSHIPS,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
         ]);
     }
@@ -74,7 +73,6 @@ class OpportunityController extends Controller
             'external_url' => ['nullable', 'url', 'max:500'],
             'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:60'],
             'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
-            'required_citizenship' => ['nullable', Rule::in(FormOptions::CITIZENSHIPS)],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), free text for the same reason
             // the applicant's own locality field is - no fixed list of every
@@ -120,7 +118,6 @@ class OpportunityController extends Controller
             'awardingBodySuggestions' => $this->opportunityService->providerNames(),
             'currencies' => FormOptions::CURRENCIES,
             'defaultCurrency' => FormOptions::DEFAULT_CURRENCY,
-            'citizenships' => FormOptions::CITIZENSHIPS,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
         ]);
     }
@@ -147,7 +144,6 @@ class OpportunityController extends Controller
             'external_url' => ['nullable', 'url', 'max:500'],
             'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:60'],
             'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
-            'required_citizenship' => ['nullable', Rule::in(FormOptions::CITIZENSHIPS)],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), free text for the same reason
             // the applicant's own locality field is - no fixed list of every

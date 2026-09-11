@@ -83,7 +83,6 @@ final class OpportunityLifecycle
         'target_settlement_type',
         'min_academic_points',
         'max_age',
-        'required_citizenship',
         'required_province',
         'requires_results_certificate',
         'award_amount',

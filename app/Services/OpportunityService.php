@@ -57,7 +57,6 @@ class OpportunityService
             'external_url' => $stringOrNull($data['external_url'] ?? null),
             'min_academic_points' => $intOrNull($data['min_academic_points'] ?? null),
             'max_age' => $intOrNull($data['max_age'] ?? null),
-            'required_citizenship' => $stringOrNull($data['required_citizenship'] ?? null),
             'required_province' => $stringOrNull($data['required_province'] ?? null),
             'minimum_education_level' => $stringOrNull($data['minimum_education_level'] ?? null),
             'target_locality' => $stringOrNull($data['target_locality'] ?? null),

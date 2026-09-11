@@ -20,7 +20,7 @@
                 --}}
                 <div class="card border-danger">
                     <div class="card-header bg-danger-subtle">
-                        <h2 class="h6 fw-semibold mb-0">You cannot apply to this scholarship</h2>
+                        <h2 class="h6 fw-semibold mb-0">NOT ELIGIBLE</h2>
                     </div>
                     <div class="card-body">
                         <p>Your profile does not meet this award's stated requirements:</p>

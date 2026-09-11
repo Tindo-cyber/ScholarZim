@@ -47,7 +47,6 @@ final class EligibilityEvaluator
             $this->minimumLevel($profile, $opportunity),
             $this->points($opportunity, $record),
             $this->age($profile, $opportunity),
-            $this->citizenship($profile, $opportunity),
             $this->province($profile, $opportunity),
             $this->certificate($profile, $opportunity),
         ]));
@@ -136,25 +135,6 @@ final class EligibilityEvaluator
 
         if ($age > $opportunity->max_age) {
             return 'Open to applicants aged ' . $opportunity->max_age . ' and under; you are ' . $age . '.';
-        }
-
-        return null;
-    }
-
-    private function citizenship(ApplicantProfile $profile, Opportunity $opportunity): ?string
-    {
-        if (blank($opportunity->required_citizenship)) {
-            return null;
-        }
-
-        if (blank($profile->citizenship)) {
-            return 'This award is limited to ' . $opportunity->required_citizenship
-                . ' citizens - add your citizenship to your profile.';
-        }
-
-        if (strcasecmp(trim($profile->citizenship), trim($opportunity->required_citizenship)) !== 0) {
-            return 'Open to ' . $opportunity->required_citizenship
-                . ' citizens only; your profile states ' . $profile->citizenship . '.';
         }
 
         return null;

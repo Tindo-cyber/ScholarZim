@@ -55,6 +55,10 @@ class AccountDeletionService
             throw new RuntimeException('The super admin account cannot be deleted.');
         }
 
+        if ($selfService && $user->isAdmin()) {
+            throw new RuntimeException('Administrators must be deleted by another administrator from the admin panel.');
+        }
+
         // A listing blocks deletion unless the provider withdrew it or an
         // administrator declined it. Asked across both axes now that withdrawal
         // lives on the publication column: checking moderation alone would have

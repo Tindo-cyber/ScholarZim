@@ -136,4 +136,55 @@ class AccountSecurityTest extends TestCase
         $this->assertDatabaseMissing('users', ['user_id' => $provider->user_id]);
     }
 
+    public function test_an_administrator_cannot_self_delete_via_the_account_page(): void
+    {
+        $admin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->get('/account/security')
+            ->assertOk()
+            ->assertSee('Delete my account');
+    }
+
+    public function test_an_administrator_cannot_self_delete_via_the_api(): void
+    {
+        $admin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->post('/account/delete', [
+                'current_password' => 'ChangeMe123',
+                'confirm_email' => $admin->email,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('errorMessage');
+
+        $this->assertDatabaseHas('users', ['user_id' => $admin->user_id]);
+    }
+
+    public function test_an_administrator_self_delete_form_is_visible_but_submission_fails(): void
+    {
+        $superAdmin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
+        $adminRole = $superAdmin->role;
+        
+        $admin = User::create([
+            'role_id' => $adminRole->role_id,
+            'full_name' => 'Second Admin',
+            'email' => 'admin2@scholarzim.co.zw',
+            'password_hash' => \Illuminate\Support\Facades\Hash::make('ChangeMe123'),
+            'account_status' => \App\Support\AccountStatus::ACTIVE,
+            'email_verified' => true,
+            'is_super_admin' => false,
+        ]);
+
+        $this->actingAs($admin)
+            ->post('/account/delete', [
+                'current_password' => 'ChangeMe123',
+                'confirm_email' => $admin->email,
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('errorMessage', 'Administrators must be deleted by another administrator from the admin panel.');
+
+        $this->assertDatabaseHas('users', ['user_id' => $admin->user_id]);
+    }
+
 }

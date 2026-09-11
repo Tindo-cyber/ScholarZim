@@ -127,7 +127,7 @@
                 </div>
                 <div class="card-body small">
                     <p>
-                        Hard eligibility rules - minimum points, age limits, citizenship, province, and a
+                        Hard eligibility rules - minimum points, age limits, province, and a
                         required results certificate - are set per listing by the provider. A student who
                         fails one is shown as ineligible and scores nothing, whatever these weights say.
                     </p>

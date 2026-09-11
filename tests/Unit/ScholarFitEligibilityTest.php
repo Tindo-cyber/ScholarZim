@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\ScholarFitEngine;
+use App\Support\EducationLevel;
 use Tests\TestCase;
 
 /**
@@ -23,7 +24,6 @@ class ScholarFitEligibilityTest extends TestCase
             'education_level' => \App\Support\EducationLevel::UNDERGRADUATE,
             'field_of_study' => 'Computer Science',
             'province' => 'Harare',
-            'citizenship' => 'Zimbabwean',
             'date_of_birth' => now()->subYears(21)->toDateString(),
             'academic_results' => '14 points at A-Level',
             // Undergraduate's academic evidence is a transcript, not an
@@ -51,7 +51,6 @@ class ScholarFitEligibilityTest extends TestCase
         $scored = $this->engine()->evaluate($this->profile(), $this->opportunity([
             'min_academic_points' => 10,
             'max_age' => 25,
-            'required_citizenship' => 'Zimbabwean',
             'required_province' => 'Harare',
             'requires_results_certificate' => true,
         ]));
@@ -86,19 +85,13 @@ class ScholarFitEligibilityTest extends TestCase
         $this->assertSame(0, $scored->matchScore);
     }
 
-    public function test_the_wrong_citizenship_or_province_disqualifies_outright(): void
+    public function test_the_wrong_province_disqualifies_outright(): void
     {
-        $wrongCitizenship = $this->engine()->evaluate(
-            $this->profile(['citizenship' => 'Zambian']),
-            $this->opportunity(['required_citizenship' => 'Zimbabwean'])
-        );
-
         $wrongProvince = $this->engine()->evaluate(
             $this->profile(['province' => 'Bulawayo']),
             $this->opportunity(['required_province' => 'Masvingo'])
         );
 
-        $this->assertFalse($wrongCitizenship->meetsRequirements());
         $this->assertFalse($wrongProvince->meetsRequirements());
     }
 
@@ -110,20 +103,48 @@ class ScholarFitEligibilityTest extends TestCase
     public function test_a_missing_field_says_what_to_add(): void
     {
         $scored = $this->engine()->evaluate(
-            $this->profile(['date_of_birth' => null, 'citizenship' => null]),
-            $this->opportunity(['max_age' => 25, 'required_citizenship' => 'Zimbabwean'])
+            $this->profile(['date_of_birth' => null]),
+            $this->opportunity(['max_age' => 25])
         );
 
         $missing = implode(' ', $scored->breakdown->unmetRequirements);
 
         $this->assertStringContainsString('add your date of birth', $missing);
-        $this->assertStringContainsString('add your citizenship', $missing);
+    }
+
+    /** Multiple hard failures must all be listed, not just the first. */
+    public function test_multiple_failed_requirements_produce_multiple_reasons(): void
+    {
+        $scored = $this->engine()->evaluate(
+            $this->profile([
+                'education_level' => EducationLevel::O_LEVEL,
+                'academic_results' => '5 points',
+                'province' => 'Bulawayo',
+            ]),
+            $this->opportunity([
+                'education_level' => EducationLevel::UNDERGRADUATE,
+                'minimum_education_level' => EducationLevel::A_LEVEL,
+                'min_academic_points' => 12,
+                'required_province' => 'Harare',
+            ])
+        );
+
+        $this->assertFalse($scored->meetsRequirements());
+        $this->assertSame(0, $scored->matchScore);
+
+        $reasons = $scored->breakdown->unmetRequirements;
+        $this->assertCount(3, $reasons);
+
+        $joined = implode(' ', $reasons);
+        $this->assertStringContainsString('A Level', $joined);
+        $this->assertStringContainsString('points', $joined);
+        $this->assertStringContainsString('Harare', $joined);
     }
 
     public function test_a_rule_the_provider_did_not_set_is_never_a_disqualification(): void
     {
         $scored = $this->engine()->evaluate(
-            $this->profile(['citizenship' => 'Malawian', 'date_of_birth' => now()->subYears(60)->toDateString()]),
+            $this->profile(['date_of_birth' => now()->subYears(60)->toDateString()]),
             $this->opportunity()
         );
 

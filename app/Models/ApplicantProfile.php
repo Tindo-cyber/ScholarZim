@@ -206,8 +206,6 @@ class ApplicantProfile extends Model
             'hint' => 'Some awards are restricted to one province.'];
         $items[] = ['label' => 'Date of birth', 'value' => $this->date_of_birth, 'anchor' => 'date_of_birth',
             'hint' => 'Needed to check age limits on an award.'];
-        $items[] = ['label' => 'Citizenship', 'value' => $this->citizenship, 'anchor' => 'citizenship',
-            'hint' => 'Needed to check citizenship rules on an award.'];
 
         if ($isPrimary) {
             // A Primary applicant's own results are not the relevant academic

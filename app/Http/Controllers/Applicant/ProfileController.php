@@ -29,7 +29,6 @@ class ProfileController extends Controller
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
             'settlementTypes' => SettlementType::ALL,
             'institutions' => FormOptions::INSTITUTIONS,
-            'citizenships' => FormOptions::CITIZENSHIPS,
         ]);
     }
 
@@ -54,7 +53,6 @@ class ProfileController extends Controller
             'locality' => ['nullable', 'string', 'max:100'],
             'settlement_type' => ['nullable', Rule::in(SettlementType::ALL)],
             'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1920-01-01'],
-            'citizenship' => ['nullable', Rule::in(FormOptions::CITIZENSHIPS)],
             'guardian_name' => ['nullable', 'string', 'max:255'],
             'guardian_phone' => ['nullable', 'string', 'max:50'],
             'guardian_relationship' => ['nullable', 'string', 'max:100'],
@@ -120,11 +118,21 @@ class ProfileController extends Controller
         $level = $data['education_level'] ?? null;
         $dateOfBirth = $data['date_of_birth'] ?? null;
 
-        if (blank($level) || blank($dateOfBirth)) {
+        if (blank($dateOfBirth)) {
             return;
         }
 
         $age = \Illuminate\Support\Carbon::parse($dateOfBirth)->age;
+
+        if ($age < 7) {
+            $validator->errors()->add('date_of_birth', 'You must be at least 7 years old to use this platform.');
+            return;
+        }
+
+        if (blank($level)) {
+            return;
+        }
+
         $reason = EducationLevel::ageConsistencyReason($level, $age);
 
         if ($reason !== null) {
@@ -140,7 +148,11 @@ class ProfileController extends Controller
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
         ]);
 
-        $this->profileService->storeDocument($request->user(), $documentType, $request->file('document'));
+        try {
+            $this->profileService->storeDocument($request->user(), $documentType, $request->file('document'));
+        } catch (\RuntimeException $e) {
+            return back()->withInput()->with('errorMessage', $e->getMessage());
+        }
 
         return back()->with('successMessage', 'Document uploaded.');
     }

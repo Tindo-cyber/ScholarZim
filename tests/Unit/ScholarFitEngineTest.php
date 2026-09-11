@@ -37,9 +37,6 @@ class ScholarFitEngineTest extends TestCase
             'education_level' => EducationLevel::UNDERGRADUATE,
             'field_of_study' => 'Computer Science & IT',
             'province' => 'Harare',
-            // Stated, so a citizenship rule is genuinely tested rather than
-            // deferred: a blank field is a prompt, not a refusal.
-            'citizenship' => 'Zimbabwe',
             'academic_results' => '14 points at A-Level',
             // Undergraduate's academic evidence is a transcript, not an O/A-Level
             // results certificate - see ApplicantProfile::hasRequiredAcademicEvidence().
@@ -119,7 +116,7 @@ class ScholarFitEngineTest extends TestCase
 
         $blocked = $this->engine()->evaluate(
             $this->profile(),
-            $this->opportunity(['required_citizenship' => 'Botswana'])
+            $this->opportunity(['required_province' => 'Bulawayo'])
         );
 
         $this->assertFalse($blocked->meetsRequirements());
@@ -481,7 +478,7 @@ class ScholarFitEngineTest extends TestCase
                 'academic_results' => null, 'transcript_path' => null], []],
             'bare listing' => [[], ['education_level' => null, 'target_field' => null,
                 'required_province' => null, 'deadline' => null]],
-            'blocked' => [[], ['required_citizenship' => 'Botswana']],
+            'blocked' => [[], ['required_province' => 'Bulawayo']],
             'expired' => [[], ['deadline' => '2020-01-01']],
         ];
     }

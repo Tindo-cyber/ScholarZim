@@ -130,4 +130,42 @@ class ScholarFitLocationTest extends TestCase
             'field_of_study' => 'Computer Science & IT',
         ], $overrides);
     }
+
+    // --------------------------------------------------------------- age rules --
+
+    public function test_a_future_date_of_birth_is_rejected(): void
+    {
+        $this->actingAs($this->student)
+            ->post('/applicant/profile', $this->form([
+                'date_of_birth' => Carbon::tomorrow()->toDateString(),
+            ]))
+            ->assertSessionHasErrors('date_of_birth');
+    }
+
+    public function test_an_age_below_seven_is_rejected(): void
+    {
+        $this->actingAs($this->student)
+            ->post('/applicant/profile', $this->form([
+                'date_of_birth' => Carbon::today()->subYears(6)->toDateString(),
+            ]))
+            ->assertSessionHasErrors('date_of_birth');
+    }
+
+    public function test_exactly_seven_years_old_is_accepted(): void
+    {
+        $this->actingAs($this->student)
+            ->post('/applicant/profile', $this->form([
+                'date_of_birth' => Carbon::today()->subYears(7)->toDateString(),
+            ]))
+            ->assertRedirect();
+    }
+
+    public function test_a_normal_adult_age_is_accepted(): void
+    {
+        $this->actingAs($this->student)
+            ->post('/applicant/profile', $this->form([
+                'date_of_birth' => Carbon::today()->subYears(21)->toDateString(),
+            ]))
+            ->assertRedirect();
+    }
 }

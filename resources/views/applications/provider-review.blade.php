@@ -53,7 +53,6 @@
                             }
                             $profileFields['Province'] = $applicantProfile->province;
                             $profileFields['Locality'] = $applicantProfile->locality;
-                            $profileFields['Citizenship'] = $applicantProfile->citizenship;
                             $profileFields['Age'] = $applicantProfile->age();
                             $profileFields['Academic results'] = $applicantProfile->academic_results;
                         @endphp

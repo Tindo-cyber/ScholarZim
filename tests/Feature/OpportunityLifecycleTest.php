@@ -241,7 +241,6 @@ class OpportunityLifecycleTest extends TestCase
             'funding type' => ['funding_type', 'Partial Scholarship'],
             'minimum points' => ['min_academic_points', 20],
             'maximum age' => ['max_age', 21],
-            'required citizenship' => ['required_citizenship', 'Zambia'],
             'required province' => ['required_province', 'Midlands'],
             'certificate requirement' => ['requires_results_certificate', true],
         ];

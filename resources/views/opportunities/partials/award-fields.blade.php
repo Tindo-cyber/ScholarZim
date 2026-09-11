@@ -91,12 +91,6 @@
                               hint="Only applied when the student has given a date of birth." />
             </div>
             <div class="col-md-6">
-                <x-form.select name="required_citizenship" label="Required citizenship"
-                               :options="$citizenships"
-                               :value="$value('required_citizenship')"
-                               placeholder="No restriction" />
-            </div>
-            <div class="col-md-6">
                 <x-form.select name="required_province" label="Required province"
                                :options="$provinces"
                                :value="$value('required_province')"

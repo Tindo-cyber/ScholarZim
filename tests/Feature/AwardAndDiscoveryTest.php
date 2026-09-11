@@ -42,7 +42,6 @@ class AwardAndDiscoveryTest extends TestCase
                 'external_url' => 'https://example.test/apply',
                 'min_academic_points' => '12',
                 'max_age' => '25',
-                'required_citizenship' => 'Zimbabwean',
                 'requires_results_certificate' => '1',
             ])
             ->assertRedirect('/provider/dashboard');

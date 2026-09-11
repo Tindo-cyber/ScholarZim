@@ -135,12 +135,6 @@
                                         <span>Aged {{ $opportunity->max_age }} or under.</span>
                                     </li>
                                 @endif
-                                @if($opportunity->required_citizenship)
-                                    <li class="d-flex gap-2 align-items-start">
-                                        <x-icon name="check" :size="16" class="text-primary mt-1" />
-                                        <span>{{ $opportunity->required_citizenship }} citizens only.</span>
-                                    </li>
-                                @endif
                                 @if($opportunity->required_province)
                                     <li class="d-flex gap-2 align-items-start">
                                         <x-icon name="check" :size="16" class="text-primary mt-1" />
@@ -204,7 +198,7 @@
                                         <x-icon name="x-circle" :size="20" class="flex-shrink-0 mt-1" />
                                         <div>
                                             <div class="fw-semibold mb-1">
-                                                You do not meet this award's requirements
+                                                NOT ELIGIBLE
                                             </div>
                                             <ul class="mb-0 ps-3 small">
                                                 @foreach($fit->breakdown->unmetRequirements as $requirement)
