@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Application;
+use App\Models\AuditLog;
 use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\ScholarFit\AcademicRecord;
@@ -48,7 +49,7 @@ class ApplicationService
             ->get();
     }
 
-    public function paginateForApplicant(User $user, ?string $status = null, int $perPage = 10)
+    public function paginateForApplicant(User $user, ?string $status = null, ?string $search = null, int $perPage = 10)
     {
         $query = Application::with('opportunity.provider')
             ->where('user_id', $user->user_id)
@@ -56,6 +57,20 @@ class ApplicationService
 
         if (filled($status)) {
             $query->where('application_status', $status);
+        }
+
+        if (filled($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('application_id', 'like', '%' . $search . '%')
+                    ->orWhereHas('opportunity', function ($opportunityQuery) use ($search) {
+                        $opportunityQuery->where('title', 'like', '%' . $search . '%')
+                            ->orWhere('provider_name', 'like', '%' . $search . '%')
+                            ->orWhereHas('provider', function ($userQuery) use ($search) {
+                                $userQuery->where('full_name', 'like', '%' . $search . '%')
+                                    ->orWhere('email', 'like', '%' . $search . '%');
+                            });
+                    });
+            });
         }
 
         return $query->paginate($perPage)->withQueryString();
@@ -103,6 +118,69 @@ class ApplicationService
             ->where('opportunity_id', $opportunityId)
             ->blockingReapplication()
             ->exists();
+    }
+
+    /**
+     * The audit trail for an application, newest first.
+     *
+     * Returns entries from APPLY (the moment the application was created) through
+     * STATUS_UPDATE (provider decisions) and WITHDRAW_APPLICATION (if withdrawn).
+     * Each entry carries a human-readable label and the timestamp from the audit
+     * row.
+     *
+     * @return array<int, array{date: \Illuminate\Support\Carbon, action: string, label: string, reason: ?string}>
+     */
+    public function history(int $applicationId, User $user): array
+    {
+        $application = $this->findForApplicant($applicationId, $user);
+
+        $actions = [
+            AuditAction::APPLY,
+            AuditAction::STATUS_UPDATE,
+            AuditAction::WITHDRAW_APPLICATION,
+        ];
+
+        return AuditLog::where('entity_type', 'APPLICATION')
+            ->where('entity_id', $application->application_id)
+            ->whereIn('action', $actions)
+            ->orderByDesc('created_at')
+            ->get()
+            ->map(function (AuditLog $log) {
+                $labels = [
+                    AuditAction::APPLY => 'Your application was submitted',
+                    AuditAction::STATUS_UPDATE => $this->statusUpdateLabel($log),
+                    AuditAction::WITHDRAW_APPLICATION => 'You withdrew this application',
+                ];
+
+                return [
+                    'date' => $log->created_at,
+                    'action' => $log->action,
+                    'label' => $labels[$log->action] ?? AuditAction::displayLabel($log->action),
+                    'reason' => $log->reason,
+                ];
+            })
+            ->all();
+    }
+
+    private function statusUpdateLabel(AuditLog $log): string
+    {
+        $newStatus = $log->new_values['application_status'] ?? null;
+
+        if (blank($newStatus)) {
+            return 'The provider updated your application';
+        }
+
+        $canonical = ApplicationStatus::canonical($newStatus);
+
+        if ($canonical === ApplicationStatus::ACCEPTED) {
+            return 'The provider accepted your application';
+        }
+
+        if ($canonical === ApplicationStatus::REJECTED) {
+            return 'The provider declined your application';
+        }
+
+        return 'The provider updated your application to ' . ApplicationStatus::displayLabel($newStatus);
     }
 
     /**

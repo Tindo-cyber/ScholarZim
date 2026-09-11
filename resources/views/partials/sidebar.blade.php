@@ -20,11 +20,12 @@
 
                 @if($role === \App\Support\RoleNames::APPLICANT)
                     <x-nav-item :href="route('applicant.dashboard')" icon="grid" :active="request()->routeIs('applicant.dashboard')">Dashboard</x-nav-item>
-                    <x-nav-item :href="route('applicant.recommendations')" icon="stars" :active="request()->routeIs('applicant.recommendations')">My matches</x-nav-item>
-                    <x-nav-item :href="route('opportunities.index')" icon="search" :active="request()->routeIs('opportunities.index')">Browse scholarships</x-nav-item>
+                    <x-nav-item :href="route('opportunities.index')" icon="search" :active="request()->routeIs('opportunities.index')">Find scholarships</x-nav-item>
                     <x-nav-item :href="route('applications.mine')" icon="file-text" :active="request()->routeIs('applications.mine')">My applications</x-nav-item>
-                    <x-nav-item :href="route('applicant.saved')" icon="bookmark" :active="request()->routeIs('applicant.saved')">Saved</x-nav-item>
-                    <x-nav-item :href="route('applicant.profile')" icon="person" :active="request()->routeIs('applicant.profile')">My profile</x-nav-item>
+                    <x-nav-item :href="route('applicant.recommendations')" icon="stars" :active="request()->routeIs('applicant.recommendations')">Recommendations</x-nav-item>
+                    <x-nav-item :href="route('applicant.saved')" icon="bookmark" :active="request()->routeIs('applicant.saved')">Saved scholarships</x-nav-item>
+                    <x-nav-item :href="route('applicant.profile') . '#documents'" icon="upload" :active="request()->routeIs('applicant.profile')">Documents</x-nav-item>
+                    <x-nav-item :href="route('applicant.profile')" icon="person" :active="request()->routeIs('applicant.profile')">Profile</x-nav-item>
                 @endif
 
                 @if($role === \App\Support\RoleNames::PROVIDER)

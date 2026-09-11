@@ -35,6 +35,9 @@
             <x-stat-card label="Accepted" :value="$stats['accepted']" icon="check-circle" tone="success" />
         </div>
         <div class="col-6 col-xl-3">
+            <x-stat-card label="Rejected" :value="$stats['rejected'] ?? 0" icon="x-circle" tone="danger" />
+        </div>
+        <div class="col-6 col-xl-3">
             <x-stat-card label="Saved" :value="$stats['saved']" icon="bookmark" tone="info"
                          :href="route('applicant.saved')" />
         </div>
@@ -74,7 +77,7 @@
             <div class="card">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h6 fw-semibold mb-0">Recent applications</h2>
-                    <a class="small text-decoration-none" href="{{ route('applications.mine') }}">View all</a>
+                    <a class="btn btn-sm btn-outline-primary" href="{{ route('applications.mine') }}">View all applications</a>
                 </div>
 
                 @if($recentApplications->isEmpty())

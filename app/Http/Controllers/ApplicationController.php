@@ -24,10 +24,15 @@ class ApplicationController extends Controller
         $user = $request->user();
 
         return view('applications.my-applications', [
-            'applications' => $this->applicationService->paginateForApplicant($user, $request->query('status')),
+            'applications' => $this->applicationService->paginateForApplicant(
+                $user,
+                $request->query('status'),
+                $request->query('search')
+            ),
             'statusCounts' => $this->applicationService->statusCountsForApplicant($user),
             'activeStatus' => $request->query('status'),
             'statuses' => ApplicationStatus::FILTERABLE,
+            'search' => $request->query('search'),
         ]);
     }
 
@@ -141,6 +146,7 @@ class ApplicationController extends Controller
         return view('applications.confirmation', [
             'application' => $application,
             'timeline' => ApplicationStatus::timeline($application->application_status),
+            'history' => $this->applicationService->history($application->application_id, $request->user()),
         ]);
     }
 }

@@ -58,6 +58,33 @@
                 </div>
             @endif
 
+            @if(! empty($history))
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Application history</h2>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-group list-group-flush">
+                            @foreach($history as $entry)
+                                <li class="list-group-item py-3">
+                                    <div class="d-flex gap-2">
+                                        <span class="small text-secondary flex-shrink-0 min-w-9">
+                                            {{ $entry['date']->format('d M Y') }}
+                                        </span>
+                                        <div class="flex-grow-1">
+                                            <span class="fw-medium">{{ $entry['label'] }}</span>
+                                            @if($entry['reason'])
+                                                <p class="small text-secondary mb-0">{{ $entry['reason'] }}</p>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+            @endif
+
             @if($application->isDecided() && $application->decision_reason)
                 <div class="card mb-4">
                     <div class="card-header">

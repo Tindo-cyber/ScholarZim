@@ -28,6 +28,9 @@ class ApplicantDashboardService
             'accepted' => (clone $applications)
                 ->where('application_status', ApplicationStatus::ACCEPTED)
                 ->count(),
+            'rejected' => (clone $applications)
+                ->where('application_status', ApplicationStatus::REJECTED)
+                ->count(),
             'saved' => $this->savedScholarshipService->count($user),
             'profileCompletion' => $user->applicantProfile?->completionPercentage() ?? 0,
             'topMatch' => $this->recommendationService->topMatchScore($user),
