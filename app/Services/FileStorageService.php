@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
-use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Uploads land on the private disk, never in public/. Files are served back
@@ -20,6 +20,12 @@ use Symfony\Component\HttpFoundation\ResponseHeaderBag;
  */
 class FileStorageService
 {
+    /**
+     * Retained for backward compatibility with tests and callers that reference
+     * the constant directly. The effective disk is resolved at runtime from
+     * config('filesystems.default') via diskName(), so production can point at
+     * S3/R2 while local and test environments keep using the local driver.
+     */
     public const DISK = 'local';
 
     public const MAX_BYTES = 5 * 1024 * 1024;
@@ -58,6 +64,22 @@ class FileStorageService
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
     ];
 
+    /**
+     * The configured filesystem disk, resolved from config at runtime so the
+     * application can target S3/R2 in production without hard-coding 's3' in
+     * business logic.
+     */
+    private function diskName(): string
+    {
+        return (string) config('filesystems.default', self::DISK);
+    }
+
+    /** @return \Illuminate\Contracts\Filesystem\Filesystem&object */
+    private function disk()
+    {
+        return Storage::disk($this->diskName());
+    }
+
     public function store(UploadedFile $file, string $folder, ?User $uploader = null): string
     {
         $mime = $this->guard($file);
@@ -66,9 +88,11 @@ class FileStorageService
         $size = (int) $file->getSize();
         $original = $this->safeOriginalName($file);
 
-        $path = $file->storeAs(trim($folder, '/'), $name, self::DISK);
+        $checksum = $this->checksumFromFile($file);
 
-        $this->recordMetadata($path, $name, $original, $mime, $size, $uploader);
+        $path = $file->storeAs(trim($folder, '/'), $name, $this->diskName());
+
+        $this->recordMetadata($path, $name, $original, $mime, $size, $uploader, $checksum);
 
         return $path;
     }
@@ -79,14 +103,13 @@ class FileStorageService
             return;
         }
 
-        if (Storage::disk(self::DISK)->exists($path)) {
-            Storage::disk(self::DISK)->delete($path);
+        $disk = $this->resolveDiskForPath($path);
+
+        if (Storage::disk($disk)->exists($path)) {
+            Storage::disk($disk)->delete($path);
         }
 
-        // The record goes with the bytes. A metadata row outliving its file
-        // would describe something that is no longer there, which is worse than
-        // no record at all.
-        DocumentFile::where('disk', self::DISK)->where('path', $path)->delete();
+        DocumentFile::where('disk', $disk)->where('path', $path)->delete();
     }
 
     /**
@@ -121,13 +144,20 @@ class FileStorageService
             return null;
         }
 
-        return DocumentFile::where('disk', self::DISK)->where('path', $path)->first();
+        return DocumentFile::where('disk', $this->diskName())
+            ->where('path', $path)
+            ->first()
+            ?? DocumentFile::where('path', $path)->first();
     }
 
     /**
      * Whether the bytes on disk still match what was recorded at upload.
      * Cheap enough to run on demand, and the only way to notice silent
      * corruption or a file swapped underneath the application.
+     *
+     * Works with any filesystem driver by streaming the object rather than
+     * reading it through a local path, so Cloudflare R2 / S3 objects are
+     * supported alongside the local driver.
      */
     public function checksumMatches(string $path): bool
     {
@@ -137,56 +167,126 @@ class FileStorageService
             return false;
         }
 
-        return hash_equals($record->checksum, hash_file('sha256', $this->absolutePath($path)));
+        $stream = Storage::disk($record->disk)->readStream($path);
+
+        if ($stream === false) {
+            return false;
+        }
+
+        try {
+            $hash = hash_init('sha256');
+            hash_update_stream($hash, $stream);
+            $computed = hash_final($hash);
+        } finally {
+            fclose($stream);
+        }
+
+        return hash_equals((string) $record->checksum, $computed);
     }
 
     public function exists(?string $path): bool
     {
-        return filled($path) && Storage::disk(self::DISK)->exists($path);
+        return filled($path) && $this->disk()->exists($path);
     }
 
     public function absolutePath(string $path): string
     {
-        return Storage::disk(self::DISK)->path($path);
+        return Storage::disk($this->diskName())->path($path);
     }
 
     public function mimeType(string $path): string
     {
-        return Storage::disk(self::DISK)->mimeType($path) ?: 'application/octet-stream';
+        return (string) ($this->disk()->mimeType($path) ?: 'application/octet-stream');
     }
 
     /**
      * Serves a stored file for the browser to open - inline (viewable in a new
      * tab) for PDF/JPG/PNG, or as a download for anything else, since there is
      * no useful in-browser preview for a Word document.
+     *
+     * Streams the object directly from the configured disk rather than reading
+     * it through a local path, so Cloudflare R2 / S3 objects are supported.
      */
-    public function respond(string $path, ?string $filename = null): BinaryFileResponse
+    public function respond(string $path, ?string $filename = null): StreamedResponse
     {
-        // A file the scanner flagged is never handed over, whoever is asking and
-        // however well they are authorised. Checked here rather than in each
-        // controller so a new download endpoint inherits it.
         $record = $this->metadataFor($path);
 
         if ($record !== null && $record->isQuarantined()) {
             abort(403, 'This file was quarantined and cannot be downloaded.');
         }
 
-        $absolute = $this->absolutePath($path);
-        $mime = $this->mimeType($path);
+        $disk = $record !== null && $record->disk !== ''
+            ? Storage::disk($record->disk)
+            : $this->disk();
+
+        if (! $disk->exists($path)) {
+            abort(404, 'File not found.');
+        }
+
+        $mime = $record !== null && $record->mime_type !== ''
+            ? $record->mime_type
+            : ($disk->mimeType($path) ?: 'application/octet-stream');
         $name = $filename ?: basename($path);
 
         $disposition = in_array($mime, self::PREVIEWABLE_MIME, true)
             ? ResponseHeaderBag::DISPOSITION_INLINE
             : ResponseHeaderBag::DISPOSITION_ATTACHMENT;
 
-        return response()->file($absolute, [
+        $stream = $disk->readStream($path);
+
+        if ($stream === false) {
+            abort(404, 'File not found.');
+        }
+
+        $response = new StreamedResponse(function () use ($stream): void {
+            fpassthru($stream);
+            fclose($stream);
+        }, 200, [
             'Content-Type' => $mime,
+            'Content-Length' => $disk->size($path),
             'Content-Disposition' => HeaderUtils::makeDisposition(
                 $disposition,
                 $name,
                 str_replace('%', '', Str::ascii($name))
             ),
         ]);
+
+        return $response;
+    }
+
+    /**
+     * Resolves which disk a given path lives on.
+     *
+     * Looks up the DocumentFile record first so that files stored under a
+     * different disk (e.g. a legacy 'local' record written before the
+     * migration to S3/R2) are deleted from the right place. Falls back to the
+     * currently configured disk when no record exists.
+     */
+    private function resolveDiskForPath(string $path): string
+    {
+        $record = DocumentFile::where('path', $path)->first();
+
+        return $record !== null && $record->disk !== '' ? $record->disk : $this->diskName();
+    }
+
+    /**
+     * SHA-256 of the uploaded file, computed from the temporary file PHP
+     * provides before it is moved into long-term storage. This avoids relying
+     * on Storage::path() — which does not exist for S3/R2 disks.
+     */
+    private function checksumFromFile(UploadedFile $file): string
+    {
+        $tempPath = $file->getRealPath();
+
+        if ($tempPath !== false && is_file($tempPath)) {
+            return hash_file('sha256', $tempPath);
+        }
+
+        $stream = $file->getStream();
+        $hash = hash_init('sha256');
+        hash_update_stream($hash, $stream);
+
+        return hash_final($hash);
     }
 
     /**
@@ -255,17 +355,18 @@ class FileStorageService
         string $originalName,
         string $mime,
         int $size,
-        ?User $uploader
+        ?User $uploader,
+        string $checksum
     ): void {
         try {
             DocumentFile::create([
-                'disk' => self::DISK,
+                'disk' => $this->diskName(),
                 'path' => $path,
                 'original_filename' => $originalName,
                 'stored_filename' => $storedName,
                 'mime_type' => $mime,
                 'size_bytes' => $size,
-                'checksum' => hash_file('sha256', $this->absolutePath($path)),
+                'checksum' => $checksum,
                 'uploaded_by_user_id' => $uploader?->user_id,
                 'scan_status' => DocumentFile::SCAN_PENDING,
                 'created_at' => Carbon::now(),

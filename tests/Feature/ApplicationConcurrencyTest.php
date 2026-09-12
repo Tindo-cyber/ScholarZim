@@ -43,7 +43,7 @@ class ApplicationConcurrencyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('local');
+        Storage::fake($this->testDisk());
         $this->seed(DatabaseSeeder::class);
         $this->student = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
         $this->provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
@@ -236,7 +236,7 @@ class ApplicationConcurrencyTest extends TestCase
 
         $this->assertSame(
             [],
-            Storage::disk('local')->allFiles('applications'),
+            Storage::disk($this->testDisk())->allFiles('applications'),
             'the upload must not be left behind with no row pointing at it'
         );
     }
@@ -260,7 +260,7 @@ class ApplicationConcurrencyTest extends TestCase
             'type' => NotificationType::APPLICATION_SUBMITTED,
         ]);
 
-        Storage::disk('local')->assertExists($application->document_path);
+        Storage::disk($this->testDisk())->assertExists($application->document_path);
     }
 
     /**
@@ -290,9 +290,9 @@ class ApplicationConcurrencyTest extends TestCase
         );
 
         $this->assertNotSame($firstPath, $second->document_path);
-        Storage::disk('local')->assertMissing($firstPath);
-        Storage::disk('local')->assertExists($second->document_path);
-        $this->assertCount(1, Storage::disk('local')->allFiles('applications'));
+        Storage::disk($this->testDisk())->assertMissing($firstPath);
+        Storage::disk($this->testDisk())->assertExists($second->document_path);
+        $this->assertCount(1, Storage::disk($this->testDisk())->allFiles('applications'));
     }
 
     // ------------------------------------------------------- decision races --
@@ -486,7 +486,7 @@ class ApplicationConcurrencyTest extends TestCase
 
         $originalPath = $profile->fresh()->cv_path;
         $this->assertNotNull($originalPath);
-        Storage::disk('local')->assertExists($originalPath);
+        Storage::disk($this->testDisk())->assertExists($originalPath);
 
         \App\Models\ApplicantProfile::updated(function () {
             throw new RuntimeException('failed while recording the replacement');
@@ -508,11 +508,11 @@ class ApplicationConcurrencyTest extends TestCase
             $this->student->fresh()->applicantProfile->cv_path,
             'the profile must still point at the document it had'
         );
-        Storage::disk('local')->assertExists($originalPath);
+        Storage::disk($this->testDisk())->assertExists($originalPath);
 
         $this->assertCount(
             1,
-            Storage::disk('local')->allFiles('profiles/' . $this->student->user_id),
+            Storage::disk($this->testDisk())->allFiles('profiles/' . $this->student->user_id),
             'the failed upload must not be left on disk'
         );
     }
@@ -549,7 +549,7 @@ class ApplicationConcurrencyTest extends TestCase
 
         $this->assertSame(
             [],
-            Storage::disk('local')->allFiles('provider-certificates'),
+            Storage::disk($this->testDisk())->allFiles('provider-certificates'),
             'the certificate must not outlive the registration that rolled back'
         );
         $this->assertDatabaseMissing('users', ['email' => 'chiedza-trust@example.test']);
@@ -565,6 +565,12 @@ class ApplicationConcurrencyTest extends TestCase
     private function opportunity(string $title = 'Zimbabwe Tech Futures Undergraduate Bursary'): Opportunity
     {
         return Opportunity::where('title', $title)->firstOrFail();
+    }
+
+    /** The disk under test - resolves from config so these tests run unchanged against `local` or `s3`. */
+    private function testDisk(): string
+    {
+        return (string) config('filesystems.default', 'local');
     }
 
     private function applicationCount(Opportunity $opportunity): int

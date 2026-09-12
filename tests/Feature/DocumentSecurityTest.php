@@ -44,7 +44,7 @@ class DocumentSecurityTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Storage::fake('local');
+        Storage::fake($this->testDisk());
         $this->seed(DatabaseSeeder::class);
 
         $this->student = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
@@ -65,6 +65,12 @@ class DocumentSecurityTest extends TestCase
         return app(FileStorageService::class);
     }
 
+    /** The disk under test - resolves from config so these tests run unchanged against `local` or `s3`. */
+    private function testDisk(): string
+    {
+        return (string) config('filesystems.default', 'local');
+    }
+
     private function pdf(string $name = 'transcript.pdf', int $kb = 100): UploadedFile
     {
         return UploadedFile::fake()->create($name, $kb, 'application/pdf');
@@ -78,7 +84,7 @@ class DocumentSecurityTest extends TestCase
 
         $this->assertStringNotContainsString('public', $path);
         $this->assertSame(storage_path('app'), config('filesystems.disks.local.root'));
-        Storage::disk('local')->assertExists($path);
+        Storage::disk($this->testDisk())->assertExists($path);
     }
 
     /**
@@ -246,7 +252,7 @@ class DocumentSecurityTest extends TestCase
 
         $path = $this->storage()->store($this->pdf('ok.pdf', $atLimit), 'applications', $this->student);
 
-        Storage::disk('local')->assertExists($path);
+        Storage::disk($this->testDisk())->assertExists($path);
     }
 
     // -------------------------------------------------------------- metadata --
@@ -273,7 +279,7 @@ class DocumentSecurityTest extends TestCase
 
         $this->assertTrue($this->storage()->checksumMatches($path));
 
-        Storage::disk('local')->put($path, 'different bytes entirely');
+        Storage::disk($this->testDisk())->put($path, 'different bytes entirely');
 
         $this->assertFalse($this->storage()->checksumMatches($path));
     }
@@ -398,14 +404,14 @@ class DocumentSecurityTest extends TestCase
         $this->assertCount(2, $paths);
 
         foreach ($paths as $path) {
-            Storage::disk('local')->assertExists($path);
+            Storage::disk($this->testDisk())->assertExists($path);
         }
 
         Application::where('user_id', $this->student->user_id)->delete();
         app(AccountDeletionService::class)->delete($this->student, $this->student->email, selfService: true);
 
         foreach ($paths as $path) {
-            Storage::disk('local')->assertMissing($path);
+            Storage::disk($this->testDisk())->assertMissing($path);
         }
 
         $this->assertSame(0, DocumentFile::where('uploaded_by_user_id', $this->student->user_id)->count());
@@ -432,11 +438,85 @@ class DocumentSecurityTest extends TestCase
         $second = $profiles->storeDocument($this->student, 'cv', $this->pdf('new.pdf'))->fresh()->cv_path;
 
         $this->assertNotSame($first, $second);
-        Storage::disk('local')->assertMissing($first);
-        Storage::disk('local')->assertExists($second);
+        Storage::disk($this->testDisk())->assertMissing($first);
+        Storage::disk($this->testDisk())->assertExists($second);
 
         $this->assertNull($this->storage()->metadataFor($first), 'the record must go with the bytes');
         $this->assertNotNull($this->storage()->metadataFor($second));
+    }
+
+    // -------------------------------------------------- S3 / R2 compatibility --
+
+    /**
+     * The full store -> checksum -> stream-download lifecycle works when the
+     * disk is an S3-compatible adapter (simulated by Storage::fake('s3')),
+     * proving the streaming refactor did not break the core path.
+     */
+    public function test_store_checksum_and_stream_download_all_work_over_s3(): void
+    {
+        $this->useS3Disk();
+
+        $path = $this->storage()->store($this->pdf(), 'applications', $this->student);
+
+        $this->assertTrue($this->storage()->exists($path));
+        $this->assertTrue($this->storage()->checksumMatches($path));
+        $this->assertSame('s3', $this->storage()->metadataFor($path)->disk);
+
+        Storage::disk('s3')->put($path, 'tampered');
+        $this->assertFalse($this->storage()->checksumMatches($path));
+
+        $response = $this->storage()->respond($path);
+
+        $this->assertSame(200, $response->getStatusCode());
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+        $this->assertStringContainsString('inline', $response->headers->get('Content-Disposition'));
+    }
+
+    /**
+     * Deleting by relative path resolves the disk from the metadata record, so a
+     * file recorded under 's3' is deleted from 's3' even when the configured
+     * default disk has changed.
+     */
+    public function test_delete_resolves_the_correct_disk_from_the_metadata_record(): void
+    {
+        $this->useS3Disk();
+
+        $path = $this->storage()->store($this->pdf(), 'applications', $this->student);
+        $record = $this->storage()->metadataFor($path);
+
+        $this->assertSame('s3', $record->disk);
+        $this->assertTrue(Storage::disk('s3')->exists($path));
+
+        $this->storage()->delete($path);
+
+        $this->assertFalse(Storage::disk('s3')->exists($path));
+        $this->assertNull($this->storage()->metadataFor($path));
+    }
+
+    /**
+     * A download endpoint returns the bytes over HTTP when the file lives on the
+     * S3-backed disk, exercising the StreamedResponse path end to end.
+     */
+    public function test_a_download_endpoint_serves_a_file_stored_on_s3(): void
+    {
+        $this->useS3Disk();
+
+        $application = $this->applicationWithDocument();
+
+        $this->actingAs($this->student)
+            ->get('/applications/' . $application->application_id . '/document')
+            ->assertOk()
+            ->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    /**
+     * Switches the configured default disk to 's3' and fakes it so tests do not
+     * touch real R2 credentials. Must be called before any store() in the test.
+     */
+    private function useS3Disk(): void
+    {
+        config(['filesystems.default' => 's3']);
+        Storage::fake('s3');
     }
 
     // --------------------------------------------------------------- helpers --

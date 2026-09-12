@@ -10,6 +10,7 @@
         "guzzlehttp/guzzle": "^7.2",
         "laravel/framework": "^12.61.1",
         "laravel/tinker": "^2.10",
+        "league/flysystem-aws-s3-v3": "3.0",
         "phpoffice/phpspreadsheet": "^5.9",
         "symfony/http-client": "^8.1",
         "symfony/mailgun-mailer": "^7.1"
