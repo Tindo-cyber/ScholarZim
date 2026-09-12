@@ -159,6 +159,17 @@ if [ -n "${FILESYSTEM_ROOT:-}" ]; then
     chown -R www-data:www-data "${FILESYSTEM_ROOT}"
 fi
 
+# nginx workers run as www-data (docker/nginx.conf: `user www-data;`). The
+# nginx package creates its temp directories under /var/lib/nginx/tmp/ as
+# root-owned, so the first request that spills a request body to
+# client_body_temp_path fails with EACCES before Laravel ever sees it.
+# Recreate + chown here too so a fresh container - where no image layer can
+# guarantee the directories survived - comes up correct every time.
+mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/proxy \
+         /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/uwsgi \
+         /var/lib/nginx/tmp/scgi
+chown -R www-data:www-data /var/lib/nginx/tmp
+
 chown -R www-data:www-data storage bootstrap/cache
 
 exec "$@"

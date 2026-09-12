@@ -82,6 +82,17 @@ RUN mkdir -p \
         storage/app \
     && chown -R www-data:www-data storage bootstrap/cache
 
+# nginx workers run as www-data (see docker/nginx.conf), but the nginx package
+# creates its temp directories under /var/lib/nginx/tmp/ as root-owned. The first
+# upload that exceeds client_body_buffer_size (~16 KB on Alpine) makes nginx
+# try to spill the request body to client_body_temp_path, and the write fails
+# with EACCES before Laravel ever sees the file. Fixing ownership here - in the
+# image layer - means a fresh deploy never starts without it.
+RUN mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/proxy \
+             /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/uwsgi \
+             /var/lib/nginx/tmp/scgi \
+    && chown -R www-data:www-data /var/lib/nginx/tmp
+
 EXPOSE 8080
 
 ENTRYPOINT ["entrypoint"]
