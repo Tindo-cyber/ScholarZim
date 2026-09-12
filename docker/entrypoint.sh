@@ -163,12 +163,16 @@ fi
 # nginx package creates its temp directories under /var/lib/nginx/tmp/ as
 # root-owned, so the first request that spills a request body to
 # client_body_temp_path fails with EACCES before Laravel ever sees it.
-# Recreate + chown here too so a fresh container - where no image layer can
-# guarantee the directories survived - comes up correct every time.
+#
+# nginx.conf sets client_body_temp_path to /tmp/nginx-client-body; create it
+# with www-data ownership here too so a fresh container - where no image
+# layer can guarantee the directories survived - comes up correct every time.
 mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/proxy \
          /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/uwsgi \
-         /var/lib/nginx/tmp/scgi
-chown -R www-data:www-data /var/lib/nginx/tmp
+         /var/lib/nginx/tmp/scgi \
+         /tmp/nginx-client-body
+chown -R www-data:www-data /var/lib/nginx/tmp /tmp/nginx-client-body
+chmod 700 /tmp/nginx-client-body
 
 chown -R www-data:www-data storage bootstrap/cache
 

@@ -88,10 +88,16 @@ RUN mkdir -p \
 # try to spill the request body to client_body_temp_path, and the write fails
 # with EACCES before Laravel ever sees the file. Fixing ownership here - in the
 # image layer - means a fresh deploy never starts without it.
+#
+# client_body_temp_path in nginx.conf points at /tmp/nginx-client-body, which
+# we create here with www-data ownership. The /var/lib/nginx/tmp paths are also
+# chown'd as a belt-and-suspenders measure for any other nginx temp use.
 RUN mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/proxy \
              /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/uwsgi \
              /var/lib/nginx/tmp/scgi \
-    && chown -R www-data:www-data /var/lib/nginx/tmp
+             /tmp/nginx-client-body \
+    && chown -R www-data:www-data /var/lib/nginx/tmp /tmp/nginx-client-body \
+    && chmod 700 /tmp/nginx-client-body
 
 EXPOSE 8080
 
