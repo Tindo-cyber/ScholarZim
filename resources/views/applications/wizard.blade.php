@@ -59,6 +59,17 @@
                     </div>
                 </div>
             @else
+            {{--
+                An eligible applicant is shown what they met before they fill
+                anything in - or told the listing set no requirements, which is
+                not the same statement and must not be dressed up as one. The
+                component draws that distinction; this page only decides where
+                it sits.
+            --}}
+            @if($fit)
+                <x-eligibility-summary :fit="$fit" />
+            @endif
+
             <form method="POST" action="{{ route('applications.submit', $opportunity->opportunity_id) }}"
                   enctype="multipart/form-data" novalidate>
                 @csrf

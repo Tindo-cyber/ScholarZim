@@ -180,6 +180,19 @@
                                     </li>
                                 @endif
                             </ul>
+                        @else
+                            {{--
+                                Stated as a fact about the listing, not about the reader.
+                                Its absence used to be the only signal, which left "this
+                                provider asked for nothing" looking identical to "you
+                                passed everything they asked". They are different things
+                                and only one of them is a verdict.
+                            --}}
+                            <h2 class="h6 fw-semibold text-uppercase text-secondary mb-2">Who can apply</h2>
+                            <p class="text-secondary mb-4">
+                                This scholarship does not specify entry requirements. Read the description
+                                below for what the provider is looking for - they decide who is awarded.
+                            </p>
                         @endif
 
                         <h2 class="h6 fw-semibold text-uppercase text-secondary mb-2">About this scholarship</h2>
@@ -206,33 +219,17 @@
                     <div class="card-body">
 
                         @if($fit)
-                            @if(! $fit->meetsRequirements())
-                                {{--
-                                    A stated requirement is not met, so no
-                                    percentage is shown at all. A number next to
-                                    "you do not meet this rule" only invites the
-                                    reader to argue with it.
-                                --}}
-                                <div class="alert alert-danger" role="alert">
-                                    <div class="d-flex gap-2 align-items-start">
-                                        <x-icon name="x-circle" :size="20" class="flex-shrink-0 mt-1" />
-                                        <div>
-                                            <div class="fw-semibold mb-1">
-                                                NOT ELIGIBLE
-                                            </div>
-                                            <ul class="mb-0 ps-3 small">
-                                                @foreach($fit->breakdown->unmetRequirements as $requirement)
-                                                    <li>{{ $requirement }}</li>
-                                                @endforeach
-                                            </ul>
-                                            <p class="small mb-0 mt-2">
-                                                <a href="{{ route('applicant.profile') }}">Update your profile</a>
-                                                if any of these are out of date.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            @else
+                            {{--
+                                Eligibility first and on its own terms: which
+                                requirements were met, which were not, or that the
+                                listing set none. The score follows separately below,
+                                and only when the applicant is actually eligible - a
+                                percentage beside "you do not meet this rule" is a
+                                number that invites an argument rather than an answer.
+                            --}}
+                            <x-eligibility-summary :fit="$fit" />
+
+                            @if($fit->meetsRequirements())
                                 <div class="text-center mb-3">
                                     <x-match-score :score="$fit->matchScore"
                                                    :label="$fit->breakdown->confidenceLabel"
@@ -240,22 +237,6 @@
                                 </div>
 
                                 <p class="small text-secondary text-center">{{ $fit->breakdown->explanation }}</p>
-                            @endif
-
-                            {{--
-                                Shown either way, and kept apart from the requirement list
-                                above: an unusual progression is something to know about, not
-                                a rule anyone failed. Nothing here makes an applicant
-                                ineligible - the listing's own requirements do that.
-                            --}}
-                            @foreach($fit->breakdown->advisoryNotes() as $note)
-                                <p class="small text-secondary d-flex gap-2 align-items-start">
-                                    <x-icon name="shield" :size="16" class="flex-shrink-0 mt-1" />
-                                    <span>{{ $note->message }}</span>
-                                </p>
-                            @endforeach
-
-                            @if($fit->meetsRequirements())
 
                                 {{--
                                     One line per dimension, read straight off the
