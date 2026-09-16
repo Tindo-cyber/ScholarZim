@@ -137,16 +137,16 @@ class AccountSecurityTest extends TestCase
     }
 
     /**
-     * The panel is not offered to an administrator at all.
+     * An administrator sees nothing about account deletion on this page - not
+     * the form, and not an explanation of why the form is absent.
      *
-     * This asserted the opposite until it was pointed out that showing the form
-     * is itself the bug: AccountDeletionService has always refused an
-     * administrator self-delete, so rendering a button, a password field and an
-     * email confirmation only to refuse the submission is a control that looks
-     * live and is not. An administrator should not be invited to try locking
-     * themselves out of the platform.
+     * AccountDeletionService has always refused an administrator self-delete
+     * and refuses the super admin outright, so a form here would be a control
+     * that looks live and only fails once the password and email are typed.
+     * Removing an administrator is another administrator's job in the admin
+     * panel; this page simply does not raise the subject.
      */
-    public function test_an_administrator_is_not_offered_the_delete_panel(): void
+    public function test_an_administrator_sees_nothing_about_account_deletion(): void
     {
         $admin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
 
@@ -154,7 +154,9 @@ class AccountSecurityTest extends TestCase
 
         $response->assertDontSee('Delete my account');
         $response->assertDontSee('Permanently delete my account');
-        $response->assertSee('Administrator accounts cannot delete themselves');
+        $response->assertDontSee('Delete this account');
+        $response->assertDontSee('Deleting this account');
+        $response->assertDontSee('Administrator accounts cannot delete themselves');
     }
 
     /** Every other role still gets it - this was never a change for them. */
