@@ -39,6 +39,20 @@ final class CertificateMatcher
             ? 'Results certificate'
             : 'Transcript';
 
+        // The Primary pathway asks for no document, so there is nothing here to
+        // score against and nothing to tell the applicant to upload. Saying
+        // "transcript uploaded" to a Grade 7 pupil who has uploaded nothing
+        // would be worse than saying nothing.
+        if (\App\Support\EducationLevel::isPrimary($profile->education_level)) {
+            return DimensionResult::make(
+                'certificate',
+                'Certificate',
+                1.0,
+                $weight,
+                'No document is required for the Form 1 pathway'
+            );
+        }
+
         if ($held) {
             return DimensionResult::make(
                 'certificate',

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Services\ScholarFit\ScoredOpportunity;
 use App\Support\ApplicationStatus;
 use Illuminate\Support\Carbon;
 
@@ -16,7 +17,12 @@ class ApplicantDashboardService
     ) {
     }
 
-    public function stats(User $user): array
+    /**
+     * @param  array<int, ScoredOpportunity>  $recommendations  pre-computed via
+     *         RecommendationService::forUser(), used to derive the top match
+     *         score without re-scoring every listing.
+     */
+    public function stats(User $user, array $recommendations = []): array
     {
         $applications = Application::where('user_id', $user->user_id);
 
@@ -33,7 +39,9 @@ class ApplicantDashboardService
                 ->count(),
             'saved' => $this->savedScholarshipService->count($user),
             'profileCompletion' => $user->applicantProfile?->completionPercentage() ?? 0,
-            'topMatch' => $this->recommendationService->topMatchScore($user),
+            'topMatch' => $recommendations === []
+                ? $this->recommendationService->topMatchScore($user)
+                : ($recommendations[0]->matchScore ?? 0),
         ];
     }
 

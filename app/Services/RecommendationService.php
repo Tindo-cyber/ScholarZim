@@ -43,6 +43,11 @@ class RecommendationService
             return [];
         }
 
+        // Load the profile's structured academic results and each listing's
+        // subject requirements up-front so the engine does not hit the DB
+        // once per listing while scoring a catalogue.
+        $profile->loadMissing(['academicResults.qualification', 'academicResults.subject.qualification']);
+
         // Only applications that actually block a fresh one are excluded, and
         // the rule for that lives on the Application model rather than being
         // spelled out again here.
@@ -54,6 +59,7 @@ class RecommendationService
         $candidates = Opportunity::query()
             ->publiclyVisible()
             ->when($blockedIds !== [], fn ($q) => $q->whereNotIn('opportunity_id', $blockedIds))
+            ->with(['subjectRequirements', 'subjectRequirements.subject.qualification', 'subjectRequirements.qualification'])
             ->get();
 
         $ranked = array_filter(

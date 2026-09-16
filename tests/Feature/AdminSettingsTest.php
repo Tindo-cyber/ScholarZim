@@ -112,7 +112,7 @@ class AdminSettingsTest extends TestCase
     {
         $settings = app(SettingsService::class);
 
-        $this->assertStringContainsString('ScholarFit v2', $settings->scoringIdentity());
+        $this->assertStringContainsString('ScholarFit v3', $settings->scoringIdentity());
         $this->assertStringContainsString($settings->scoringVersion(), $settings->scoringIdentity());
     }
 

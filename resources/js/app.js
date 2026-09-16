@@ -11,6 +11,7 @@
  */
 import './scholarzim';
 import './profile-form';
+import './academic-results';
 import './scholarfit-weights';
 import './bulk-select';
 import './pwa';

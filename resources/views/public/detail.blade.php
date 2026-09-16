@@ -126,7 +126,7 @@
                                 @if($opportunity->min_academic_points)
                                     <li class="d-flex gap-2 align-items-start">
                                         <x-icon name="check" :size="16" class="text-primary mt-1" />
-                                        <span>At least {{ $opportunity->min_academic_points }} A-Level points.</span>
+                                        <span>At least {{ $opportunity->min_academic_points }} ZIMSEC A-Level points (A=5, B=4, C=3, D=2, E=1).</span>
                                     </li>
                                 @endif
                                 @if($opportunity->max_age)
@@ -157,6 +157,26 @@
                                     <li class="d-flex gap-2 align-items-start">
                                         <x-icon name="check" :size="16" class="text-primary mt-1" />
                                         <span>Proof of academic results must be on your profile before you apply.</span>
+                                    </li>
+                                @endif
+                                @if($opportunity->subjectRequirements->isNotEmpty())
+                                    <li class="d-flex gap-2 align-items-start">
+                                        <x-icon name="check" :size="16" class="text-primary mt-1" />
+                                        <span>
+                                            Required subjects:
+                                            @foreach($opportunity->subjectRequirements as $req)
+                                                {{ $req->subject?->name ?? 'Subject' }}
+                                                @if($req->minimum_grade)
+                                                    (minimum {{ $req->minimum_grade }})
+                                                @endif
+                                                @if(!$loop->last)<span class="text-muted">,</span>@endif
+                                            @endforeach
+                                            @if($opportunity->subjectRequirements->isNotEmpty())
+                                                <span class="d-block text-secondary small mt-1">
+                                                    Under {{ $opportunity->subjectRequirements->first()?->qualification?->name ?? 'the stated qualification' }}.
+                                                </span>
+                                            @endif
+                                        </span>
                                     </li>
                                 @endif
                             </ul>
@@ -220,6 +240,22 @@
                                 </div>
 
                                 <p class="small text-secondary text-center">{{ $fit->breakdown->explanation }}</p>
+                            @endif
+
+                            {{--
+                                Shown either way, and kept apart from the requirement list
+                                above: an unusual progression is something to know about, not
+                                a rule anyone failed. Nothing here makes an applicant
+                                ineligible - the listing's own requirements do that.
+                            --}}
+                            @foreach($fit->breakdown->advisoryNotes() as $note)
+                                <p class="small text-secondary d-flex gap-2 align-items-start">
+                                    <x-icon name="shield" :size="16" class="flex-shrink-0 mt-1" />
+                                    <span>{{ $note->message }}</span>
+                                </p>
+                            @endforeach
+
+                            @if($fit->meetsRequirements())
 
                                 {{--
                                     One line per dimension, read straight off the

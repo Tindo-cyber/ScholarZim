@@ -27,13 +27,15 @@ class DashboardController extends Controller
         $user = $request->user();
         $profile = $this->profileService->forUser($user);
 
+        $recommendations = $this->recommendationService->forUser($user, 4);
+
         return view('applicant.dashboard', [
             'greeting' => Greeting::forUser($user->full_name),
             'profile' => $profile,
-            'stats' => $this->dashboardService->stats($user),
+            'stats' => $this->dashboardService->stats($user, $recommendations),
             'recentApplications' => $this->dashboardService->recentApplications($user),
             'upcomingDeadlines' => $this->dashboardService->upcomingDeadlines($user),
-            'recommendations' => $this->recommendationService->forUser($user, 4),
+            'recommendations' => $recommendations,
             // The match cards carry the same save button as the browse page, so
             // they need the same saved list behind it - without it every card
             // renders as unsaved and its button posts to the store route, so a

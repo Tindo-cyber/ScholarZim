@@ -2,6 +2,8 @@
 
 namespace Database\Seeders;
 
+use App\Models\AcademicQualification;
+use App\Models\AcademicResult;
 use App\Models\ApplicantProfile;
 use App\Models\Application;
 use App\Models\AuditLog;
@@ -10,6 +12,7 @@ use App\Models\Opportunity;
 use App\Models\ProviderProfile;
 use App\Models\Role;
 use App\Models\User;
+use App\Support\Academic\AcademicCatalogue;
 use App\Support\AccountStatus;
 use App\Support\ApplicationStatus;
 use App\Support\AuditAction;
@@ -56,6 +59,10 @@ class DatabaseSeeder extends Seeder
 
         $this->ensureRoles();
 
+        $this->call([
+            AcademicQualificationSeeder::class,
+        ]);
+
         $admin = $this->admin();
         $provider = $this->provider();
         $pendingProvider = $this->pendingProvider();
@@ -75,6 +82,8 @@ class DatabaseSeeder extends Seeder
         $oLevelApplicant = $this->oLevelApplicant();
         $aLevelApplicant = $this->aLevelApplicant();
         $mastersApplicant = $this->mastersApplicant();
+
+        $this->academicResults();
 
         $this->opportunities($provider);
         $this->applications($applicant, $incompleteApplicant);
@@ -212,7 +221,6 @@ class DatabaseSeeder extends Seeder
                 'province' => 'Harare',
                 'date_of_birth' => Carbon::today()->subYears(21)->toDateString(),
                 'citizenship' => 'Zimbabwean',
-                'academic_results' => 'Upper second class standing after year one',
                 'biography' => 'Second-year computing student building civic-tech projects for rural schools.',
                 // Deliberately no results_certificate_path: Tendai is
                 // Undergraduate, so his academic evidence is a transcript, not
@@ -275,7 +283,6 @@ class DatabaseSeeder extends Seeder
                 'province' => 'Manicaland',
                 'date_of_birth' => Carbon::today()->subYears(18)->toDateString(),
                 'citizenship' => 'Zimbabwean',
-                'academic_results' => '13 points at A-Level (Biology A, Chemistry B, Maths B)',
                 'biography' => 'Aspiring doctor looking for support through the first year of medical school.',
                 // Deliberately absent: results_certificate_path, cv_path,
                 // passport_path, recommendation_letter_path. That is the point
@@ -360,7 +367,6 @@ class DatabaseSeeder extends Seeder
                 'settlement_type' => \App\Services\ScholarFit\Taxonomy\SettlementType::URBAN,
                 'date_of_birth' => Carbon::today()->subYears(17)->toDateString(),
                 'citizenship' => 'Zimbabwean',
-                'academic_results' => '7 O-Level passes including Maths and English',
                 'biography' => 'Finished O-Level and weighing A-Level against a direct move to a diploma programme.',
                 'results_certificate_path' => 'profiles/demo/o-level-results.pdf',
                 'results_certificate_filename' => 'farai-o-level-results.pdf',
@@ -399,7 +405,6 @@ class DatabaseSeeder extends Seeder
                 'province' => 'Harare',
                 'date_of_birth' => Carbon::today()->subYears(19)->toDateString(),
                 'citizenship' => 'Zimbabwean',
-                'academic_results' => '15 points at A-Level (Maths A, Physics A, Chemistry B)',
                 'biography' => 'A-Level leaver applying straight into an engineering degree.',
                 'results_certificate_path' => 'profiles/demo/a-level-results.pdf',
                 'results_certificate_filename' => 'tanaka-a-level-results.pdf',
@@ -440,7 +445,6 @@ class DatabaseSeeder extends Seeder
                 'province' => 'Harare',
                 'date_of_birth' => Carbon::today()->subYears(27)->toDateString(),
                 'citizenship' => 'Zimbabwean',
-                'academic_results' => 'Distinction, BSc Nursing Science',
                 'biography' => 'Registered nurse pursuing a Masters in public health.',
                 'transcript_path' => 'profiles/demo/masters-transcript.pdf',
                 'transcript_filename' => 'blessing-masters-transcript.pdf',
@@ -449,6 +453,90 @@ class DatabaseSeeder extends Seeder
         );
 
         return $applicant;
+    }
+
+    /**
+     * Structured results for the demo applicants.
+     *
+     * These used to be a sentence each - "13 points at A-Level (Biology A,
+     * Chemistry B, Maths B)" - in the free-text column ScholarFit parsed with
+     * a regular expression. They are facts now: a qualification, a subject and
+     * a grade, with the points derived from the qualification's own scheme.
+     *
+     * The totals are what the ZIMSEC A-Level scale actually produces: A=5,
+     * B=4, C=3, D=2, E=1. Chipo's three subjects come to 13 and Tanaka's to
+     * 15, which are the numbers the old sentences claimed - on the corrected
+     * scale rather than the one where an A was worth 12.
+     *
+     * The two tertiary applicants get a degree classification on the profile
+     * instead. A degree class is one fact about a person, not a score per
+     * module, and keeping it off academic_results is what makes it structurally
+     * impossible for a First Class to be added into an A-Level points total.
+     */
+    private function academicResults(): void
+    {
+        $this->subjectResults('chipo.ncube@scholarzim.co.zw', AcademicCatalogue::ZIMSEC_A_LEVEL, [
+            'Biology' => 'A',
+            'Chemistry' => 'B',
+            'Mathematics' => 'B',
+        ], 2024);
+
+        $this->subjectResults('tanaka.chirwa@scholarzim.co.zw', AcademicCatalogue::ZIMSEC_A_LEVEL, [
+            'Mathematics' => 'A',
+            'Physics' => 'A',
+            'Chemistry' => 'A',
+        ], 2024);
+
+        $this->subjectResults('farai.sibanda@scholarzim.co.zw', AcademicCatalogue::ZIMSEC_O_LEVEL, [
+            'Mathematics' => 'B',
+            'English Language' => 'B',
+            'Combined Science' => 'C',
+            'Geography' => 'B',
+            'History' => 'C',
+            'Shona' => 'A',
+            'Commerce' => 'C',
+        ], 2025);
+
+        $this->degreeClassification('student@scholarzim.co.zw', 'Upper Second (2:1)');
+        $this->degreeClassification('blessing.moyana@scholarzim.co.zw', 'First Class');
+    }
+
+    /** @param array<string, string> $subjectGrades subject name => grade symbol */
+    private function subjectResults(string $email, string $qualificationKey, array $subjectGrades, ?int $year = null): void
+    {
+        $profile = ApplicantProfile::whereHas('user', fn ($q) => $q->where('email', $email))->first();
+        $qualification = AcademicQualification::findByKey($qualificationKey);
+
+        if ($profile === null || $qualification === null) {
+            return;
+        }
+
+        foreach ($subjectGrades as $subjectName => $grade) {
+            $subject = $qualification->subjects()->where('name', $subjectName)->first();
+
+            if ($subject === null) {
+                continue;
+            }
+
+            AcademicResult::updateOrCreate(
+                [
+                    'profile_id' => $profile->profile_id,
+                    'qualification_id' => $qualification->id,
+                    'subject_id' => $subject->id,
+                ],
+                [
+                    'result' => $grade,
+                    'year' => $year,
+                    'derived_points' => $qualification->pointsFor($grade),
+                ]
+            );
+        }
+    }
+
+    private function degreeClassification(string $email, string $classification): void
+    {
+        ApplicantProfile::whereHas('user', fn ($q) => $q->where('email', $email))
+            ->update(['degree_classification' => $classification]);
     }
 
     private function opportunities(User $provider): void

@@ -12,19 +12,21 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * The pathway table itself, exercised against the exact set of scenarios the
- * domain rework was scoped against: a Primary pupil may only ever reach a Form
- * 1 scholarship; O-Level and A-Level may reach some tertiary awards but never
- * postgraduate ones; and none of this is decided by a distance-based score -
- * see EducationPathway's own class docblock for why that used to be the bug.
+ * The progression table itself: what usually follows what.
+ *
+ * The cases below record which steps Zimbabwean education recognises as
+ * ordinary. They are no longer eligibility rules - a step absent from the
+ * table is unusual, not forbidden, and the tests further down prove it is
+ * reported as a note while the listing's own stated requirements decide who
+ * may apply.
  */
 class EducationPathwayTest extends TestCase
 {
     /**
-     * The fifteen pathway cases the domain model was built against, verbatim.
-     * A PASS means the transition is a real one Zimbabwean education supports;
-     * a FAIL means it can never be valid, regardless of what any individual
-     * scholarship configures.
+     * The fifteen progression cases the domain model was built against.
+     * A PASS means the step is an ordinary one Zimbabwean education supports;
+     * a FAIL means it is unusual, and the applicant is told so. Neither
+     * decides eligibility - see the tests below.
      */
     #[DataProvider('pathwayCases')]
     public function test_pathway_validity(string $current, string $target, bool $expectValid): void
@@ -64,7 +66,7 @@ class EducationPathwayTest extends TestCase
         ];
     }
 
-    /** Primary may reach Form 1, and nothing secondary-entry-shaped beyond it. */
+    /** Form 1 is the only ordinary next step from Primary; the rest are unusual, not barred. */
     public function test_primary_reaches_only_form_one(): void
     {
         $this->assertSame([EducationLevel::FORM_1], array_values(array_filter(
@@ -73,7 +75,7 @@ class EducationPathwayTest extends TestCase
         )));
     }
 
-    /** An unrecognised level on either side is unknown, not a block. */
+    /** An unrecognised level on either side is unknown, so nothing is remarked on. */
     public function test_an_unrecognised_level_never_blocks_the_pathway(): void
     {
         $this->assertTrue(EducationPathway::isValid('not a real level', EducationLevel::MASTERS));
@@ -81,44 +83,103 @@ class EducationPathwayTest extends TestCase
         $this->assertTrue(EducationPathway::isValid(null, null));
     }
 
-    // --------------------------------------- eligibility, not merely scoring --
+    // ------------------------- advisory notes vs. the listing's own rules --
 
     /**
-     * The evaluator's pathway check is the same table, wired into the actual
-     * eligibility gate - not merely a distance that costs marks. This is the
-     * behaviour EducationMatcher explicitly no longer owns.
+     * An unusual progression is reported, and refuses nobody.
+     *
+     * This asserted the opposite until the product decided a level must not
+     * imply its destinations. The table still knows Primary to Masters is not
+     * a usual next step, and the applicant is told so - but the listing states
+     * no requirement they fail, so nothing refuses them.
      */
-    public function test_a_hard_pathway_failure_is_a_real_eligibility_block(): void
+    public function test_an_unusual_progression_is_a_note_and_not_a_refusal(): void
     {
         $profile = new ApplicantProfile(['education_level' => EducationLevel::PRIMARY]);
         $opportunity = new Opportunity(['education_level' => EducationLevel::MASTERS]);
+        $record = \App\Services\ScholarFit\AcademicRecord::fromProfile($profile);
 
-        $unmet = app(EligibilityEvaluator::class)->evaluate(
+        $outcomes = app(EligibilityEvaluator::class)->evaluate($profile, $opportunity, $record);
+
+        $this->assertSame([], app(EligibilityEvaluator::class)->unmetReasons($profile, $opportunity, $record));
+
+        $notes = \App\Services\ScholarFit\RequirementOutcome::notes($outcomes);
+        $this->assertCount(1, $notes);
+        $this->assertFalse($notes[0]->passed, 'recorded as an unusual step');
+        $this->assertTrue($notes[0]->advisory, 'and never counted against the applicant');
+        $this->assertStringContainsString('Masters', $notes[0]->message);
+        $this->assertStringContainsString('Primary', $notes[0]->message);
+        $this->assertStringContainsString('not a usual next step', $notes[0]->message);
+    }
+
+    /** State a requirement and it is the requirement that refuses, naming itself. */
+    public function test_a_stated_requirement_is_what_refuses(): void
+    {
+        $profile = new ApplicantProfile(['education_level' => EducationLevel::PRIMARY]);
+        $opportunity = new Opportunity([
+            'education_level' => EducationLevel::MASTERS,
+            'minimum_education_level' => EducationLevel::UNDERGRADUATE,
+        ]);
+
+        $unmet = app(EligibilityEvaluator::class)->unmetReasons(
             $profile,
             $opportunity,
             \App\Services\ScholarFit\AcademicRecord::fromProfile($profile)
         );
 
-        $this->assertNotEmpty($unmet);
-        $this->assertStringContainsString('Masters', $unmet[0]);
+        $this->assertCount(1, $unmet);
+        $this->assertStringContainsString('Undergraduate required', $unmet[0]);
         $this->assertStringContainsString('Primary', $unmet[0]);
     }
 
     /**
-     * The whole point end to end: an applicant who fails the pathway gets no
-     * score at all, not a low one - a percentage next to "you cannot apply"
-     * would be a lie, and ScholarFit must never print one.
+     * An unusual step still scores, and scores badly. That is the difference
+     * between ranking someone low and refusing them: the listing states no
+     * requirement, so ScholarFit reports a poor fit rather than a closed door,
+     * and the education dimension carries the judgement.
      */
-    public function test_an_ineligible_pathway_produces_no_misleading_score(): void
+    public function test_an_unusual_progression_scores_poorly_rather_than_being_refused(): void
     {
         $scored = app(ScholarFitEngine::class)->evaluate(
             new ApplicantProfile(['education_level' => EducationLevel::O_LEVEL]),
             new Opportunity(['education_level' => EducationLevel::PHD, 'deadline' => now()->addDays(10)])
         );
 
-        $this->assertFalse($scored->meetsRequirements());
-        $this->assertSame(0, $scored->matchScore);
-        $this->assertStringContainsString('Requirements not met', $scored->explain());
+        $this->assertTrue($scored->meetsRequirements(), 'nothing stated, nothing refused');
+        $this->assertStringContainsString('ELIGIBLE', $scored->explain());
+        $this->assertStringContainsString('not a usual next step', $scored->explain());
+
+        $this->assertSame(0, $scored->breakdown->dimension('education')?->points());
+        $this->assertLessThan(50, $scored->matchScore);
+    }
+
+    /**
+     * A recognised progression is credited on its own terms, not on how many
+     * rungs separate the two levels.
+     *
+     * O-Level to a polytechnic diploma is three rungs apart and one of the
+     * ordinary routes out of O-Level. Scoring it by distance alone put it level
+     * with O-Level to a PhD, which would have under-recommended a real
+     * candidate just as surely as the old gate over-refused one.
+     */
+    public function test_a_recognised_progression_outscores_an_unusual_one_at_the_same_distance(): void
+    {
+        $profile = fn () => new ApplicantProfile([
+            'education_level' => EducationLevel::O_LEVEL,
+            'province' => 'Harare',
+        ]);
+
+        $score = fn (string $target) => app(ScholarFitEngine::class)->evaluate(
+            $profile(),
+            new Opportunity(['education_level' => $target, 'deadline' => now()->addDays(10)])
+        )->breakdown->dimension('education')?->points();
+
+        $diploma = $score(EducationLevel::DIPLOMA);
+        $phd = $score(EducationLevel::PHD);
+
+        $this->assertGreaterThan(0, $diploma, 'a recognised route earns credit');
+        $this->assertSame(0, $phd, 'an unusual one does not');
+        $this->assertGreaterThan($phd, $diploma);
     }
 
     /** The mirror image: a genuinely eligible applicant does receive a score. */
@@ -188,7 +249,6 @@ class EducationPathwayTest extends TestCase
             new ApplicantProfile([
                 'education_level' => EducationLevel::UNDERGRADUATE,
                 'transcript_path' => 'transcripts/on-file.pdf',
-                'academic_results' => null,
             ]),
             new Opportunity(['min_academic_points' => 10, 'deadline' => now()->addDays(10)])
         );

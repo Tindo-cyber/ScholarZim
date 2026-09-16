@@ -23,12 +23,34 @@
                         <h2 class="h6 fw-semibold mb-0">NOT ELIGIBLE</h2>
                     </div>
                     <div class="card-body">
-                        <p>Your profile does not meet this award's stated requirements:</p>
-                        <ul class="ps-3 d-grid gap-1 mb-3">
-                            @foreach($fit->breakdown->unmetRequirements as $requirement)
-                                <li>{{ $requirement }}</li>
+                        <p>Your profile does not meet this award's stated requirements.</p>
+                        {{--
+                            Every requirement is listed, met and unmet alike, each with the
+                            value required and the value held. Showing only the failures made
+                            a refusal read as a verdict on the whole profile rather than on
+                            the one or two things that actually fell short.
+                        --}}
+                        <ul class="list-unstyled d-grid gap-2 mb-3">
+                            @foreach(\App\Services\ScholarFit\RequirementOutcome::rules($fit->breakdown->requirementOutcomes) as $outcome)
+                                <li class="d-flex gap-2 align-items-start">
+                                    <x-icon :name="$outcome->passed ? 'check-circle' : 'x-circle'" :size="16"
+                                            class="flex-shrink-0 mt-1 {{ $outcome->passed ? 'text-success' : 'text-danger' }}" />
+                                    <span class="{{ $outcome->passed ? 'text-secondary' : '' }}">{{ $outcome->message }}</span>
+                                </li>
                             @endforeach
                         </ul>
+
+                        {{--
+                            Advisory notes are kept out of the list above and marked apart.
+                            An unusual progression is not a requirement anyone failed, and
+                            showing it beside the rules with a red cross would say it was.
+                        --}}
+                        @foreach($fit->breakdown->advisoryNotes() as $note)
+                            <p class="small text-secondary d-flex gap-2 align-items-start">
+                                <x-icon name="shield" :size="16" class="flex-shrink-0 mt-1" />
+                                <span>{{ $note->message }}</span>
+                            </p>
+                        @endforeach
                         <div class="d-flex flex-wrap gap-2">
                             <a class="btn btn-primary" href="{{ route('applicant.profile') }}">Update my profile</a>
                             <a class="btn btn-outline-secondary"
