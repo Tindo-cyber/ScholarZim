@@ -26,6 +26,24 @@ services:
         value: warning
       - key: SESSION_SECURE_COOKIE
         value: "true"
+      # Sessions live in the database, not on the container's disk.
+      #
+      # The default file driver stores them under storage/framework/sessions,
+      # which is local to one container and does not survive it. There is no
+      # persistent disk on this plan, and Render spins a quiet free service
+      # down, so every deploy and every idle period signed every user out at
+      # once - a student filling in their profile pressed Save and landed on the
+      # login page with the work lost.
+      #
+      # This stays correct on a paid plan too. A persistent disk would fix the
+      # restart case and not the next one: the moment the service runs more than
+      # one instance, a request handled by the other container has no session
+      # file to read. The database is shared by every instance by definition.
+      #
+      # Needs the `sessions` table from 2025_01_01_000004, which the entrypoint
+      # migrates on deploy before any request is served.
+      - key: SESSION_DRIVER
+        value: database
       # Render terminates TLS at its own load balancer, so the container only
       # ever sees plain HTTP and learns the real scheme from X-Forwarded-Proto.
       # Without a trusted proxy that header is discarded, $request->secure()
