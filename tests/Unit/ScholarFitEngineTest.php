@@ -6,13 +6,14 @@ use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Services\ScholarFit\ScholarFitEngine;
 use App\Services\ScholarFit\Taxonomy\SettlementType;
+use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
 use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 /**
- * ScholarFit v2, dimension by dimension.
+ * ScholarFit v3, dimension by dimension.
  *
  * These run against unsaved models on purpose: scoring is pure arithmetic over
  * two objects and a weights array, so it needs no database, and keeping it that
@@ -25,23 +26,34 @@ use Tests\TestCase;
  */
 class ScholarFitEngineTest extends TestCase
 {
+    use \Tests\Support\BuildsAcademicRecords;
+
     private function engine(): ScholarFitEngine
     {
         return app(ScholarFitEngine::class);
     }
 
-    /** A profile that matches the default opportunity on every dimension. */
-    private function profile(array $attributes = []): ApplicantProfile
+    /**
+     * A profile that matches the default opportunity on every dimension,
+     * holding 14 ZIMSEC A-Level points as structured results: Mathematics A
+     * (5), Physics B (4), Chemistry A (5). Passing $grades as null records no
+     * academic results at all.
+     *
+     * @param  array<string, string>|null  $grades  subject => grade
+     */
+    private function profile(array $attributes = [], array|null $grades = ['Mathematics' => 'A', 'Physics' => 'B', 'Chemistry' => 'A']): ApplicantProfile
     {
-        return new ApplicantProfile(array_merge([
-            'education_level' => EducationLevel::UNDERGRADUATE,
-            'field_of_study' => 'Computer Science & IT',
-            'province' => 'Harare',
-            'academic_results' => '14 points at A-Level',
-            // Undergraduate's academic evidence is a transcript, not an O/A-Level
-            // results certificate - see ApplicantProfile::hasRequiredAcademicEvidence().
-            'transcript_path' => 'certs/transcript.pdf',
-        ], $attributes));
+        return $this->profileWithAcademicResults(
+            $grades === null ? [] : [AcademicCatalogue::ZIMSEC_A_LEVEL => $grades],
+            array_merge([
+                'education_level' => EducationLevel::UNDERGRADUATE,
+                'field_of_study' => 'Computer Science & IT',
+                'province' => 'Harare',
+                // Undergraduate's academic evidence is a transcript, not an O/A-Level
+                // results certificate - see ApplicantProfile::hasRequiredAcademicEvidence().
+                'transcript_path' => 'certs/transcript.pdf',
+            ], $attributes)
+        );
     }
 
     private function opportunity(array $attributes = []): Opportunity
@@ -98,14 +110,20 @@ class ScholarFitEngineTest extends TestCase
             $this->profile([
                 'education_level' => EducationLevel::CERTIFICATE,
                 'field_of_study' => 'Law',
-                'academic_results' => null,
                 'transcript_path' => null,
-            ]),
+            ], null),
             $this->opportunity()
         );
 
         $this->assertTrue($scored->meetsRequirements(), 'a poor fit is not the same as a closed door');
-        $this->assertLessThan(40, $scored->matchScore);
+
+        // Certificate towards Undergraduate is an ordinary route, so the
+        // education dimension earns the recognised-step credit rather than the
+        // near-nothing raw rung distance would give it. That lifted this
+        // scenario's ceiling: it is still a weak match, and no longer an
+        // almost-zero one, which is the point of crediting real progressions.
+        $this->assertSame(15, $scored->breakdown->dimension('education')?->points());
+        $this->assertLessThan(50, $scored->matchScore);
     }
 
     /** 4. The gate closes and no amount of soft matching reopens it. */
@@ -127,7 +145,7 @@ class ScholarFitEngineTest extends TestCase
     public function test_missing_profile_information_scores_zero_rather_than_full(): void
     {
         $scored = $this->engine()->evaluate(
-            new ApplicantProfile(),
+            new ApplicantProfile,
             $this->opportunity()
         );
 
@@ -176,7 +194,7 @@ class ScholarFitEngineTest extends TestCase
         $this->assertSame(
             1.0,
             $this->ratio($this->profile(['field_of_study' => $written]), $this->opportunity(), 'field'),
-            '"' . $written . '" should match a Computer Science & IT listing'
+            '"'.$written.'" should match a Computer Science & IT listing'
         );
     }
 
@@ -400,20 +418,22 @@ class ScholarFitEngineTest extends TestCase
         );
 
         $this->assertFalse($scored->meetsRequirements());
-        $this->assertStringContainsString('aged 25 and under', $scored->explain());
+        $this->assertStringContainsString('Age: 25 and under required, you are 40.', $scored->explain());
     }
 
     /** 19. */
     public function test_falling_short_of_the_points_floor_is_a_hard_failure(): void
     {
         $scored = $this->engine()->evaluate(
-            $this->profile(['academic_results' => '7 points at A-Level']),
+            $this->profile([], ['Mathematics' => 'C', 'Physics' => 'D', 'Chemistry' => 'D']),
             $this->opportunity(['min_academic_points' => 15])
         );
 
         $this->assertFalse($scored->meetsRequirements());
-        $this->assertStringContainsString('Minimum academic points required: 15', $scored->explain());
-        $this->assertStringContainsString('Applicant points: 7', $scored->explain());
+        // The sentence names both numbers, and names the qualification the
+        // points belong to - a bar on ZIMSEC A-Level points is not a bar on
+        // whatever else the applicant happens to hold.
+        $this->assertStringContainsString('ZIMSEC Advanced Level points: 15 required, you have 7.', $scored->explain());
     }
 
     /** Clearing the floor by more earns more, rather than being pass/fail. */
@@ -421,8 +441,10 @@ class ScholarFitEngineTest extends TestCase
     {
         $opportunity = $this->opportunity(['min_academic_points' => 10]);
 
-        $justOver = $this->ratio($this->profile(['academic_results' => '10 points']), $opportunity, 'academic');
-        $wellOver = $this->ratio($this->profile(['academic_results' => '18 points']), $opportunity, 'academic');
+        // 10 points exactly (B+C+C) sits on the floor; 15 (A+A+A) clears it
+        // by more than headroom_points and earns the dimension outright.
+        $justOver = $this->ratio($this->profile([], ['Mathematics' => 'B', 'Physics' => 'C', 'Chemistry' => 'C']), $opportunity, 'academic');
+        $wellOver = $this->ratio($this->profile([], ['Mathematics' => 'A', 'Physics' => 'A', 'Chemistry' => 'A']), $opportunity, 'academic');
 
         $this->assertGreaterThan($justOver, $wellOver);
         $this->assertSame(1.0, $wellOver);
@@ -475,7 +497,7 @@ class ScholarFitEngineTest extends TestCase
         return [
             'perfect' => [[], []],
             'empty profile' => [['education_level' => null, 'field_of_study' => null, 'province' => null,
-                'academic_results' => null, 'transcript_path' => null], []],
+                'transcript_path' => null], []],
             'bare listing' => [[], ['education_level' => null, 'target_field' => null,
                 'required_province' => null, 'deadline' => null]],
             'blocked' => [[], ['required_province' => 'Bulawayo']],
@@ -508,7 +530,7 @@ class ScholarFitEngineTest extends TestCase
 
         $explanation = $scored->explain();
 
-        $this->assertStringContainsString('Match Score: ' . $scored->matchScore . '%', $explanation);
+        $this->assertStringContainsString('MATCH SCORE: '.$scored->matchScore.'%', $explanation);
 
         // Every dimension's own line must quote its own contribution, and those
         // contributions must add up to the headline.
@@ -524,15 +546,16 @@ class ScholarFitEngineTest extends TestCase
     public function test_an_unmet_requirement_states_the_reason_and_no_score(): void
     {
         $scored = $this->engine()->evaluate(
-            $this->profile(['academic_results' => '5 points']),
+            $this->profile([], ['Mathematics' => 'C', 'Physics' => 'E', 'Chemistry' => 'E']),
             $this->opportunity(['min_academic_points' => 15])
         );
 
         $explanation = $scored->explain();
 
-        $this->assertStringContainsString('Requirements not met', $explanation);
-        $this->assertStringContainsString('Reason:', $explanation);
-        $this->assertStringNotContainsString('Match Score:', $explanation);
+        $this->assertStringContainsString('NOT ELIGIBLE', $explanation);
+        $this->assertStringContainsString('ZIMSEC Advanced Level points: 15 required, you have 5.', $explanation);
+        // A score is withheld entirely rather than shown beside a refusal.
+        $this->assertStringNotContainsString('MATCH SCORE', $explanation);
     }
 
     /** 23. */
@@ -563,7 +586,7 @@ class ScholarFitEngineTest extends TestCase
         ];
 
         $order = static fn (array $ranked) => array_map(
-            static fn ($s) => $s->opportunity->opportunity_id . ':' . $s->matchScore,
+            static fn ($s) => $s->opportunity->opportunity_id.':'.$s->matchScore,
             $ranked
         );
 
@@ -577,12 +600,105 @@ class ScholarFitEngineTest extends TestCase
     {
         $scored = $this->engine()->evaluate($this->profile(), $this->opportunity());
 
-        $this->assertSame('ScholarFit v2', $scored->scoringVersion());
-        $this->assertSame(2, ScholarFitEngine::ALGORITHM_VERSION);
+        $this->assertSame('ScholarFit v3', $scored->scoringVersion());
+        $this->assertSame(3, ScholarFitEngine::ALGORITHM_VERSION);
     }
 
     private function emptyProfile(): ApplicantProfile
     {
-        return new ApplicantProfile();
+        return new ApplicantProfile;
+    }
+
+    // ------------------------------------------- subject requirements --
+
+    /**
+     * Built through Tests\Support\BuildsAcademicRecords, so these read the real
+     * ZIMSEC A-Level scheme out of the catalogue. The helpers this replaces
+     * declared their own grading inline - A=12, B=10, C=8 - which is a scale
+     * ZIMSEC has never used, and meant the subject tests could not have caught
+     * the grades being wrong.
+     */
+    private function aLevelProfile(array $grades): ApplicantProfile
+    {
+        return $this->profileWithAcademicResults(
+            [AcademicCatalogue::ZIMSEC_A_LEVEL => $grades],
+            ['education_level' => EducationLevel::A_LEVEL, 'province' => 'Harare']
+        );
+    }
+
+    private function subjectGatedOpportunity(array $subjectMinimumGrades = ['Mathematics' => 'C']): Opportunity
+    {
+        return $this->opportunityWithSubjectRules(
+            AcademicCatalogue::ZIMSEC_A_LEVEL,
+            $subjectMinimumGrades,
+            [
+                'education_level' => EducationLevel::UNDERGRADUATE,
+                'target_field' => 'Computer Science & IT',
+                'required_province' => 'Harare',
+                'deadline' => Carbon::today()->addDays(10),
+            ]
+        );
+    }
+
+    public function test_subject_requirements_block_a_missing_subject(): void
+    {
+        // Holds Physics but not Mathematics, which is the required subject.
+        $scored = $this->engine()->evaluate(
+            $this->aLevelProfile(['Physics' => 'B']),
+            $this->subjectGatedOpportunity()
+        );
+
+        $this->assertFalse($scored->meetsRequirements());
+        $this->assertSame(0, $scored->matchScore);
+    }
+
+    public function test_subject_requirements_pass_when_all_met(): void
+    {
+        $scored = $this->engine()->evaluate(
+            $this->aLevelProfile(['Mathematics' => 'A', 'Physics' => 'B']),
+            $this->subjectGatedOpportunity()
+        );
+
+        $this->assertTrue($scored->meetsRequirements());
+    }
+
+    public function test_subject_requirements_block_a_grade_below_minimum(): void
+    {
+        $scored = $this->engine()->evaluate(
+            $this->aLevelProfile(['Mathematics' => 'D']),
+            $this->subjectGatedOpportunity()
+        );
+
+        $this->assertFalse($scored->meetsRequirements());
+        $this->assertSame(0, $scored->matchScore);
+    }
+
+    /**
+     * Grades rank by their place in the qualification's own ordered list, not
+     * by string comparison. Under Cambridge A Level, "A*" is the top grade and
+     * sorts before "A" - lexicographically it does not, and a string compare
+     * would refuse the best result the board awards.
+     */
+    public function test_a_cambridge_a_star_meets_a_b_requirement(): void
+    {
+        $profile = $this->profileWithAcademicResults(
+            [AcademicCatalogue::CAMBRIDGE_A_LEVEL => ['Mathematics' => 'A*']],
+            ['education_level' => EducationLevel::A_LEVEL, 'province' => 'Harare']
+        );
+
+        $opportunity = $this->opportunityWithSubjectRules(
+            AcademicCatalogue::CAMBRIDGE_A_LEVEL,
+            ['Mathematics' => 'B'],
+            [
+                'education_level' => EducationLevel::UNDERGRADUATE,
+                'target_field' => 'Computer Science & IT',
+                'required_province' => 'Harare',
+                'deadline' => Carbon::today()->addDays(10),
+            ]
+        );
+
+        $scored = $this->engine()->evaluate($profile, $opportunity);
+
+        $this->assertTrue($scored->meetsRequirements());
     }
 }

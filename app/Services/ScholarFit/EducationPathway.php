@@ -5,42 +5,47 @@ namespace App\Services\ScholarFit;
 use App\Support\EducationLevel;
 
 /**
- * Whether an applicant's current education level can reach a scholarship's
- * target level at all - a hard yes/no, never a percentage.
+ * The progressions Zimbabwean education recognises: what usually follows what.
  *
- * This exists because `EducationMatcher` (the scoring dimension) and this
- * class answer two different questions that `EducationLadder::distance()`
- * used to be asked to answer at once. Distance is a reasonable way to rank
- * *already-eligible* applicants against each other - two rungs apart is a
- * weaker candidate than an exact match - but it is a bad way to decide
- * eligibility, because "two rungs apart" describes both a diploma holder
- * eyeing an undergraduate award (plausible) and a primary pupil eyeing a PhD
- * scholarship (not a real scenario, and previously scored as a distant-but-
- * nonzero match rather than refused outright).
+ * This is a description, not a rule. It answers "is this a usual next step?"
+ * and nothing more - it does not decide whether an applicant may apply for a
+ * scholarship, and `EligibilityEvaluator` reports it as an advisory note
+ * rather than a gate.
  *
- * The table below is deliberately an explicit adjacency list, not a computed
- * range on the ladder, precisely so a case like "O Level to Masters" cannot
- * be accidentally rescued by an off-by-one in a distance calculation. Every
- * entry is a pathway that genuinely exists in Zimbabwean education, and
- * nothing is inferred.
+ * That is a deliberate reversal. This table used to refuse an applicant
+ * outright whenever their current level was not listed against a listing's
+ * target, which encoded an assumption the product does not want to make: that
+ * a level implies its destinations. It does not. An O-Level holder may go on
+ * to A-Level, to a polytechnic certificate or diploma, to a college, or
+ * straight to some undergraduate programmes, and which of those a particular
+ * scholarship is open to is a fact about that scholarship, not about
+ * O-Level.
  *
- * A scholarship's target level establishes the pathway is *possible*, not
- * that this specific scholarship accepts every level that could reach it -
- * that is what `Opportunity::minimum_education_level` is for, checked
- * separately in `EligibilityEvaluator`. This class only ever answers "could a
- * student at this level ever sensibly apply for a scholarship aimed at that
- * level", the same question for every scholarship with that target.
+ * So eligibility is decided by what a listing actually states -
+ * `minimum_education_level`, `min_academic_points`, its subject requirements,
+ * age, province, proof of results - evaluated against the applicant's real
+ * qualifications. Where a listing states nothing on a point, nothing is
+ * inferred and nothing is refused.
+ *
+ * What this table is still good for: telling an applicant that a progression
+ * is an unusual one, and helping `EducationMatcher` rank an already-eligible
+ * field. Both are things worth saying. Neither is a refusal.
  */
 final class EducationPathway
 {
     /**
-     * currentLevel => the target levels a scholarship may sensibly be aimed at.
+     * currentLevel => the levels that usually follow it.
      *
-     * Same-tier and forward moves only; nothing moves backward (an
-     * undergraduate is not "eligible" for a Form 1 scholarship) and nothing
-     * skips more than one tier (a Primary pupil cannot reach Undergraduate in
-     * one step, regardless of how good their results are - that is not a
-     * scoring judgement, it is how the education system is structured).
+     * Read as "these are the ordinary next steps", not "these are the only
+     * ones permitted". A progression absent from this table is unusual, and
+     * an applicant is told so; it is not thereby forbidden, because whether a
+     * given scholarship accepts them is the scholarship's own requirements to
+     * answer.
+     *
+     * Post-secondary entry is deliberately broad on both O-Level and A-Level:
+     * certificate and diploma cover the polytechnic and college routes, and
+     * undergraduate covers direct university entry where a programme offers
+     * it.
      */
     private const VALID_TARGETS = [
         EducationLevel::PRIMARY => [
@@ -117,8 +122,12 @@ final class EducationPathway
     }
 
     /**
-     * The sentence explaining a failed pathway, or null when the pathway is
-     * valid (or unknown, which `isValid()` already treats as valid).
+     * The sentence describing an unusual progression, or null when it is a
+     * recognised one (or unknown, which `isValid()` already treats as valid).
+     *
+     * Worded as an observation, not a refusal, because that is what it is:
+     * the applicant is told their situation is unusual and what the listing
+     * actually asks for is reported separately, on its own terms.
      */
     public static function reason(?string $currentLevel, ?string $targetLevel): ?string
     {
@@ -126,7 +135,16 @@ final class EducationPathway
             return null;
         }
 
-        return 'This scholarship is for ' . EducationLevel::label($targetLevel)
-            . ' applicants. Your current education level is ' . EducationLevel::label($currentLevel) . '.';
+        return 'This scholarship funds ' . EducationLevel::label($targetLevel)
+            . ' study, which is not a usual next step from ' . EducationLevel::label($currentLevel)
+            . '. Check the requirements below before applying.';
+    }
+
+    /** The sentence for a recognised progression, for the same advisory line. */
+    public static function describe(?string $currentLevel, ?string $targetLevel): string
+    {
+        return self::reason($currentLevel, $targetLevel)
+            ?? 'This scholarship funds ' . EducationLevel::label($targetLevel)
+                . ' study, a recognised next step from ' . EducationLevel::label($currentLevel) . '.';
     }
 }

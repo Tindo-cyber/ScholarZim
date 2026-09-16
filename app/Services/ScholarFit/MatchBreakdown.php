@@ -25,6 +25,20 @@ class MatchBreakdown
     public array $unmetRequirements = [];
 
     /**
+     * Every stated requirement as evaluated - passed and failed alike - each
+     * carrying the required value and the applicant's actual one.
+     *
+     * `unmetRequirements` above is the failure sentences drawn from this list,
+     * kept as a flat array of strings because reports and exports already read
+     * it in that shape. This is the fuller record: it is what lets an eligible
+     * applicant be shown the requirements they met, which nothing could do
+     * while only failures were retained.
+     *
+     * @var array<int, RequirementOutcome>
+     */
+    public array $requirementOutcomes = [];
+
+    /**
      * Everything holding this score back, as plain text: the unmet requirements
      * first, then the dimensions that scored badly. Reports and the API read
      * this, so it keeps a flat, stable shape.
@@ -121,29 +135,98 @@ class MatchBreakdown
     }
 
     /**
+     * Requirements the applicant met, in the order they were evaluated.
+     *
+     * @return array<int, RequirementOutcome>
+     */
+    public function metRequirements(): array
+    {
+        return RequirementOutcome::passes($this->requirementOutcomes);
+    }
+
+    /**
+     * Requirements the applicant failed, as outcomes rather than sentences.
+     *
+     * @return array<int, RequirementOutcome>
+     */
+    public function failedRequirements(): array
+    {
+        return RequirementOutcome::failures($this->requirementOutcomes);
+    }
+
+    /**
+     * Advisory notes: reported, but not rules. The progression note lives here,
+     * so an applicant is told their next step is an unusual one without that
+     * being treated as a requirement they failed.
+     *
+     * @return array<int, RequirementOutcome>
+     */
+    public function advisoryNotes(): array
+    {
+        return RequirementOutcome::notes($this->requirementOutcomes);
+    }
+
+    /** Whether the listing states any hard requirement at all. */
+    public function hasStatedRequirements(): bool
+    {
+        return RequirementOutcome::rules($this->requirementOutcomes) !== [];
+    }
+
+    /**
      * The full explanation, in the shape the applicant is shown.
      *
-     * Built from dimensionResults and unmetRequirements alone. There is
+     * Hard eligibility comes first and is reported in full - what was met as
+     * well as what was not - and the match score follows as a separate thing.
+     * Both halves are shown either way: an applicant who fails one requirement
+     * still sees the three they passed, which is the difference between an
+     * explanation and a rejection notice.
+     *
+     * Built from dimensionResults and requirementOutcomes alone. There is
      * deliberately no second code path here: if the score changes, these lines
-     * change with it, because they are reading the same objects the score was
-     * summed from.
+     * change with it, because they read the same objects the score was summed
+     * from.
      *
      * @return array<int, string>
      */
     public function explanationLines(int $matchScore): array
     {
-        if (! $this->meetsRequirements()) {
-            $lines = ['Requirements not met', ''];
-            $lines[] = count($this->unmetRequirements) === 1 ? 'Reason:' : 'Reasons:';
+        $eligible = $this->meetsRequirements();
+        $lines = [$eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'];
 
-            foreach ($this->unmetRequirements as $requirement) {
-                $lines[] = $requirement;
+        $rules = RequirementOutcome::rules($this->requirementOutcomes);
+
+        if ($rules !== []) {
+            $lines[] = '';
+
+            foreach ($rules as $outcome) {
+                $lines[] = ($outcome->passed ? '✓' : '✗') . ' ' . $outcome->message;
             }
+        } elseif (! $eligible) {
+            // Cannot happen while failures come only from stated rules, but
+            // stated explicitly rather than left to produce a bare heading.
+            $lines[] = '';
+        }
 
+        // Notes come last and are marked apart from the rules above, because
+        // the difference between "this listing requires X and you do not have
+        // it" and "this is an unusual next step" is the whole point.
+        foreach ($this->advisoryNotes() as $note) {
+            $lines[] = '';
+            $lines[] = ($note->passed ? 'Note:' : 'Please note:') . ' ' . $note->message;
+        }
+
+        if ($rules === [] && $eligible) {
+            $lines[] = '';
+            $lines[] = 'This scholarship states no entry requirements.';
+        }
+
+        if (! $eligible) {
             return $lines;
         }
 
-        $lines = ['Match Score: ' . $matchScore . '%', ''];
+        $lines[] = '';
+        $lines[] = 'MATCH SCORE: ' . $matchScore . '%';
+        $lines[] = '';
 
         foreach ($this->dimensionResults as $dimension) {
             $lines[] = $dimension->scoreLine() . ' - ' . $dimension->detail;

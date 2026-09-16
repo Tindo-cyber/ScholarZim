@@ -59,16 +59,31 @@ return [
      * floor: meeting it exactly is a pass rather than a triumph, and clearing it
      * by `headroom_points` or more is full marks. When no floor is stated the
      * record is graded on its own merits instead.
+     *
+     * Every figure below is on the ZIMSEC A-Level scale - A=5 down to E=1, so
+     * five subjects at A is 25 and three at A is 15. They were previously set
+     * against a scale on which an A was worth 12, which is not a scale ZIMSEC
+     * has ever used; rescaling them was part of correcting the grades
+     * themselves, because a threshold of 12 means "three good passes" on one
+     * scale and "one A" on the other.
      */
     'academic' => [
-        'headroom_points' => 5,
+        /* Points clear of the floor that earn full marks, on a 3-subject total of 15. */
+        'headroom_points' => 3,
         'at_floor' => 0.7,
         'strong_record' => 1.0,
         'sound_record' => 0.7,
         'thin_record' => 0.4,
-        /* Points at or above which a record stands on its own with no floor to beat. */
-        'strong_points' => 12,
-        'sound_points' => 6,
+        /* A-Level points at or above which a record stands on its own with no floor to beat. */
+        'strong_points' => 13,
+        'sound_points' => 8,
+        /*
+         * Subjects at or above which an unpointed record - O-Level, Cambridge,
+         * Primary - reads as a sound one. These qualifications have no point
+         * scale, so their strength is how complete the record is rather than a
+         * total converted out of a scale their board does not use.
+         */
+        'sound_subjects' => 5,
     ],
 
     /*

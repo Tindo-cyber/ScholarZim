@@ -82,6 +82,16 @@
                                               min="1" max="8" :value="$profile->year_of_study"
                                               hint="If relevant to your programme." />
                             </div>
+                            <div class="col-md-8">
+                                {{-- A degree class is one fact about a person, not a score per
+                                     module, so it is held here rather than as subject results.
+                                     That also keeps it out of any A-Level points total. --}}
+                                <x-form.select name="degree_classification" label="Degree classification"
+                                               :options="collect($degreeClassifications)->mapWithKeys(fn ($c) => [$c => $c])->all()"
+                                               :value="$profile->degree_classification"
+                                               placeholder="Not yet classified"
+                                               hint="Your award classification, if you have completed or been graded." />
+                            </div>
                         </div>
 
                         <div class="row">
@@ -107,6 +117,29 @@
                                               :value="$profile->date_of_birth?->format('Y-m-d')"
                                               max="{{ now()->toDateString() }}"
                                               hint="Some awards have an age limit. Without this we cannot check one for you." />
+                            </div>
+                            <div class="col-md-6">
+                                <fieldset class="mb-3">
+                                    <legend class="form-label mb-2">Gender</legend>
+                                    @foreach($genders as $genderValue => $genderLabel)
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio"
+                                                   id="field-gender-{{ $genderValue }}"
+                                                   name="gender" value="{{ $genderValue }}"
+                                                   @checked(old('gender', $profile->gender) === $genderValue)>
+                                            <label class="form-check-label" for="field-gender-{{ $genderValue }}">
+                                                {{ $genderLabel }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                    @error('gender')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">
+                                        Optional. Shown to providers reviewing your application; it does not
+                                        affect your ScholarFit score or which awards you are eligible for.
+                                    </div>
+                                </fieldset>
                             </div>
                         </div>
                     </div>
@@ -149,30 +182,194 @@
                     </div>
                 </div>
 
-                <div class="card mb-4">
+                <div class="card mb-4" id="academic-results">
                     <div class="card-header">
                         <h2 class="h6 fw-semibold mb-0">Academic information</h2>
                     </div>
                     <div class="card-body">
-                        {{-- O-Level / A-Level: a school-style results summary. Hidden entirely for Primary. --}}
-                        <div data-sz-tier="SECONDARY" id="sz-school-results">
-                            <x-form.textarea name="academic_results" label="O-Level / A-Level results"
-                                             :value="$profile->academic_results" :rows="3"
-                                             hint="For example: 12 points at A-Level (Maths A, Physics B, Chemistry B), or your O-Level subjects and grades." />
+                        {{--
+                            The marker that tells the server this submission carried the academic
+                            section. Without it, ProfileController leaves academic results
+                            untouched. It matters because an applicant who deletes their last row
+                            submits no result rows at all, and that still has to be a deletion they
+                            can make - testing for the rows themselves could not tell the two apart,
+                            and the version before this one deleted everything on every save.
+                        --}}
+                        <input type="hidden" name="academic_results_submitted" value="1">
+
+                        @if($profile->needsAcademicResultsMigration())
+                            {{--
+                                This applicant recorded their results before ScholarZim asked for them
+                                subject by subject. The old text is shown back verbatim rather than
+                                parsed: reading grades out of a sentence is guesswork, and guessing an
+                                applicant's academic record wrong is worse than asking them to retype
+                                four lines. Nothing is filled in for them.
+                            --}}
+                            <div class="alert alert-warning d-flex gap-2" role="note">
+                                <x-icon name="person-exclamation" :size="18" class="flex-shrink-0 mt-1" />
+                                <div>
+                                    <strong class="d-block mb-1">Please re-enter your results below</strong>
+                                    <p class="small mb-2">
+                                        You recorded your results before we asked for them subject by subject.
+                                        We have not filled anything in for you, because we would have to guess
+                                        at your grades. Add each subject below and your points will be worked
+                                        out automatically. <strong>Scholarships cannot check your results until
+                                        you do.</strong>
+                                    </p>
+                                    <p class="small text-secondary mb-1">What you wrote before:</p>
+                                    <blockquote class="small fst-italic border-start border-2 ps-3 mb-0">
+                                        {{ $profile->legacyAcademicResults() }}
+                                    </blockquote>
+                                </div>
+                            </div>
+                        @endif
+
+                        <p class="text-secondary small">
+                            Enter your subjects and grades exactly as they appear on your results slip.
+                            ScholarZim works out any points itself - you never type a points total, and
+                            grades from one examination board are never converted into another's.
+                        </p>
+
+                        @error('academic_subject_results')
+                            <div class="alert alert-danger small">{{ $message }}</div>
+                        @enderror
+                        @foreach($errors->get('academic_subject_results.*') as $messages)
+                            <div class="alert alert-danger small">{{ $messages[0] }}</div>
+                        @endforeach
+
+                        <div class="table-responsive">
+                            <table class="table table-sm align-middle mb-2" id="academic-results-table">
+                                <thead>
+                                    <tr>
+                                        <th scope="col" style="width:26%">Qualification</th>
+                                        <th scope="col" style="width:28%">Subject</th>
+                                        <th scope="col" style="width:14%">Result</th>
+                                        <th scope="col" style="width:14%">Year</th>
+                                        <th scope="col" style="width:10%" class="text-end">Points</th>
+                                        <th scope="col" style="width:8%"><span class="visually-hidden">Actions</span></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="academic-results-list">
+                                    @foreach($profile->academicResults as $idx => $result)
+                                        <tr class="academic-result-row">
+                                            <td>
+                                                <select class="form-select form-select-sm qualification-select"
+                                                        name="academic_subject_results[{{ $idx }}][qualification_id]"
+                                                        aria-label="Qualification">
+                                                    @foreach($qualifications as $qual)
+                                                        <option value="{{ $qual->id }}"
+                                                            @selected($qual->id == $result->qualification_id)>{{ $qual->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            {{--
+                                                Options are rendered server-side, already selected, so an
+                                                existing row is correct and submittable before the script
+                                                runs. A row whose options only appear once JavaScript has
+                                                populated them would submit an empty grade without it, and
+                                                losing an applicant's results on save is exactly what this
+                                                section was rebuilt to stop.
+                                            --}}
+                                            <td>
+                                                <select class="form-select form-select-sm subject-select"
+                                                        name="academic_subject_results[{{ $idx }}][subject_id]"
+                                                        data-selected="{{ $result->subject_id }}"
+                                                        aria-label="Subject">
+                                                    <option value="">Select subject</option>
+                                                    @foreach(($result->qualification?->activeSubjects ?? []) as $subject)
+                                                        <option value="{{ $subject->id }}"
+                                                            @selected($subject->id == $result->subject_id)>{{ $subject->label() }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <select class="form-select form-select-sm grade-select"
+                                                        name="academic_subject_results[{{ $idx }}][result]"
+                                                        data-selected="{{ $result->result }}"
+                                                        aria-label="Result">
+                                                    <option value="">Select result</option>
+                                                    @foreach(($result->subject?->grades() ?? $result->qualification?->grades() ?? []) as $grade)
+                                                        <option value="{{ $grade }}"
+                                                            @selected($grade === $result->result)>{{ $grade }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <input type="number" class="form-control form-control-sm year-input"
+                                                       name="academic_subject_results[{{ $idx }}][year]"
+                                                       value="{{ $result->year }}"
+                                                       min="1950" max="{{ now()->year + 1 }}" step="1"
+                                                       aria-label="Year">
+                                            </td>
+                                            {{-- Derived, never entered. There is no input here on purpose. --}}
+                                            <td class="text-end derived-points font-monospace">
+                                                {{ $result->points() !== null ? rtrim(rtrim(number_format($result->points(), 2), '0'), '.') : '—' }}
+                                            </td>
+                                            <td class="text-end">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
 
-                        {{-- Tertiary and postgraduate: a transcript is the evidence, not a typed summary. --}}
-                        <div data-sz-tier="TERTIARY,POSTGRADUATE" id="sz-tertiary-results">
-                            <x-form.textarea name="academic_results" label="Academic performance (optional summary)"
-                                             :value="$profile->academic_results" :rows="3"
-                                             hint="Optional: a short note on your results, e.g. class of degree. Your transcript (uploaded under Documents) is the evidence providers rely on - ScholarZim does not use a GPA figure." />
+                        <template id="academic-result-template">
+                            <tr class="academic-result-row">
+                                <td>
+                                    <select class="form-select form-select-sm qualification-select"
+                                            name="academic_subject_results[__IDX__][qualification_id]" aria-label="Qualification">
+                                        <option value="">Select qualification</option>
+                                        @foreach($qualifications as $qual)
+                                            <option value="{{ $qual->id }}">{{ $qual->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm subject-select"
+                                            name="academic_subject_results[__IDX__][subject_id]" aria-label="Subject" disabled></select>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm grade-select"
+                                            name="academic_subject_results[__IDX__][result]" aria-label="Result" disabled></select>
+                                </td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm year-input"
+                                           name="academic_subject_results[__IDX__][year]"
+                                           min="1950" max="{{ now()->year + 1 }}" step="1" aria-label="Year">
+                                </td>
+                                <td class="text-end derived-points font-monospace">—</td>
+                                <td class="text-end">
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
+                                </td>
+                            </tr>
+                        </template>
+
+                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                            <button type="button" id="add-academic-result" class="btn btn-sm btn-outline-secondary">
+                                Add subject
+                            </button>
+                            <p class="small mb-0" id="academic-points-summary" aria-live="polite"></p>
                         </div>
 
-                        <div data-sz-tier="PRIMARY" class="text-secondary small mb-0">
-                            No academic results are needed yet - a guardian's involvement is what this
-                            pathway asks for. See the Guardian details section above.
-                        </div>
+                        <p class="text-danger small mt-2 mb-0 d-none" id="academic-duplicate-warning">
+                            The same subject is listed twice under one qualification. Record each subject once.
+                        </p>
 
+                        <p class="text-secondary small mt-3 mb-0" data-sz-tier="PRIMARY">
+                            Primary applicants apply through the guardian-assisted Form 1 pathway. You may record
+                            your Grade 7 learning areas above, but no result is required to start.
+                        </p>
+
+                        <script type="application/json" id="academic-catalogue">@json($academicCatalogue)</script>
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">About you</h2>
+                    </div>
+                    <div class="card-body">
                         <x-form.textarea name="biography" label="Short biography"
                                          :value="$profile->biography" :rows="5"
                                          hint="Providers read this alongside your applications." />

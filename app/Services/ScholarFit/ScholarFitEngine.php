@@ -45,13 +45,21 @@ class ScholarFitEngine
      * from a different set of facts than the score. v2 is the weighted engine in
      * this namespace.
      *
+     * v3 changes what the academic dimension measures. Points became
+     * qualification-specific - a total means ZIMSEC A-Level points and nothing
+     * else, where v2 summed every qualification on to one scale - and the
+     * ZIMSEC A-Level grades themselves were corrected to A=5 down to E=1 from
+     * a scale on which an A was 12. A v2 score and a v3 score of the same
+     * profile against the same listing are not comparable numbers, which is
+     * precisely what this constant exists to record.
+     *
      * Bump it in the same commit as any change to how a score is calculated, so
      * a stored or quoted score can be read in the context that produced it.
      */
-    public const ALGORITHM_VERSION = 2;
+    public const ALGORITHM_VERSION = 3;
 
     /** The version as it appears in explanations, logs and tests. */
-    public const VERSION_LABEL = 'ScholarFit v2';
+    public const VERSION_LABEL = 'ScholarFit v3';
 
     /**
      * The configured weights, read once per engine.
@@ -82,8 +90,15 @@ class ScholarFitEngine
         $weights = $this->cachedWeights ??= $this->settings->scholarFitWeights();
         $record = AcademicRecord::fromProfile($profile);
 
+        // Hard eligibility is settled first, once, and the academic matcher is
+        // handed the result. Scoring a subject requirement means asking
+        // whether a grade met a bar, which is a question the evaluator has
+        // just answered - asking it twice, in two implementations, is how the
+        // score and the explanation came apart before.
+        $outcomes = $this->requirements->evaluate($profile, $opportunity, $record);
+
         $dimensions = [
-            $this->academic->match($record, $opportunity, (int) $weights['academic']),
+            $this->academic->match($record, $opportunity, (int) $weights['academic'], $outcomes),
             $this->education->match($profile, $opportunity, (int) $weights['education_level']),
             $this->field->match($profile, $opportunity, (int) $weights['field']),
             $this->location->match($profile, $opportunity, (int) $weights['location']),
@@ -94,7 +109,8 @@ class ScholarFitEngine
         $breakdown = new MatchBreakdown();
         $breakdown->weights = $weights;
         $breakdown->dimensionResults = $dimensions;
-        $breakdown->unmetRequirements = $this->requirements->evaluate($profile, $opportunity, $record);
+        $breakdown->requirementOutcomes = $outcomes;
+        $breakdown->unmetRequirements = RequirementOutcome::failureMessages($outcomes);
         $breakdown->scoringVersion = self::VERSION_LABEL;
 
         $earned = 0;

@@ -85,6 +85,11 @@ class Opportunity extends Model
         return $this->hasMany(SavedScholarship::class, 'opportunity_id', 'opportunity_id');
     }
 
+    public function subjectRequirements(): HasMany
+    {
+        return $this->hasMany(OpportunitySubjectRequirement::class, 'opportunity_id', 'opportunity_id');
+    }
+
     public function dailyViews(): HasMany
     {
         return $this->hasMany(OpportunityView::class, 'opportunity_id', 'opportunity_id');
@@ -343,7 +348,9 @@ class Opportunity extends Model
             || filled($this->required_province)
             || filled($this->target_locality)
             || filled($this->minimum_education_level)
-            || (bool) $this->requires_results_certificate;
+            || (bool) $this->requires_results_certificate
+            || $this->relationLoaded('subjectRequirements')
+                && $this->subjectRequirements->isNotEmpty();
     }
 
     /**

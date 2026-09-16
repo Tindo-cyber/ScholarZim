@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Models\AcademicQualification;
+use App\Models\AcademicResult;
+use App\Models\AcademicSubject;
 use App\Models\ApplicantProfile;
 use App\Models\User;
 use App\Support\AuditAction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 class ApplicantProfileService
@@ -44,10 +48,18 @@ class ApplicantProfileService
             'year_of_study' => \App\Support\EducationLevel::usesFieldOfStudy($data['education_level'] ?? null)
                 ? ($data['year_of_study'] ?? null)
                 : null,
+            // A degree classification is the tertiary equivalent of a grade,
+            // held once on the profile rather than as a subject result - which
+            // is what keeps a First Class out of any A-Level points total.
+            // Cleared when the applicant moves to a level it cannot describe.
+            'degree_classification' => \App\Support\EducationLevel::usesTranscript($data['education_level'] ?? null)
+                ? ($data['degree_classification'] ?? null)
+                : null,
             'province' => $data['province'] ?? null,
             'locality' => $data['locality'] ?? null,
             'settlement_type' => $data['settlement_type'] ?? null,
             'date_of_birth' => $data['date_of_birth'] ?? null,
+            'gender' => $data['gender'] ?? null,
             // Guardian fields are collected only for the Primary pathway;
             // cleared otherwise so a profile that moves off Primary does not
             // carry on displaying a guardian section it no longer needs.
@@ -57,7 +69,11 @@ class ApplicantProfileService
             'guardian_confirmed_at' => $isPrimary && filled($data['guardian_confirmed'] ?? null)
                 ? Carbon::now()
                 : ($isPrimary ? $profile->guardian_confirmed_at : null),
-            'academic_results' => $data['academic_results'] ?? null,
+            // `academic_results`, the legacy free-text column, is deliberately
+            // absent. It is no longer written, no longer read by ScholarFit and
+            // no longer part of profile completeness; writing it here would
+            // also have overwritten every existing production value with null
+            // the moment the textarea left the form.
             'biography' => $data['biography'] ?? null,
         ]);
 
@@ -71,6 +87,153 @@ class ApplicantProfileService
         $this->auditService->log($user->email, AuditAction::PROFILE_UPDATE, 'APPLICANT_PROFILE', $profile->profile_id);
 
         return $profile;
+    }
+
+    /**
+     * Brings the applicant's structured results into line with a submission.
+     *
+     * Call this only when academic results were actually part of the request -
+     * ProfileController gates on an explicit marker. The method it replaces
+     * was called unconditionally on every profile save with an array that was
+     * always empty, and opened by deleting every result the applicant had, so
+     * editing a phone number silently destroyed an academic record and changed
+     * the applicant's eligibility with it.
+     *
+     * Rows are upserted on (profile_id, qualification_id, subject_id), the same
+     * key the table enforces, and only rows the submission dropped are removed.
+     * Nothing here trusts the request: the qualification must be active, the
+     * subject must belong to it, and the grade must be one that qualification
+     * actually awards. Points are derived from the qualification's own scheme
+     * and are never read from the request - an applicant states facts, the
+     * platform does the arithmetic.
+     *
+     * @param  array<int, array{qualification_id: int|string, subject_id: int|string, result: string, year?: int|string|null}>  $rows
+     *
+     * @throws ValidationException when a row is not a fact this catalogue recognises
+     */
+    public function syncAcademicResults(User $user, array $rows): ApplicantProfile
+    {
+        $profile = $this->forUser($user);
+
+        DB::transaction(function () use ($profile, $rows, $user) {
+            $keptIds = [];
+            $seen = [];
+
+            foreach ($rows as $index => $row) {
+                [$qualification, $subject, $grade] = $this->resolveResultRow($row, $index);
+
+                // Belt and braces alongside the unique key: a duplicate pair in
+                // one submission would otherwise upsert the same row twice and
+                // quietly keep only the last grade the applicant typed.
+                $pair = $qualification->id.':'.$subject->id;
+
+                if (isset($seen[$pair])) {
+                    throw ValidationException::withMessages([
+                        "academic_subject_results.$index.subject_id" => $subject->name.' is listed more than once under '
+                            .$qualification->name.'. Record each subject once.',
+                    ]);
+                }
+
+                $seen[$pair] = true;
+
+                $result = AcademicResult::updateOrCreate(
+                    [
+                        'profile_id' => $profile->profile_id,
+                        'qualification_id' => $qualification->id,
+                        'subject_id' => $subject->id,
+                    ],
+                    [
+                        'result' => $grade,
+                        'year' => $this->resultYear($row['year'] ?? null),
+                        // Read from the subject, not the qualification: a
+                        // subject may be awarded on a scale of its own.
+                        'derived_points' => $subject->pointsFor($grade),
+                    ]
+                );
+
+                $keptIds[] = $result->id;
+            }
+
+            // Only what the applicant removed. An empty submission from a form
+            // that did carry the academic section means they deleted every row,
+            // which is a legitimate thing to have done.
+            $profile->academicResults()->whereNotIn('id', $keptIds)->delete();
+
+            $this->auditService->log(
+                $user->email,
+                AuditAction::PROFILE_UPDATE,
+                'APPLICANT_PROFILE',
+                $profile->profile_id,
+                'Saved '.count($keptIds).' academic result(s)'
+            );
+        });
+
+        return $profile->refresh();
+    }
+
+    /**
+     * Resolves one submitted row against the catalogue, or refuses it.
+     *
+     * @return array{0: AcademicQualification, 1: AcademicSubject, 2: string}
+     *
+     * @throws ValidationException
+     */
+    private function resolveResultRow(array $row, int|string $index): array
+    {
+        $qualification = AcademicQualification::find($row['qualification_id'] ?? null);
+
+        if ($qualification === null || ! $qualification->is_active) {
+            throw ValidationException::withMessages([
+                "academic_subject_results.$index.qualification_id" => 'Choose a qualification from the list.',
+            ]);
+        }
+
+        $subject = AcademicSubject::find($row['subject_id'] ?? null);
+
+        // A subject belongs to exactly one qualification. Cambridge IGCSE
+        // Mathematics and ZIMSEC A-Level Mathematics are different rows sat
+        // under different boards, and a request that pairs one board's subject
+        // with another's qualification is not a fact about anybody.
+        if ($subject === null || (int) $subject->qualification_id !== (int) $qualification->id) {
+            throw ValidationException::withMessages([
+                "academic_subject_results.$index.subject_id" => 'Choose a subject offered under '.$qualification->name.'.',
+            ]);
+        }
+
+        if (! $subject->is_active) {
+            throw ValidationException::withMessages([
+                "academic_subject_results.$index.subject_id" => $subject->name.' is no longer offered under '.$qualification->name.'.',
+            ]);
+        }
+
+        // Validated against the subject's own scale where it has one, so a
+        // Cambridge IGCSE 9-1 syllabus accepts 9..1 and an A*-G syllabus under
+        // the very same qualification does not. Stored in that scale's own
+        // casing, so a Cambridge AS "a" stays lower case.
+        $grade = $subject->canonicalGrade($row['result'] ?? null);
+
+        if ($grade === null) {
+            $awardedBy = $subject->hasOwnScheme() ? $subject->name : $qualification->name;
+
+            throw ValidationException::withMessages([
+                "academic_subject_results.$index.result" => 'Choose a result that '.$awardedBy.' awards ('
+                    .implode(', ', $subject->grades()).').',
+            ]);
+        }
+
+        return [$qualification, $subject, $grade];
+    }
+
+    private function resultYear(mixed $year): ?int
+    {
+        if (blank($year)) {
+            return null;
+        }
+
+        $year = (int) $year;
+        $ceiling = (int) Carbon::now()->year + 1;
+
+        return $year >= 1950 && $year <= $ceiling ? $year : null;
     }
 
     /**

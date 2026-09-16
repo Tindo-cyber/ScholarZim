@@ -160,7 +160,8 @@ class OpportunityService
         $material = OpportunityLifecycle::isMaterialChange($opportunity, $attributes)
             // Bringing a deadline forward cuts applicants off early, so it is
             // material even though pushing one back is not.
-            || OpportunityLifecycle::shortensDeadline($opportunity, $data['deadline'] ?? null);
+            || OpportunityLifecycle::shortensDeadline($opportunity, $data['deadline'] ?? null)
+            || $this->subjectRequirementsChanged($opportunity, $data['subject_requirements'] ?? []);
 
         $attributes += [
             'deadline' => $data['deadline'] ?? null,
@@ -422,7 +423,11 @@ class OpportunityService
      */
     public function findPubliclyVisible(int $id): ?Opportunity
     {
-        return Opportunity::with('provider')->publiclyVisible()->find($id);
+        return Opportunity::with([
+            'provider',
+            'subjectRequirements.subject',
+            'subjectRequirements.qualification',
+        ])->publiclyVisible()->find($id);
     }
 
     /** @return array<int, string> */
@@ -548,5 +553,39 @@ class OpportunityService
         $trimmed = trim((string) $value);
 
         return $trimmed !== '' ? $trimmed : FormOptions::DEFAULT_COUNTRY;
+    }
+
+    /**
+     * Whether the submitted subject requirements differ from what is stored.
+     *
+     * Subject requirements live on a separate table, so OpportunityLifecycle::
+     * isMaterialChange() does not see them. Changing the subject bar changes
+     * who is eligible, so it is material regardless of which axis moved.
+     */
+    private function subjectRequirementsChanged(Opportunity $opportunity, array $newRequirements): bool
+    {
+        $current = $opportunity->subjectRequirements()
+            ->orderby('id')
+            ->get(['subject_id', 'minimum_grade'])
+            ->map(fn ($r) => [
+                'subject_id' => (int) $r->subject_id,
+                'minimum_grade' => $r->minimum_grade,
+            ])
+            ->values()
+            ->toArray();
+
+        $incoming = [];
+
+        foreach ($newRequirements as $req) {
+            $incoming[] = [
+                'subject_id' => (int) $req['subject_id'],
+                // Null-coalesced deliberately: the previous read of this key
+                // raised an undefined-index warning on every save, because
+                // the form has never posted it.
+                'minimum_grade' => $req['minimum_grade'] ?? null,
+            ];
+        }
+
+        return $current !== $incoming;
     }
 }

@@ -274,7 +274,7 @@ class ApplicationService
         // pathway rule, a minimum level, or any other stated requirement just
         // because the frontend happened not to enforce it.
         $profile = $this->profileService->forUser($user);
-        $unmet = $this->eligibilityEvaluator->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile));
+        $unmet = $this->eligibilityEvaluator->unmetReasons($profile, $opportunity, AcademicRecord::fromProfile($profile));
 
         if ($unmet !== []) {
             throw new RuntimeException(

@@ -90,11 +90,15 @@ class ScholarFitController extends Controller
      */
     private function sampleScore(): array
     {
+        // A degree classification rather than the free-text results column this
+        // used to set: that column is no longer read by ScholarFit, so leaving
+        // it here would have shown administrators a worked example whose
+        // academic dimension scored zero for no visible reason.
         $profile = new ApplicantProfile([
             'education_level' => EducationLevel::UNDERGRADUATE,
             'field_of_study' => FormOptions::FIELDS_OF_STUDY[0],
             'province' => 'Harare',
-            'academic_results' => 'Upper second class standing',
+            'degree_classification' => 'Upper Second (2:1)',
             'transcript_path' => 'sample/transcript.pdf',
         ]);
 

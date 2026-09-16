@@ -2,13 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicQualification;
+use App\Models\AcademicSubject;
+use App\Models\Opportunity;
+use App\Models\OpportunitySubjectRequirement;
 use App\Services\ApplicationService;
 use App\Services\OpportunityService;
 use App\Services\SavedScholarshipService;
+use App\Support\Academic\AcademicCatalogue;
 use App\Support\FormOptions;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\UnauthorizedException;
+use Illuminate\Validation\ValidationException;
 
 class OpportunityController extends Controller
 {
@@ -48,6 +54,8 @@ class OpportunityController extends Controller
             'currencies' => FormOptions::CURRENCIES,
             'defaultCurrency' => FormOptions::DEFAULT_CURRENCY,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
+            'qualifications' => $qualifications = $this->qualificationCatalogue(),
+            'qualificationCatalogue' => $this->qualificationCataloguePayload($qualifications),
         ]);
     }
 
@@ -71,7 +79,7 @@ class OpportunityController extends Controller
             'award_slots' => ['nullable', 'integer', 'min:1', 'max:5000'],
             'is_renewable' => ['nullable', 'boolean'],
             'external_url' => ['nullable', 'url', 'max:500'],
-            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:'.AcademicCatalogue::maxZimsecALevelPoints()],
             'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), free text for the same reason
@@ -80,10 +88,15 @@ class OpportunityController extends Controller
             'target_locality' => ['nullable', 'string', 'max:100'],
             'target_settlement_type' => ['nullable', Rule::in(\App\Services\ScholarFit\Taxonomy\SettlementType::ALL)],
             'requires_results_certificate' => ['nullable', 'boolean'],
+            'subject_requirements' => ['nullable', 'array'],
+            'subject_requirements.*.qualification_id' => ['required', 'integer', 'exists:academic_qualifications,id'],
+            'subject_requirements.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
+            'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
         ]);
 
         try {
-            $this->opportunityService->create($data, $request->user());
+            $opportunity = $this->opportunityService->create($data, $request->user());
+            $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
         } catch (UnauthorizedException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
@@ -119,6 +132,8 @@ class OpportunityController extends Controller
             'currencies' => FormOptions::CURRENCIES,
             'defaultCurrency' => FormOptions::DEFAULT_CURRENCY,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
+            'qualifications' => $qualifications = $this->qualificationCatalogue(),
+            'qualificationCatalogue' => $this->qualificationCataloguePayload($qualifications),
         ]);
     }
 
@@ -142,7 +157,7 @@ class OpportunityController extends Controller
             'award_slots' => ['nullable', 'integer', 'min:1', 'max:5000'],
             'is_renewable' => ['nullable', 'boolean'],
             'external_url' => ['nullable', 'url', 'max:500'],
-            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:60'],
+            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:'.AcademicCatalogue::maxZimsecALevelPoints()],
             'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), free text for the same reason
@@ -151,11 +166,16 @@ class OpportunityController extends Controller
             'target_locality' => ['nullable', 'string', 'max:100'],
             'target_settlement_type' => ['nullable', Rule::in(\App\Services\ScholarFit\Taxonomy\SettlementType::ALL)],
             'requires_results_certificate' => ['nullable', 'boolean'],
+            'subject_requirements' => ['nullable', 'array'],
+            'subject_requirements.*.qualification_id' => ['required', 'integer', 'exists:academic_qualifications,id'],
+            'subject_requirements.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
+            'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
         try {
             $opportunity = $this->opportunityService->update($id, $data, $request->user(), $data['reason']);
+            $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
         } catch (\RuntimeException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
@@ -196,5 +216,114 @@ class OpportunityController extends Controller
         return redirect()
             ->route('provider.dashboard')
             ->with('successMessage', '"' . $opportunity->title . '" was withdrawn.');
+    }
+
+    /** The qualification catalogue as the subject picker renders it. */
+    private function qualificationCatalogue()
+    {
+        return AcademicQualification::query()
+            ->active()
+            ->with('activeSubjects')
+            ->orderBy('ordering')
+            ->get();
+    }
+
+    /**
+     * The same catalogue as the JSON payload the requirement rows are driven
+     * from: which subjects each qualification offers, and which grades it
+     * awards. Both come from the qualification rows, so the picker cannot
+     * offer a grade saveSubjectRequirements() would then reject.
+     *
+     * @return array<int, array{subjects: array<int, array{id: int, name: string}>, grades: array<int, string>}>
+     */
+    private function qualificationCataloguePayload($qualifications): array
+    {
+        return $qualifications->mapWithKeys(fn (AcademicQualification $q) => [
+            $q->id => [
+                // A subject carries its own grades only where it is awarded on a
+                // different scale from the rest of its qualification - the
+                // Cambridge IGCSE 9-1 syllabuses. Null means the
+                // qualification's own scale applies.
+                'subjects' => $q->activeSubjects
+                    ->map(fn (AcademicSubject $s) => [
+                        'id' => $s->id,
+                        'name' => $s->label(),
+                        'grades' => $s->hasOwnScheme() ? $s->grades() : null,
+                    ])
+                    ->values()
+                    ->all(),
+                'grades' => $q->grades(),
+            ],
+        ])->all();
+    }
+
+    /**
+     * Brings the listing's subject requirements into line with the submitted
+     * set.
+     *
+     * Upserted on (opportunity_id, subject_id) - the key the table enforces -
+     * so an edit updates the rows that are still there and removes only the
+     * ones the provider actually deleted.
+     *
+     * The bug this replaces was in the form rather than here: existing rows
+     * rendered their minimum grade as a readonly input with no `name`, so it
+     * was never submitted, `minimum_grade` was nullable, and this method
+     * deleted and reinserted the lot. Editing a listing's title therefore
+     * reset every subject rule to "any grade". The form now posts the grade
+     * as an editable named field, and this method no longer destroys a row it
+     * is about to recreate.
+     *
+     * A grade the requirement's own qualification does not award is rejected:
+     * a bar nobody can be measured against is not a rule.
+     */
+    private function saveSubjectRequirements(Opportunity $opportunity, array $requirements): void
+    {
+        $keptIds = [];
+
+        foreach ($requirements as $index => $req) {
+            $qualification = AcademicQualification::find($req['qualification_id'] ?? null);
+            $subject = AcademicSubject::find($req['subject_id'] ?? null);
+
+            if ($qualification === null || $subject === null
+                || (int) $subject->qualification_id !== (int) $qualification->id) {
+                throw ValidationException::withMessages([
+                    "subject_requirements.$index.subject_id" => 'Choose a subject offered under the selected qualification.',
+                ]);
+            }
+
+            $grade = null;
+
+            if (filled($req['minimum_grade'] ?? null)) {
+                // Checked against the subject's own scale where it has one. A
+                // requirement of "6 or better" is meaningful on a Cambridge
+                // IGCSE 9-1 syllabus and meaningless on an A*-G one, even
+                // though both sit under Cambridge IGCSE.
+                $grade = $subject->canonicalGrade($req['minimum_grade']);
+
+                if ($grade === null) {
+                    $awardedBy = $subject->hasOwnScheme() ? $subject->name : $qualification->name;
+
+                    throw ValidationException::withMessages([
+                        "subject_requirements.$index.minimum_grade" => 'Choose a grade that '.$awardedBy
+                            .' awards ('.implode(', ', $subject->grades()).').',
+                    ]);
+                }
+            }
+
+            $requirement = OpportunitySubjectRequirement::updateOrCreate(
+                [
+                    'opportunity_id' => $opportunity->opportunity_id,
+                    'subject_id' => $subject->id,
+                ],
+                [
+                    'qualification_id' => $qualification->id,
+                    'minimum_grade' => $grade,
+                ]
+            );
+
+            $keptIds[] = $requirement->id;
+        }
+
+        $opportunity->subjectRequirements()->whereNotIn('id', $keptIds)->delete();
     }
 }

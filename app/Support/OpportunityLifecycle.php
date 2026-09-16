@@ -85,6 +85,7 @@ final class OpportunityLifecycle
         'max_age',
         'required_province',
         'requires_results_certificate',
+        'subject_requirements',
         'award_amount',
         'award_currency',
         'award_slots',

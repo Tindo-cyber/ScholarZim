@@ -126,7 +126,7 @@
                                 @if($opportunity->min_academic_points)
                                     <li class="d-flex gap-2 align-items-start">
                                         <x-icon name="check" :size="16" class="text-primary mt-1" />
-                                        <span>At least {{ $opportunity->min_academic_points }} A-Level points.</span>
+                                        <span>At least {{ $opportunity->min_academic_points }} ZIMSEC A-Level points (A=5, B=4, C=3, D=2, E=1).</span>
                                     </li>
                                 @endif
                                 @if($opportunity->max_age)
@@ -159,7 +159,40 @@
                                         <span>Proof of academic results must be on your profile before you apply.</span>
                                     </li>
                                 @endif
+                                @if($opportunity->subjectRequirements->isNotEmpty())
+                                    <li class="d-flex gap-2 align-items-start">
+                                        <x-icon name="check" :size="16" class="text-primary mt-1" />
+                                        <span>
+                                            Required subjects:
+                                            @foreach($opportunity->subjectRequirements as $req)
+                                                {{ $req->subject?->name ?? 'Subject' }}
+                                                @if($req->minimum_grade)
+                                                    (minimum {{ $req->minimum_grade }})
+                                                @endif
+                                                @if(!$loop->last)<span class="text-muted">,</span>@endif
+                                            @endforeach
+                                            @if($opportunity->subjectRequirements->isNotEmpty())
+                                                <span class="d-block text-secondary small mt-1">
+                                                    Under {{ $opportunity->subjectRequirements->first()?->qualification?->name ?? 'the stated qualification' }}.
+                                                </span>
+                                            @endif
+                                        </span>
+                                    </li>
+                                @endif
                             </ul>
+                        @else
+                            {{--
+                                Stated as a fact about the listing, not about the reader.
+                                Its absence used to be the only signal, which left "this
+                                provider asked for nothing" looking identical to "you
+                                passed everything they asked". They are different things
+                                and only one of them is a verdict.
+                            --}}
+                            <h2 class="h6 fw-semibold text-uppercase text-secondary mb-2">Who can apply</h2>
+                            <p class="text-secondary mb-4">
+                                This scholarship does not specify entry requirements. Read the description
+                                below for what the provider is looking for - they decide who is awarded.
+                            </p>
                         @endif
 
                         <h2 class="h6 fw-semibold text-uppercase text-secondary mb-2">About this scholarship</h2>
@@ -186,33 +219,17 @@
                     <div class="card-body">
 
                         @if($fit)
-                            @if(! $fit->meetsRequirements())
-                                {{--
-                                    A stated requirement is not met, so no
-                                    percentage is shown at all. A number next to
-                                    "you do not meet this rule" only invites the
-                                    reader to argue with it.
-                                --}}
-                                <div class="alert alert-danger" role="alert">
-                                    <div class="d-flex gap-2 align-items-start">
-                                        <x-icon name="x-circle" :size="20" class="flex-shrink-0 mt-1" />
-                                        <div>
-                                            <div class="fw-semibold mb-1">
-                                                NOT ELIGIBLE
-                                            </div>
-                                            <ul class="mb-0 ps-3 small">
-                                                @foreach($fit->breakdown->unmetRequirements as $requirement)
-                                                    <li>{{ $requirement }}</li>
-                                                @endforeach
-                                            </ul>
-                                            <p class="small mb-0 mt-2">
-                                                <a href="{{ route('applicant.profile') }}">Update your profile</a>
-                                                if any of these are out of date.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            @else
+                            {{--
+                                Eligibility first and on its own terms: which
+                                requirements were met, which were not, or that the
+                                listing set none. The score follows separately below,
+                                and only when the applicant is actually eligible - a
+                                percentage beside "you do not meet this rule" is a
+                                number that invites an argument rather than an answer.
+                            --}}
+                            <x-eligibility-summary :fit="$fit" />
+
+                            @if($fit->meetsRequirements())
                                 <div class="text-center mb-3">
                                     <x-match-score :score="$fit->matchScore"
                                                    :label="$fit->breakdown->confidenceLabel"

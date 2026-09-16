@@ -2,8 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\Academic\AcademicCatalogue;
+use App\Support\EducationLevel;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ApplicantProfile extends Model
 {
@@ -17,17 +20,18 @@ class ApplicantProfile extends Model
         'institution_name',
         'field_of_study',
         'year_of_study',
+        'degree_classification',
         'country',
         'province',
         'locality',
         'settlement_type',
         'date_of_birth',
+        'gender',
         'citizenship',
         'guardian_name',
         'guardian_phone',
         'guardian_relationship',
         'guardian_confirmed_at',
-        'academic_results',
         'biography',
         'results_certificate_path',
         'results_certificate_filename',
@@ -88,18 +92,104 @@ class ApplicantProfile extends Model
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
 
+    public function academicResults(): HasMany
+    {
+        return $this->hasMany(AcademicResult::class, 'profile_id', 'profile_id');
+    }
+
+    public function resultsByQualification(int $qualificationId): HasMany
+    {
+        return $this->hasMany(AcademicResult::class, 'profile_id', 'profile_id')
+            ->where('qualification_id', $qualificationId);
+    }
+
+    /**
+     * Points held under one qualification, by its stable catalogue key.
+     *
+     * There is deliberately no method here that totals points across
+     * qualifications. The one this replaces did exactly that, and summing a
+     * Cambridge grade, an O-Level symbol and a degree class on to a single
+     * scale is how a bar labelled "A-Level points" came to be clearable with
+     * no A-Level at all. Ask for the qualification you mean.
+     */
+    public function pointsForQualification(string $qualificationKey): ?float
+    {
+        $results = $this->relationLoaded('academicResults')
+            ? $this->academicResults
+            : $this->academicResults()->with('qualification')->get();
+
+        $total = null;
+
+        foreach ($results as $result) {
+            if ($result->qualification?->qualification_key !== $qualificationKey) {
+                continue;
+            }
+
+            $points = $result->points();
+
+            if ($points !== null) {
+                $total = ($total ?? 0.0) + $points;
+            }
+        }
+
+        return $total;
+    }
+
+    public function zimsecALevelPoints(): ?float
+    {
+        return $this->pointsForQualification(AcademicCatalogue::ZIMSEC_A_LEVEL);
+    }
+
+    /**
+     * Whether this profile still carries only the old free-text academic
+     * summary, with nothing recorded subject by subject.
+     *
+     * The column is deliberately not parsed into structured results. The text
+     * is whatever the applicant once typed - "13 points at A-Level (Biology A,
+     * Chemistry B, Maths B)" in the best case, and far less in others - and
+     * reading grades out of it with a regular expression is the guesswork this
+     * whole model replaced. Inventing academic facts on an applicant's behalf
+     * is worse than asking them to re-enter four lines.
+     *
+     * So the text is shown back to them verbatim as a prompt, and the profile
+     * reads as incomplete until they record the same results properly.
+     */
+    public function needsAcademicResultsMigration(): bool
+    {
+        return filled($this->academic_results) && ! $this->hasStructuredResults();
+    }
+
+    /** The legacy text, shown back to the applicant so they can copy from it. */
+    public function legacyAcademicResults(): ?string
+    {
+        return filled($this->academic_results) ? trim((string) $this->academic_results) : null;
+    }
+
+    public function hasStructuredResults(): bool
+    {
+        if ($this->profile_id === null) {
+            return false;
+        }
+
+        if ($this->relationLoaded('academicResults')) {
+            return $this->academicResults->isNotEmpty();
+        }
+
+        return $this->academicResults()->exists();
+    }
+
     public function documentPath(string $type): ?string
     {
         $prefix = self::DOCUMENT_TYPES[$type] ?? null;
 
-        return $prefix ? $this->{$prefix . '_path'} : null;
+        return $prefix ? $this->{$prefix.'_path'} : null;
     }
 
     public function documentFilename(string $type): ?string
     {
         $prefix = self::DOCUMENT_TYPES[$type] ?? null;
 
-        return $prefix ? $this->{$prefix . '_filename'} : null;
+        return $prefix ? $this->{$prefix.'_filename'} : null;
     }
 
     public function documentUploadedAt(string $type): mixed
@@ -110,7 +200,7 @@ class ApplicantProfile extends Model
         }
 
         // results uses results_uploaded_at, not results_certificate_uploaded_at.
-        $column = $prefix === 'results_certificate' ? 'results_uploaded_at' : $prefix . '_uploaded_at';
+        $column = $prefix === 'results_certificate' ? 'results_uploaded_at' : $prefix.'_uploaded_at';
 
         return $this->{$column};
     }
@@ -134,7 +224,19 @@ class ApplicantProfile extends Model
      */
     public function hasRequiredAcademicEvidence(): bool
     {
-        return \App\Support\EducationLevel::usesSchoolResults($this->education_level)
+        // A Primary applicant is asked for no document at all - see
+        // requiredDocumentTypes(), which returns an empty list for the
+        // guardian-assisted Form 1 pathway. Reading this as "needs a
+        // transcript" made a Form 1 listing that ticked
+        // requires_results_certificate refuse every Primary pupil for a
+        // document ScholarZim never invites them to upload, and their Grade 7
+        // results - the thing that listing actually cares about - could not
+        // rescue them. An unsatisfiable requirement is not a requirement.
+        if (EducationLevel::isPrimary($this->education_level)) {
+            return true;
+        }
+
+        return EducationLevel::usesSchoolResults($this->education_level)
             ? $this->hasResultsCertificate()
             : $this->hasTranscript();
     }
@@ -148,13 +250,13 @@ class ApplicantProfile extends Model
      */
     public function requiredDocumentTypes(): array
     {
-        if (\App\Support\EducationLevel::isPrimary($this->education_level)) {
+        if (EducationLevel::isPrimary($this->education_level)) {
             // A Primary applicant applies through the guardian-assisted Form 1
             // pathway; no document here is required to start that.
             return [];
         }
 
-        if (\App\Support\EducationLevel::usesSchoolResults($this->education_level)) {
+        if (EducationLevel::usesSchoolResults($this->education_level)) {
             return ['results'];
         }
 
@@ -184,7 +286,7 @@ class ApplicantProfile extends Model
      */
     public function completionChecklist(): array
     {
-        $isPrimary = \App\Support\EducationLevel::isPrimary($this->education_level);
+        $isPrimary = EducationLevel::isPrimary($this->education_level);
 
         $items = [
             ['label' => 'Education level', 'value' => $this->education_level, 'anchor' => 'education_level',
@@ -197,7 +299,7 @@ class ApplicantProfile extends Model
         // Primary or O/A-Level applicant has no "field" to state, and asking
         // for one anyway is exactly the university-shaped form the redesign
         // was about removing.
-        if (\App\Support\EducationLevel::usesFieldOfStudy($this->education_level)) {
+        if (EducationLevel::usesFieldOfStudy($this->education_level)) {
             $items[] = ['label' => 'Field of study', 'value' => $this->field_of_study, 'anchor' => 'field_of_study',
                 'hint' => 'Worth up to a quarter of your ScholarFit score.'];
         }
@@ -213,18 +315,26 @@ class ApplicantProfile extends Model
             $items[] = ['label' => 'Guardian details', 'value' => $this->guardian_name, 'anchor' => 'guardian',
                 'hint' => 'Required for the Form 1 pathway - Primary applicants apply with a guardian.'];
         } else {
-            $items[] = ['label' => 'Academic results', 'value' => $this->academic_results, 'anchor' => 'academic_results',
-                'hint' => 'Your points or degree class, in your own words.'];
+            // Any structured result counts, whatever the board. Asking a
+            // Cambridge A-Level applicant for ZIMSEC A-Level results - or an
+            // O-Level applicant for A-Level ones - would mark a complete
+            // profile incomplete for holding the wrong country's certificate.
+            // A tertiary applicant's degree classification is the same fact in
+            // a different shape, so it counts here too.
+            $hasAcademicFact = $this->hasStructuredResults() || filled($this->degree_classification);
+
+            $items[] = ['label' => 'Academic results', 'value' => $hasAcademicFact ?: null, 'anchor' => 'academic-results',
+                'hint' => 'Your subjects and grades, entered one by one.'];
         }
 
         $items[] = ['label' => 'Short biography', 'value' => $this->biography, 'anchor' => 'biography',
             'hint' => 'The first thing a provider reads about you.'];
 
         if (! $isPrimary) {
-            $documentLabel = \App\Support\EducationLevel::usesSchoolResults($this->education_level)
+            $documentLabel = EducationLevel::usesSchoolResults($this->education_level)
                 ? 'Results certificate'
                 : 'Academic transcript';
-            $documentValue = \App\Support\EducationLevel::usesSchoolResults($this->education_level)
+            $documentValue = EducationLevel::usesSchoolResults($this->education_level)
                 ? $this->results_certificate_path
                 : $this->transcript_path;
 
