@@ -415,6 +415,119 @@ class AcademicProfileTest extends TestCase
         $this->assertSame(['9', '8', '7', '6', '5', '4', '3', '2', '1', 'U'], $nineToOne['grades']);
     }
 
+    // ------------------------------------- qualifications offered by level --
+
+    /**
+     * A Grade 7 pupil has not sat O-Level, so they are not offered it. The
+     * editor previously listed all eight qualifications to everybody, which
+     * invited a record that could not be true.
+     */
+    public function test_a_primary_applicant_is_only_offered_primary_qualifications(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+        $profile->academicResults()->delete();
+
+        $offered = $profile->fresh()->selectableQualifications()->pluck('qualification_key')->all();
+
+        $this->assertSame([AcademicCatalogue::ZIMBABWE_PRIMARY], $offered);
+    }
+
+    public function test_the_profile_form_does_not_offer_a_primary_applicant_o_level_subjects(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail()->academicResults()->delete();
+
+        $html = $this->actingAs($pupil)->get('/applicant/profile')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Zimbabwe Primary (Grade 7)', $html);
+        $this->assertStringNotContainsString('ZIMSEC Ordinary Level', $html);
+        $this->assertStringNotContainsString('ZIMSEC Advanced Level', $html);
+        $this->assertStringNotContainsString('Cambridge International A Level', $html);
+    }
+
+    /** And the server refuses it too, not merely the form. */
+    public function test_a_primary_applicant_cannot_post_an_o_level_result(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+        $profile->academicResults()->delete();
+
+        $oLevel = AcademicQualification::findByKey(AcademicCatalogue::ZIMSEC_O_LEVEL);
+
+        $this->actingAs($pupil)
+            ->post('/applicant/profile', [
+                'full_name' => $pupil->full_name,
+                'education_level' => EducationLevel::PRIMARY,
+                'province' => 'Harare',
+                'guardian_name' => 'Rudo Marufu',
+                'guardian_phone' => '+263 772 111 222',
+                'guardian_relationship' => 'Mother',
+                'academic_results_submitted' => '1',
+                'academic_subject_results' => [[
+                    'qualification_id' => $oLevel->id,
+                    'subject_id' => $this->subject($oLevel, 'Mathematics')->id,
+                    'result' => 'A',
+                ]],
+            ])
+            ->assertSessionHasErrors('academic_subject_results.0.qualification_id');
+
+        $this->assertSame(0, $profile->fresh()->academicResults()->count());
+    }
+
+    /**
+     * Levels at or below are offered, because holding O-Level results is the
+     * ordinary case for an A-Level applicant rather than an exception.
+     */
+    public function test_an_a_level_applicant_is_offered_primary_o_level_and_a_level(): void
+    {
+        $offered = $this->profile()->selectableQualifications()->pluck('qualification_key')->all();
+
+        $this->assertContains(AcademicCatalogue::ZIMSEC_O_LEVEL, $offered);
+        $this->assertContains(AcademicCatalogue::ZIMSEC_A_LEVEL, $offered);
+        $this->assertContains(AcademicCatalogue::CAMBRIDGE_A_LEVEL, $offered);
+        $this->assertContains(AcademicCatalogue::ZIMBABWE_PRIMARY, $offered);
+
+        // A degree is above them, so it is not offered.
+        $this->assertNotContains(AcademicCatalogue::TERTIARY, $offered);
+    }
+
+    /**
+     * An applicant who lowers their stated level keeps the results they already
+     * recorded selectable, so a later save cannot silently drop them.
+     */
+    public function test_results_already_recorded_stay_selectable_after_a_level_change(): void
+    {
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields() + $this->academicFields([
+            ['qualification' => $this->aLevel, 'subject' => 'Mathematics', 'result' => 'B'],
+        ]))->assertSessionHasNoErrors();
+
+        // Now they say they are only at O-Level after all.
+        $this->profile()->forceFill(['education_level' => EducationLevel::O_LEVEL])->save();
+
+        $offered = $this->profile()->fresh()->selectableQualifications()->pluck('qualification_key')->all();
+
+        $this->assertContains(AcademicCatalogue::ZIMSEC_A_LEVEL, $offered, 'existing results stay selectable');
+
+        // And resubmitting them is accepted rather than refused.
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields([
+            'education_level' => EducationLevel::O_LEVEL,
+        ]) + $this->academicFields([
+            ['qualification' => $this->aLevel, 'subject' => 'Mathematics', 'result' => 'B'],
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $this->profile()->academicResults()->count());
+    }
+
+    /** An applicant who has not stated a level yet is not filtered on anything. */
+    public function test_an_applicant_with_no_stated_level_is_offered_everything(): void
+    {
+        $profile = $this->profile();
+        $profile->forceFill(['education_level' => null])->save();
+
+        $this->assertCount(8, $profile->fresh()->selectableQualifications());
+    }
+
     // ---------------------------------------------------- legacy free text --
 
     /**

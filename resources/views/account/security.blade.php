@@ -115,6 +115,29 @@
                 </div>
             </div>
 
+            @if($user->isAdmin())
+                {{--
+                    An administrator cannot delete their own account -
+                    AccountDeletionService has always refused it, and the super
+                    admin is refused outright. Rendering the form anyway made a
+                    control that looks live and only fails after the password
+                    and email have been typed, which reads as a bug at best and
+                    invites an administrator to try locking themselves out at
+                    worst. The panel is not shown at all.
+                --}}
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Deleting this account</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary mb-0">
+                            Administrator accounts cannot delete themselves. Another administrator
+                            removes them from the admin panel, so the platform is never left without
+                            someone who can manage it.
+                        </p>
+                    </div>
+                </div>
+            @else
             <div class="card border-danger">
                 <div class="card-header bg-danger-subtle">
                     <h2 class="h6 fw-semibold mb-0">Delete this account</h2>
@@ -155,6 +178,7 @@
                     </div>
                 </div>
             </div>
+            @endif
 
         </div>
     </div>

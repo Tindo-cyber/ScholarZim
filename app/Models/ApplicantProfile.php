@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
 use Illuminate\Database\Eloquent\Model;
@@ -138,6 +139,64 @@ class ApplicantProfile extends Model
     public function zimsecALevelPoints(): ?float
     {
         return $this->pointsForQualification(AcademicCatalogue::ZIMSEC_A_LEVEL);
+    }
+
+    /**
+     * The qualifications this applicant may record results under.
+     *
+     * Bounded by the level they are at: a Grade 7 pupil has not sat O-Level, so
+     * offering them O-Level subjects invites a record that cannot be true. The
+     * editor previously listed all eight qualifications to everybody, which is
+     * what this fixes.
+     *
+     * Anything at or below their level is offered, so an A-Level applicant can
+     * still record the O-Level results they hold - that is the ordinary case,
+     * not an exception. A qualification they already have results under is
+     * always included even if it now sits above their level, because an
+     * applicant who edits their level downwards must not find existing results
+     * unselectable and silently lose them on the next save.
+     *
+     * An applicant who has not stated a level yet is filtered on nothing: there
+     * is no claim to contradict.
+     */
+    public function selectableQualifications(): \Illuminate\Database\Eloquent\Collection
+    {
+        $active = AcademicQualification::query()
+            ->active()
+            ->with('activeSubjects')
+            ->orderBy('ordering')
+            ->get();
+
+        $rung = EducationLadder::rung(EducationLevel::canonical($this->education_level));
+
+        if ($rung === null) {
+            return $active;
+        }
+
+        $alreadyHeld = $this->relationLoaded('academicResults')
+            ? $this->academicResults->pluck('qualification_id')->unique()->all()
+            : $this->academicResults()->distinct()->pluck('qualification_id')->all();
+
+        return $active->filter(function (AcademicQualification $qualification) use ($rung, $alreadyHeld) {
+            if (in_array((int) $qualification->id, array_map('intval', $alreadyHeld), true)) {
+                return true;
+            }
+
+            $qualificationRung = EducationLadder::rung(
+                EducationLevel::canonical($qualification->education_level)
+            );
+
+            // A qualification with no placeable level is left offered rather
+            // than hidden - unknown is not a reason to take a choice away.
+            return $qualificationRung === null || $qualificationRung <= $rung;
+        })->values();
+    }
+
+    /** Whether this applicant may record a result under a given qualification. */
+    public function allowsQualification(AcademicQualification $qualification): bool
+    {
+        return $this->selectableQualifications()
+            ->contains(fn (AcademicQualification $q) => (int) $q->id === (int) $qualification->id);
     }
 
     /**

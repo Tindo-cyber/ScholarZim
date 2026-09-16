@@ -11,6 +11,7 @@ use App\Services\OpportunityService;
 use App\Services\SavedScholarshipService;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\FormOptions;
+use App\Support\ZimbabweLocalities;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\UnauthorizedException;
@@ -94,6 +95,8 @@ class OpportunityController extends Controller
             'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
         ]);
 
+        $this->assertTargetLocalityMatchesProvince($data);
+
         try {
             $opportunity = $this->opportunityService->create($data, $request->user());
             $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
@@ -173,6 +176,8 @@ class OpportunityController extends Controller
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
+        $this->assertTargetLocalityMatchesProvince($data);
+
         try {
             $opportunity = $this->opportunityService->update($id, $data, $request->user(), $data['reason']);
             $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
@@ -216,6 +221,28 @@ class OpportunityController extends Controller
         return redirect()
             ->route('provider.dashboard')
             ->with('successMessage', '"' . $opportunity->title . '" was withdrawn.');
+    }
+
+    /**
+     * A listing cannot target a town that is not in the province it restricts
+     * to. Gwanda is in Matabeleland South, so a Midlands-only award targeting
+     * Gwanda would exclude everyone it meant to reach.
+     *
+     * Only towns ZimbabweLocalities recognises are checked; an unfamiliar name
+     * is accepted, which is why the field is free text in the first place.
+     *
+     * @throws ValidationException
+     */
+    private function assertTargetLocalityMatchesProvince(array $data): void
+    {
+        $reason = ZimbabweLocalities::mismatchReason(
+            $data['target_locality'] ?? null,
+            $data['required_province'] ?? null
+        );
+
+        if ($reason !== null) {
+            throw ValidationException::withMessages(['target_locality' => $reason]);
+        }
     }
 
     /** The qualification catalogue as the subject picker renders it. */

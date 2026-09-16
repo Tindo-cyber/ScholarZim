@@ -136,11 +136,33 @@ class AccountSecurityTest extends TestCase
         $this->assertDatabaseMissing('users', ['user_id' => $provider->user_id]);
     }
 
-    public function test_an_administrator_cannot_self_delete_via_the_account_page(): void
+    /**
+     * The panel is not offered to an administrator at all.
+     *
+     * This asserted the opposite until it was pointed out that showing the form
+     * is itself the bug: AccountDeletionService has always refused an
+     * administrator self-delete, so rendering a button, a password field and an
+     * email confirmation only to refuse the submission is a control that looks
+     * live and is not. An administrator should not be invited to try locking
+     * themselves out of the platform.
+     */
+    public function test_an_administrator_is_not_offered_the_delete_panel(): void
     {
         $admin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
 
-        $this->actingAs($admin)
+        $response = $this->actingAs($admin)->get('/account/security')->assertOk();
+
+        $response->assertDontSee('Delete my account');
+        $response->assertDontSee('Permanently delete my account');
+        $response->assertSee('Administrator accounts cannot delete themselves');
+    }
+
+    /** Every other role still gets it - this was never a change for them. */
+    public function test_an_applicant_is_still_offered_the_delete_panel(): void
+    {
+        $applicant = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
+
+        $this->actingAs($applicant)
             ->get('/account/security')
             ->assertOk()
             ->assertSee('Delete my account');
@@ -161,7 +183,8 @@ class AccountSecurityTest extends TestCase
         $this->assertDatabaseHas('users', ['user_id' => $admin->user_id]);
     }
 
-    public function test_an_administrator_self_delete_form_is_visible_but_submission_fails(): void
+    /** The form is gone, and the service still refuses the request anyway. */
+    public function test_an_administrator_self_delete_is_refused_by_the_service_too(): void
     {
         $superAdmin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
         $adminRole = $superAdmin->role;

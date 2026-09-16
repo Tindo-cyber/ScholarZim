@@ -12,6 +12,7 @@ use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
 use App\Support\FormOptions;
 use App\Support\Gender;
+use App\Support\ZimbabweLocalities;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -28,11 +29,11 @@ class ProfileController extends Controller
         $profile = $this->profileService->forUser($user);
         $profile->loadMissing(['academicResults.qualification', 'academicResults.subject']);
 
-        $qualifications = AcademicQualification::query()
-            ->active()
-            ->with('activeSubjects')
-            ->orderBy('ordering')
-            ->get();
+        // Only the qualifications this applicant could actually have sat. A
+        // Grade 7 pupil was previously offered O-Level and A-Level subjects,
+        // which invites a record that cannot be true - see
+        // ApplicantProfile::selectableQualifications().
+        $qualifications = $profile->selectableQualifications();
 
         return view('applicant.profile', [
             'profile' => $profile,
@@ -131,6 +132,7 @@ class ProfileController extends Controller
             ->after(function (Validator $validator) use ($data) {
                 $this->assertGuardianRequirementsMet($validator, $data);
                 $this->assertAgeIsConsistent($validator, $data);
+                $this->assertLocalityMatchesProvince($validator, $data);
             })
             ->validate();
 
@@ -179,6 +181,29 @@ class ProfileController extends Controller
 
         if (blank($data['guardian_relationship'] ?? null)) {
             $validator->errors()->add('guardian_relationship', 'State the guardian\'s relationship to the applicant.');
+        }
+    }
+
+    /**
+     * A town and a province that cannot both be true.
+     *
+     * Gwanda is in Matabeleland South; a profile claiming it under Midlands is
+     * stating something false about where the applicant lives, and would be
+     * matched against province-restricted awards on the wrong province.
+     *
+     * Only a locality ZimbabweLocalities recognises is checked. An unfamiliar
+     * name is left alone - this field is free text precisely so a growth point
+     * nobody catalogued is still a valid answer.
+     */
+    private function assertLocalityMatchesProvince(Validator $validator, array $data): void
+    {
+        $reason = ZimbabweLocalities::mismatchReason(
+            $data['locality'] ?? null,
+            $data['province'] ?? null
+        );
+
+        if ($reason !== null) {
+            $validator->errors()->add('locality', $reason);
         }
     }
 

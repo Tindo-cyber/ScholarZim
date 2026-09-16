@@ -115,12 +115,24 @@ class ApplicantProfileService
     {
         $profile = $this->forUser($user);
 
-        DB::transaction(function () use ($profile, $rows, $user) {
+        // Resolved once rather than per row: the allowed set is the same for
+        // every row in a submission, and asking the profile for it each time
+        // would re-query the catalogue up to forty times for one save.
+        $allowedQualificationIds = $profile->selectableQualifications()
+            ->map(fn (AcademicQualification $q) => (int) $q->id)
+            ->all();
+
+        DB::transaction(function () use ($profile, $rows, $user, $allowedQualificationIds) {
             $keptIds = [];
             $seen = [];
 
             foreach ($rows as $index => $row) {
-                [$qualification, $subject, $grade] = $this->resolveResultRow($row, $index);
+                [$qualification, $subject, $grade] = $this->resolveResultRow(
+                    $profile,
+                    $allowedQualificationIds,
+                    $row,
+                    $index
+                );
 
                 // Belt and braces alongside the unique key: a duplicate pair in
                 // one submission would otherwise upsert the same row twice and
@@ -178,13 +190,30 @@ class ApplicantProfileService
      *
      * @throws ValidationException
      */
-    private function resolveResultRow(array $row, int|string $index): array
-    {
+    /** @param  array<int, int>  $allowedQualificationIds */
+    private function resolveResultRow(
+        ApplicantProfile $profile,
+        array $allowedQualificationIds,
+        array $row,
+        int|string $index,
+    ): array {
         $qualification = AcademicQualification::find($row['qualification_id'] ?? null);
 
         if ($qualification === null || ! $qualification->is_active) {
             throw ValidationException::withMessages([
                 "academic_subject_results.$index.qualification_id" => 'Choose a qualification from the list.',
+            ]);
+        }
+
+        // The form only offers qualifications at or below the applicant's own
+        // level, and the server holds the same line: a Primary applicant
+        // posting an O-Level result is stating something they cannot have.
+        if (! in_array((int) $qualification->id, $allowedQualificationIds, true)) {
+            throw ValidationException::withMessages([
+                "academic_subject_results.$index.qualification_id" => $qualification->name
+                    .' is above your current education level ('
+                    .\App\Support\EducationLevel::label($profile->education_level)
+                    .'). Update your education level first if you have sat it.',
             ]);
         }
 
