@@ -171,14 +171,9 @@
                                               hint="For example: Mother, Father, Aunt, Guardian." />
                             </div>
                         </div>
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="field-guardian_confirmed"
-                                   name="guardian_confirmed" value="1"
-                                   @checked(old('guardian_confirmed', $profile->guardian_confirmed_at !== null))>
-                            <label class="form-check-label small" for="field-guardian_confirmed">
-                                I confirm a parent or guardian is aware of and involved in this application.
-                            </label>
-                        </div>
+                        <x-form.checkbox name="guardian_confirmed" wrapper-class=""
+                                         label="I confirm a parent or guardian is aware of and involved in this application."
+                                         :checked="$profile->guardian_confirmed_at !== null" />
                     </div>
                 </div>
 
@@ -374,7 +369,7 @@
                                          :value="$profile->biography" :rows="5"
                                          hint="Providers read this alongside your applications." />
 
-                        <button class="btn btn-primary" type="submit">Save profile</button>
+                        <x-submit-button label="Save profile" busy-label="Saving..." />
                     </div>
                 </div>
             </form>

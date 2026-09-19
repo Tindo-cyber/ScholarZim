@@ -95,12 +95,18 @@
                                             </form>
                                         @endif
 
-                                        <form method="POST" action="{{ route('admin.users.destroy', $user->user_id) }}"
-                                              class="m-0"
-                                              onsubmit="return confirm('Delete {{ $user->email }} permanently?');">
-                                            @csrf
-                                            <button class="btn btn-sm btn-outline-danger" type="submit">Delete</button>
-                                        </form>
+                                        {{--
+                                            This was window.confirm(), which could
+                                            name the email address and nothing else -
+                                            not what deletion takes with it, and not
+                                            that it cannot be undone.
+                                        --}}
+                                        <x-confirm-dialog :id="'delete-user-' . $user->user_id"
+                                                          :action="route('admin.users.destroy', $user->user_id)"
+                                                          :title="'Delete ' . $user->email . '?'"
+                                                          trigger-label="Delete"
+                                                          confirm-label="Delete permanently"
+                                                          message="This removes the account and everything attached to it - profile, applications, saved scholarships and notifications. It cannot be undone. The audit trail is kept." />
                                     </div>
                                 @endunless
                             </td>

@@ -143,16 +143,17 @@
                                              hint="The applicant sees this exactly as you write it." />
 
                             <div class="d-grid gap-2">
-                                <button class="btn btn-success d-inline-flex align-items-center justify-content-center gap-2"
-                                        type="submit" name="status"
-                                        value="{{ \App\Support\ApplicationStatus::ACCEPTED }}">
-                                    <x-icon name="check-circle" :size="16" /> Accept
-                                </button>
-                                <button class="btn btn-outline-danger d-inline-flex align-items-center justify-content-center gap-2"
-                                        type="submit" name="status"
-                                        value="{{ \App\Support\ApplicationStatus::REJECTED }}">
-                                    <x-icon name="x-circle" :size="16" /> Reject
-                                </button>
+                                {{-- Two submits in one form, each with its own value. The busy
+                                     state follows event.submitter, so only the one that was
+                                     pressed spins. --}}
+                                <x-submit-button tone="success" icon="check-circle" label="Accept"
+                                                 busy-label="Accepting..."
+                                                 name="status"
+                                                 :value="\App\Support\ApplicationStatus::ACCEPTED" />
+                                <x-submit-button tone="outline-danger" icon="x-circle" label="Reject"
+                                                 busy-label="Rejecting..."
+                                                 name="status"
+                                                 :value="\App\Support\ApplicationStatus::REJECTED" />
                             </div>
                         </form>
                     @else

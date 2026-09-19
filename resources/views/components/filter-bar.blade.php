@@ -145,7 +145,7 @@
                 is the difference between narrowing a search and starting over.
             --}}
             @foreach($facets as $key => $value)
-                <a class="badge rounded-pill bg-primary-subtle text-primary text-decoration-none d-inline-flex align-items-center gap-1"
+                <a class="sz-filter-chip badge rounded-pill bg-primary-subtle text-primary text-decoration-none d-inline-flex align-items-center gap-1"
                    href="{{ $action }}?{{ http_build_query(collect($filters)->filter(fn ($v) => filled($v))->except($key)->all()) }}"
                    aria-label="Remove the {{ $chipLabels[$key] ?? $key }} filter">
                     <span>{{ $chipLabels[$key] ?? $key }}: {{ $key === 'renewable_only' ? 'Yes' : $value }}</span>

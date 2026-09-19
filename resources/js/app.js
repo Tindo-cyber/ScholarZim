@@ -11,6 +11,7 @@
  */
 import './scholarzim';
 import './navigation';
+import './submit-state';
 import './profile-form';
 import './academic-results';
 import './scholarfit-weights';

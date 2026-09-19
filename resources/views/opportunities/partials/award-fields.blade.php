@@ -9,7 +9,6 @@
      * back to old() and renders empty.
      */
     $value = static fn (string $field, $fallback = null) => $opportunity?->{$field} ?? $fallback;
-    $checked = static fn (string $field) => (bool) old($field, $opportunity?->{$field} ?? false);
 @endphp
 
 <div class="card mb-4">
@@ -50,13 +49,8 @@
             </div>
 
             <div class="col-md-4 d-flex align-items-center">
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="field-is_renewable"
-                           name="is_renewable" value="1" @checked($checked('is_renewable'))>
-                    <label class="form-check-label" for="field-is_renewable">
-                        Renewable each year
-                    </label>
-                </div>
+                <x-form.checkbox name="is_renewable" label="Renewable each year"
+                                 :checked="(bool) $value('is_renewable', false)" />
             </div>
         </div>
     </div>
@@ -109,17 +103,10 @@
                                placeholder="No restriction" />
             </div>
             <div class="col-12">
-                <div class="form-check mb-0">
-                    <input class="form-check-input" type="checkbox" id="field-requires_results_certificate"
-                           name="requires_results_certificate" value="1"
-                           @checked($checked('requires_results_certificate'))>
-                    <label class="form-check-label" for="field-requires_results_certificate">
-                        Proof of academic results must be on file before applying
-                        <span class="d-block text-secondary">
-                            A results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants.
-                        </span>
-                    </label>
-                </div>
+                <x-form.checkbox name="requires_results_certificate" wrapper-class="mb-0"
+                                 label="Proof of academic results must be on file before applying"
+                                 hint="A results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants."
+                                 :checked="(bool) $value('requires_results_certificate', false)" />
             </div>
         </div>
     </div>

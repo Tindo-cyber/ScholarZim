@@ -115,41 +115,14 @@
                                             <button class="btn btn-sm btn-success" type="submit">Approve</button>
                                         </form>
 
-                                        <button class="btn btn-sm btn-outline-danger" type="button"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#decline-{{ $opportunity->opportunity_id }}">
-                                            Decline
-                                        </button>
-                                    </div>
-
-                                    <div class="modal fade text-start" id="decline-{{ $opportunity->opportunity_id }}"
-                                         tabindex="-1" aria-hidden="true">
-                                        <div class="modal-dialog">
-                                            <form method="POST"
-                                                  action="{{ route('admin.moderation.reject', $opportunity->opportunity_id) }}"
-                                                  class="modal-content">
-                                                @csrf
-                                                <div class="modal-header">
-                                                    <h3 class="modal-title h6">Decline "{{ $opportunity->title }}"</h3>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                            aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <label class="form-label"
-                                                           for="reason-{{ $opportunity->opportunity_id }}">
-                                                        Reason (sent to the provider)
-                                                    </label>
-                                                    <textarea class="form-control" rows="4" required
-                                                              id="reason-{{ $opportunity->opportunity_id }}"
-                                                              name="reason"></textarea>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-outline-secondary"
-                                                            data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn btn-danger">Decline listing</button>
-                                                </div>
-                                            </form>
-                                        </div>
+                                        <x-confirm-dialog :id="'decline-' . $opportunity->opportunity_id"
+                                                          :action="route('admin.moderation.reject', $opportunity->opportunity_id)"
+                                                          :title="'Decline: ' . $opportunity->title"
+                                                          trigger-label="Decline"
+                                                          confirm-label="Decline listing">
+                                            <x-form.textarea name="reason" :id="'reason-' . $opportunity->opportunity_id"
+                                                             label="Reason (sent to the provider)" :rows="4" required />
+                                        </x-confirm-dialog>
                                     </div>
                                 </td>
                             </tr>
@@ -233,40 +206,14 @@
                                             <button class="btn btn-sm btn-success" type="submit">Approve</button>
                                         </form>
 
-                                        <button class="btn btn-sm btn-outline-danger" type="button"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#reject-provider-{{ $profile->user_id }}">
-                                            Reject
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div class="modal fade" id="reject-provider-{{ $profile->user_id }}"
-                                     tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <form method="POST"
-                                              action="{{ route('admin.providers.reject', $profile->user_id) }}"
-                                              class="modal-content">
-                                            @csrf
-                                            <div class="modal-header">
-                                                <h3 class="modal-title h6">Reject {{ $profile->user?->displayName() }}</h3>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                        aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <label class="form-label" for="provider-reason-{{ $profile->user_id }}">
-                                                    Reason (sent to the organisation)
-                                                </label>
-                                                <textarea class="form-control" rows="4" required
-                                                          id="provider-reason-{{ $profile->user_id }}"
-                                                          name="reason"></textarea>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-outline-secondary"
-                                                        data-bs-dismiss="modal">Cancel</button>
-                                                <button type="submit" class="btn btn-danger">Reject provider</button>
-                                            </div>
-                                        </form>
+                                        <x-confirm-dialog :id="'reject-provider-' . $profile->user_id"
+                                                          :action="route('admin.providers.reject', $profile->user_id)"
+                                                          :title="'Reject ' . $profile->user?->displayName()"
+                                                          trigger-label="Reject"
+                                                          confirm-label="Reject provider">
+                                            <x-form.textarea name="reason" :id="'provider-reason-' . $profile->user_id"
+                                                             label="Reason (sent to the organisation)" :rows="4" required />
+                                        </x-confirm-dialog>
                                     </div>
                                 </div>
                             </li>

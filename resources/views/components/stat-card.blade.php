@@ -24,7 +24,7 @@
             <div class="fs-3 fw-bold lh-1 my-1">{{ $value }}</div>
 
             @if(!is_null($progress))
-                <div class="progress mt-2" style="height: .375rem;" role="progressbar"
+                <div class="progress mt-2 sz-progress-thin" role="progressbar"
                      aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"
                      aria-label="{{ $label }} progress">
                     <div class="progress-bar bg-{{ $tone }}" style="width: {{ max(0, min(100, $progress)) }}%"></div>

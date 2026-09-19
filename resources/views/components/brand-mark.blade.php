@@ -1,7 +1,7 @@
 @props(['tone' => 'primary'])
 
 @php
-    $fill = $tone === 'light' ? '#ffffff' : 'var(--primary-color)';
+    $fill = $tone === 'light' ? '#ffffff' : 'var(--sz-primary)';
 @endphp
 
 {{-- Graduation cap over an upward chevron: study plus progression. --}}

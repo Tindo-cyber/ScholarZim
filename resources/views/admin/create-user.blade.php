@@ -34,7 +34,7 @@
                         </div>
 
                         <div class="d-flex flex-wrap gap-2">
-                            <button class="btn btn-primary" type="submit">Create account</button>
+                            <x-submit-button label="Create account" busy-label="Creating..." />
                             <a class="btn btn-outline-secondary" href="{{ route('admin.users.index') }}">Cancel</a>
                         </div>
                     </form>

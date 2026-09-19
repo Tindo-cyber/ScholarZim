@@ -29,7 +29,7 @@
                         <x-form.input name="password_confirmation" label="Confirm new password" type="password" required
                                       autocomplete="new-password" />
 
-                        <button class="btn btn-primary" type="submit">Update password</button>
+                        <x-submit-button label="Update password" busy-label="Updating..." />
                     </form>
                 </div>
             </div>
@@ -51,7 +51,7 @@
                                       required autocomplete="current-password"
                                       id="logout-others-current-password" />
 
-                        <button class="btn btn-outline-primary" type="submit">Sign out all other sessions</button>
+                        <x-submit-button label="Sign out all other sessions" tone="outline-primary" busy-label="Signing out..." />
                     </form>
                 </div>
             </div>
@@ -76,18 +76,13 @@
                             'email_notify_scholarships' => ['Scholarships', 'New listings that match you, and deadline reminders.'],
                             'email_notify_system' => ['System', 'Account, verification, and administrative messages.'],
                         ] as $field => [$label, $help])
-                            <div class="form-check form-switch mb-3">
-                                <input class="form-check-input" type="checkbox" role="switch"
-                                       id="{{ $field }}" name="{{ $field }}" value="1"
-                                       @checked($user->{$field})>
-                                <label class="form-check-label" for="{{ $field }}">
-                                    <span class="fw-semibold d-block">{{ $label }}</span>
-                                    <span class="small text-secondary">{{ $help }}</span>
-                                </label>
-                            </div>
+                            <x-form.checkbox :name="$field" :id="$field" switch
+                                             :checked="$user->{$field}" :hint="$help">
+                                <span class="fw-semibold d-block">{{ $label }}</span>
+                            </x-form.checkbox>
                         @endforeach
 
-                        <button class="btn btn-primary" type="submit">Save preferences</button>
+                        <x-submit-button label="Save preferences" busy-label="Saving..." />
                     </form>
                 </div>
             </div>
@@ -163,7 +158,7 @@
                                           required :placeholder="$user->email"
                                           hint="A password alone is muscle memory; this is not reversible." />
 
-                            <button class="btn btn-danger" type="submit">Permanently delete my account</button>
+                            <x-submit-button label="Permanently delete my account" tone="danger" busy-label="Deleting..." />
                         </form>
                     </div>
                 </div>

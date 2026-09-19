@@ -1,6 +1,14 @@
 @props(['name', 'label' => null, 'value' => null, 'rows' => 4, 'hint' => null, 'required' => false])
 
 @php
+    /*
+     * except('id'): $attributes still holds the id that $id was just read from,
+     * so merging the bag straight onto the control printed id="..." twice on the
+     * same tag whenever a caller passed one. Browsers honour the first and carry
+     * on, which is why it went unnoticed - but it is invalid HTML, and a
+     * duplicate id is exactly the sort of thing a screen reader resolves
+     * differently from the browser.
+     */
     $id = $attributes->get('id', 'field-' . $name);
     $current = old($name, $value);
     $invalid = $errors->has($name);
@@ -21,7 +29,7 @@
         </label>
     @endif
 
-    <textarea {{ $attributes->merge(['class' => 'form-control' . ($invalid ? ' is-invalid' : '')]) }}
+    <textarea {{ $attributes->except('id')->merge(['class' => 'form-control' . ($invalid ? ' is-invalid' : '')]) }}
               id="{{ $id }}"
               name="{{ $name }}"
               rows="{{ $rows }}"

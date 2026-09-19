@@ -429,11 +429,25 @@ main {
     height: 4rem;
 }
 
+/*
+ * Size comes from a custom property rather than an inline width/height pair,
+ * so the three sizes live here and the component only names which one it wants.
+ */
 .sz-avatar {
+    width: var(--sz-avatar-size, 2.5rem);
+    height: var(--sz-avatar-size, 2.5rem);
     background: var(--sz-primary);
     color: var(--sz-on-primary);
     font-size: .8rem;
     letter-spacing: .02em;
+}
+
+.sz-avatar--sm {
+    --sz-avatar-size: 2rem;
+}
+
+.sz-avatar--lg {
+    --sz-avatar-size: 3.25rem;
 }
 
 /* Two-line description clamp on listing cards. */
@@ -442,6 +456,49 @@ main {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* ---------- Shared components ---------- */
+
+/*
+ * A submit button that is working.
+ *
+ * pointer-events rather than [disabled]: a disabled submit button can lose its
+ * own name and value from the request it is submitting, and the double-press
+ * this guards against is already handled by the flag in
+ * resources/js/submit-state.js. The button stays in the accessibility tree and
+ * carries aria-busy, so a screen reader is told what a sighted reader can see.
+ */
+.btn[data-sz-submit].is-busy {
+    pointer-events: none;
+    opacity: .75;
+}
+
+/*
+ * A measure on an empty state's explanation, and on a stat card's progress
+ * rail. Both were inline styles repeated in the component; they are the same
+ * numbers, now named once.
+ */
+.sz-empty-message {
+    max-width: 28rem;
+}
+
+.sz-progress-thin {
+    height: .375rem;
+}
+
+/*
+ * A filter chip is a link that removes one facet. The hover state is what says
+ * so: without it the chips read as labels rather than as controls.
+ */
+.sz-filter-chip {
+    transition: background-color var(--sz-transition-fast), color var(--sz-transition-fast);
+}
+
+.sz-filter-chip:hover,
+.sz-filter-chip:focus-visible {
+    background: var(--sz-primary) !important;
+    color: var(--sz-on-primary) !important;
 }
 
 /* ---------- Application timeline ---------- */

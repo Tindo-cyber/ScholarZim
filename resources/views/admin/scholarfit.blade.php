@@ -83,7 +83,7 @@
                 </div>
 
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary btn-lg" type="submit">Save weights</button>
+                    <x-submit-button label="Save weights" size="lg" busy-label="Saving..." />
                     <a class="btn btn-outline-secondary btn-lg" href="{{ route('admin.dashboard') }}">Cancel</a>
                 </div>
             </form>

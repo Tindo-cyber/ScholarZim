@@ -21,18 +21,10 @@
         <x-form.input name="password_confirmation" label="Confirm password" type="password" required
                       autocomplete="new-password" />
 
-        <div class="form-check mb-4">
-            <input class="form-check-input @error('terms') is-invalid @enderror" type="checkbox"
-                   name="terms" id="terms" value="1" @checked(old('terms')) required>
-            <label class="form-check-label" for="terms">
-                I agree to the ScholarZim terms of use and privacy policy.
-            </label>
-            @error('terms')
-                <div class="invalid-feedback d-block">{{ $message }}</div>
-            @enderror
-        </div>
+        <x-form.checkbox name="terms" id="terms" required wrapper-class="mb-4"
+                         label="I agree to the ScholarZim terms of use and privacy policy." />
 
-        <button class="btn btn-primary btn-lg w-100 mb-3" type="submit">Create account</button>
+        <x-submit-button label="Create account" size="lg" class="w-100 mb-3" busy-label="Creating..." />
     </form>
 
     <p class="text-secondary text-center mb-0">

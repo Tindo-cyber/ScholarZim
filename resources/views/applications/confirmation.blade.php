@@ -132,27 +132,25 @@
                                 again later while the scholarship is still open.
                             </p>
                         </div>
-                        <button class="btn btn-outline-danger flex-shrink-0" type="button"
-                                data-bs-toggle="collapse" data-bs-target="#withdraw-panel"
-                                aria-expanded="false" aria-controls="withdraw-panel">
-                            Withdraw application
-                        </button>
-                    </div>
-
-                    <div class="collapse" id="withdraw-panel">
-                        <div class="card-body border-top">
-                            <form method="POST" action="{{ route('applications.withdraw', $application->application_id) }}">
-                                @csrf
-                                <div class="mb-3">
-                                    <label class="form-label" for="withdraw-reason">
-                                        Why are you withdrawing? <span class="text-secondary">(optional)</span>
-                                    </label>
-                                    <input type="text" class="form-control" id="withdraw-reason" name="reason"
-                                           maxlength="500" placeholder="e.g. I accepted another scholarship">
-                                </div>
-                                <button class="btn btn-danger" type="submit">Yes, withdraw this application</button>
-                            </form>
-                        </div>
+                        {{--
+                            This used to open a collapse below the card. A panel that
+                            slides open leaves the warning above it out of view once it
+                            has scrolled, so the reason field and the red button could
+                            be all a reader had in front of them. The dialog carries
+                            the consequence with it.
+                        --}}
+                        <x-confirm-dialog id="withdraw-application"
+                                          :action="route('applications.withdraw', $application->application_id)"
+                                          title="Withdraw this application?"
+                                          trigger-label="Withdraw application"
+                                          trigger-class="btn btn-outline-danger flex-shrink-0"
+                                          confirm-label="Yes, withdraw this application"
+                                          message="This tells the provider you are no longer in the running. You can apply again later while the scholarship is still open.">
+                            <x-form.input name="reason" id="withdraw-reason" maxlength="500"
+                                          label="Why are you withdrawing?"
+                                          placeholder="e.g. I accepted another scholarship"
+                                          hint="Optional. The provider sees this." />
+                        </x-confirm-dialog>
                     </div>
                 </div>
             @endif

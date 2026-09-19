@@ -98,7 +98,7 @@
                 </div>
 
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary btn-lg" type="submit">Save and resubmit for review</button>
+                    <x-submit-button label="Save and resubmit for review" size="lg" busy-label="Saving..." />
                     <a class="btn btn-outline-secondary btn-lg" href="{{ route('provider.dashboard') }}">Cancel</a>
                 </div>
             </form>
