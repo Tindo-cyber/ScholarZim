@@ -4,7 +4,7 @@
 
 @section('content')
 
-    <x-page-header title="My Applications"
+    <x-page-header title="My applications"
                    subtitle="Track the progress and status of your scholarship applications.">
         <x-slot:actions>
             <a class="btn btn-primary" href="{{ route('applicant.recommendations') }}">Find more matches</a>

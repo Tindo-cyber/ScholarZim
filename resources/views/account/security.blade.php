@@ -4,7 +4,10 @@
 
 @section('content')
 
-    <x-page-header title="Security &amp; privacy"
+    {{-- A plain attribute value reaches the component as a literal string, and
+         {{ $title }} escapes it: "&amp;" arrived here already encoded and came out
+         of the heading as "&amp;amp;", so the page read "Security &amp; privacy". --}}
+    <x-page-header title="Security & privacy"
                    subtitle="Your password, your sessions, and what we email you about." />
 
     <div class="row g-4">

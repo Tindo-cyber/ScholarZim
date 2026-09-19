@@ -10,6 +10,7 @@
  * document head rather than a deferred module.
  */
 import './scholarzim';
+import './navigation';
 import './profile-form';
 import './academic-results';
 import './scholarfit-weights';

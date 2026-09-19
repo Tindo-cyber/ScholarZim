@@ -4,6 +4,13 @@
     $id = $attributes->get('id', 'field-' . $name);
     $current = old($name, $value);
     $invalid = $errors->has($name);
+
+    // See components/form/input.blade.php: the hint and the error message are
+    // both named here so aria-invalid has something to point a reader at.
+    $describedBy = array_filter([
+        $hint ? $id . '-hint' : null,
+        $invalid ? $id . '-error' : null,
+    ]);
 @endphp
 
 <div class="mb-3">
@@ -18,13 +25,15 @@
               id="{{ $id }}"
               name="{{ $name }}"
               rows="{{ $rows }}"
-              @if($required) required @endif>{{ $current }}</textarea>
+              @if($required) required @endif
+              @if($invalid) aria-invalid="true" @endif
+              @if($describedBy) aria-describedby="{{ implode(' ', $describedBy) }}" @endif>{{ $current }}</textarea>
 
     @if($hint)
-        <div class="form-text">{{ $hint }}</div>
+        <div class="form-text" id="{{ $id }}-hint">{{ $hint }}</div>
     @endif
 
     @error($name)
-        <div class="invalid-feedback d-block">{{ $message }}</div>
+        <div class="invalid-feedback d-block" id="{{ $id }}-error">{{ $message }}</div>
     @enderror
 </div>

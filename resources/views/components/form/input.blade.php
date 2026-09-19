@@ -14,6 +14,17 @@
     $current = old($name, $value);
     $invalid = $errors->has($name);
     $isPassword = $type === 'password';
+
+    /*
+     * Everything that describes this field, in reading order. The error message
+     * used to be rendered but never referenced, so a screen reader announced a
+     * field as invalid - once aria-invalid was added - without ever reading out
+     * why. Both ids are listed here and both elements carry them below.
+     */
+    $describedBy = array_filter([
+        ($hint || $strengthCheck) ? $id . '-hint' : null,
+        $invalid ? $id . '-error' : null,
+    ]);
 @endphp
 
 <div class="mb-3">
@@ -32,8 +43,9 @@
                value="{{ $isPassword ? '' : $current }}"
                @if($list) list="{{ $list }}" @endif
                @if($required) required @endif
+               @if($invalid) aria-invalid="true" @endif
                @if($isPassword && $strengthCheck) data-password-rules @endif
-               @if($hint || $strengthCheck) aria-describedby="{{ $id }}-hint" @endif>
+               @if($describedBy) aria-describedby="{{ implode(' ', $describedBy) }}" @endif>
 
         @if($isPassword)
             <button class="btn btn-outline-secondary{{ $invalid ? ' border-danger' : '' }}" type="button"
@@ -64,6 +76,6 @@
     @endif
 
     @error($name)
-        <div class="invalid-feedback d-block">{{ $message }}</div>
+        <div class="invalid-feedback d-block" id="{{ $id }}-error">{{ $message }}</div>
     @enderror
 </div>

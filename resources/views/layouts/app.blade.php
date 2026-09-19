@@ -22,7 +22,9 @@
         <div class="sz-main flex-grow-1 min-vw-0">
             @include('partials.topbar')
 
-            <div class="px-3 px-lg-4 py-4">
+            {{-- .sz-page owns the page gutter, the vertical padding and the content
+                 cap, so no view repeats them and none of them can drift apart. --}}
+            <div class="sz-page">
                 <x-flash-alerts />
 
                 @unless(auth()->user()->email_verified)

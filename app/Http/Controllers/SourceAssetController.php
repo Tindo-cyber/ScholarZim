@@ -28,6 +28,7 @@ class SourceAssetController extends Controller
     private const ASSETS = [
         'scholarzim.css' => ['css/scholarzim.css', 'text/css'],
         'scholarzim.js' => ['js/scholarzim.js', 'text/javascript'],
+        'navigation.js' => ['js/navigation.js', 'text/javascript'],
         'profile-form.js' => ['js/profile-form.js', 'text/javascript'],
         'academic-results.js' => ['js/academic-results.js', 'text/javascript'],
         'scholarfit-weights.js' => ['js/scholarfit-weights.js', 'text/javascript'],
@@ -38,6 +39,7 @@ class SourceAssetController extends Controller
     /** The scripts the fallback loads, in the order app.js imports them. */
     public const FALLBACK_SCRIPTS = [
         'scholarzim.js',
+        'navigation.js',
         'profile-form.js',
         'academic-results.js',
         'scholarfit-weights.js',

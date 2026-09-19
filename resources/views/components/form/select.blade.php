@@ -14,6 +14,13 @@
     $current = old($name, $value);
     $invalid = $errors->has($name);
 
+    // See components/form/input.blade.php: the hint and the error message are
+    // both named here so aria-invalid has something to point a reader at.
+    $describedBy = array_filter([
+        $hint ? $id . '-hint' : null,
+        $invalid ? $id . '-error' : null,
+    ]);
+
     // Accepts either a flat list, a value => label map, or (when $grouped) a
     // group => options map for optgroups.
     $normalize = static function (array $items): array {
@@ -34,7 +41,9 @@
     <select {{ $attributes->merge(['class' => 'form-select' . ($invalid ? ' is-invalid' : '')]) }}
             id="{{ $id }}"
             name="{{ $name }}"
-            @if($required) required @endif>
+            @if($required) required @endif
+            @if($invalid) aria-invalid="true" @endif
+            @if($describedBy) aria-describedby="{{ implode(' ', $describedBy) }}" @endif>
 
         @if($placeholder !== null)
             <option value="">{{ $placeholder }}</option>
@@ -56,10 +65,10 @@
     </select>
 
     @if($hint)
-        <div class="form-text">{{ $hint }}</div>
+        <div class="form-text" id="{{ $id }}-hint">{{ $hint }}</div>
     @endif
 
     @error($name)
-        <div class="invalid-feedback d-block">{{ $message }}</div>
+        <div class="invalid-feedback d-block" id="{{ $id }}-error">{{ $message }}</div>
     @enderror
 </div>

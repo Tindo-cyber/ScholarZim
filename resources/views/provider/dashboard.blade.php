@@ -48,7 +48,10 @@
 
     <div class="row g-4">
         <div class="col-xl-8">
-            <div class="card mb-4">
+            {{-- The sidebar's "My listings" points here: there is no separate index
+                 route for a provider's own listings, and inventing one would be a
+                 feature, not navigation. --}}
+            <div class="card mb-4" id="listings">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h6 fw-semibold mb-0">My listings</h2>
                     @if(auth()->user()->isActive())
