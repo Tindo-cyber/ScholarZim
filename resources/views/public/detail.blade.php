@@ -239,25 +239,16 @@
                                 <p class="small text-secondary text-center">{{ $fit->breakdown->explanation }}</p>
 
                                 {{--
-                                    One line per dimension, read straight off the
+                                    One row per dimension, read straight off the
                                     same DimensionResult objects the score was
                                     summed from - so what a student is told here
                                     cannot drift away from what they were scored.
+                                    Open on this page, where the score is what
+                                    the reader came for.
                                 --}}
-                                <h3 class="h6 fw-semibold mt-4 mb-2">Why this score</h3>
-                                <ul class="list-unstyled d-grid gap-2 mb-3">
-                                    @foreach($fit->breakdown->dimensionResults as $dimension)
-                                        <li class="sz-fit-reason small">
-                                            <x-icon :name="$dimension->ratio >= 0.5 ? 'check-circle' : 'x-circle'"
-                                                    :size="16"
-                                                    class="text-{{ $dimension->ratio >= 0.5 ? 'success' : 'secondary' }} mt-1" />
-                                            <span class="{{ $dimension->ratio >= 0.5 ? '' : 'text-secondary' }}">
-                                                <strong>{{ $dimension->scoreLine() }}</strong>
-                                                <span class="d-block text-secondary">{{ $dimension->detail }}</span>
-                                            </span>
-                                        </li>
-                                    @endforeach
-                                </ul>
+                                <div class="mt-4 mb-3">
+                                    <x-score-breakdown :fit="$fit" :open="true" />
+                                </div>
 
                                 @if($fit->breakdown->fixes)
                                     {{--

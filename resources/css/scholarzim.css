@@ -521,6 +521,85 @@ main {
     color: var(--sz-on-primary) !important;
 }
 
+/* ---------- Score breakdown ---------- */
+
+/*
+ * The ScholarFit breakdown is a <details>, so the browser gives us the
+ * disclosure behaviour and the keyboard for free. What it does not give us is a
+ * summary that looks like a control rather than a bulleted line, which is all
+ * this section does.
+ */
+.sz-score-breakdown {
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius);
+    background: var(--sz-surface-3);
+    padding: var(--sz-space-3) var(--sz-space-4);
+}
+
+.sz-score-breakdown-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--sz-space-2);
+    cursor: pointer;
+    list-style: none;
+    font-size: var(--sz-font-size-sm);
+}
+
+/* Safari draws its own triangle through ::-webkit-details-marker. */
+.sz-score-breakdown-summary::-webkit-details-marker {
+    display: none;
+}
+
+.sz-score-breakdown-summary:focus-visible {
+    outline: 2px solid var(--sz-primary);
+    outline-offset: 3px;
+    border-radius: var(--sz-radius-sm);
+}
+
+/*
+ * No rotation on the summary's icon.
+ *
+ * It was turning a quarter when the panel opened, which is the usual disclosure
+ * cue - but the usual disclosure cue is a chevron, and a bar chart on its side
+ * reads as a rendering fault rather than as state. The <summary> element already
+ * carries its expanded state to assistive tech, and the panel appearing is what
+ * says so to everyone else. Decorative motion with nothing to communicate is
+ * motion this component does not need.
+ */
+
+/*
+ * Figures that sit in a column and are meant to be compared down it - "14/20"
+ * over "18/25". Lining figures stop the slash drifting left and right as the
+ * digits change width.
+ */
+.sz-tabular {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Disabled controls ---------- */
+
+/*
+ * Bootstrap dims a disabled .btn with opacity alone, which on the outline
+ * variants leaves a control that still reads as pressable. The cursor is the
+ * second signal, and aria-disabled on the element is the third.
+ */
+.btn:disabled,
+.btn.disabled {
+    cursor: not-allowed;
+}
+
+/*
+ * A readonly field is not a disabled one: it can be focused, selected and
+ * copied, and it submits. It should look like a field that is holding a value
+ * rather than one that is switched off, so it keeps the body colour and takes
+ * the secondary surface.
+ */
+.form-control[readonly],
+.form-select[readonly] {
+    background-color: var(--sz-surface-2);
+    color: var(--sz-text);
+}
+
 /* ---------- Application timeline ---------- */
 
 .sz-timeline-step {

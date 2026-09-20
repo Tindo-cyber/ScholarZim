@@ -48,20 +48,13 @@
     </form>
 
     <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 sz-table-stack">
-                <thead>
-                    <tr>
-                        <th scope="col">User</th>
-                        <th scope="col">Role</th>
-                        <th scope="col">Status</th>
-                        <th scope="col" class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($users as $user)
+        <x-data-table :columns="['User', 'Role', 'Status', ['label' => 'Actions', 'align' => 'end']]"
+                      :empty="$users->isEmpty()"
+                      empty-title="No users match those filters"
+                      empty-icon="people">
+            @foreach($users as $user)
                         <tr>
-                            <td data-label="User">
+                            <x-data-table.cell label="User">
                                 <div class="d-flex align-items-center gap-2">
                                     <x-avatar :user="$user" size="sm" />
                                     <div class="min-w-0">
@@ -77,13 +70,13 @@
                                         <span class="small text-secondary d-block">{{ $user->email }}</span>
                                     </div>
                                 </div>
-                            </td>
-                            <td data-label="Role">{{ \App\Support\RoleNames::displayLabel($user->roleName()) }}</td>
-                            <td data-label="Status">
+                            </x-data-table.cell>
+                            <x-data-table.cell label="Role">{{ \App\Support\RoleNames::displayLabel($user->roleName()) }}</x-data-table.cell>
+                            <x-data-table.cell label="Status">
                                 <x-status-badge :label="\App\Support\AccountStatus::displayLabel($user->account_status)"
                                                 :tone="\App\Support\AccountStatus::badgeTone($user->account_status)" />
-                            </td>
-                            <td class="text-end" data-label="">
+                            </x-data-table.cell>
+                            <x-data-table.cell align="end">
                                 @unless($user->is_super_admin || $user->user_id === auth()->id())
                                     <div class="d-inline-flex gap-1">
                                         @if(strcasecmp((string) $user->account_status, \App\Support\AccountStatus::ACTIVE) === 0)
@@ -112,18 +105,10 @@
                                                           message="This removes the account and everything attached to it - profile, applications, saved scholarships and notifications. It cannot be undone. The audit trail is kept." />
                                     </div>
                                 @endunless
-                            </td>
+                            </x-data-table.cell>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4">
-                                <x-empty-state title="No users match those filters" icon="people" />
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+            @endforeach
+        </x-data-table>
     </div>
 
     <div class="mt-4">

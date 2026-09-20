@@ -71,6 +71,13 @@
                                     @endforeach
                                 </div>
 
+                                {{-- Collapsed in a list: the full six-row breakdown is available
+                                     on demand without making every card as tall as the one
+                                     scholarship the reader is actually weighing up. --}}
+                                <div class="mb-2">
+                                    <x-score-breakdown :fit="$match" />
+                                </div>
+
                                 @if($match->breakdown->fixes)
                                     <details class="small">
                                         <summary class="text-secondary">

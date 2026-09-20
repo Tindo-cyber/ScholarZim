@@ -5,6 +5,24 @@
     'value' => null,
     'hint' => null,
     'required' => false,
+    /*
+     * The states beyond "normal", all opt-in.
+     *
+     * `invalid` is deliberately not one of them: it is derived from the error
+     * bag, because a field that has to be told it failed validation is a field
+     * that can be told wrongly.
+     *
+     * `valid` is unused across the app today. A tick on every field somebody
+     * has merely filled in marks the absence of a problem, which was already
+     * the absence of a problem - so it is here for the one form that earns it
+     * rather than applied by default.
+     *
+     * `disabled` also dims the label. Bootstrap styles only the control, which
+     * left a bright label sitting over a greyed-out field.
+     */
+    'disabled' => false,
+    'readonly' => false,
+    'valid' => false,
     'list' => null,
     'strengthCheck' => false,
 ])
@@ -21,6 +39,10 @@
     $id = $attributes->get('id', 'field-' . $name);
     $current = old($name, $value);
     $invalid = $errors->has($name);
+
+    // is-invalid wins over is-valid: a field cannot be both, and the error
+    // bag is the only one of the two the server has an opinion about.
+    $stateClass = $invalid ? ' is-invalid' : ($valid ? ' is-valid' : '');
     $isPassword = $type === 'password';
 
     /*
@@ -35,7 +57,7 @@
     ]);
 @endphp
 
-<div class="mb-3">
+<div @class(['mb-3', 'opacity-50' => $disabled])>
     @if($label)
         <label class="form-label" for="{{ $id }}">
             {{ $label }}
@@ -44,13 +66,15 @@
     @endif
 
     <div @if($isPassword) class="input-group" @endif>
-        <input {{ $attributes->except('id')->merge(['class' => 'form-control' . ($invalid ? ' is-invalid' : '')]) }}
+        <input {{ $attributes->except('id')->merge(['class' => 'form-control' . $stateClass]) }}
                type="{{ $type }}"
                id="{{ $id }}"
                name="{{ $name }}"
                value="{{ $isPassword ? '' : $current }}"
                @if($list) list="{{ $list }}" @endif
                @if($required) required @endif
+               @disabled($disabled)
+               @readonly($readonly)
                @if($invalid) aria-invalid="true" @endif
                @if($isPassword && $strengthCheck) data-password-rules @endif
                @if($describedBy) aria-describedby="{{ implode(' ', $describedBy) }}" @endif>

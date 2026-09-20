@@ -38,43 +38,27 @@
     </form>
 
     <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0 sz-table-stack">
-                <thead>
-                    <tr>
-                        <th scope="col">When</th>
-                        <th scope="col">Actor</th>
-                        <th scope="col">Action</th>
-                        <th scope="col">Entity</th>
-                        <th scope="col">Details</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($entries as $entry)
-                        <tr>
-                            <td class="text-secondary small text-nowrap" data-label="When">
-                                {{ $entry->created_at?->format('d M Y H:i') }}
-                            </td>
-                            <td class="small" data-label="Actor">{{ $entry->actor_email }}</td>
-                            <td data-label="Action">
-                                <x-status-badge :label="\App\Support\AuditAction::displayLabel($entry->action)"
-                                                :tone="\App\Support\AuditAction::badgeTone($entry->action)" />
-                            </td>
-                            <td class="small text-secondary" data-label="Entity">
-                                {{ $entry->entity_type }}@if($entry->entity_id) #{{ $entry->entity_id }}@endif
-                            </td>
-                            <td class="small" data-label="Details">{{ $entry->details }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5">
-                                <x-empty-state title="No audit entries match those filters" icon="shield" />
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
+        <x-data-table :columns="['When', 'Actor', 'Action', 'Entity', 'Details']"
+                      :empty="$entries->isEmpty()"
+                      empty-title="No audit entries match those filters"
+                      empty-icon="shield">
+            @foreach($entries as $entry)
+                <tr>
+                    <x-data-table.cell label="When" class="text-secondary small text-nowrap">
+                        {{ $entry->created_at?->format('d M Y H:i') }}
+                    </x-data-table.cell>
+                    <x-data-table.cell label="Actor" class="small">{{ $entry->actor_email }}</x-data-table.cell>
+                    <x-data-table.cell label="Action">
+                        <x-status-badge :label="\App\Support\AuditAction::displayLabel($entry->action)"
+                                        :tone="\App\Support\AuditAction::badgeTone($entry->action)" />
+                    </x-data-table.cell>
+                    <x-data-table.cell label="Entity" class="small text-secondary">
+                        {{ $entry->entity_type }}@if($entry->entity_id) #{{ $entry->entity_id }}@endif
+                    </x-data-table.cell>
+                    <x-data-table.cell label="Details" class="small">{{ $entry->details }}</x-data-table.cell>
+                </tr>
+            @endforeach
+        </x-data-table>
     </div>
 
     <div class="mt-4">

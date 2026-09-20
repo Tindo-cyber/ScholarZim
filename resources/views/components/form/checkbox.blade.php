@@ -8,6 +8,7 @@
     'hint' => null,
     'switch' => false,
     'required' => false,
+    'disabled' => false,
     /*
      * Spacing on the wrapper, not on the input.
      *
@@ -54,7 +55,7 @@
     ]);
 @endphp
 
-<div class="form-check{{ $switch ? ' form-switch' : '' }}{{ $wrapperClass ? ' ' . $wrapperClass : '' }}">
+<div @class(['form-check', 'form-switch' => $switch, 'opacity-50' => $disabled, $wrapperClass => $wrapperClass])>
     <input {{ $attributes->except('id')->merge(['class' => 'form-check-input' . ($invalid ? ' is-invalid' : '')]) }}
            type="checkbox"
            id="{{ $id }}"
@@ -62,6 +63,7 @@
            value="{{ $value }}"
            @if($switch) role="switch" @endif
            @if($required) required @endif
+           @disabled($disabled)
            @if($invalid) aria-invalid="true" @endif
            @if($describedBy) aria-describedby="{{ implode(' ', $describedBy) }}" @endif
            @checked($isChecked)>
