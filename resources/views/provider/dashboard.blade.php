@@ -67,7 +67,7 @@
                                    :action-href="auth()->user()->isActive() ? route('opportunities.create') : null" />
                 @else
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 sz-table-stack">
                             <thead>
                                 <tr>
                                     <th scope="col">Scholarship</th>
@@ -80,19 +80,19 @@
                             <tbody>
                                 @foreach($opportunities as $opportunity)
                                     <tr>
-                                        <td>
+                                        <td data-label="Scholarship">
                                             <span class="fw-semibold d-block">{{ $opportunity->title }}</span>
                                             <span class="small text-secondary">{{ $opportunity->target_field ?: 'Any field' }}</span>
                                         </td>
-                                        <td class="text-secondary small">
+                                        <td class="text-secondary small" data-label="Deadline">
                                             {{ $opportunity->deadline?->format('d M Y') ?? 'Rolling' }}
                                         </td>
-                                        <td>
+                                        <td data-label="Applications">
                                             <span class="badge bg-body-secondary text-body">
                                                 {{ $opportunity->applications_count }}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-label="Review state">
                                             <x-status-badge :label="$opportunity->lifecycleLabel()"
                                                             :tone="$opportunity->lifecycleTone()" />
                                             @if(strcasecmp((string) $opportunity->status, \App\Support\OpportunityStatus::CLOSED) === 0)
@@ -109,7 +109,7 @@
                                                 </span>
                                             @endif
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end" data-label="">
                                             @unless($opportunity->isWithdrawn())
                                                 <div class="dropdown">
                                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle"

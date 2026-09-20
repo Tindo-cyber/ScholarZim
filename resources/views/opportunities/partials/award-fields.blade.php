@@ -133,7 +133,7 @@
         @endif
 
         <div class="table-responsive">
-            <table class="table table-sm align-middle mb-2" id="subject-requirements-table">
+            <table class="table table-sm align-middle mb-2 sz-table-stack" id="subject-requirements-table">
                 <thead>
                     <tr>
                         <th scope="col" style="width:34%">Qualification</th>
@@ -145,7 +145,7 @@
                 <tbody id="subject-requirements-list">
                     @foreach(($opportunity?->subjectRequirements ?? []) as $idx => $existing)
                         <tr class="subject-requirement-row">
-                            <td>
+                            <td data-label="Qualification">
                                 <select class="form-select form-select-sm qualification-select"
                                         name="subject_requirements[{{ $idx }}][qualification_id]"
                                         aria-label="Qualification">
@@ -163,7 +163,7 @@
                                 empty grade without it, which is the same data loss this whole
                                 section was fixed to prevent.
                             --}}
-                            <td>
+                            <td data-label="Subject">
                                 <select class="form-select form-select-sm subject-select"
                                         name="subject_requirements[{{ $idx }}][subject_id]"
                                         data-selected="{{ $existing->subject_id }}"
@@ -175,7 +175,7 @@
                                     @endforeach
                                 </select>
                             </td>
-                            <td>
+                            <td data-label="Minimum grade">
                                 {{-- This field previously rendered readonly and unnamed, so it was
                                      never submitted and every edit reset the rule to "any grade". --}}
                                 <select class="form-select form-select-sm grade-select"
@@ -189,7 +189,7 @@
                                     @endforeach
                                 </select>
                             </td>
-                            <td class="text-end">
+                            <td class="text-end" data-label="">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
                             </td>
                         </tr>
@@ -200,7 +200,7 @@
 
         <template id="subject-requirement-template">
             <tr class="subject-requirement-row">
-                <td>
+                <td data-label="Qualification">
                     <select class="form-select form-select-sm qualification-select"
                             name="subject_requirements[__IDX__][qualification_id]" aria-label="Qualification">
                         <option value="">Select qualification</option>
@@ -209,15 +209,15 @@
                         @endforeach
                     </select>
                 </td>
-                <td>
+                <td data-label="Subject">
                     <select class="form-select form-select-sm subject-select"
                             name="subject_requirements[__IDX__][subject_id]" aria-label="Subject" disabled></select>
                 </td>
-                <td>
+                <td data-label="Minimum grade">
                     <select class="form-select form-select-sm grade-select"
                             name="subject_requirements[__IDX__][minimum_grade]" aria-label="Minimum grade" disabled></select>
                 </td>
-                <td class="text-end">
+                <td class="text-end" data-label="">
                     <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
                 </td>
             </tr>

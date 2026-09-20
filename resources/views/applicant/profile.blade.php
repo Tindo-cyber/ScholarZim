@@ -233,7 +233,7 @@
                         @endforeach
 
                         <div class="table-responsive">
-                            <table class="table table-sm align-middle mb-2" id="academic-results-table">
+                            <table class="table table-sm align-middle mb-2 sz-table-stack" id="academic-results-table">
                                 <thead>
                                     <tr>
                                         <th scope="col" style="width:26%">Qualification</th>
@@ -247,7 +247,7 @@
                                 <tbody id="academic-results-list">
                                     @foreach($profile->academicResults as $idx => $result)
                                         <tr class="academic-result-row">
-                                            <td>
+                                            <td data-label="Qualification">
                                                 <select class="form-select form-select-sm qualification-select"
                                                         name="academic_subject_results[{{ $idx }}][qualification_id]"
                                                         aria-label="Qualification">
@@ -265,7 +265,7 @@
                                                 losing an applicant's results on save is exactly what this
                                                 section was rebuilt to stop.
                                             --}}
-                                            <td>
+                                            <td data-label="Subject">
                                                 <select class="form-select form-select-sm subject-select"
                                                         name="academic_subject_results[{{ $idx }}][subject_id]"
                                                         data-selected="{{ $result->subject_id }}"
@@ -277,7 +277,7 @@
                                                     @endforeach
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td data-label="Result">
                                                 <select class="form-select form-select-sm grade-select"
                                                         name="academic_subject_results[{{ $idx }}][result]"
                                                         data-selected="{{ $result->result }}"
@@ -289,7 +289,7 @@
                                                     @endforeach
                                                 </select>
                                             </td>
-                                            <td>
+                                            <td data-label="Year">
                                                 <input type="number" class="form-control form-control-sm year-input"
                                                        name="academic_subject_results[{{ $idx }}][year]"
                                                        value="{{ $result->year }}"
@@ -297,10 +297,10 @@
                                                        aria-label="Year">
                                             </td>
                                             {{-- Derived, never entered. There is no input here on purpose. --}}
-                                            <td class="text-end derived-points font-monospace">
+                                            <td class="text-end derived-points font-monospace" data-label="Points">
                                                 {{ $result->points() !== null ? rtrim(rtrim(number_format($result->points(), 2), '0'), '.') : '—' }}
                                             </td>
-                                            <td class="text-end">
+                                            <td class="text-end" data-label="">
                                                 <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
                                             </td>
                                         </tr>
@@ -311,7 +311,7 @@
 
                         <template id="academic-result-template">
                             <tr class="academic-result-row">
-                                <td>
+                                <td data-label="Qualification">
                                     <select class="form-select form-select-sm qualification-select"
                                             name="academic_subject_results[__IDX__][qualification_id]" aria-label="Qualification">
                                         <option value="">Select qualification</option>
@@ -320,21 +320,21 @@
                                         @endforeach
                                     </select>
                                 </td>
-                                <td>
+                                <td data-label="Subject">
                                     <select class="form-select form-select-sm subject-select"
                                             name="academic_subject_results[__IDX__][subject_id]" aria-label="Subject" disabled></select>
                                 </td>
-                                <td>
+                                <td data-label="Result">
                                     <select class="form-select form-select-sm grade-select"
                                             name="academic_subject_results[__IDX__][result]" aria-label="Result" disabled></select>
                                 </td>
-                                <td>
+                                <td data-label="Year">
                                     <input type="number" class="form-control form-control-sm year-input"
                                            name="academic_subject_results[__IDX__][year]"
                                            min="1950" max="{{ now()->year + 1 }}" step="1" aria-label="Year">
                                 </td>
-                                <td class="text-end derived-points font-monospace">—</td>
-                                <td class="text-end">
+                                <td class="text-end derived-points font-monospace" data-label="Points">—</td>
+                                <td class="text-end" data-label="">
                                     <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
                                 </td>
                             </tr>

@@ -88,7 +88,7 @@
                                    :action-href="route('opportunities.index')" />
                 @else
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 sz-table-stack">
                             <thead>
                                 <tr>
                                     <th scope="col">Scholarship</th>
@@ -100,12 +100,12 @@
                             <tbody>
                                 @foreach($recentApplications as $application)
                                     <tr>
-                                        <td class="fw-semibold">{{ $application->opportunity?->title ?? 'Removed listing' }}</td>
-                                        <td class="text-secondary small">{{ $application->submitted_at?->format('d M Y') }}</td>
-                                        <td>
+                                        <td class="fw-semibold" data-label="Scholarship">{{ $application->opportunity?->title ?? 'Removed listing' }}</td>
+                                        <td class="text-secondary small" data-label="Submitted">{{ $application->submitted_at?->format('d M Y') }}</td>
+                                        <td data-label="Status">
                                             <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end" data-label="">
                                             <a class="btn btn-sm btn-outline-secondary"
                                                href="{{ route('applications.confirmation', $application->application_id) }}">View</a>
                                         </td>

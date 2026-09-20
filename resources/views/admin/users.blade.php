@@ -49,7 +49,7 @@
 
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 sz-table-stack">
                 <thead>
                     <tr>
                         <th scope="col">User</th>
@@ -61,7 +61,7 @@
                 <tbody>
                     @forelse($users as $user)
                         <tr>
-                            <td>
+                            <td data-label="User">
                                 <div class="d-flex align-items-center gap-2">
                                     <x-avatar :user="$user" size="sm" />
                                     <div class="min-w-0">
@@ -75,12 +75,12 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>{{ \App\Support\RoleNames::displayLabel($user->roleName()) }}</td>
-                            <td>
+                            <td data-label="Role">{{ \App\Support\RoleNames::displayLabel($user->roleName()) }}</td>
+                            <td data-label="Status">
                                 <x-status-badge :label="\App\Support\AccountStatus::displayLabel($user->account_status)"
                                                 :tone="\App\Support\AccountStatus::badgeTone($user->account_status)" />
                             </td>
-                            <td class="text-end">
+                            <td class="text-end" data-label="">
                                 @unless($user->is_super_admin || $user->user_id === auth()->id())
                                     <div class="d-inline-flex gap-1">
                                         @if(strcasecmp((string) $user->account_status, \App\Support\AccountStatus::ACTIVE) === 0)

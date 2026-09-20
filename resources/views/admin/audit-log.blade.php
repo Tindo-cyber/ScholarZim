@@ -39,7 +39,7 @@
 
     <div class="card">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 sz-table-stack">
                 <thead>
                     <tr>
                         <th scope="col">When</th>
@@ -52,18 +52,18 @@
                 <tbody>
                     @forelse($entries as $entry)
                         <tr>
-                            <td class="text-secondary small text-nowrap">
+                            <td class="text-secondary small text-nowrap" data-label="When">
                                 {{ $entry->created_at?->format('d M Y H:i') }}
                             </td>
-                            <td class="small">{{ $entry->actor_email }}</td>
-                            <td>
+                            <td class="small" data-label="Actor">{{ $entry->actor_email }}</td>
+                            <td data-label="Action">
                                 <x-status-badge :label="\App\Support\AuditAction::displayLabel($entry->action)"
                                                 :tone="\App\Support\AuditAction::badgeTone($entry->action)" />
                             </td>
-                            <td class="small text-secondary">
+                            <td class="small text-secondary" data-label="Entity">
                                 {{ $entry->entity_type }}@if($entry->entity_id) #{{ $entry->entity_id }}@endif
                             </td>
-                            <td class="small">{{ $entry->details }}</td>
+                            <td class="small" data-label="Details">{{ $entry->details }}</td>
                         </tr>
                     @empty
                         <tr>

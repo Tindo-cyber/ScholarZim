@@ -1051,7 +1051,9 @@ main {
  * duplicated mobile-only table, and nothing to keep in step when a column is
  * added - the new cell just needs its data-label.
  *
- * A cell with data-label="" (checkboxes, action buttons) prints no label.
+ * A cell with data-label="" (checkboxes, action buttons) prints no label, and
+ * so does a cell with no data-label at all - the empty row a table falls back
+ * to, which spans every column and has no single column to name.
  */
 @media (max-width: 767.98px) {
     .sz-table-stack thead {
@@ -1067,10 +1069,10 @@ main {
     }
 
     .sz-table-stack tr {
-        border: 1px solid var(--bs-border-color);
+        border: 1px solid var(--sz-border);
         border-radius: var(--sz-radius);
-        margin-bottom: .75rem;
-        padding: .5rem .875rem;
+        margin-bottom: var(--sz-space-3);
+        padding: var(--sz-space-2) var(--sz-space-3);
     }
 
     .sz-table-stack td {
@@ -1085,21 +1087,47 @@ main {
 
     .sz-table-stack td::before {
         content: attr(data-label);
-        flex: 0 0 8rem;
-        font-weight: 600;
-        color: var(--bs-secondary-color);
+        flex: 0 0 7.5rem;
+        font-weight: var(--sz-weight-semibold);
+        color: var(--sz-text-secondary);
     }
 
-    .sz-table-stack td[data-label=""]::before {
+    .sz-table-stack td[data-label=""]::before,
+    .sz-table-stack td:not([data-label])::before {
         display: none;
+    }
+
+    /*
+     * A cell that holds a control rather than a value.
+     *
+     * Two of these tables are editable grids - the applicant's academic results
+     * and a listing's subject requirements - and a <select> left at its natural
+     * width next to a 7.5rem label is a few characters wide on a 360px screen.
+     * Letting the control take the rest of the row is what makes those grids
+     * usable stacked rather than merely legible.
+     */
+    .sz-table-stack td > .form-select,
+    .sz-table-stack td > .form-control {
+        flex: 1 1 auto;
+        min-width: 0;
     }
 
     /* The last cell holds the row's action; give it room and its own rule. */
     .sz-table-stack td:last-child {
         justify-content: flex-start;
-        border-top: 1px solid var(--bs-border-color);
-        margin-top: .25rem;
-        padding-top: .625rem;
+        border-top: 1px solid var(--sz-border);
+        margin-top: var(--sz-space-1);
+        padding-top: var(--sz-space-2);
+    }
+
+    /*
+     * ...except when the row's fallback is a single full-width cell. An empty
+     * state does not want a rule above it and a left-aligned indent below it.
+     */
+    .sz-table-stack td:only-child {
+        border-top: 0;
+        margin-top: 0;
+        padding-top: var(--sz-space-2);
     }
 }
 
