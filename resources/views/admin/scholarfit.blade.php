@@ -4,23 +4,6 @@
 
 @php
     /**
-     * The near-miss credit, read from the key the engine actually uses.
-     *
-     * The page was rendering "a near miss earns 0% of the dimension's weight
-     * rather than nothing", which is self-contradictory and also wrong: the
-     * figure reached the view as config('scholarfit.related_credit'), a key
-     * that does not exist in config/scholarfit.php, so it arrived null and was
-     * cast to zero. The real fraction lives at scholarfit.credit.related and is
-     * what EducationMatcher and FieldMatcher award for an adjacent level or a
-     * related field.
-     *
-     * Read here rather than corrected in the controller because the controller
-     * is backend: the broken line is ScholarFitController::pageData()'s
-     * 'relatedCredit', and it is reported rather than edited.
-     */
-    $relatedCreditPercent = (int) round(((float) config('scholarfit.credit.related')) * 100);
-
-    /**
      * What each dimension actually influences, in an administrator's words.
      *
      * Keyed on the same dimension keys the controller and config use, so a key
@@ -236,7 +219,7 @@
                 <div class="card-body small">
                     <p>
                         A near miss - a related field of study, or an adjacent education level - earns
-                        {{ $relatedCreditPercent }}% of the dimension's weight rather than nothing.
+                        {{ $relatedCredit }}% of the dimension's weight rather than nothing.
                     </p>
                     <p class="mb-0">
                         A score of {{ $confidence['high'] }} or more reads as a strong match,

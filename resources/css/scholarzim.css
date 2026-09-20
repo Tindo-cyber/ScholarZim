@@ -1125,6 +1125,34 @@ summary:focus-visible,
     }
 }
 
+/*
+ * The same finger, on a bigger screen.
+ *
+ * Above 767.98px .btn-sm returns to its natural 29px, which clears WCAG 2.2's
+ * 24px minimum but is not a comfortable target - and a tablet in portrait is
+ * 768px wide, so the row of action buttons in a table gets smaller at exactly
+ * the width where the table stops being a stack of cards.
+ *
+ * Gated on the pointer rather than the viewport, because 768-991px is not a
+ * tablet range: it is also a desktop window that has been dragged narrower, and
+ * growing every button there would push a mouse user's layout around for no
+ * reason. `pointer: coarse` asks the question that actually matters - is the
+ * primary input a fingertip - and a browser reports `fine` as soon as a mouse
+ * is present, so a touchscreen laptop with a trackpad is left alone too.
+ *
+ * Desktop is untouched at every width. The exemptions match the rule above:
+ * a button joined to a field must not grow away from it.
+ */
+@media (min-width: 768px) and (pointer: coarse) {
+    .btn {
+        min-height: var(--sz-touch-target);
+    }
+
+    .input-group .btn {
+        min-height: 0;
+    }
+}
+
 /* ---------- Award panel ---------- */
 
 .sz-award-panel {

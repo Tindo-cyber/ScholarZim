@@ -76,7 +76,13 @@ class ScholarFitController extends Controller
             'labels' => self::DIMENSION_LABELS,
             'isDefault' => $this->settings->scholarFitWeightsAreDefault(),
             'sample' => $this->sampleScore(),
-            'relatedCredit' => (int) round(((float) config('scholarfit.related_credit')) * 100),
+            // scholarfit.credit.related, not scholarfit.related_credit: the
+            // latter is not a key in config/scholarfit.php, so it read null and
+            // told administrators a near miss earns 0% of a dimension's weight.
+            // This is the same fraction EducationMatcher and FieldMatcher award
+            // for an adjacent level or a related field; nothing about what they
+            // award has changed.
+            'relatedCredit' => (int) round(((float) config('scholarfit.credit.related')) * 100),
             'confidence' => config('scholarfit.confidence'),
         ];
     }
