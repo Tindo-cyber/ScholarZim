@@ -31,28 +31,40 @@
     @if($notifications->isEmpty())
         <div class="card">
             <x-empty-state title="No notifications"
-                           message="Application updates, deadline reminders, and new matches all land here."
-                           icon="bell" />
+                           message="Application updates, deadline reminders and new matches all land here. Apply for a scholarship and you will start seeing them."
+                           icon="bell"
+                           action-label="Find scholarships"
+                           :action-href="route('opportunities.index')" />
         </div>
     @else
         <div class="card">
             <ul class="list-group list-group-flush">
                 @foreach($notifications as $notification)
-                    <li class="list-group-item d-flex gap-3 align-items-start {{ $notification->is_read ? '' : 'bg-body-secondary' }}">
+                    {{-- Unread carries a rail as well as a tint and a badge: three
+                         channels, because the tint alone is a shade of grey on a
+                         page made of shades of grey. --}}
+                    <li @class([
+                            'list-group-item d-flex gap-3 align-items-start',
+                            'sz-notification-unread' => ! $notification->is_read,
+                        ])>
                         <span class="badge rounded-circle bg-{{ $notification->tone() }}-subtle text-{{ $notification->tone() }} p-2 flex-shrink-0">
                             <x-icon :name="$notification->icon()" :size="16" />
                         </span>
 
                         <div class="min-w-0 flex-grow-1">
-                            <p class="mb-1">{{ $notification->message }}</p>
+                            <p @class(['mb-1', 'fw-semibold' => ! $notification->is_read])>{{ $notification->message }}</p>
                             <span class="small text-secondary">
-                                {{ $notification->category() }} &middot; {{ $notification->created_at?->diffForHumans() }}
+                                {{ $notification->category() }} &middot;
+                                <time datetime="{{ $notification->created_at?->toIso8601String() }}"
+                                      title="{{ $notification->created_at?->format('d M Y H:i') }}">
+                                    {{ $notification->created_at?->diffForHumans() }}
+                                </time>
                             </span>
                         </div>
 
                         <div class="d-flex align-items-center gap-2 flex-shrink-0">
                             @unless($notification->is_read)
-                                <span class="badge bg-primary">New</span>
+                                <span class="badge bg-primary">New<span class="visually-hidden"> - unread</span></span>
                             @endunless
 
                             @if($notification->link)

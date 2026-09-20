@@ -374,6 +374,19 @@ main {
         min-height: var(--sz-touch-target);
         padding-block: var(--sz-space-3);
     }
+
+    /*
+     * The drawer's other two controls, for the same reason.
+     *
+     * The general touch-target rule stops at 767.98px, which is right for the
+     * page - a tablet in landscape is a pointer device for most of what is on
+     * it. The drawer is not: it is opened by a tap at every width below xl, and
+     * "Install app" and "Exit" were still 31px at 768 through 1199, measured in
+     * the browser rather than assumed from the breakpoint.
+     */
+    .sz-sidebar .btn {
+        min-height: var(--sz-touch-target);
+    }
 }
 /* ---------- Page header ---------- */
 
@@ -616,6 +629,27 @@ main {
     max-width: 22rem;
 }
 
+/* ---------- Fieldset legends used as field labels ---------- */
+
+/*
+ * A <legend class="form-label"> should look like the labels either side of it.
+ *
+ * Bootstrap's reboot sizes every legend as a heading - font-size: calc(1.275rem
+ * + .3vw), float: left, width: 100% - and .form-label sets only a margin, so it
+ * has nothing to say about any of that. The profile's "Gender" fieldset came
+ * out a third larger than "Full name" and "Date of birth" beside it, which read
+ * as a section heading rather than as the label of the two radios under it.
+ *
+ * Scoped to legends that ask to be labels, so a real legend used as a heading
+ * is untouched.
+ */
+legend.form-label {
+    float: none;
+    width: auto;
+    font-size: inherit;
+    line-height: inherit;
+}
+
 /* ---------- Applicant: calculated points ---------- */
 
 /*
@@ -633,6 +667,18 @@ main {
         text-align: left;
         margin-left: 0;
     }
+}
+
+/* ---------- Applicant: unread notifications ---------- */
+
+/*
+ * An unread row is marked three ways - a rail, a tint and a badge - because the
+ * tint on its own is a shade of grey on a page made of shades of grey, and in
+ * dark mode it is very nearly the row beside it.
+ */
+.sz-notification-unread {
+    border-left: 3px solid var(--sz-primary);
+    background: var(--sz-primary-subtle);
 }
 
 /* ---------- Application timeline ---------- */

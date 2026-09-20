@@ -1,11 +1,25 @@
 @extends('layouts.app')
 
-@section('title', 'Browse scholarships')
+@section('title', 'Find scholarships')
 
 @section('content')
 
-    <x-page-header title="Browse scholarships"
-                   :subtitle="number_format($opportunities->total()) . ' open listing(s) matching your filters.'" />
+    <x-page-header title="Find scholarships"
+                   subtitle="Search open opportunities by education level, field, deadline and location."
+                   eyebrow="Discover">
+        <x-slot:actions>
+            <a class="btn btn-primary" href="{{ route('applicant.recommendations') }}">My matches</a>
+        </x-slot:actions>
+    </x-page-header>
+
+    {{-- The count belongs with the results, not in the page's subtitle: it
+         changes with every filter, and a subtitle that changes is a heading the
+         reader has to re-read. --}}
+    <p class="text-secondary small" aria-live="polite">
+        {{ number_format($opportunities->total()) }}
+        {{ \Illuminate\Support\Str::plural('open scholarship', $opportunities->total()) }}
+        {{ collect($filters)->except('sort')->filter()->isNotEmpty() ? 'match your filters.' : 'available now.' }}
+    </p>
 
     <x-filter-bar :action="route('opportunities.index')"
                   :filters="$filters"

@@ -4,10 +4,16 @@
 
 @section('content')
 
+    {{-- The reference number goes in the eyebrow: it is the thing a student
+         quotes when they email a provider, and it was previously only findable
+         by counting rows on the applications list. --}}
     <x-page-header :title="$application->opportunity?->title ?? 'Application'"
-                   :subtitle="'Submitted ' . ($application->submitted_at?->format('d M Y') ?? 'recently')"
-                   eyebrow="Application status">
+                   :subtitle="'Submitted ' . ($application->submitted_at?->format('d M Y') ?? 'recently')
+                       . ' to ' . ($application->opportunity?->awardingBody() ?? 'the provider') . '.'"
+                   :eyebrow="'Application #' . $application->application_id">
         <x-slot:actions>
+            <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()"
+                            class="align-self-center" />
             <a class="btn btn-outline-secondary" href="{{ route('applications.mine') }}">All my applications</a>
         </x-slot:actions>
     </x-page-header>
@@ -166,7 +172,7 @@
                         <dl class="mb-3">
                             @foreach([
                                 'Awarding body' => $application->opportunity->awardingBody(),
-                                'Education level' => $application->opportunity->education_level,
+                                'Education level' => \App\Support\EducationLevel::label($application->opportunity->education_level),
                                 'Field of study' => $application->opportunity->target_field,
                                 'Funding' => $application->opportunity->funding_type,
                                 'Deadline' => $application->opportunity->deadline?->format('d M Y'),
