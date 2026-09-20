@@ -424,6 +424,26 @@ main {
     height: 2.75rem;
 }
 
+/*
+ * Two stat cards to a row on a phone leaves about 66px beside the icon, and
+ * the labels are uppercase: "APPLICATIONS" broke across three lines mid-word,
+ * as "APPLICA / TIONS", and "IN PROGRESS" as "IN / PROGRE / SS". Stacking the
+ * icon above the text hands the label the card's full width, which is enough
+ * for every label the app uses. The cards stay side by side; only what is
+ * inside them turns.
+ */
+@media (max-width: 575.98px) {
+    .sz-stat-card .card-body {
+        flex-direction: column;
+        gap: var(--sz-space-2) !important;
+    }
+
+    .sz-stat-card .sz-stat-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+}
+
 .sz-empty-icon {
     width: 4rem;
     height: 4rem;
@@ -742,6 +762,39 @@ main {
 :focus-visible {
     outline: 2px solid var(--sz-primary);
     outline-offset: 2px;
+}
+
+/*
+ * The same ring again, at a specificity that actually wins.
+ *
+ * The bare :focus-visible above is (0,1,0) and the vendor theme carries
+ * `:is(a):hover,:is(a):focus{color:var(--accent-color);outline:none;
+ * box-shadow:none}`, which is (0,1,1). So every prose link in the app - "Forgot
+ * your password?", "Create a student account", the links in the eligibility
+ * summary - had its outline removed AND its box-shadow removed, leaving a
+ * keyboard user with no focus indicator at all. Measured by tabbing through the
+ * sign-in form in a real browser; it is invisible to any amount of reading the
+ * stylesheet, because the rule that loses is the one written here.
+ *
+ * `a:focus-visible` is also (0,1,1), and this file loads after the theme, so
+ * the tie goes to us. The element selectors below cover the rest of what takes
+ * focus without a .btn or .form-control class to its name.
+ */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--sz-primary);
+    outline-offset: 2px;
+}
+
+/*
+ * .nav-link:focus-visible is (0,2,0) in the vendor CSS and sets outline:0 with
+ * a box-shadow in Bootstrap's blue, so the sidebar's focus ring was a different
+ * colour from every other focus ring on the page. Only the colour changes here.
+ */
+.nav-link:focus-visible {
+    box-shadow: 0 0 0 .25rem rgba(var(--sz-primary-rgb), .25);
 }
 
 /*
@@ -1075,21 +1128,98 @@ main {
         padding: var(--sz-space-2) var(--sz-space-3);
     }
 
+    /*
+     * Label in column one, everything the cell contains in column two.
+     *
+     * Grid rather than flex, and the difference is not cosmetic. Under flex,
+     * every child of the cell becomes its own column: a cell holding a title
+     * and a subtitle - the provider's listing rows, the moderation queue - put
+     * them side by side and squeezed a long scholarship name into a four-line
+     * ribbon. Under grid every child is pinned to column two and auto-placed
+     * down its rows, so one child or four, the value side reads as one block.
+     *
+     * minmax(0, 1fr) rather than 1fr: a grid track's default minimum is its
+     * content, so a long unbroken string - an email address on the admin user
+     * list - pushed the track wider than the card and was clipped by the
+     * .table-responsive wrapper rather than wrapping.
+     *
+     * The label column is 6.5rem, down from 7.5rem. On a 360px screen that is
+     * the difference between a <select> showing "ZIMSEC O" and showing enough
+     * of "ZIMSEC Ordinary Level" to tell two qualifications apart.
+     */
     .sz-table-stack td {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: 6.5rem minmax(0, 1fr);
+        gap: .25rem .75rem;
+        align-items: start;
         border: 0;
         padding: .375rem 0;
         text-align: left !important;
+        overflow-wrap: anywhere;
+        /*
+         * Content keeps its own width. A grid item stretches by default, which
+         * blew every pill badge - "Awaiting review", an application count - out
+         * to the full width of the card, and did the same to each row's
+         * "Remove" and "Suspend". Form controls opt back in below, because a
+         * select that does not fill the column is the thing that made these
+         * grids unusable on a phone in the first place.
+         */
+        justify-items: start;
+    }
+
+    .sz-table-stack td > * {
+        grid-column: 2;
+        min-width: 0;
+        /*
+         * A grid item sized by justify-items: start takes its fit-content
+         * width, and fit-content of a .text-truncate element is the whole
+         * string - white-space: nowrap makes its min-content the full name. So
+         * "Midlands Community Development Trust" on the admin user list sized
+         * its own box past the card instead of ellipsising inside it, and the
+         * .table-responsive wrapper clipped the result. Capping the item at the
+         * track width is what gives text-truncate something to truncate to.
+         */
+        max-width: 100%;
+    }
+
+    .sz-table-stack td > .form-select,
+    .sz-table-stack td > .form-control {
+        justify-self: stretch;
     }
 
     .sz-table-stack td::before {
         content: attr(data-label);
-        flex: 0 0 7.5rem;
+        grid-column: 1;
+        /*
+         * Stated, never inherited. The pseudo-element takes its type from the
+         * cell, so a label sat next to whatever utility class that cell happened
+         * to carry: "Points" came out in monospace because its cell is
+         * .font-monospace, and "Action" came out a size larger than "When"
+         * because the other cells in that table carry .small. Labels in one
+         * table have to look like each other.
+         */
+        font-family: var(--sz-font-sans);
+        font-size: var(--sz-font-size-sm);
         font-weight: var(--sz-weight-semibold);
+        font-style: normal;
+        line-height: 1.5;
+        letter-spacing: normal;
+        text-transform: none;
         color: var(--sz-text-secondary);
+    }
+
+    /* A cell with nothing to name gives its whole width to what it holds. */
+    .sz-table-stack td[data-label=""],
+    .sz-table-stack td:not([data-label]) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /*
+     * The colspan cell an empty table falls back to is the one exception: it
+     * does want the whole width, so its centred content stays centred.
+     */
+    .sz-table-stack td:not([data-label]) {
+        justify-items: stretch;
     }
 
     .sz-table-stack td[data-label=""]::before,
@@ -1097,24 +1227,13 @@ main {
         display: none;
     }
 
-    /*
-     * A cell that holds a control rather than a value.
-     *
-     * Two of these tables are editable grids - the applicant's academic results
-     * and a listing's subject requirements - and a <select> left at its natural
-     * width next to a 7.5rem label is a few characters wide on a 360px screen.
-     * Letting the control take the rest of the row is what makes those grids
-     * usable stacked rather than merely legible.
-     */
-    .sz-table-stack td > .form-select,
-    .sz-table-stack td > .form-control {
-        flex: 1 1 auto;
-        min-width: 0;
+    .sz-table-stack td[data-label=""] > *,
+    .sz-table-stack td:not([data-label]) > * {
+        grid-column: 1;
     }
 
     /* The last cell holds the row's action; give it room and its own rule. */
     .sz-table-stack td:last-child {
-        justify-content: flex-start;
         border-top: 1px solid var(--sz-border);
         margin-top: var(--sz-space-1);
         padding-top: var(--sz-space-2);

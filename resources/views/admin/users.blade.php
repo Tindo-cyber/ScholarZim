@@ -65,13 +65,16 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <x-avatar :user="$user" size="sm" />
                                     <div class="min-w-0">
-                                        <span class="fw-semibold d-block text-truncate">
-                                            {{ $user->displayName() }}
-                                            @if($user->is_super_admin)
-                                                <span class="badge bg-primary-subtle text-primary ms-1">Super admin</span>
-                                            @endif
-                                        </span>
-                                        <span class="small text-secondary">{{ $user->email }}</span>
+                                        {{-- The badge sits outside the truncating span on purpose.
+                                             Inside it, .text-truncate's nowrap measured the name and
+                                             the badge as one unbroken line, so on a phone the name
+                                             filled the cell and "Super admin" was clipped away
+                                             entirely - the one marker on that row that matters. --}}
+                                        <span class="fw-semibold d-block text-truncate">{{ $user->displayName() }}</span>
+                                        @if($user->is_super_admin)
+                                            <span class="badge bg-primary-subtle text-primary">Super admin</span>
+                                        @endif
+                                        <span class="small text-secondary d-block">{{ $user->email }}</span>
                                     </div>
                                 </div>
                             </td>

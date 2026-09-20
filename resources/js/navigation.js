@@ -128,6 +128,40 @@
             document.querySelectorAll('[data-bs-toggle="offcanvas"][data-bs-target="#' + SIDEBAR_ID + '"]')
         );
 
+        /*
+         * Close the drawer without reaching for window.bootstrap.
+         *
+         * The vendor bundle throws partway through loading - a broken dompurify
+         * module inside assets/bvite/js/bvite.js - so it never gets as far as
+         * assigning window.bootstrap. Bootstrap's own delegated data-API
+         * listeners are registered before that point and work perfectly: the
+         * toggle opens the drawer, Escape and the backdrop close it. Only the
+         * programmatic API is missing.
+         *
+         * So this clicks the dismiss button that is already in the sidebar's
+         * header, which is the same path a reader takes, and goes through the
+         * same delegated listener. An earlier version called
+         * Offcanvas.getInstance() behind a `window.bootstrap &&` guard, which
+         * meant both of the behaviours below silently did nothing: tapping a
+         * nav item left the drawer sitting over the section it had scrolled to,
+         * and growing the window past xl left the backdrop up and the body
+         * scroll-locked on a desktop page.
+         */
+        function closeDrawer() {
+            if (window.bootstrap && window.bootstrap.Offcanvas) {
+                var instance = window.bootstrap.Offcanvas.getInstance(sidebar);
+                if (instance) {
+                    instance.hide();
+                    return;
+                }
+            }
+
+            var dismiss = sidebar.querySelector('[data-bs-dismiss="offcanvas"]');
+            if (dismiss) {
+                dismiss.click();
+            }
+        }
+
         function announce(expanded) {
             toggles.forEach(function (toggle) {
                 toggle.setAttribute('aria-expanded', String(expanded));
@@ -158,13 +192,7 @@
                 return;
             }
 
-            var instance = window.bootstrap && window.bootstrap.Offcanvas
-                ? window.bootstrap.Offcanvas.getInstance(sidebar)
-                : null;
-
-            if (instance) {
-                instance.hide();
-            }
+            closeDrawer();
         });
 
         window.addEventListener('resize', function () {
@@ -172,15 +200,11 @@
                 return;
             }
 
-            clearStaleAriaHidden();
-
-            var instance = window.bootstrap && window.bootstrap.Offcanvas
-                ? window.bootstrap.Offcanvas.getInstance(sidebar)
-                : null;
-
-            if (instance && sidebar.classList.contains('show')) {
-                instance.hide();
+            if (sidebar.classList.contains('show')) {
+                closeDrawer();
             }
+
+            clearStaleAriaHidden();
         });
 
         clearStaleAriaHidden();
