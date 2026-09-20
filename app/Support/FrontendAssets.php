@@ -80,6 +80,63 @@ final class FrontendAssets
     }
 
     /**
+     * The origin the Vite dev server is actually serving from, or null.
+     *
+     * Only ever non-null when public/hot exists AND something answers at the
+     * address inside it, which is the same probe viteReady() uses - a stale hot
+     * file left by a killed `npm run dev` does not count, and is removed on the
+     * way past exactly as it is there.
+     *
+     * This exists for SecurityHeaders, which has to name that origin in the
+     * development Content-Security-Policy. It returns the scheme, host and port
+     * and nothing else, because that is all a CSP source expression may carry.
+     */
+    public static function devServerOrigin(): ?string
+    {
+        $hotFile = public_path('hot');
+
+        if (! is_file($hotFile)) {
+            return null;
+        }
+
+        if (! self::devServerIsListening($hotFile)) {
+            // Same cleanup as viteReadyIn(): a dead hot file is a leftover, and
+            // leaving it would make @vite() go on pointing at a closed port.
+            @unlink($hotFile);
+
+            return null;
+        }
+
+        $parts = parse_url(trim((string) @file_get_contents($hotFile)));
+        $scheme = $parts['scheme'] ?? null;
+        $host = $parts['host'] ?? null;
+
+        if ($scheme === null || $host === null) {
+            return null;
+        }
+
+        /*
+         * An IPv6 host is refused rather than returned.
+         *
+         * A CSP source expression has no syntax for one: Chrome reports
+         * "contains an invalid source: 'http://[::1]:5175'. It will be ignored"
+         * and drops the entry, which is worse than not adding it - the header
+         * reads as though the origin were allowed while the browser blocks
+         * every asset from it anyway.
+         *
+         * vite.config.js pins the dev server to 127.0.0.1 so this branch is not
+         * reached. It is here for the developer who overrides that: they get
+         * the strict policy and the blocked-asset errors, which at least say
+         * what is happening, instead of a policy that quietly does nothing.
+         */
+        if (str_contains(trim($host, '[]'), ':')) {
+            return null;
+        }
+
+        return $scheme . '://' . $host . (isset($parts['port']) ? ':' . $parts['port'] : '');
+    }
+
+    /**
      * Whether anything is accepting connections at the address in the hot file.
      * A connection is opened and dropped without speaking HTTP: reaching the
      * socket is the whole question, and a request would only add latency.

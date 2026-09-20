@@ -14,6 +14,7 @@ import './navigation';
 import './submit-state';
 import './profile-form';
 import './academic-results';
+import './subject-requirements';
 import './scholarfit-weights';
 import './bulk-select';
 import './pwa';
