@@ -14,9 +14,17 @@
             <form method="POST" action="{{ route('applicant.profile.update') }}" novalidate id="sz-profile-form">
                 @csrf
 
+                {{--
+                    Four cards, in the order a student thinks about themselves:
+                    who they are, what they are studying, where they live, what
+                    they have passed. Date of birth and gender used to sit in
+                    the Education card between "home area" and the guardian
+                    section, which is where fields go when a form grows rather
+                    than where a reader would look for them.
+                --}}
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="h6 fw-semibold mb-0">Contact details</h2>
+                        <h2 class="h6 fw-semibold mb-0">Personal information</h2>
                     </div>
                     <div class="card-body">
                         <div class="row">
@@ -25,6 +33,35 @@
                             </div>
                             <div class="col-md-6">
                                 <x-form.input name="phone" label="Phone number" type="tel" :value="auth()->user()->phone" />
+                            </div>
+                            <div class="col-md-6">
+                                <x-form.input name="date_of_birth" label="Date of birth" type="date"
+                                              :value="$profile->date_of_birth?->format('Y-m-d')"
+                                              max="{{ now()->toDateString() }}"
+                                              hint="Some awards have an age limit. Without this we cannot check one for you." />
+                            </div>
+                            <div class="col-md-6">
+                                <fieldset class="mb-3">
+                                    <legend class="form-label mb-2">Gender</legend>
+                                    @foreach($genders as $genderValue => $genderLabel)
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="radio"
+                                                   id="field-gender-{{ $genderValue }}"
+                                                   name="gender" value="{{ $genderValue }}"
+                                                   @checked(old('gender', $profile->gender) === $genderValue)>
+                                            <label class="form-check-label" for="field-gender-{{ $genderValue }}">
+                                                {{ $genderLabel }}
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                    @error('gender')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                    <div class="form-text">
+                                        Optional. Shown to providers reviewing your application; it does not
+                                        affect your ScholarFit score or which awards you are eligible for.
+                                    </div>
+                                </fieldset>
                             </div>
                         </div>
                         <p class="small text-secondary mb-0">
@@ -94,6 +131,18 @@
                             </div>
                         </div>
 
+                    </div>
+                </div>
+
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Where you live</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="small text-secondary">
+                            Some awards are limited to one province, or aimed at rural or urban applicants.
+                            ScholarFit uses this to match you; nothing here is shown publicly.
+                        </p>
                         <div class="row">
                             <div class="col-md-4">
                                 <x-form.select name="province" label="Province"
@@ -111,35 +160,6 @@
                                                :value="$profile->settlement_type"
                                                placeholder="Select"
                                                hint="Rural or urban - used only by awards aimed at one or the other." />
-                            </div>
-                            <div class="col-md-6">
-                                <x-form.input name="date_of_birth" label="Date of birth" type="date"
-                                              :value="$profile->date_of_birth?->format('Y-m-d')"
-                                              max="{{ now()->toDateString() }}"
-                                              hint="Some awards have an age limit. Without this we cannot check one for you." />
-                            </div>
-                            <div class="col-md-6">
-                                <fieldset class="mb-3">
-                                    <legend class="form-label mb-2">Gender</legend>
-                                    @foreach($genders as $genderValue => $genderLabel)
-                                        <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio"
-                                                   id="field-gender-{{ $genderValue }}"
-                                                   name="gender" value="{{ $genderValue }}"
-                                                   @checked(old('gender', $profile->gender) === $genderValue)>
-                                            <label class="form-check-label" for="field-gender-{{ $genderValue }}">
-                                                {{ $genderLabel }}
-                                            </label>
-                                        </div>
-                                    @endforeach
-                                    @error('gender')
-                                        <div class="text-danger small mt-1">{{ $message }}</div>
-                                    @enderror
-                                    <div class="form-text">
-                                        Optional. Shown to providers reviewing your application; it does not
-                                        affect your ScholarFit score or which awards you are eligible for.
-                                    </div>
-                                </fieldset>
                             </div>
                         </div>
                     </div>
@@ -340,11 +360,27 @@
                             </tr>
                         </template>
 
-                        <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between">
+                        <div class="d-flex flex-wrap gap-3 align-items-center justify-content-between">
                             <button type="button" id="add-academic-result" class="btn btn-sm btn-outline-secondary">
                                 Add subject
                             </button>
-                            <p class="small mb-0" id="academic-points-summary" aria-live="polite"></p>
+
+                            {{--
+                                Points are shown, never typed. There is no points input in
+                                the grid above and no points field in what is submitted; the
+                                server derives the figure from the grades, and this is the
+                                same arithmetic run while the student is still working so
+                                they are not surprised by it later.
+
+                                academic-results.js writes the totals into the element
+                                below and nothing else here; the label and the note are the
+                                presentation it never had.
+                            --}}
+                            <div class="sz-points-panel">
+                                <span class="sz-eyebrow mb-0">Calculated points</span>
+                                <p class="small fw-semibold mb-0 sz-tabular" id="academic-points-summary" aria-live="polite"></p>
+                                <span class="small text-secondary">Worked out from your grades. You cannot enter these yourself.</span>
+                            </div>
                         </div>
 
                         <p class="text-danger small mt-2 mb-0 d-none" id="academic-duplicate-warning">
@@ -377,52 +413,10 @@
 
         <div class="col-xl-4">
 
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h2 class="h6 fw-semibold mb-0">Profile completion</h2>
-                </div>
-                <div class="card-body">
-                    <div class="d-flex align-items-center gap-3 mb-3">
-                        <x-match-score :score="$profile->completionPercentage()"
-                                       size="lg"
-                                       :label="$profile->isComplete() ? 'Complete' : 'In progress'" />
-
-                        <p class="small text-secondary mb-0">
-                            @if($profile->isComplete())
-                                Every field ScholarFit reads is filled in. Your matches are as accurate as we
-                                can make them.
-                            @else
-                                Each item below is a field ScholarFit scores you on. Filling them in raises your
-                                match on every listing at once.
-                            @endif
-                        </p>
-                    </div>
-
-                    {{--
-                        The same checklist the reminder job reads, so the nudge email
-                        and this page can never disagree about what is missing.
-                    --}}
-                    <ul class="list-unstyled d-grid gap-2 mb-0">
-                        @foreach($profile->completionChecklist() as $item)
-                            <li class="sz-fit-reason small">
-                                <x-icon :name="$item['done'] ? 'check-circle' : 'circle'" :size="16"
-                                        class="text-{{ $item['done'] ? 'success' : 'secondary' }} mt-1" />
-                                <span class="min-w-0">
-                                    @if($item['done'])
-                                        <span class="fw-semibold">{{ $item['label'] }}</span>
-                                    @else
-                                        <a class="fw-semibold"
-                                           href="#{{ $item['anchor'] === 'documents' ? 'documents' : ($item['anchor'] === 'guardian' ? 'sz-guardian-card' : 'field-' . $item['anchor']) }}">
-                                            {{ $item['label'] }}
-                                        </a>
-                                        <span class="d-block text-secondary">{{ $item['hint'] }}</span>
-                                    @endif
-                                </span>
-                            </li>
-                        @endforeach
-                    </ul>
-                </div>
-            </div>
+            {{-- The same component the dashboard and the matches page use, in its
+                 checklist density. One definition of "complete", one list of what is
+                 missing, and one set of links at the fields that close the gaps. --}}
+            <x-profile-progress :profile="$profile" variant="checklist" class="mb-4" />
 
             <div class="card" id="documents" data-sz-tier-hide="PRIMARY">
                 <div class="card-header">
@@ -437,6 +431,11 @@
                             All four documents below are required for your education level.
                         </div>
                     @endif
+
+                    <p class="small text-secondary mb-0">
+                        Uploading again replaces what is there. Your documents are private: only you,
+                        and a provider you have applied to, can open them.
+                    </p>
 
                     @foreach([
                         'results' => ['Worth 5 points of your ScholarFit score.'],
@@ -468,7 +467,7 @@
                                     @elseif($isRequired)
                                         <x-status-badge label="Required" tone="danger" />
                                     @else
-                                        <x-status-badge label="Missing" tone="secondary" />
+                                        <x-status-badge label="Not uploaded" tone="secondary" />
                                     @endif
                                 </div>
 
@@ -495,10 +494,13 @@
                                     <input class="form-control form-control-sm" type="file" name="document"
                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required
                                            aria-label="Upload {{ $label }}">
-                                    <button class="btn btn-sm btn-outline-primary flex-shrink-0" type="submit">
-                                        {{ $filename ? 'Replace' : 'Upload' }}
-                                    </button>
+                                    <x-submit-button :label="$filename ? 'Replace' : 'Upload'"
+                                                     busy-label="Uploading..."
+                                                     tone="outline-primary" size="sm"
+                                                     class="flex-shrink-0" />
                                 </form>
+
+                                <p class="form-text mt-1 mb-0">PDF, Word, JPG or PNG.</p>
                             </div>
                         @endif
                     @endforeach

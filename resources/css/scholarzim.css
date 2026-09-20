@@ -616,6 +616,25 @@ main {
     max-width: 22rem;
 }
 
+/* ---------- Applicant: calculated points ---------- */
+
+/*
+ * The points panel beside "Add subject". Points are derived from grades and
+ * never entered, so the block is styled as a readout rather than as a field:
+ * right-aligned, no border, and a note saying where the number comes from.
+ */
+.sz-points-panel {
+    text-align: right;
+    margin-left: auto;
+}
+
+@media (max-width: 575.98px) {
+    .sz-points-panel {
+        text-align: left;
+        margin-left: 0;
+    }
+}
+
 /* ---------- Application timeline ---------- */
 
 .sz-timeline-step {
