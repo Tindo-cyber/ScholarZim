@@ -187,26 +187,7 @@
                     </div>
                 </div>
 
-                @if($fit->breakdown->fixes)
-                    <div class="card border-warning">
-                        <div class="card-header bg-warning-subtle">
-                            <h2 class="h6 fw-semibold mb-0">Before you submit</h2>
-                        </div>
-                        <div class="card-body">
-                            <ul class="small mb-0 ps-3 d-grid gap-1">
-                                @foreach($fit->breakdown->fixes as $fix)
-                                    <li>
-                                        {{ $fix['text'] }}
-                                        @if($fix['target'] === 'profile')
-                                            <a class="fw-semibold"
-                                               href="{{ route('applicant.profile') }}#field-{{ $fix['cta'] }}">Fix this</a>
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                @endif
+                <x-score-fixes :fit="$fit" variant="alert" />
             @endif
 
             @if($opportunity->deadline)

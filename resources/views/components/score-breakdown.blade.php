@@ -95,9 +95,14 @@
                             <div class="progress-bar bg-{{ $tone }}" style="width: {{ $percent }}%"></div>
                         </div>
 
+                        {{-- The engine writes its explanations out of the values it
+                             scored on, which is what keeps the two in step - and
+                             leaves stored tokens like O_LEVEL in the sentence.
+                             ScholarFitCopy restates the same facts in a student's
+                             words without touching what was decided. --}}
                         <p class="small text-secondary mb-0">
                             <span class="text-{{ $tone }} fw-semibold">{{ $dimension->verdict() }}.</span>
-                            {{ $dimension->detail }}
+                            {{ \App\Support\ScholarFitCopy::humanise($dimension->detail) }}
                         </p>
                     </li>
                 @endforeach

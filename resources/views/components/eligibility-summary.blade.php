@@ -1,4 +1,13 @@
-@props(['fit'])
+@props([
+    'fit',
+    /**
+     * 'full'    the alert, every requirement, the advisory notes - for a page
+     *           where the reader is deciding whether to apply.
+     * 'compact' the verdict and a count, with the same list one click away -
+     *           for a card in a list of many.
+     */
+    'variant' => 'full',
+])
 
 @php
     /**
@@ -22,15 +31,55 @@
      * when they press Submit. Advisory notes are kept out of the rule list and
      * marked differently: an unusual progression is not a requirement anyone
      * failed.
+     *
+     * The compact variant states the same verdict from the same data. It is a
+     * second density, not a second opinion - which is why it lives here rather
+     * than in a component of its own.
      */
     $rules = \App\Services\ScholarFit\RequirementOutcome::rules($fit->breakdown->requirementOutcomes);
     $notes = $fit->breakdown->advisoryNotes();
     $eligible = $fit->meetsRequirements();
     $stated = $rules !== [];
+    $met = count(array_filter($rules, static fn ($o) => $o->passed));
+    $unmet = count($rules) - $met;
 @endphp
 
-@if($stated)
-    <div class="alert {{ $eligible ? 'alert-success' : 'alert-danger' }} mb-3" role="alert">
+@if($variant === 'compact')
+    <div {{ $attributes->merge(['class' => 'd-flex flex-wrap align-items-center gap-2']) }}>
+        @if(! $stated)
+            <x-status-badge label="No stated requirements" tone="secondary" icon="shield" />
+            <span class="small text-secondary">The provider decides who is awarded.</span>
+        @elseif($eligible)
+            <x-status-badge label="Eligible" tone="success" />
+            <span class="small text-secondary">
+                You meet {{ $met === 1 ? 'the one requirement' : 'all ' . $met . ' requirements' }} this scholarship states.
+            </span>
+        @else
+            <x-status-badge label="Not eligible" tone="danger" />
+            <span class="small text-secondary">
+                {{ $unmet }} {{ \Illuminate\Support\Str::plural('requirement', $unmet) }} not met.
+            </span>
+        @endif
+
+        @if($stated)
+            <details class="small w-100 mt-1">
+                <summary class="text-secondary">
+                    {{ $eligible ? 'Why you qualify' : 'Why you do not qualify' }}
+                </summary>
+                <ul class="list-unstyled d-grid gap-1 mt-2 mb-0">
+                    @foreach($rules as $outcome)
+                        <li class="d-flex gap-2 align-items-start">
+                            <x-icon :name="$outcome->passed ? 'check-circle' : 'x-circle'" :size="14"
+                                    class="flex-shrink-0 mt-1 {{ $outcome->passed ? 'text-success' : 'text-danger' }}" />
+                            <span class="{{ $outcome->passed ? 'text-secondary' : '' }}">{{ $outcome->message }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </details>
+        @endif
+    </div>
+@elseif($stated)
+    <div {{ $attributes->merge(['class' => 'alert mb-3 alert-' . ($eligible ? 'success' : 'danger')]) }} role="alert">
         <div class="d-flex gap-2 align-items-start">
             <x-icon :name="$eligible ? 'check-circle' : 'x-circle'" :size="20" class="flex-shrink-0 mt-1" />
             <div class="w-100">
@@ -42,9 +91,12 @@
                         : 'This scholarship states requirements your profile does not meet.' }}
                 </p>
 
+                <div class="small fw-semibold mb-1">{{ $eligible ? 'Why you qualify' : 'Why you do not qualify' }}</div>
+
                 {{-- Met and unmet together, in the order they were evaluated, so a
                      refusal reads as a verdict on the one or two things that fell
-                     short rather than on the whole profile. --}}
+                     short rather than on the whole profile. Each line carries what
+                     was required and what the applicant has. --}}
                 <ul class="list-unstyled d-grid gap-1 mb-0 small">
                     @foreach($rules as $outcome)
                         <li class="d-flex gap-2 align-items-start">
@@ -70,7 +122,7 @@
         not state; it does not say the applicant passed anything, because
         nothing was asked of them.
     --}}
-    <div class="alert alert-secondary mb-3" role="note">
+    <div {{ $attributes->merge(['class' => 'alert alert-secondary mb-3']) }} role="note">
         <div class="d-flex gap-2 align-items-start">
             <x-icon name="shield" :size="20" class="flex-shrink-0 mt-1" />
             <div>
@@ -87,6 +139,6 @@
 @foreach($notes as $note)
     <p class="small text-secondary d-flex gap-2 align-items-start">
         <x-icon name="shield" :size="16" class="flex-shrink-0 mt-1" />
-        <span>{{ $note->message }}</span>
+        <span>{{ \App\Support\ScholarFitCopy::humanise($note->message) }}</span>
     </p>
 @endforeach

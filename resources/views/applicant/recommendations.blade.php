@@ -9,19 +9,19 @@
                    eyebrow="ScholarFit">
         <x-slot:actions>
             <a class="btn btn-outline-secondary" href="{{ route('applicant.profile') }}">Improve my profile</a>
+            <a class="btn btn-primary" href="{{ route('opportunities.index') }}">Find scholarships</a>
         </x-slot:actions>
     </x-page-header>
 
+    {{-- Shown only while it is actionable. At 100% it is congratulation, which
+         is not information, and it would sit above the matches on every visit. --}}
     @if($profile->completionPercentage() < 100)
-        <div class="alert alert-info">
-            Your profile is {{ $profile->completionPercentage() }}% complete. Scores below are calculated from
-            what you have filled in so far.
-        </div>
+        <x-profile-progress :profile="$profile" class="mb-4" />
     @endif
 
     <form method="GET" action="{{ route('applicant.recommendations') }}" class="card mb-4">
         <div class="card-body d-flex flex-wrap gap-3 align-items-end">
-            <div class="flex-grow-1" style="max-width: 20rem;">
+            <div class="flex-grow-1 sz-filter-field">
                 <label class="form-label" for="min_score">Minimum match score</label>
                 <select class="form-select" id="min_score" name="min_score">
                     @foreach([0 => 'Show everything', 45 => 'Moderate fit and above (45%+)', 75 => 'Strong fit only (75%+)'] as $value => $label)
@@ -29,7 +29,7 @@
                     @endforeach
                 </select>
             </div>
-            <button class="btn btn-primary" type="submit">Filter</button>
+            <button class="btn btn-outline-primary" type="submit">Apply filter</button>
         </div>
     </form>
 
@@ -42,94 +42,111 @@
                            :action-href="route('applicant.profile')" />
         </div>
     @else
+        <p class="text-secondary small" aria-live="polite">
+            {{ count($matches) }} {{ \Illuminate\Support\Str::plural('scholarship', count($matches)) }} matched your profile.
+        </p>
+
         <div class="d-grid gap-3">
             @foreach($matches as $match)
-                @php $opportunity = $match->opportunity; @endphp
+                @php
+                    $opportunity = $match->opportunity;
+                    $acceptedApplication = $accepted[$opportunity->opportunity_id] ?? null;
+                    $hasApplied = in_array($opportunity->opportunity_id, $appliedIds, true);
+                    $isSaved = in_array($opportunity->opportunity_id, $savedIds, true);
+                @endphp
 
-                <div class="card">
+                {{--
+                    The order of this card is the argument it makes.
+
+                    What the scholarship is, then whether the student can apply,
+                    then why it fits, and only then the number. The score used to
+                    be the first thing in the row - a large dial in the left
+                    column - which put a percentage in front of a reader before
+                    they knew what it was a percentage of, and sat a confident
+                    "92%" beside listings they were not eligible for.
+                --}}
+                <article class="card sz-match-card">
                     <div class="card-body">
-                        <div class="row g-3 align-items-center">
-
-                            <div class="col-md-2 text-center">
-                                <x-match-score :score="$match->matchScore"
-                                               :label="$match->breakdown->confidenceLabel" />
-                            </div>
-
-                            <div class="col-md-7">
+                        <div class="d-flex flex-nowrap align-items-start gap-3 mb-2">
+                            <div class="min-w-0 flex-grow-1">
                                 <h2 class="h6 fw-bold mb-1">
-                                    <a class="text-body text-decoration-none"
+                                    <a class="text-body text-decoration-none stretched-link"
                                        href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">
                                         {{ $opportunity->title }}
                                     </a>
                                 </h2>
-                                <p class="small text-secondary mb-2">{{ $opportunity->awardingBody() }}</p>
-
-                                <div class="d-flex flex-wrap gap-2 mb-2">
-                                    {{-- The dimensions that carried this score, named by the same objects it was summed from. --}}
-                                    @foreach($match->breakdown->metReasons() as $dimension)
-                                        <x-status-badge :label="$dimension->label" tone="success" icon="check" />
-                                    @endforeach
-                                </div>
-
-                                {{-- Collapsed in a list: the full six-row breakdown is available
-                                     on demand without making every card as tall as the one
-                                     scholarship the reader is actually weighing up. --}}
-                                <div class="mb-2">
-                                    <x-score-breakdown :fit="$match" />
-                                </div>
-
-                                @if($match->breakdown->fixes)
-                                    <details class="small">
-                                        <summary class="text-secondary">
-                                            {{ count($match->breakdown->fixes) }} thing(s) holding this score back
-                                        </summary>
-                                        {{-- Each one links at the field that fixes it. --}}
-                                        <ul class="mt-2 mb-0 ps-3 text-secondary d-grid gap-1">
-                                            @foreach($match->breakdown->fixes as $fix)
-                                                <li>
-                                                    {{ $fix['text'] }}
-                                                    @if($fix['target'] === 'profile')
-                                                        <a class="fw-semibold"
-                                                           href="{{ route('applicant.profile') }}#field-{{ $fix['cta'] }}">Fix this</a>
-                                                    @elseif($fix['target'] === 'documents')
-                                                        <a class="fw-semibold"
-                                                           href="{{ route('applicant.profile') }}#documents">Upload it</a>
-                                                    @endif
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </details>
-                                @endif
+                                <p class="small text-secondary mb-0">{{ $opportunity->awardingBody() }}</p>
                             </div>
 
-                            <div class="col-md-3 d-grid gap-2">
-                                @if($accepted[$opportunity->opportunity_id] ?? null)
-                                    <a class="text-decoration-none"
-                                       href="{{ route('applications.confirmation', $accepted[$opportunity->opportunity_id]->application_id) }}">
-                                        <x-status-badge label="Accepted" tone="success" icon="stars" class="justify-content-center" />
-                                    </a>
-                                @elseif(in_array($opportunity->opportunity_id, $appliedIds, true))
-                                    <x-status-badge label="Applied" tone="success" icon="check-circle" class="justify-content-center" />
-                                @else
-                                    <a class="btn btn-primary btn-sm"
-                                       href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply</a>
-                                @endif
-                                <a class="btn btn-outline-secondary btn-sm"
-                                   href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Details</a>
-
-                                <form method="POST"
-                                      action="{{ in_array($opportunity->opportunity_id, $savedIds, true)
-                                          ? route('applicant.saved.destroy', $opportunity->opportunity_id)
-                                          : route('applicant.saved.store', $opportunity->opportunity_id) }}">
-                                    @csrf
-                                    <button class="btn btn-sm btn-link p-0 text-decoration-none w-100" type="submit">
-                                        {{ in_array($opportunity->opportunity_id, $savedIds, true) ? 'Remove from saved' : 'Save for later' }}
-                                    </button>
-                                </form>
+                            {{-- Secondary to the title, and kept to the smaller size:
+                                 a match score is a hint about fit, not a verdict. --}}
+                            <div class="text-center flex-shrink-0 position-relative z-1">
+                                <x-match-score :score="$match->matchScore"
+                                               :label="$match->breakdown->confidenceLabel" />
                             </div>
                         </div>
+
+                        <x-eligibility-summary :fit="$match" variant="compact" class="mb-3" />
+
+                        <ul class="list-unstyled d-flex flex-wrap gap-3 small text-secondary mb-3">
+                            <li class="d-flex align-items-center gap-1">
+                                <x-icon name="calendar" :size="14" />
+                                {{ $opportunity->deadline?->format('d M Y') ?? 'No deadline' }}
+                            </li>
+                            @if($opportunity->education_level)
+                                <li class="d-flex align-items-center gap-1">
+                                    <x-icon name="file-text" :size="14" />
+                                    {{ \App\Support\EducationLevel::label($opportunity->education_level) }}
+                                </li>
+                            @endif
+                            @if($opportunity->target_field)
+                                <li class="d-flex align-items-center gap-1">
+                                    <x-icon name="stars" :size="14" />{{ $opportunity->target_field }}
+                                </li>
+                            @endif
+                            @if($opportunity->formattedAward())
+                                <li class="d-flex align-items-center gap-1">
+                                    <x-icon name="coins" :size="14" />{{ $opportunity->formattedAward() }}
+                                </li>
+                            @endif
+                        </ul>
+
+                        <div class="d-grid gap-2 mb-3">
+                            <x-score-breakdown :fit="$match" />
+                            <x-score-fixes :fit="$match" />
+                        </div>
+
+                        <div class="d-flex flex-wrap gap-2 position-relative z-1">
+                            @if($acceptedApplication)
+                                <a class="text-decoration-none"
+                                   href="{{ route('applications.confirmation', $acceptedApplication->application_id) }}">
+                                    <x-status-badge label="Accepted" tone="success" />
+                                </a>
+                            @elseif($hasApplied)
+                                <x-status-badge label="Applied" tone="success" />
+                            @else
+                                <a class="btn btn-primary btn-sm"
+                                   href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Apply</a>
+                            @endif
+
+                            <a class="btn btn-outline-secondary btn-sm"
+                               href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">View details</a>
+
+                            <form method="POST" class="m-0 ms-auto"
+                                  action="{{ $isSaved
+                                      ? route('applicant.saved.destroy', $opportunity->opportunity_id)
+                                      : route('applicant.saved.store', $opportunity->opportunity_id) }}">
+                                @csrf
+                                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                                        type="submit"
+                                        aria-label="{{ $isSaved ? 'Remove ' . $opportunity->title . ' from saved' : 'Save ' . $opportunity->title . ' for later' }}">
+                                    <x-icon name="bookmark" :size="14" />
+                                    {{ $isSaved ? 'Saved' : 'Save' }}
+                                </button>
+                            </form>
+                        </div>
                     </div>
-                </div>
+                </article>
             @endforeach
         </div>
     @endif

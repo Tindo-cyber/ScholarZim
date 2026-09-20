@@ -250,30 +250,7 @@
                                     <x-score-breakdown :fit="$fit" :open="true" />
                                 </div>
 
-                                @if($fit->breakdown->fixes)
-                                    {{--
-                                        Each shortfall links at the field that fixes
-                                        it: telling a student what is missing without
-                                        saying where to put it is only half an answer.
-                                    --}}
-                                    <div class="alert alert-warning small mb-3">
-                                        <div class="fw-semibold mb-1">To improve your score</div>
-                                        <ul class="mb-0 ps-3 d-grid gap-1">
-                                            @foreach($fit->breakdown->fixes as $fix)
-                                                <li>
-                                                    {{ $fix['text'] }}
-                                                    @if($fix['target'] === 'profile')
-                                                        <a class="fw-semibold"
-                                                           href="{{ route('applicant.profile') }}#field-{{ $fix['cta'] }}">Fix this</a>
-                                                    @elseif($fix['target'] === 'documents')
-                                                        <a class="fw-semibold"
-                                                           href="{{ route('applicant.profile') }}#documents">Upload it</a>
-                                                    @endif
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                @endif
+                                <x-score-fixes :fit="$fit" variant="alert" class="mb-3" />
                             @endif
                         @endif
 

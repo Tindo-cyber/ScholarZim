@@ -600,6 +600,22 @@ main {
     color: var(--sz-text);
 }
 
+/* ---------- Applicant: match cards ---------- */
+
+/*
+ * A match card is a card, not a poster. The hover lift the scholarship cards
+ * use is right for a grid of tiles you skim; this is a list of decisions, and
+ * a row that moves under the pointer while you read it is a distraction.
+ */
+.sz-match-card {
+    border-radius: var(--sz-radius);
+}
+
+/* Keeps a filter select readable without letting it run the width of the card. */
+.sz-filter-field {
+    max-width: 22rem;
+}
+
 /* ---------- Application timeline ---------- */
 
 .sz-timeline-step {

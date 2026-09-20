@@ -34,11 +34,15 @@
         'open' => 'check-circle',
         'verified' => 'shield-check',
         'shortlisted' => 'stars',
+        'eligible' => 'check-circle',
+        'applied' => 'check-circle',
+        'saved' => 'bookmark',
 
         // Did not
         'rejected' => 'x-circle',
         'declined' => 'x-circle',
         'not eligible' => 'x-circle',
+        'no stated requirements' => 'shield',
 
         // Ended, by someone's choice or by the calendar
         'withdrawn' => 'circle',
