@@ -52,6 +52,17 @@
             </div>
         @endif
 
+        @if(auth()->user()?->isAdmin() && ! $opportunity->isPubliclyVisible())
+            {{--
+                The moderator's frame, and the only admin-specific thing in
+                this view. It can be reached one way: admin.moderation.show,
+                which is the single route that renders an unpublished listing -
+                the public route answers 404 for anything not publicly visible,
+                so an administrator browsing the live site never sees it.
+            --}}
+            <x-moderation-panel :opportunity="$opportunity" />
+        @endif
+
         <div class="row g-4">
             <div class="col-lg-8">
                 <div class="card mb-4">

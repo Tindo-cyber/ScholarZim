@@ -8,6 +8,34 @@
                    subtitle="Accounts created here are active immediately and skip email verification."
                    eyebrow="Administration" />
 
+    {{--
+        What creating an account here actually does, since it is not the same
+        path a person signing up takes.
+
+        Every fact below is AdminUserService::createUser(): the account is
+        written ACTIVE with email_verified true, a welcome message is sent, and
+        the action is audited. The provider note matters most - that method
+        creates no provider_profile, so an organisation made here has no
+        registration certificate on file and never appears in the verification
+        queue. An administrator choosing "Provider" from the list deserves to
+        know that before they choose it, not after somebody asks where the
+        certificate went.
+    --}}
+    <div class="alert alert-primary d-flex gap-2 mb-4" role="note">
+        <x-icon name="shield" :size="18" class="flex-shrink-0 mt-1" />
+        <div>
+            <p class="mb-1">
+                The account is active straight away, is treated as email-verified, and is sent a
+                welcome message. Creating it is recorded in the audit log.
+            </p>
+            <p class="mb-0">
+                A provider created here is not put through verification: there is no registration
+                certificate on file and nothing appears in the review queue. Let an organisation
+                register itself if you want that check to happen.
+            </p>
+        </div>
+    </div>
+
     <div class="row">
         <div class="col-xl-7">
             <div class="card">
@@ -21,7 +49,8 @@
 
                         <x-form.select name="role_name" label="Role"
                                        :options="collect($roles)->mapWithKeys(fn ($r) => [$r => \App\Support\RoleNames::displayLabel($r)])->all()"
-                                       placeholder="Select a role" required />
+                                       placeholder="Select a role" required
+                                       hint="Applicants apply for scholarships, providers publish them, administrators run the platform. A role cannot be changed here afterwards." />
 
                         <div class="row">
                             <div class="col-md-6">

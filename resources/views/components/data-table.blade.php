@@ -10,6 +10,8 @@
     'emptyTitle' => 'Nothing here yet',
     'emptyMessage' => null,
     'emptyIcon' => 'inbox',
+    /** Heading level for the empty row's title; see x-empty-state. */
+    'emptyLevel' => 'h2',
     /** Off for tables whose rows are not individually actionable. */
     'hover' => true,
     /**
@@ -83,7 +85,8 @@
                 {{-- colspan counted from the columns given, so it cannot fall behind them. --}}
                 <tr>
                     <td colspan="{{ max(count($normalised), 1) }}">
-                        <x-empty-state :title="$emptyTitle" :message="$emptyMessage" :icon="$emptyIcon" />
+                        <x-empty-state :title="$emptyTitle" :message="$emptyMessage"
+                                       :icon="$emptyIcon" :level="$emptyLevel" />
                     </td>
                 </tr>
             @else
