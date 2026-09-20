@@ -13,7 +13,7 @@
 
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">What the award is worth</h2>
+        <h2 class="h6 fw-semibold mb-0">Funding and award</h2>
     </div>
     <div class="card-body">
         <p class="text-secondary small">
@@ -58,7 +58,7 @@
 
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">Hard eligibility rules</h2>
+        <h2 class="h6 fw-semibold mb-0">General eligibility</h2>
     </div>
     <div class="card-body">
         <div class="alert alert-warning d-flex gap-2" role="note">
@@ -72,12 +72,6 @@
         </div>
 
         <div class="row">
-            <div class="col-md-6">
-                <x-form.input name="min_academic_points" label="Minimum ZIMSEC A-Level points" type="number"
-                              min="1" :max="\App\Support\Academic\AcademicCatalogue::maxZimsecALevelPoints()" step="1"
-                              :value="$value('min_academic_points')"
-                              hint="ZIMSEC A-Level only: A=5, B=4, C=3, D=2, E=1, so three A grades is 15. O-Level, Cambridge and degree results are never counted towards this." />
-            </div>
             <div class="col-md-6">
                 <x-form.input name="max_age" label="Maximum age" type="number"
                               min="10" max="99" step="1"
@@ -113,11 +107,26 @@
 </div>
 
 
+{{--
+    Academic requirements, in two clearly separated halves.
+
+    They are different rules and they are checked separately. A subject
+    requirement asks "do you hold Mathematics at B or better?"; the points rule
+    asks "do your ZIMSEC A-Level grades add up to 15?". An applicant can pass
+    one and fail the other, and the engine reports them as two outcomes.
+
+    The points field used to sit in the general eligibility card between a
+    maximum age and a required province, which invited reading it as one more
+    demographic filter. Nothing about either rule changed - only which heading
+    they sit under.
+--}}
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">Required subjects (optional)</h2>
+        <h2 class="h6 fw-semibold mb-0">Academic requirements (optional)</h2>
     </div>
     <div class="card-body">
+        <h3 class="sz-eyebrow">Subject requirements</h3>
+
         <p class="text-secondary small">
             If this award requires applicants to hold specific subjects at a minimum grade, list them here.
             Applicants who do not hold a required subject, or whose grade falls short, are told they are not
@@ -226,6 +235,24 @@
         <button type="button" id="add-subject-requirement" class="btn btn-sm btn-outline-secondary">
             Add a required subject
         </button>
+
+        <hr class="my-4">
+
+        <h3 class="sz-eyebrow">Total A-Level points</h3>
+
+        <p class="text-secondary small">
+            A separate rule from the subjects above, and checked separately. It asks whether the
+            applicant's ZIMSEC A-Level grades add up to a total, whatever those subjects are.
+        </p>
+
+        <div class="row">
+            <div class="col-md-6">
+                <x-form.input name="min_academic_points" label="Minimum ZIMSEC A-Level points" type="number"
+                              min="1" :max="\App\Support\Academic\AcademicCatalogue::maxZimsecALevelPoints()" step="1"
+                              :value="$value('min_academic_points')"
+                              hint="ZIMSEC A-Level only: A=5, B=4, C=3, D=2, E=1, so three A grades is 15. O-Level, Cambridge and degree results are never counted towards this." />
+            </div>
+        </div>
 
         {{--
             Built in the controller rather than inline: Blade's directive parser

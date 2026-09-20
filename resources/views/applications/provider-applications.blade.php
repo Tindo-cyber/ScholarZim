@@ -52,7 +52,9 @@
                                                 {{ $application->user?->displayName() ?? 'Deleted user' }}
                                             </span>
                                             <span class="small text-secondary">
-                                                {{ $application->user?->applicantProfile?->education_level ?? 'Level not set' }}
+                                                {{ $application->user?->applicantProfile?->education_level
+                                                    ? \App\Support\EducationLevel::label($application->user->applicantProfile->education_level)
+                                                    : 'Level not set' }}
                                             </span>
                                         </span>
                                     </span>
