@@ -80,7 +80,11 @@
                 </p>
             </div>
             <div class="col-6 col-lg-2">
-                <h6 class="fw-semibold mb-3">Students</h6>
+                {{-- h2 carrying the h6 type scale. These are the footer's own
+                     section headings; marking them h6 to get the size dropped
+                     three levels below the page's last heading, on every public
+                     page. The class keeps the appearance identical. --}}
+                <h2 class="h6 fw-semibold mb-3">Students</h2>
                 <ul class="list-unstyled d-grid gap-2 mb-0">
                     <li><a class="link-secondary text-decoration-none" href="{{ route('scholarships.index') }}">Browse</a></li>
                     <li><a class="link-secondary text-decoration-none" href="{{ route('register') }}">Create account</a></li>
@@ -88,7 +92,7 @@
                 </ul>
             </div>
             <div class="col-6 col-lg-2">
-                <h6 class="fw-semibold mb-3">Providers</h6>
+                <h2 class="h6 fw-semibold mb-3">Providers</h2>
                 <ul class="list-unstyled d-grid gap-2 mb-0">
                     <li><a class="link-secondary text-decoration-none" href="{{ route('register.provider') }}">Register</a></li>
                     <li><a class="link-secondary text-decoration-none" href="{{ route('login') }}">Provider sign in</a></li>

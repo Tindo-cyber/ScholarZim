@@ -34,7 +34,14 @@
             <input type="hidden" name="status" value="{{ $activeStatus }}" />
         @endif
         <div class="flex-grow-1">
-            <input class="form-control" type="search" name="search" value="{{ $search ?? '' }}"
+            {{-- A placeholder is not a label: it goes the moment anything is typed,
+                 and it is not reliably announced. This is the same visually-hidden
+                 label the topbar search and the landing-page search already use. --}}
+            <label class="visually-hidden" for="application-search">
+                Search your applications
+            </label>
+            <input class="form-control" type="search" id="application-search" name="search"
+                   value="{{ $search ?? '' }}"
                    placeholder="Search by scholarship, provider, or application number" />
         </div>
         <button class="btn btn-outline-secondary" type="submit">Search</button>

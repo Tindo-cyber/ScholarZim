@@ -36,6 +36,10 @@
                            :action-href="route('opportunities.index')" />
         </div>
     @else
+        {{-- Same reason as the public listing: the cards are h3 and need a
+             section heading between them and the page h1. --}}
+        <h2 class="visually-hidden">Search results</h2>
+
         <div class="row g-3 g-lg-4">
             @foreach($opportunities as $opportunity)
                 <div class="col-md-6 col-xxl-4">

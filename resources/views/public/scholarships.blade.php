@@ -24,6 +24,10 @@
                                :action-href="route('scholarships.index')" />
             </div>
         @else
+            {{-- For the document outline: the cards below title themselves h3,
+                 which needs a section heading above them rather than the page h1. --}}
+            <h2 class="visually-hidden">Search results</h2>
+
             <div class="row g-3 g-lg-4">
                 @foreach($opportunities as $opportunity)
                     <div class="col-md-6 col-xl-4">
