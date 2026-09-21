@@ -210,19 +210,6 @@
                         <div class="mb-0">{!! nl2br(e($opportunity->description)) !!}</div>
                     </div>
                 </div>
-
-                @if($related->isNotEmpty())
-                    <h2 class="h5 fw-bold mb-3">Similar scholarships</h2>
-                    <div class="row g-3">
-                        @foreach($related as $item)
-                            <div class="col-md-4">
-                                <x-scholarship-card :opportunity="$item" :show-save="false"
-                                                    :applied="in_array($item->opportunity_id, $appliedIds, true)"
-                                                    :accepted="$accepted[$item->opportunity_id] ?? null" />
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
             </div>
 
             <div class="col-lg-4">
@@ -329,5 +316,30 @@
                 </div>
             </div>
         </div>
+
+        {{--
+            Related listings sit below both columns rather than at the foot of
+            the left one.
+
+            The action panel is the second column, so on a phone - where the
+            columns become rows - everything in the left column came first.
+            Six related scholarship cards therefore stood between the
+            description and the only button on the page that applies for this
+            one. Moving the block out of that column puts the action directly
+            after the listing it belongs to, and costs the desktop layout
+            nothing: it was always full width down there anyway.
+        --}}
+        @if($related->isNotEmpty())
+            <h2 class="h5 fw-bold mb-3">Similar scholarships</h2>
+            <div class="row g-3">
+                @foreach($related as $item)
+                    <div class="col-md-6 col-lg-4">
+                        <x-scholarship-card :opportunity="$item" :show-save="false"
+                                            :applied="in_array($item->opportunity_id, $appliedIds, true)"
+                                            :accepted="$accepted[$item->opportunity_id] ?? null" />
+                    </div>
+                @endforeach
+            </div>
+        @endif
     </div>
 @endsection

@@ -18,6 +18,6 @@
         <x-form.input name="password_confirmation" label="Confirm new password" type="password" required
                       autocomplete="new-password" />
 
-        <button class="btn btn-primary btn-lg w-100" type="submit">Update password</button>
+        <x-submit-button label="Update password" size="lg" class="w-100" busy-label="Updating..." />
     </form>
 @endsection

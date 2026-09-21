@@ -730,45 +730,25 @@ legend.form-label {
     background: var(--bs-body-bg);
 }
 
-.sz-photo-banner {
-    position: relative;
-    min-height: 22rem;
-    display: flex;
-    align-items: flex-end;
-    background: url('/assets/img/scholarship-graduate-hero.jpg') center 20% / cover no-repeat;
-    border-radius: var(--sz-radius);
-    overflow: hidden;
-    color: #fff;
+/*
+ * The error page's reading measure. It was an inline max-width, which is the
+ * one place a length cannot be themed or found again.
+ */
+.sz-error-panel {
+    max-width: 32rem;
 }
 
-.sz-photo-banner::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(0deg, rgba(4, 12, 36, .88) 0%, rgba(4, 12, 36, .4) 60%, rgba(4, 12, 36, .05) 100%);
-}
-
-.sz-photo-banner > * {
-    position: relative;
-    z-index: 1;
-}
-
+/*
+ * The provider panel, without the photograph behind it.
+ *
+ * The image is a navy banner with the word SCHOLARSHIPS set across it, and even
+ * under a gradient at 85-92% opacity the letterforms read through - so the
+ * paragraph explaining how provider verification works was laid over a second,
+ * larger word saying something else. A flat brand panel says the same thing and
+ * lets the sentence be read.
+ */
 .sz-provider-cta {
-    background:
-        linear-gradient(120deg, rgba(0, 41, 122, .92), rgba(0, 74, 173, .85)),
-        url('/assets/img/scholarship-banner-navy.jpg') center / cover no-repeat;
-}
-
-.sz-steps-photo {
-    background: url('/assets/img/scholarship-books-badge.jpg') center / cover no-repeat;
-    border-radius: var(--sz-radius);
-    min-height: 16rem;
-}
-
-.sz-badge-coin {
-    width: 100%;
-    max-width: 12rem;
-    height: auto;
+    background: linear-gradient(120deg, #00297a, #004aad);
 }
 
 .sz-step-number {

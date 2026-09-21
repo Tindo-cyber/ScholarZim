@@ -20,7 +20,9 @@
 
         <x-form.input name="email" label="Email address" type="email" required autocomplete="email" autofocus />
 
-        <button class="btn btn-primary btn-lg w-100 mb-3" type="submit">Send reset link</button>
+        {{-- Sending the link is a round trip that despatches mail, so the
+             press is acknowledged the same way it is everywhere else. --}}
+        <x-submit-button label="Send reset link" size="lg" class="w-100 mb-3" busy-label="Sending..." />
     </form>
 
     <p class="text-secondary text-center mb-0">
