@@ -13,7 +13,9 @@ docker compose up --build
 
 Open http://localhost:8000 and follow [docs/demo-script.md](docs/demo-script.md).
 
-**Demo password:** `ChangeMe123` (all seeded accounts)
+**Demo password:** `ChangeMe123` (all seeded accounts) — **local/demo only; never
+used in production.** These accounts are seeded solely for local runs; production
+seeding is disabled and these credentials do not exist on a deployed instance.
 
 | Role     | Email                     |
 |----------|---------------------------|

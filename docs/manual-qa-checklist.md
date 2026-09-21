@@ -121,7 +121,9 @@ something that was deliberately removed, not a regression.
 
 ## Demo accounts
 
-Seeded by `database/seeders/DatabaseSeeder.php`, password `ChangeMe123` for all:
+Seeded by `database/seeders/DatabaseSeeder.php`, password `ChangeMe123` for all.
+**Local/demo only — never reused in production;** the seeder refuses to run under
+`APP_ENV=production`, so these accounts exist only in a local database:
 
 | Role | Email | State |
 |------|-------|-------|

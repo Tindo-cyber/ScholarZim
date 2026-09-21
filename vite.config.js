@@ -5,7 +5,8 @@ import laravel from 'laravel-vite-plugin';
  * Only ScholarZim's own CSS and JS go through the bundler, so they are minified
  * and content-hashed - a deploy can no longer serve a stale stylesheet from a
  * browser cache. The BVite vendor theme stays a static file in public/assets:
- * it ships compiled and is never edited here.
+ * it ships compiled and is otherwise not edited here, the one documented
+ * exception being the removal of its remote @imports (see partials/assets).
  */
 export default defineConfig({
     /*

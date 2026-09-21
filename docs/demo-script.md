@@ -1,7 +1,9 @@
 # ScholarZim Viva Demo Script
 
 **Duration:** 12–15 minutes
-**Password for every demo account:** `ChangeMe123`
+**Password for every demo account:** `ChangeMe123` — **local/demo only, never for
+production.** These accounts are seeded only into a local database; production
+seeding is disabled and none of them exist on a deployed instance.
 
 This script was rewritten against the current codebase rather than edited in place, because the
 previous version described features that no longer exist (saved-search alerts, an

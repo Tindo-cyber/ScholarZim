@@ -56,13 +56,23 @@ files are served individually and unminified. Nothing about a fresh clone needs
 `public/build` or `public/hot` to exist, and neither is committed. See
 [Front end](#front-end).
 
-Seeded accounts (all password `ChangeMe123`):
+Seeded accounts, **for local and demo use only** — all share the password
+`ChangeMe123`:
 
 | Role     | Email                        |
 |----------|------------------------------|
 | Admin    | admin@scholarzim.co.zw       |
 | Provider | provider@scholarzim.co.zw    |
 | Student  | student@scholarzim.co.zw     |
+
+> **These credentials are local demo fixtures and must never be reused in
+> production.** The password is published here deliberately so a fresh clone is
+> usable in one step, which is exactly why a deployed instance must not run this
+> seeder. Production seeding is disabled three independent ways —
+> `SCHOLARZIM_DEMO_SEED=false` in `render.yaml`, the entrypoint refuses to seed
+> under `APP_ENV=production`, and `DatabaseSeeder` throws if invoked there — so
+> these accounts do not exist in production. Set a strong, unique
+> `SCHOLARZIM_ADMIN_PASSWORD` for any real deployment.
 
 ## Layout of the port
 
@@ -344,8 +354,10 @@ actually handed to the mailer.
 
 Styling comes from the BVite Bootstrap 5 admin theme in the `pfn-ui` workspace folder. Its
 compiled stylesheets and script are referenced statically from `public/assets/bvite/` — the
-theme ships compiled and is never edited here, so it has nothing to gain from a build step.
-The palette is set once via `data-bvite="theme-Mariner"` on `<body>` in each layout.
+theme ships compiled and is otherwise not edited here, so it has nothing to gain from a build
+step. The one documented edit is the removal of its top-of-file remote `@import`s (see
+_Known vendor console issues_ below). The palette is set once via `data-bvite="theme-Mariner"`
+on `<body>` in each layout.
 
 Every stylesheet and script in the document head comes from a single partial,
 `resources/views/partials/assets.blade.php`, which all four layouts (`app`, `auth`, `public`,
@@ -393,6 +405,28 @@ toggle to show.
 
 Charts on both analytics pages are inline SVG/CSS, so no charting library is required at
 runtime.
+
+### Known vendor console issues
+
+The BVite theme ships with three defects that surface in the browser console. None originates
+in ScholarZim code, and none affects functionality — navigation, dropdowns and the theme
+toggle all work — but two were noisy enough (about 140 console lines each, on every page) to
+be worth removing at the source:
+
+- **Google Fonts, CSP-blocked → fixed.** `bvite-base.css` / `bvite-theme.css` opened with a
+  remote `@import` of DM Sans and Jost. Under `style-src 'self'` the browser blocked it, so
+  the theme's own `--body-font` / `--title-font` silently fell back to the system stack. The
+  two `@import`s are removed and the fonts are self-hosted under `public/assets/fonts/`
+  (`@font-face` in `resources/css/scholarzim.css`), which both restores the intended
+  typography and clears the violations without relaxing the policy.
+- **Broken icon CDNs, 404 → fixed.** The same files `@import`ed four icon packs
+  (flag-icon-css, weather-icons, simple-line-icons, bootstrap-icons) through malformed
+  `../../../cdnjs…` paths that 404. None of those icon classes is used in any view, so the
+  four `@import`s are removed.
+- **`dompurify` bundle error → accepted.** `bvite.js` throws `Cannot read properties of
+  undefined (reading 'call')` from a broken internal module reference, once per load. It is
+  inside minified vendor code with no clean fix short of replacing the theme, and it breaks
+  nothing observable, so it is left as-is and recorded here rather than patched.
 
 Design details worth knowing:
 

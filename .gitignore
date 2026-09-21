@@ -13,6 +13,9 @@
 # Filled-in compose env: holds a real APP_KEY and Mailgun secret, so it is a
 # working credential file rather than a template. The template is .env.example.
 .env.docker
+# Local QA credentials file: holds real account passwords for production QA and
+# must never be committed. Kept out of the tree entirely.
+qa-credentials.env
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml

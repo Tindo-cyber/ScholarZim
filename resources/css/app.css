@@ -2,7 +2,8 @@
  * Vite entry point for ScholarZim's own styles.
  *
  * The BVite vendor theme is still linked statically from the layouts: it ships
- * compiled, is not edited here, and pulling it through the bundler would only
- * add a build step to a file that never changes.
+ * compiled and pulling it through the bundler would only add a build step to a
+ * file that barely changes. It is edited only once, in a documented way - its
+ * remote @imports removed, the fonts self-hosted below in scholarzim.css.
  */
 @import './scholarzim.css';

@@ -41,8 +41,11 @@
 {{--
     ScholarZim's own CSS and JS, bundled by Vite so they are minified and
     content-hashed - a deploy can no longer serve a stale stylesheet out of a
-    browser cache. The BVite vendor theme above ships compiled and is never
-    edited here, so it has nothing to gain from a build step.
+    browser cache. The BVite vendor theme above ships compiled and is otherwise
+    not edited here, so it has nothing to gain from a build step. The one
+    documented exception is the removal of its top-of-file remote @imports (a
+    CSP-blocked Google Fonts sheet and four 404 icon CDNs); the fonts are
+    self-hosted instead - see the webfont block in resources/css/scholarzim.css.
 
     The fallback matters. @vite() throws when no build has been made, which would
     turn a forgotten `npm run build` into a 500 on every page. Without a manifest
