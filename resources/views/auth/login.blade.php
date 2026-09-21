@@ -15,15 +15,11 @@
         <x-form.input name="password" label="Password" type="password" required autocomplete="current-password" />
 
         <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="remember" id="remember" value="1"
-                       @checked(old('remember'))>
-                <label class="form-check-label" for="remember">Keep me signed in</label>
-            </div>
+            <x-form.checkbox name="remember" id="remember" label="Keep me signed in" wrapper-class="" />
             <a class="small text-decoration-none" href="{{ route('password.request') }}">Forgot your password?</a>
         </div>
 
-        <button class="btn btn-primary btn-lg w-100 mb-3" type="submit">Sign in</button>
+        <x-submit-button label="Sign in" size="lg" class="w-100 mb-3" busy-label="Signing in..." />
 
         <p class="d-flex align-items-center justify-content-center gap-2 small text-secondary mb-0">
             <x-icon name="lock" :size="14" />

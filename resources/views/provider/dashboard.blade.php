@@ -4,9 +4,11 @@
 
 @section('content')
 
-    <x-page-header :title="$greeting" subtitle="Your listings and the applications they are attracting.">
+    <x-page-header :title="$greeting"
+                   subtitle="Manage your scholarships and review student applications."
+                   eyebrow="Provider">
         <x-slot:actions>
-            <a class="btn btn-outline-secondary" href="{{ route('provider.applications') }}">View applications</a>
+            <a class="btn btn-outline-secondary" href="{{ route('provider.applications') }}">All applications</a>
             @if(auth()->user()->isActive())
                 <a class="btn btn-primary" href="{{ route('opportunities.create') }}">Post a scholarship</a>
             @endif
@@ -29,26 +31,119 @@
         </div>
     @endunless
 
+    {{--
+        "Awaiting decision" is the number this page exists for, so it links at
+        the queue and the rest do not compete with it. acceptedApplications was
+        already being counted by the service and shown nowhere.
+    --}}
     <div class="row g-3 mb-4">
-        <div class="col-6 col-xl-3">
-            <x-stat-card label="Listings" :value="$stats['totalOpportunities']" icon="stars" tone="primary" />
+        <div class="col-6 col-lg-4 col-xl">
+            <x-stat-card label="Awaiting decision" :value="$stats['pendingApplications']"
+                         icon="hourglass-split" tone="warning"
+                         :href="route('provider.applications')" />
         </div>
-        <div class="col-6 col-xl-3">
-            <x-stat-card label="Live" :value="$stats['liveOpportunities']" icon="check-circle" tone="success"
-                         :hint="$stats['awaitingReview'] . ' awaiting review'" />
-        </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-lg-4 col-xl">
             <x-stat-card label="Applications" :value="$stats['applicationsReceived']" icon="inbox" tone="info"
                          :href="route('provider.applications')" />
         </div>
-        <div class="col-6 col-xl-3">
-            <x-stat-card label="Awaiting decision" :value="$stats['pendingApplications']" icon="hourglass-split" tone="warning" />
+        <div class="col-6 col-lg-4 col-xl">
+            <x-stat-card label="Accepted" :value="$stats['acceptedApplications']" icon="check-circle" tone="success" />
         </div>
+        <div class="col-6 col-lg-4 col-xl">
+            <x-stat-card label="Listings" :value="$stats['totalOpportunities']" icon="stars" tone="primary" />
+        </div>
+        <div class="col-6 col-lg-4 col-xl">
+            <x-stat-card label="Live" :value="$stats['liveOpportunities']" icon="check-circle" tone="primary"
+                         :hint="$stats['awaitingReview'] . ' awaiting review'" />
+        </div>
+    </div>
+
+    @php
+        // Drawn from the same recentApplications the activity list below reads,
+        // filtered to the ones still open. The count beside it is the real
+        // total from dashboardStats, so a provider with more pending than this
+        // page shows is told so rather than left to assume this is all of them.
+        $awaitingDecision = $recentApplications->filter(fn ($application) => ! $application->isDecided()
+            && ! $application->isWithdrawn());
+    @endphp
+
+    {{--
+        Work to do, above everything else on the page.
+
+        The listings table used to occupy the main column and the applications
+        sat in the narrow sidebar - which is the right layout for a catalogue
+        and the wrong one for an inbox. A provider opens this page to find out
+        who is waiting on them.
+    --}}
+    <div class="card mb-4">
+        <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <h2 class="h6 fw-semibold mb-0">Applications awaiting your decision</h2>
+            @if($stats['pendingApplications'] > 0)
+                <a class="btn btn-sm btn-outline-primary" href="{{ route('provider.applications') }}">
+                    Review all {{ $stats['pendingApplications'] }}
+                </a>
+            @endif
+        </div>
+
+        <x-data-table :columns="[
+                          'Applicant',
+                          'Scholarship',
+                          'Application #',
+                          'Submitted',
+                          'Status',
+                          ['label' => 'Action', 'align' => 'end'],
+                      ]"
+                      :empty="$awaitingDecision->isEmpty()"
+                      empty-title="Nothing waiting on you"
+                      empty-message="Every application you have received has a decision. New ones will appear here."
+                      empty-icon="check-circle">
+            @foreach($awaitingDecision as $application)
+                <tr>
+                    <x-data-table.cell label="Applicant">
+                        <span class="d-flex align-items-center gap-2">
+                            <x-avatar :user="$application->user" size="sm" />
+                            <span class="min-w-0">
+                                <span class="fw-semibold d-block text-truncate">
+                                    {{ $application->user?->displayName() ?? 'Deleted user' }}
+                                </span>
+                                <span class="small text-secondary">
+                                    {{ \App\Support\EducationLevel::label($application->user?->applicantProfile?->education_level) }}
+                                </span>
+                            </span>
+                        </span>
+                    </x-data-table.cell>
+
+                    <x-data-table.cell label="Scholarship" class="text-secondary">
+                        {{ $application->opportunity?->title }}
+                    </x-data-table.cell>
+
+                    <x-data-table.cell label="Application #" class="text-secondary small sz-tabular">
+                        #{{ $application->application_id }}
+                    </x-data-table.cell>
+
+                    <x-data-table.cell label="Submitted" class="text-secondary small">
+                        {{ $application->submitted_at?->format('d M Y') }}
+                    </x-data-table.cell>
+
+                    <x-data-table.cell label="Status">
+                        <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
+                    </x-data-table.cell>
+
+                    <x-data-table.cell align="end">
+                        <a class="btn btn-sm btn-primary"
+                           href="{{ route('provider.applications.show', $application->application_id) }}">Review</a>
+                    </x-data-table.cell>
+                </tr>
+            @endforeach
+        </x-data-table>
     </div>
 
     <div class="row g-4">
         <div class="col-xl-8">
-            <div class="card mb-4">
+            {{-- The sidebar's "My listings" points here: there is no separate index
+                 route for a provider's own listings, and inventing one would be a
+                 feature, not navigation. --}}
+            <div class="card mb-4" id="listings">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h6 fw-semibold mb-0">My listings</h2>
                     @if(auth()->user()->isActive())
@@ -64,7 +159,7 @@
                                    :action-href="auth()->user()->isActive() ? route('opportunities.create') : null" />
                 @else
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
+                        <table class="table table-hover align-middle mb-0 sz-table-stack">
                             <thead>
                                 <tr>
                                     <th scope="col">Scholarship</th>
@@ -77,19 +172,19 @@
                             <tbody>
                                 @foreach($opportunities as $opportunity)
                                     <tr>
-                                        <td>
+                                        <td data-label="Scholarship">
                                             <span class="fw-semibold d-block">{{ $opportunity->title }}</span>
                                             <span class="small text-secondary">{{ $opportunity->target_field ?: 'Any field' }}</span>
                                         </td>
-                                        <td class="text-secondary small">
+                                        <td class="text-secondary small" data-label="Deadline">
                                             {{ $opportunity->deadline?->format('d M Y') ?? 'Rolling' }}
                                         </td>
-                                        <td>
+                                        <td data-label="Applications">
                                             <span class="badge bg-body-secondary text-body">
                                                 {{ $opportunity->applications_count }}
                                             </span>
                                         </td>
-                                        <td>
+                                        <td data-label="Review state">
                                             <x-status-badge :label="$opportunity->lifecycleLabel()"
                                                             :tone="$opportunity->lifecycleTone()" />
                                             @if(strcasecmp((string) $opportunity->status, \App\Support\OpportunityStatus::CLOSED) === 0)
@@ -106,7 +201,7 @@
                                                 </span>
                                             @endif
                                         </td>
-                                        <td class="text-end">
+                                        <td class="text-end" data-label="">
                                             @unless($opportunity->isWithdrawn())
                                                 <div class="dropdown">
                                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -138,79 +233,34 @@
                                                     </ul>
                                                 </div>
 
-                                                <div class="modal fade text-start" id="extend-deadline-{{ $opportunity->opportunity_id }}"
-                                                     tabindex="-1" aria-hidden="true">
-                                                    <div class="modal-dialog">
-                                                        <form method="POST"
-                                                              action="{{ route('opportunities.extendDeadline', $opportunity->opportunity_id) }}"
-                                                              class="modal-content">
-                                                            @csrf
-                                                            <div class="modal-header">
-                                                                <h3 class="modal-title h6">Extend deadline for "{{ $opportunity->title }}"</h3>
-                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                                        aria-label="Close"></button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <label class="form-label"
-                                                                       for="deadline-{{ $opportunity->opportunity_id }}">
-                                                                    New deadline
-                                                                </label>
-                                                                <input type="date" class="form-control mb-3" required
-                                                                       id="deadline-{{ $opportunity->opportunity_id }}"
-                                                                       name="deadline"
-                                                                       min="{{ $opportunity->deadline?->format('Y-m-d') }}">
+                                                {{-- Both dialogs are opened from the dropdown above rather
+                                                     than by their own trigger, so they are rendered here on
+                                                     their own and the menu items keep their data-bs-target. --}}
+                                                <x-confirm-dialog :id="'extend-deadline-' . $opportunity->opportunity_id"
+                                                                  :action="route('opportunities.extendDeadline', $opportunity->opportunity_id)"
+                                                                  :title="'Extend deadline for: ' . $opportunity->title"
+                                                                  confirm-label="Extend deadline"
+                                                                  tone="primary">
+                                                    <x-form.input name="deadline" type="date" required
+                                                                  :id="'deadline-' . $opportunity->opportunity_id"
+                                                                  label="New deadline"
+                                                                  :min="$opportunity->deadline?->format('Y-m-d')" />
 
-                                                                <label class="form-label"
-                                                                       for="extend-reason-{{ $opportunity->opportunity_id }}">
-                                                                    Reason (for transparency, shown in the audit trail)
-                                                                </label>
-                                                                <textarea class="form-control" rows="3" required
-                                                                          id="extend-reason-{{ $opportunity->opportunity_id }}"
-                                                                          name="reason"></textarea>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-outline-secondary"
-                                                                        data-bs-dismiss="modal">Cancel</button>
-                                                                <button type="submit" class="btn btn-primary">Extend deadline</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
+                                                    <x-form.textarea name="reason" :rows="3" required
+                                                                     :id="'extend-reason-' . $opportunity->opportunity_id"
+                                                                     label="Reason (for transparency, shown in the audit trail)" />
+                                                </x-confirm-dialog>
 
-                                                <div class="modal fade text-start" id="withdraw-{{ $opportunity->opportunity_id }}"
-                                                     tabindex="-1" aria-hidden="true">
-                                                    <div class="modal-dialog">
-                                                        <form method="POST"
-                                                              action="{{ route('opportunities.destroy', $opportunity->opportunity_id) }}"
-                                                              class="modal-content">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <div class="modal-header">
-                                                                <h3 class="modal-title h6">Withdraw "{{ $opportunity->title }}"</h3>
-                                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                                        aria-label="Close"></button>
-                                                            </div>
-                                                            <div class="modal-body">
-                                                                <p class="small text-secondary">
-                                                                    This removes the listing from the public site. It cannot be undone,
-                                                                    and applicants who already applied will be notified.
-                                                                </p>
-                                                                <label class="form-label"
-                                                                       for="withdraw-reason-{{ $opportunity->opportunity_id }}">
-                                                                    Reason (for transparency, shown to applicants and in the audit trail)
-                                                                </label>
-                                                                <textarea class="form-control" rows="3" required
-                                                                          id="withdraw-reason-{{ $opportunity->opportunity_id }}"
-                                                                          name="reason"></textarea>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-outline-secondary"
-                                                                        data-bs-dismiss="modal">Cancel</button>
-                                                                <button type="submit" class="btn btn-danger">Withdraw listing</button>
-                                                            </div>
-                                                        </form>
-                                                    </div>
-                                                </div>
+                                                <x-confirm-dialog :id="'withdraw-' . $opportunity->opportunity_id"
+                                                                  :action="route('opportunities.destroy', $opportunity->opportunity_id)"
+                                                                  :title="'Withdraw: ' . $opportunity->title"
+                                                                  confirm-label="Withdraw listing"
+                                                                  method="DELETE"
+                                                                  message="This removes the listing from the public site. It cannot be undone, and applicants who already applied will be notified.">
+                                                    <x-form.textarea name="reason" :rows="3" required
+                                                                     :id="'withdraw-reason-' . $opportunity->opportunity_id"
+                                                                     label="Reason (for transparency, shown to applicants and in the audit trail)" />
+                                                </x-confirm-dialog>
                                             @endunless
                                         </td>
                                     </tr>

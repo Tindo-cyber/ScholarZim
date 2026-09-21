@@ -52,6 +52,17 @@
             </div>
         @endif
 
+        @if(auth()->user()?->isAdmin() && ! $opportunity->isPubliclyVisible())
+            {{--
+                The moderator's frame, and the only admin-specific thing in
+                this view. It can be reached one way: admin.moderation.show,
+                which is the single route that renders an unpublished listing -
+                the public route answers 404 for anything not publicly visible,
+                so an administrator browsing the live site never sees it.
+            --}}
+            <x-moderation-panel :opportunity="$opportunity" />
+        @endif
+
         <div class="row g-4">
             <div class="col-lg-8">
                 <div class="card mb-4">
@@ -199,19 +210,6 @@
                         <div class="mb-0">{!! nl2br(e($opportunity->description)) !!}</div>
                     </div>
                 </div>
-
-                @if($related->isNotEmpty())
-                    <h2 class="h5 fw-bold mb-3">Similar scholarships</h2>
-                    <div class="row g-3">
-                        @foreach($related as $item)
-                            <div class="col-md-4">
-                                <x-scholarship-card :opportunity="$item" :show-save="false"
-                                                    :applied="in_array($item->opportunity_id, $appliedIds, true)"
-                                                    :accepted="$accepted[$item->opportunity_id] ?? null" />
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
             </div>
 
             <div class="col-lg-4">
@@ -239,50 +237,18 @@
                                 <p class="small text-secondary text-center">{{ $fit->breakdown->explanation }}</p>
 
                                 {{--
-                                    One line per dimension, read straight off the
+                                    One row per dimension, read straight off the
                                     same DimensionResult objects the score was
                                     summed from - so what a student is told here
                                     cannot drift away from what they were scored.
+                                    Open on this page, where the score is what
+                                    the reader came for.
                                 --}}
-                                <h3 class="h6 fw-semibold mt-4 mb-2">Why this score</h3>
-                                <ul class="list-unstyled d-grid gap-2 mb-3">
-                                    @foreach($fit->breakdown->dimensionResults as $dimension)
-                                        <li class="sz-fit-reason small">
-                                            <x-icon :name="$dimension->ratio >= 0.5 ? 'check-circle' : 'x-circle'"
-                                                    :size="16"
-                                                    class="text-{{ $dimension->ratio >= 0.5 ? 'success' : 'secondary' }} mt-1" />
-                                            <span class="{{ $dimension->ratio >= 0.5 ? '' : 'text-secondary' }}">
-                                                <strong>{{ $dimension->scoreLine() }}</strong>
-                                                <span class="d-block text-secondary">{{ $dimension->detail }}</span>
-                                            </span>
-                                        </li>
-                                    @endforeach
-                                </ul>
+                                <div class="mt-4 mb-3">
+                                    <x-score-breakdown :fit="$fit" :open="true" />
+                                </div>
 
-                                @if($fit->breakdown->fixes)
-                                    {{--
-                                        Each shortfall links at the field that fixes
-                                        it: telling a student what is missing without
-                                        saying where to put it is only half an answer.
-                                    --}}
-                                    <div class="alert alert-warning small mb-3">
-                                        <div class="fw-semibold mb-1">To improve your score</div>
-                                        <ul class="mb-0 ps-3 d-grid gap-1">
-                                            @foreach($fit->breakdown->fixes as $fix)
-                                                <li>
-                                                    {{ $fix['text'] }}
-                                                    @if($fix['target'] === 'profile')
-                                                        <a class="fw-semibold"
-                                                           href="{{ route('applicant.profile') }}#field-{{ $fix['cta'] }}">Fix this</a>
-                                                    @elseif($fix['target'] === 'documents')
-                                                        <a class="fw-semibold"
-                                                           href="{{ route('applicant.profile') }}#documents">Upload it</a>
-                                                    @endif
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </div>
-                                @endif
+                                <x-score-fixes :fit="$fit" variant="alert" class="mb-3" />
                             @endif
                         @endif
 
@@ -350,5 +316,30 @@
                 </div>
             </div>
         </div>
+
+        {{--
+            Related listings sit below both columns rather than at the foot of
+            the left one.
+
+            The action panel is the second column, so on a phone - where the
+            columns become rows - everything in the left column came first.
+            Six related scholarship cards therefore stood between the
+            description and the only button on the page that applies for this
+            one. Moving the block out of that column puts the action directly
+            after the listing it belongs to, and costs the desktop layout
+            nothing: it was always full width down there anyway.
+        --}}
+        @if($related->isNotEmpty())
+            <h2 class="h5 fw-bold mb-3">Similar scholarships</h2>
+            <div class="row g-3">
+                @foreach($related as $item)
+                    <div class="col-md-6 col-lg-4">
+                        <x-scholarship-card :opportunity="$item" :show-save="false"
+                                            :applied="in_array($item->opportunity_id, $appliedIds, true)"
+                                            :accepted="$accepted[$item->opportunity_id] ?? null" />
+                    </div>
+                @endforeach
+            </div>
+        @endif
     </div>
 @endsection

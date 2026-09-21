@@ -159,21 +159,13 @@
                             @enderror
                         </div>
 
-                        <div class="form-check mb-0">
-                            <input class="form-check-input @error('confirm') is-invalid @enderror" type="checkbox"
-                                   name="confirm" id="confirm" value="1" @checked(old('confirm')) required>
-                            <label class="form-check-label" for="confirm">
-                                I confirm the information in this application is accurate.
-                            </label>
-                            @error('confirm')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
+                        <x-form.checkbox name="confirm" id="confirm" required wrapper-class="mb-0"
+                                         label="I confirm the information in this application is accurate." />
                     </div>
                 </div>
 
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary btn-lg" type="submit">Submit application</button>
+                    <x-submit-button label="Submit application" size="lg" busy-label="Submitting..." />
                     <a class="btn btn-outline-secondary btn-lg"
                        href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
                 </div>
@@ -195,26 +187,7 @@
                     </div>
                 </div>
 
-                @if($fit->breakdown->fixes)
-                    <div class="card border-warning">
-                        <div class="card-header bg-warning-subtle">
-                            <h2 class="h6 fw-semibold mb-0">Before you submit</h2>
-                        </div>
-                        <div class="card-body">
-                            <ul class="small mb-0 ps-3 d-grid gap-1">
-                                @foreach($fit->breakdown->fixes as $fix)
-                                    <li>
-                                        {{ $fix['text'] }}
-                                        @if($fix['target'] === 'profile')
-                                            <a class="fw-semibold"
-                                               href="{{ route('applicant.profile') }}#field-{{ $fix['cta'] }}">Fix this</a>
-                                        @endif
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    </div>
-                @endif
+                <x-score-fixes :fit="$fit" variant="alert" />
             @endif
 
             @if($opportunity->deadline)

@@ -41,21 +41,10 @@
         </div>
     @else
         <div class="card">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0 sz-table-stack">
-                    <thead>
-                        <tr>
-                            <th scope="col">Applicant</th>
-                            <th scope="col">Scholarship</th>
-                            <th scope="col">Submitted</th>
-                            <th scope="col">Status</th>
-                            <th scope="col" class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <x-data-table :columns="['Applicant', 'Scholarship', 'Submitted', 'Status', ['label' => 'Action', 'align' => 'end']]">
                         @foreach($applications as $application)
                             <tr>
-                                <td data-label="Applicant">
+                                <x-data-table.cell label="Applicant">
                                     <span class="d-flex align-items-center gap-2">
                                         <x-avatar :user="$application->user" size="sm" />
                                         <span class="min-w-0">
@@ -63,14 +52,16 @@
                                                 {{ $application->user?->displayName() ?? 'Deleted user' }}
                                             </span>
                                             <span class="small text-secondary">
-                                                {{ $application->user?->applicantProfile?->education_level ?? 'Level not set' }}
+                                                {{ $application->user?->applicantProfile?->education_level
+                                                    ? \App\Support\EducationLevel::label($application->user->applicantProfile->education_level)
+                                                    : 'Level not set' }}
                                             </span>
                                         </span>
                                     </span>
-                                </td>
-                                <td data-label="Scholarship" class="text-secondary">{{ $application->opportunity?->title }}</td>
-                                <td data-label="Submitted" class="text-secondary small">{{ $application->submitted_at?->format('d M Y') }}</td>
-                                <td data-label="Status">
+                                </x-data-table.cell>
+                                <x-data-table.cell label="Scholarship" class="text-secondary">{{ $application->opportunity?->title }}</x-data-table.cell>
+                                <x-data-table.cell label="Submitted" class="text-secondary small">{{ $application->submitted_at?->format('d M Y') }}</x-data-table.cell>
+                                <x-data-table.cell label="Status">
                                     <span class="min-w-0">
                                         <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
 
@@ -80,16 +71,14 @@
                                             </span>
                                         @endif
                                     </span>
-                                </td>
-                                <td data-label="" class="text-end">
+                                </x-data-table.cell>
+                                <x-data-table.cell align="end">
                                     <a class="btn btn-sm btn-primary"
                                        href="{{ route('provider.applications.show', $application->application_id) }}">Review</a>
-                                </td>
+                                </x-data-table.cell>
                             </tr>
                         @endforeach
-                    </tbody>
-                </table>
-            </div>
+            </x-data-table>
 
             <div class="card-footer">
                 <p class="form-text mb-0">

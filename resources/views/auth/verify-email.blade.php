@@ -18,7 +18,7 @@
 
     <form method="POST" action="{{ route('verification.resend') }}" class="mb-3">
         @csrf
-        <button class="btn btn-primary btn-lg w-100" type="submit">Resend verification email</button>
+        <x-submit-button label="Resend verification email" size="lg" class="w-100" busy-label="Sending..." />
     </form>
 
     <a class="btn btn-outline-secondary w-100" href="{{ route('dashboard') }}">Continue to dashboard</a>

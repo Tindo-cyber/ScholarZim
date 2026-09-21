@@ -6,38 +6,32 @@
 
     <x-page-header :title="$greeting" subtitle="Here is where your scholarship search stands today.">
         <x-slot:actions>
-            <a class="btn btn-outline-secondary" href="{{ route('opportunities.index') }}">Browse scholarships</a>
-            <a class="btn btn-primary" href="{{ route('applicant.recommendations') }}">See my matches</a>
+            <a class="btn btn-outline-secondary" href="{{ route('applicant.recommendations') }}">My matches</a>
+            <a class="btn btn-primary" href="{{ route('opportunities.index') }}">Find scholarships</a>
         </x-slot:actions>
     </x-page-header>
 
+    {{-- Only while it is actionable, and in the same shape the profile and the
+         matches page use it. --}}
     @if($stats['profileCompletion'] < 100)
-        <div class="alert alert-info d-flex flex-wrap gap-3 align-items-center justify-content-between">
-            <div>
-                <strong>Your profile is {{ $stats['profileCompletion'] }}% complete.</strong>
-                <span class="d-block small">
-                    ScholarFit can only score what it knows about you - finish your profile for accurate matches.
-                </span>
-            </div>
-            <a class="btn btn-sm btn-info" href="{{ route('applicant.profile') }}">Complete profile</a>
-        </div>
+        <x-profile-progress :profile="$profile" class="mb-4" />
     @endif
 
     <div class="row g-3 mb-4">
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-lg-4 col-xl">
             <x-stat-card label="Applications" :value="$stats['applications']" icon="file-text" tone="primary"
                          :href="route('applications.mine')" />
         </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-lg-4 col-xl">
             <x-stat-card label="In progress" :value="$stats['inProgress']" icon="hourglass-split" tone="warning" />
         </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-lg-4 col-xl">
             <x-stat-card label="Accepted" :value="$stats['accepted']" icon="check-circle" tone="success" />
         </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-lg-4 col-xl">
             <x-stat-card label="Rejected" :value="$stats['rejected'] ?? 0" icon="x-circle" tone="danger" />
         </div>
-        <div class="col-6 col-xl-3">
+        <div class="col-6 col-lg-4 col-xl">
             <x-stat-card label="Saved" :value="$stats['saved']" icon="bookmark" tone="info"
                          :href="route('applicant.saved')" />
         </div>
@@ -87,33 +81,21 @@
                                    action-label="Find a scholarship"
                                    :action-href="route('opportunities.index')" />
                 @else
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th scope="col">Scholarship</th>
-                                    <th scope="col">Submitted</th>
-                                    <th scope="col">Status</th>
-                                    <th scope="col" class="text-end">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recentApplications as $application)
-                                    <tr>
-                                        <td class="fw-semibold">{{ $application->opportunity?->title ?? 'Removed listing' }}</td>
-                                        <td class="text-secondary small">{{ $application->submitted_at?->format('d M Y') }}</td>
-                                        <td>
-                                            <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
-                                        </td>
-                                        <td class="text-end">
-                                            <a class="btn btn-sm btn-outline-secondary"
-                                               href="{{ route('applications.confirmation', $application->application_id) }}">View</a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                    <x-data-table :columns="['Scholarship', 'Submitted', 'Status', ['label' => 'Action', 'align' => 'end']]">
+                        @foreach($recentApplications as $application)
+                            <tr>
+                                <x-data-table.cell label="Scholarship" class="fw-semibold">{{ $application->opportunity?->title ?? 'Removed listing' }}</x-data-table.cell>
+                                <x-data-table.cell label="Submitted" class="text-secondary small">{{ $application->submitted_at?->format('d M Y') }}</x-data-table.cell>
+                                <x-data-table.cell label="Status">
+                                    <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
+                                </x-data-table.cell>
+                                <x-data-table.cell align="end">
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       href="{{ route('applications.confirmation', $application->application_id) }}">View</a>
+                                </x-data-table.cell>
+                            </tr>
+                        @endforeach
+                    </x-data-table>
                 @endif
             </div>
         </div>
@@ -129,43 +111,10 @@
                 </div>
             </div>
 
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h2 class="h6 fw-semibold mb-0">Profile strength</h2>
-                </div>
-                <div class="card-body">
-                    <div class="text-center mb-3">
-                        <x-match-score :score="$stats['profileCompletion']"
-                                       size="lg"
-                                       :label="$stats['profileCompletion'] >= 100 ? 'Complete' : 'Completion'" />
-                    </div>
-
-                    @if($profile->missingFields())
-                        <p class="small text-secondary mb-2">Still missing:</p>
-                        {{--
-                            Each gap links straight at the field that closes it, so
-                            the list is a set of actions rather than a scorecard.
-                        --}}
-                        <ul class="list-unstyled d-grid gap-1 small mb-3">
-                            @foreach($profile->completionChecklist() as $item)
-                                @continue($item['done'])
-                                <li class="d-flex align-items-center gap-2">
-                                    <x-icon name="x-circle" :size="14" class="text-secondary" />
-                                    <a href="{{ route('applicant.profile') }}#{{ $item['anchor'] === 'documents' ? 'documents' : 'field-' . $item['anchor'] }}">
-                                        {{ $item['label'] }}
-                                    </a>
-                                </li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <p class="small text-success mb-3 d-flex align-items-center gap-2">
-                            <x-icon name="check-circle" :size="14" />Your profile is complete.
-                        </p>
-                    @endif
-
-                    <a class="btn btn-sm btn-outline-primary w-100" href="{{ route('applicant.profile') }}">Edit profile</a>
-                </div>
-            </div>
+            {{-- The same checklist the profile shows, from the same component. It used
+                 to be a dial plus a bare list of gaps here and an annotated checklist
+                 there, which meant two answers to one question. --}}
+            <x-profile-progress :profile="$profile" variant="checklist" heading="Profile strength" class="mb-4" />
 
             <div class="card">
                 <div class="card-header">

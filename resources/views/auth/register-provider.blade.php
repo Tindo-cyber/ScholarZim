@@ -97,20 +97,12 @@
             <x-form.input name="password_confirmation" label="Confirm password" type="password" required
                           autocomplete="new-password" />
 
-            <div class="form-check mb-4">
-                <input class="form-check-input @error('terms') is-invalid @enderror" type="checkbox"
-                       name="terms" id="terms" value="1" @checked(old('terms')) required>
-                <label class="form-check-label" for="terms">
-                    I confirm this organisation is registered and I am authorised to act for it.
-                </label>
-                @error('terms')
-                    <div class="invalid-feedback d-block">{{ $message }}</div>
-                @enderror
-            </div>
+            <x-form.checkbox name="terms" id="terms" required wrapper-class="mb-4"
+                             label="I confirm this organisation is registered and I am authorised to act for it." />
 
             <div class="d-flex gap-2 mb-3">
                 <button class="btn btn-outline-secondary btn-lg" type="button" data-step-back>Back</button>
-                <button class="btn btn-primary btn-lg flex-grow-1" type="submit">Submit for verification</button>
+                <x-submit-button label="Submit for verification" size="lg" class="flex-grow-1" busy-label="Submitting..." />
             </div>
         </div>
     </form>

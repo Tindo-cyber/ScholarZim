@@ -25,7 +25,17 @@
             </a>
 
             <div>
-                <h1 class="h2 fw-bold mb-3">@yield('aside_heading', 'Find scholarships you actually qualify for.')</h1>
+                {{--
+                    A <p>, not an <h1>.
+
+                    Every auth page already has one: the form's own heading, which
+                    is what the page is for. This rail repeats the brand promise
+                    beside it, and marking it up as a second level-one heading gave
+                    each of these pages two - so a screen-reader user listing
+                    headings was told the page was about two different things, and
+                    the one that mattered came second.
+                --}}
+                <p class="h2 fw-bold mb-3">@yield('aside_heading', 'Find scholarships you actually qualify for.')</p>
                 <p class="opacity-75 mb-4">
                     @yield('aside_copy', 'ScholarFit scores every listing against your profile and shows you exactly which criteria you meet — and which ones to fix.')
                 </p>
@@ -55,11 +65,20 @@
 
         <div class="col-lg-7 d-flex align-items-center justify-content-center p-4 p-lg-5">
             <div class="w-100" style="max-width: 32rem;">
-                <a class="d-lg-none d-inline-flex align-items-center gap-2 fw-bold text-decoration-none mb-4"
-                   href="{{ route('home') }}">
-                    <x-brand-mark />
-                    <span>ScholarZim</span>
-                </a>
+                {{--
+                    The brand link doubles as the way back out to the public site,
+                    and the theme control sits beside it: these pages already
+                    honour a stored preference, but they were the one place in the
+                    product offering no way to change it.
+                --}}
+                <div class="d-flex align-items-center justify-content-between gap-2 mb-4">
+                    <a class="d-lg-none d-inline-flex align-items-center gap-2 fw-bold text-decoration-none"
+                       href="{{ route('home') }}">
+                        <x-brand-mark />
+                        <span>ScholarZim</span>
+                    </a>
+                    <div class="ms-auto"><x-theme-toggle /></div>
+                </div>
 
                 <x-flash-alerts />
 

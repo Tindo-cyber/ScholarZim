@@ -20,26 +20,44 @@
 
 @section('content')
 
+    {{--
+        The same charts as before, under three headings.
+
+        Nothing was added: this page already answered how many, over what
+        period, and in what proportion - it just presented seven cards of equal
+        weight and left the reader to work out which question each one was
+        answering. Totals are a snapshot, trends are a direction, and the mix is
+        a composition; they are three different questions and now they say so.
+    --}}
     <x-page-header title="Analytics"
                    subtitle="How the platform is being used over the last twelve months."
-                   eyebrow="Administration" />
+                   eyebrow="Insights" />
+
+    <h2 class="h5 fw-bold mb-3">Totals today</h2>
 
     <div class="row g-3 mb-4">
         <div class="col-6 col-xl-3">
-            <x-stat-card label="Users" :value="number_format($stats['totalUsers'])" icon="people" tone="primary" />
+            <x-stat-card label="Users" :value="number_format($stats['totalUsers'])" icon="people" tone="primary"
+                         :hint="number_format($stats['providers']) . ' providers'" />
         </div>
         <div class="col-6 col-xl-3">
-            <x-stat-card label="Listings" :value="number_format($stats['totalOpportunities'])" icon="stars" tone="info" />
+            <x-stat-card label="Listings" :value="number_format($stats['totalOpportunities'])" icon="stars" tone="info"
+                         :hint="number_format($stats['activeOpportunities']) . ' live now'" />
         </div>
         <div class="col-6 col-xl-3">
-            <x-stat-card label="Applications" :value="number_format($stats['totalApplications'])" icon="file-text" tone="warning" />
+            <x-stat-card label="Applications" :value="number_format($stats['totalApplications'])" icon="file-text" tone="warning"
+                         :hint="number_format($stats['pendingApplications']) . ' awaiting a decision'" />
         </div>
         <div class="col-6 col-xl-3">
-            <x-stat-card label="Accepted" :value="number_format($stats['acceptedApplications'])" icon="check-circle" tone="success" />
+            {{-- Accepting an application is granting the scholarship. --}}
+            <x-stat-card label="Granted" :value="number_format($stats['acceptedApplications'])" icon="check-circle" tone="success"
+                         :hint="number_format($stats['rejectedApplications']) . ' not successful'" />
         </div>
     </div>
 
-    <div class="row g-4">
+    <h2 class="h5 fw-bold mb-3">Trends over the last twelve months</h2>
+
+    <div class="row g-4 mb-4">
         @foreach([
             ['Applications per month', $applicationsPerMonth, 'primary'],
             ['Listings published per month', $opportunitiesPerMonth, 'info'],
@@ -48,50 +66,62 @@
             <div class="col-xl-6">
                 <div class="card h-100">
                     <div class="card-header">
-                        <h2 class="h6 fw-semibold mb-0">{{ $title }}</h2>
+                        <h3 class="h6 fw-semibold mb-0">{{ $title }}</h3>
                     </div>
                     <div class="card-body">
-                        {{--
-                            gap-1 below sm, gap-2 above. Twelve months of bars and
-                            twelve labels leave 11 gaps; at 8px each that is 88px of
-                            the 320px a small phone has, and the labels - unlike the
-                            bars - cannot shrink below their own text, so the row ran
-                            2px past the viewport. The two rows must carry the same
-                            gap or the labels stop lining up with their bars.
-                        --}}
-                        <div class="d-flex align-items-end gap-1 gap-sm-2" style="height: 12rem;">
-                            @foreach($barChart($series) as $bar)
-                                <div class="flex-fill d-flex flex-column justify-content-end align-items-center h-100"
-                                     title="{{ $bar['label'] }}: {{ $bar['value'] }}">
-                                    <span class="small text-secondary mb-1">{{ $bar['value'] ?: '' }}</span>
-                                    <div class="w-100 bg-{{ $tone }} rounded-top"
-                                         style="height: {{ max(2, $bar['height']) }}%;"
-                                         role="img"
-                                         aria-label="{{ $bar['label'] }}: {{ $bar['value'] }}"></div>
-                                </div>
-                            @endforeach
-                        </div>
+                        @if(array_sum($series['data'] ?: [0]) === 0)
+                            <x-empty-state title="Nothing recorded in this period"
+                                           message="The chart fills in as records are created; twelve empty months means there have not been any yet."
+                                           icon="chart" level="h4" />
+                        @else
+                            {{--
+                                gap-1 below sm, gap-2 above. Twelve months of bars and
+                                twelve labels leave 11 gaps; at 8px each that is 88px of
+                                the 320px a small phone has, and the labels - unlike the
+                                bars - cannot shrink below their own text, so the row ran
+                                2px past the viewport. The two rows must carry the same
+                                gap or the labels stop lining up with their bars.
+                            --}}
+                            <div class="d-flex align-items-end gap-1 gap-sm-2" style="height: 12rem;">
+                                @foreach($barChart($series) as $bar)
+                                    <div class="flex-fill d-flex flex-column justify-content-end align-items-center h-100"
+                                         title="{{ $bar['label'] }}: {{ $bar['value'] }}">
+                                        <span class="small text-secondary mb-1">{{ $bar['value'] ?: '' }}</span>
+                                        <div class="w-100 bg-{{ $tone }} rounded-top"
+                                             style="height: {{ max(2, $bar['height']) }}%;"
+                                             role="img"
+                                             aria-label="{{ $bar['label'] }}: {{ $bar['value'] }}"></div>
+                                    </div>
+                                @endforeach
+                            </div>
 
-                        <div class="d-flex gap-1 gap-sm-2 mt-2">
-                            @foreach($series['labels'] as $label)
-                                <span class="flex-fill text-center text-secondary" style="font-size: .625rem;">
-                                    {{ Str::before($label, ' ') }}
-                                </span>
-                            @endforeach
-                        </div>
+                            <div class="d-flex gap-1 gap-sm-2 mt-2">
+                                @foreach($series['labels'] as $label)
+                                    <span class="flex-fill text-center text-secondary" style="font-size: .625rem;">
+                                        {{ Str::before($label, ' ') }}
+                                    </span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
         @endforeach
+    </div>
 
+    <h2 class="h5 fw-bold mb-3">Composition</h2>
+
+    <div class="row g-4">
         <div class="col-xl-6">
             <div class="card h-100">
                 <div class="card-header">
-                    <h2 class="h6 fw-semibold mb-0">Application outcomes</h2>
+                    <h3 class="h6 fw-semibold mb-0">Application outcomes</h3>
                 </div>
                 <div class="card-body">
                     @if(empty($statusMix['data']))
-                        <p class="text-secondary mb-0">No applications recorded yet.</p>
+                        <x-empty-state title="No applications yet"
+                                       message="Once students start applying, this shows how those applications have been decided."
+                                       icon="file-text" level="h4" />
                     @else
                         @php $total = max(1, array_sum($statusMix['data'])); @endphp
 
@@ -113,7 +143,7 @@
                                 <li class="d-flex align-items-center gap-2 small">
                                     <span class="badge bg-{{ $tones[$i % count($tones)] }} rounded-circle p-1">&nbsp;</span>
                                     <span class="flex-grow-1">{{ $label }}</span>
-                                    <span class="fw-semibold">{{ $statusMix['data'][$i] }}</span>
+                                    <span class="fw-semibold sz-tabular">{{ $statusMix['data'][$i] }}</span>
                                 </li>
                             @endforeach
                         </ul>
@@ -125,11 +155,13 @@
         <div class="col-xl-6">
             <div class="card h-100">
                 <div class="card-header">
-                    <h2 class="h6 fw-semibold mb-0">Most-listed fields of study</h2>
+                    <h3 class="h6 fw-semibold mb-0">Most-listed fields of study</h3>
                 </div>
                 <div class="card-body">
                     @if(empty($topFields['data']))
-                        <p class="text-secondary mb-0">No published listings yet.</p>
+                        <x-empty-state title="No published listings yet"
+                                       message="This ranks the fields providers are funding, and fills in once listings are approved."
+                                       icon="stars" level="h4" />
                     @else
                         @php $max = max($topFields['data']); @endphp
 
@@ -138,9 +170,9 @@
                                 <li>
                                     <div class="d-flex justify-content-between small mb-1">
                                         <span>{{ $label }}</span>
-                                        <span class="fw-semibold">{{ $topFields['data'][$i] }}</span>
+                                        <span class="fw-semibold sz-tabular">{{ $topFields['data'][$i] }}</span>
                                     </div>
-                                    <div class="progress" style="height: .375rem;" role="progressbar"
+                                    <div class="progress sz-progress-thin" role="progressbar"
                                          aria-label="{{ $label }}"
                                          aria-valuenow="{{ $topFields['data'][$i] }}"
                                          aria-valuemin="0" aria-valuemax="{{ $max }}">

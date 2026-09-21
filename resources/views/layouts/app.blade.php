@@ -19,10 +19,25 @@
 
         @include('partials.sidebar')
 
-        <div class="sz-main flex-grow-1 min-vw-0">
+        {{--
+            min-w-0, not min-vw-0. There is no .min-vw-0 in Bootstrap, in the
+            theme, or in this stylesheet, so the class did nothing and this
+            flex item kept min-width: auto - meaning it could not shrink below
+            the widest thing inside it. One unbreakable string anywhere on any
+            authenticated page therefore widened the whole column, dragging the
+            sidebar, the topbar and the footer sideways with it instead of
+            letting the .table-responsive that contains it scroll on its own.
+
+            The audit log is where it showed: SettingsService records a weights
+            change as 'ScholarFit weights set to ' . json_encode($weights), and
+            that JSON has no space in it to break at.
+        --}}
+        <div class="sz-main flex-grow-1 min-w-0">
             @include('partials.topbar')
 
-            <div class="px-3 px-lg-4 py-4">
+            {{-- .sz-page owns the page gutter, the vertical padding and the content
+                 cap, so no view repeats them and none of them can drift apart. --}}
+            <div class="sz-page">
                 <x-flash-alerts />
 
                 @unless(auth()->user()->email_verified)

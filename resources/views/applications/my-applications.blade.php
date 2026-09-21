@@ -4,7 +4,7 @@
 
 @section('content')
 
-    <x-page-header title="My Applications"
+    <x-page-header title="My applications"
                    subtitle="Track the progress and status of your scholarship applications.">
         <x-slot:actions>
             <a class="btn btn-primary" href="{{ route('applicant.recommendations') }}">Find more matches</a>
@@ -34,7 +34,14 @@
             <input type="hidden" name="status" value="{{ $activeStatus }}" />
         @endif
         <div class="flex-grow-1">
-            <input class="form-control" type="search" name="search" value="{{ $search ?? '' }}"
+            {{-- A placeholder is not a label: it goes the moment anything is typed,
+                 and it is not reliably announced. This is the same visually-hidden
+                 label the topbar search and the landing-page search already use. --}}
+            <label class="visually-hidden" for="application-search">
+                Search your applications
+            </label>
+            <input class="form-control" type="search" id="application-search" name="search"
+                   value="{{ $search ?? '' }}"
                    placeholder="Search by scholarship, provider, or application number" />
         </div>
         <button class="btn btn-outline-secondary" type="submit">Search</button>
@@ -71,74 +78,66 @@
         </div>
     @else
         <div class="card">
-            <div class="table-responsive">
-                {{-- sz-table-stack turns each row into a card below md; see scholarzim.css. --}}
-                <table class="table table-hover align-middle mb-0 sz-table-stack">
-                    <thead>
-                        <tr>
-                            <th scope="col">Scholarship</th>
-                            <th scope="col">Awarding body</th>
-                            <th scope="col">Application #</th>
-                            <th scope="col">Submitted</th>
-                            <th scope="col">Status</th>
-                            <th scope="col" class="text-end">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($applications as $application)
-                            <tr>
-                                <td data-label="Scholarship">
-                                    <span class="min-w-0">
-                                        <span class="fw-semibold d-block">{{ $application->opportunity?->title ?? 'Removed listing' }}</span>
-                                        @if($application->opportunity?->deadline)
-                                            <span class="small text-secondary">
-                                                Closes {{ $application->opportunity->deadline->format('d M Y') }}
-                                            </span>
-                                        @endif
-                                    </span>
-                                </td>
-                                <td data-label="Awarding body" class="text-secondary">
-                                    {{ $application->opportunity?->awardingBody() }}
-                                </td>
-                                <td data-label="Application #" class="text-secondary small">
-                                    #{{ $application->application_id }}
-                                </td>
-                                <td data-label="Submitted" class="text-secondary small">
-                                    {{ $application->submitted_at?->format('d M Y') }}
-                                </td>
-                                <td data-label="Status">
-                                    <span class="min-w-0">
-                                        <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
+            <x-data-table :columns="[
+                'Scholarship',
+                'Awarding body',
+                'Application #',
+                'Submitted',
+                'Status',
+                ['label' => 'Action', 'align' => 'end'],
+            ]">
+                @foreach($applications as $application)
+                    <tr>
+                        <x-data-table.cell label="Scholarship">
+                            <span class="fw-semibold d-block">{{ $application->opportunity?->title ?? 'Removed listing' }}</span>
+                            @if($application->opportunity?->deadline)
+                                <span class="small text-secondary">
+                                    Closes {{ $application->opportunity->deadline->format('d M Y') }}
+                                </span>
+                            @endif
+                        </x-data-table.cell>
 
-                                        {{--
-                                            The provider's reason is the substance of a
-                                            decision, so it is shown here rather than only
-                                            on the detail page.
-                                        --}}
-                                        @if($application->isAccepted())
-                                            <span class="d-block small text-success fw-semibold mt-1">
-                                                Accepted {{ $application->decided_at?->format('d M Y') }}
-                                            </span>
-                                        @elseif($application->isWithdrawn() && $application->withdrawn_at)
-                                            <span class="d-block small text-secondary mt-1">
-                                                Withdrawn {{ $application->withdrawn_at->format('d M Y') }}
-                                            </span>
-                                        @endif
+                        <x-data-table.cell label="Awarding body" class="text-secondary">
+                            {{ $application->opportunity?->awardingBody() }}
+                        </x-data-table.cell>
 
-                                        @if($application->isDecided() && $application->decision_reason)
-                                            <span class="d-block small text-secondary mt-1">{{ $application->decision_reason }}</span>
-                                        @endif
-                                    </span>
-                                </td>
-                                <td data-label="" class="text-end">
-                                    <a class="btn btn-sm btn-outline-secondary"
-                                       href="{{ route('applications.confirmation', $application->application_id) }}">View details</a>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
+                        <x-data-table.cell label="Application #" class="text-secondary small sz-tabular">
+                            #{{ $application->application_id }}
+                        </x-data-table.cell>
+
+                        <x-data-table.cell label="Submitted" class="text-secondary small">
+                            {{ $application->submitted_at?->format('d M Y') }}
+                        </x-data-table.cell>
+
+                        <x-data-table.cell label="Status">
+                            <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
+
+                            {{--
+                                The provider's reason is the substance of a decision, so
+                                it is shown here rather than only on the detail page.
+                            --}}
+                            @if($application->isAccepted())
+                                <span class="d-block small text-success fw-semibold mt-1">
+                                    Accepted {{ $application->decided_at?->format('d M Y') }}
+                                </span>
+                            @elseif($application->isWithdrawn() && $application->withdrawn_at)
+                                <span class="d-block small text-secondary mt-1">
+                                    Withdrawn {{ $application->withdrawn_at->format('d M Y') }}
+                                </span>
+                            @endif
+
+                            @if($application->isDecided() && $application->decision_reason)
+                                <span class="d-block small text-secondary mt-1">{{ $application->decision_reason }}</span>
+                            @endif
+                        </x-data-table.cell>
+
+                        <x-data-table.cell align="end">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="{{ route('applications.confirmation', $application->application_id) }}">View details</a>
+                        </x-data-table.cell>
+                    </tr>
+                @endforeach
+            </x-data-table>
         </div>
 
         <div class="mt-4">

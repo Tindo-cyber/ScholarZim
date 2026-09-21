@@ -5,9 +5,161 @@
  * utilities so the theme's own palette variables keep working.
  */
 
+/* ==========================================================================
+   DESIGN TOKENS
+   ==========================================================================
+
+   One place to change how ScholarZim looks. Everything below is a CSS custom
+   property, so a value edited here propagates to every page without touching a
+   template.
+
+   Two rules keep this honest:
+
+   1. Neutrals, surfaces, text and status colours are DERIVED from Bootstrap's
+      own `--bs-*` variables rather than restated as hex. The vendor theme
+      already redefines those under [data-bs-theme="dark"], so dark mode falls
+      out of the same token set instead of needing a parallel palette that
+      drifts. Only the handful of values Bootstrap has no equivalent for (the
+      page wash, the brand hover, the shadows) are overridden in the dark block
+      at the end of this section.
+
+   2. Brand colour comes from the BVite theme's own --primary-color rather than
+      a hardcoded #0066FE. Four rules in this file used to inline that fallback;
+      they now read the token, so re-theming is a one-line change.
+
+   Tokens are not a repaint. Every value here describes what the app already
+   rendered before the token layer existed, with two deliberate exceptions,
+   both noted at their definition: --sz-primary-hover and --sz-bg.
+*/
+
 :root {
+    /* ---- Brand ------------------------------------------------------- */
+    --sz-primary: var(--primary-color, #0066fe);
+    --sz-primary-rgb: var(--primary-rgb, 0, 102, 254);
+    /*
+     * Bootstrap's .btn-primary hover is #0b5ed7 - a derivative of ITS blue,
+     * not of ours. BVite repaints the resting state to --primary-color and
+     * leaves the hover alone, so every primary button in the app shifted hue
+     * on hover. These two are the correction: the same blue, darkened.
+     */
+    --sz-primary-hover: #0052cb;
+    --sz-primary-active: #0043a6;
+    --sz-primary-subtle: rgba(var(--sz-primary-rgb), .1);
+    --sz-primary-border-subtle: rgba(var(--sz-primary-rgb), .25);
+    --sz-on-primary: #fff;
+
+    /* ---- Surfaces ---------------------------------------------------- */
+    /*
+     * --sz-bg is the only surface token that is not simply --bs-body-bg. The
+     * shell used to paint the page and the cards on it the same white, so a
+     * card was distinguishable only by its hairline border. A faint wash
+     * behind the content lets cards read as cards. Cards themselves, and every
+     * other panel, stay exactly the colour they were.
+     */
+    --sz-bg: #f5f7fa;
+    --sz-surface: var(--bs-body-bg);
+    --sz-surface-2: var(--bs-secondary-bg);
+    --sz-surface-3: var(--bs-tertiary-bg);
+    --sz-border: var(--bs-border-color);
+
+    /* ---- Text -------------------------------------------------------- */
+    --sz-text: var(--bs-body-color);
+    --sz-text-strong: var(--bs-emphasis-color);
+    --sz-text-secondary: var(--bs-secondary-color);
+    --sz-text-muted: var(--bs-tertiary-color);
+
+    /* ---- Status ------------------------------------------------------ */
+    --sz-success: var(--bs-success);
+    --sz-success-subtle: var(--bs-success-bg-subtle);
+    --sz-success-border: var(--bs-success-border-subtle);
+    --sz-warning: var(--bs-warning);
+    --sz-warning-subtle: var(--bs-warning-bg-subtle);
+    --sz-warning-border: var(--bs-warning-border-subtle);
+    --sz-danger: var(--bs-danger);
+    --sz-danger-subtle: var(--bs-danger-bg-subtle);
+    --sz-danger-border: var(--bs-danger-border-subtle);
+    --sz-info: var(--bs-info);
+    --sz-info-subtle: var(--bs-info-bg-subtle);
+    --sz-info-border: var(--bs-info-border-subtle);
+
+    /* ---- Spacing ----------------------------------------------------- */
+    /* A 4px base, matching the Bootstrap spacer scale already used in markup. */
+    --sz-space-1: .25rem;
+    --sz-space-2: .5rem;
+    --sz-space-3: .75rem;
+    --sz-space-4: 1rem;
+    --sz-space-5: 1.5rem;
+    --sz-space-6: 2rem;
+    --sz-space-7: 3rem;
+
+    /* ---- Radius ------------------------------------------------------ */
+    --sz-radius-sm: .375rem;
+    --sz-radius: .75rem;          /* pre-existing name, kept: cards, drops, tables */
+    --sz-radius-lg: 1rem;
+    --sz-radius-pill: 50rem;
+
+    /* ---- Shadows ----------------------------------------------------- */
+    --sz-shadow-xs: 0 1px 2px rgba(16, 24, 40, .05);
+    --sz-shadow-sm: 0 1px 3px rgba(16, 24, 40, .1), 0 1px 2px rgba(16, 24, 40, .06);
+    --sz-shadow-md: 0 .25rem .75rem rgba(16, 24, 40, .08);
+    --sz-shadow-lg: 0 .5rem 1.5rem rgba(16, 24, 40, .12);
+    --sz-shadow-drawer: 0 0 2rem rgba(0, 0, 0, .15);
+
+    /* ---- Typography -------------------------------------------------- */
+    --sz-font-sans: var(--bs-body-font-family);
+    --sz-font-size-xs: .75rem;
+    --sz-font-size-sm: .8125rem;
+    --sz-font-size-base: 1rem;
+    --sz-font-size-lg: 1.125rem;
+    --sz-line-height-tight: 1.25;
+    --sz-line-height-base: 1.5;
+    --sz-weight-medium: 500;
+    --sz-weight-semibold: 600;
+    --sz-weight-bold: 700;
+    --sz-eyebrow-spacing: .06em;
+
+    /* ---- Motion ------------------------------------------------------ */
+    /* Zeroed wholesale under prefers-reduced-motion; see the block that does it. */
+    --sz-transition-fast: .12s ease;
+    --sz-transition: .18s ease;
+    --sz-transition-drawer: .2s ease-in-out;
+
+    /* ---- Shell metrics ----------------------------------------------- */
     --sz-sidebar-width: 16.5rem;
-    --sz-radius: .75rem;
+    --sz-sidebar-width-mobile: min(17.5rem, 86vw);
+    --sz-topbar-height: 3.5rem;
+    --sz-content-max: 90rem;
+    --sz-page-padding-x: 1rem;
+    --sz-page-padding-y: 1.5rem;
+    --sz-section-gap: 1.5rem;
+    /* A finger, per the WCAG 2.2 target-size guidance. */
+    --sz-touch-target: 2.75rem;
+}
+
+@media (min-width: 992px) {
+    :root {
+        --sz-page-padding-x: 1.75rem;
+        --sz-page-padding-y: 1.75rem;
+        --sz-section-gap: 2rem;
+    }
+}
+
+/*
+ * Dark mode, from the same token set.
+ *
+ * Only the values Bootstrap has no dark equivalent for are restated. Every
+ * other token above already resolves through a --bs-* variable that the vendor
+ * theme flips at this selector, so it follows without being named here.
+ */
+[data-bs-theme="dark"] {
+    --sz-bg: #16191c;
+    --sz-primary-hover: #3b86ff;
+    --sz-primary-active: #6ba4ff;
+    --sz-shadow-xs: 0 1px 2px rgba(0, 0, 0, .4);
+    --sz-shadow-sm: 0 1px 3px rgba(0, 0, 0, .5);
+    --sz-shadow-md: 0 .25rem .75rem rgba(0, 0, 0, .45);
+    --sz-shadow-lg: 0 .5rem 1.5rem rgba(0, 0, 0, .55);
+    --sz-shadow-drawer: 0 0 2rem rgba(0, 0, 0, .6);
 }
 
 /*
@@ -21,7 +173,7 @@
  * over the measured bar height is breathing room, not a gap anyone will notice.
  */
 html {
-    scroll-padding-top: 5.5rem;
+    scroll-padding-top: calc(var(--sz-topbar-height) + var(--sz-space-6));
 }
 
 /* ---------- Links ---------- */
@@ -75,22 +227,125 @@ main {
     position: sticky;
     top: 0;
     height: 100vh;
+    height: 100dvh;
 }
 
 .sz-main {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    background: var(--sz-bg);
 }
 
 .sz-topbar {
     z-index: 5;
 }
 
+/*
+ * The topbar and the sidebar's brand block are the same height, so the rule
+ * under the logo lines up with the rule under the bar beside it. Both read the
+ * token rather than repeating a number.
+ */
+.sz-topbar-inner,
+.sz-sidebar-brand {
+    min-height: var(--sz-topbar-height);
+}
+
+/*
+ * Search is given room but not the whole bar: past about 28rem the field reads
+ * as the page's main content rather than as a utility in the chrome.
+ */
+.sz-topbar-search {
+    max-width: 28rem;
+}
+
+/*
+ * The notification panel is 22rem, except on a screen too narrow to hold that.
+ * `dropdown-menu-end` pins its right edge to the button, so without the cap a
+ * 360px phone had the panel's left edge off-screen.
+ */
+.sz-notification-menu {
+    width: min(22rem, calc(100vw - 1.5rem));
+}
+
+.sz-notification-list {
+    max-height: 20rem;
+    overflow-y: auto;
+}
+
+/*
+ * One rule owns page padding and content width, rather than each view
+ * repeating `px-3 px-lg-4 py-4`. The max-width stops a dashboard's cards
+ * stretching to 2500px on a wide monitor, where a table row's first and last
+ * cell end up too far apart to read as one row.
+ */
+.sz-page {
+    width: 100%;
+    max-width: var(--sz-content-max);
+    margin-inline: auto;
+    padding: var(--sz-page-padding-y) var(--sz-page-padding-x);
+    flex-grow: 1;
+}
+
+/* Vertical rhythm between the major blocks of a page. */
+.sz-section + .sz-section {
+    margin-top: var(--sz-section-gap);
+}
+
+/* ---------- Sidebar navigation ---------- */
+
+/*
+ * Grouped navigation. The label is a real <li> with its own text, not a
+ * ::before on the first item, so a screen reader announces the group and the
+ * markup stays a single flat list - Bootstrap's .nav-pills expects that.
+ */
+.sz-nav-group-label {
+    padding: var(--sz-space-2) var(--sz-space-3) var(--sz-space-1);
+    font-size: var(--sz-font-size-xs);
+    font-weight: var(--sz-weight-semibold);
+    letter-spacing: var(--sz-eyebrow-spacing);
+    text-transform: uppercase;
+    color: var(--sz-text-muted);
+}
+
+/* The first group sits directly under the brand bar and needs no top gap. */
+.sz-nav-group + .sz-nav-group {
+    margin-top: var(--sz-space-3);
+}
+
+.sz-sidebar .nav-link {
+    border-radius: var(--sz-radius-sm);
+    padding: var(--sz-space-2) var(--sz-space-3);
+    font-size: .9375rem;
+    transition: background-color var(--sz-transition-fast), color var(--sz-transition-fast);
+}
+
+.sz-sidebar .nav-link:not(.active):hover,
+.sz-sidebar .nav-link:not(.active):focus-visible {
+    background: var(--sz-surface-2);
+    color: var(--sz-text-strong);
+}
+
+/*
+ * The active item is a filled pill AND heavier text, so what marks it is not
+ * only hue: a reader who cannot separate the two blues still has the fill and
+ * the weight. WCAG 1.4.1 is the reason the weight is here rather than left to
+ * the background colour on its own.
+ */
+.sz-sidebar .nav-link.active {
+    background: var(--sz-primary);
+    color: var(--sz-on-primary);
+    font-weight: var(--sz-weight-semibold);
+}
+
+/* ---------- The sidebar as a drawer, below xl ---------- */
+
 @media (max-width: 1199.98px) {
     .sz-sidebar {
         position: fixed;
         inset: 0 auto 0 0;
+        width: var(--sz-sidebar-width-mobile);
+        flex-basis: var(--sz-sidebar-width-mobile);
         z-index: 1045;
         transform: translateX(-100%);
         /*
@@ -100,16 +355,67 @@ main {
          * transitioned with a delay so the slide-out animation still plays.
          */
         visibility: hidden;
-        transition: transform .2s ease-in-out, visibility 0s linear .2s;
-        box-shadow: 0 0 2rem rgba(0, 0, 0, .15);
+        transition: transform var(--sz-transition-drawer), visibility 0s linear .2s;
+        box-shadow: var(--sz-shadow-drawer);
     }
 
     .sz-sidebar.show,
     .sz-sidebar.showing {
         transform: translateX(0);
         visibility: visible;
-        transition: transform .2s ease-in-out, visibility 0s;
+        transition: transform var(--sz-transition-drawer), visibility 0s;
     }
+
+    /*
+     * A finger, not a mouse. The nav links were 36px tall, under the 44px that
+     * WCAG 2.2 asks for on the one device where pointing is least precise.
+     */
+    .sz-sidebar .nav-link {
+        min-height: var(--sz-touch-target);
+        padding-block: var(--sz-space-3);
+    }
+
+    /*
+     * The drawer's other two controls, for the same reason.
+     *
+     * The general touch-target rule stops at 767.98px, which is right for the
+     * page - a tablet in landscape is a pointer device for most of what is on
+     * it. The drawer is not: it is opened by a tap at every width below xl, and
+     * "Install app" and "Exit" were still 31px at 768 through 1199, measured in
+     * the browser rather than assumed from the breakpoint.
+     */
+    .sz-sidebar .btn {
+        min-height: var(--sz-touch-target);
+    }
+}
+/* ---------- Page header ---------- */
+
+.sz-page-header {
+    margin-bottom: var(--sz-section-gap);
+}
+
+/*
+ * A measure on the subtitle. The content area is capped at --sz-content-max,
+ * which on a wide monitor is wide enough that a one-sentence subtitle ran to a
+ * single 140-character line - past the ~75 characters a reader tracks
+ * comfortably.
+ */
+.sz-page-header-subtitle {
+    max-width: 68ch;
+}
+
+/*
+ * The small uppercase label above a title, and the same treatment wherever a
+ * section needs one. Pulled out of page-header so the sidebar group labels and
+ * any future eyebrow share one definition.
+ */
+.sz-eyebrow {
+    margin-bottom: var(--sz-space-1);
+    font-size: var(--sz-font-size-xs);
+    font-weight: var(--sz-weight-semibold);
+    letter-spacing: var(--sz-eyebrow-spacing);
+    text-transform: uppercase;
+    color: var(--sz-primary);
 }
 
 /* ---------- Cards and stats ---------- */
@@ -117,13 +423,13 @@ main {
 .sz-stat-card,
 .sz-scholarship-card {
     border-radius: var(--sz-radius);
-    transition: transform .15s ease, box-shadow .15s ease;
+    transition: transform var(--sz-transition), box-shadow var(--sz-transition);
 }
 
 .sz-stat-card--link:hover,
 .sz-scholarship-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .08);
+    box-shadow: var(--sz-shadow-lg);
 }
 
 .sz-stat-icon {
@@ -131,16 +437,50 @@ main {
     height: 2.75rem;
 }
 
+/*
+ * Two stat cards to a row on a phone leaves about 66px beside the icon, and
+ * the labels are uppercase: "APPLICATIONS" broke across three lines mid-word,
+ * as "APPLICA / TIONS", and "IN PROGRESS" as "IN / PROGRE / SS". Stacking the
+ * icon above the text hands the label the card's full width, which is enough
+ * for every label the app uses. The cards stay side by side; only what is
+ * inside them turns.
+ */
+@media (max-width: 575.98px) {
+    .sz-stat-card .card-body {
+        flex-direction: column;
+        gap: var(--sz-space-2) !important;
+    }
+
+    .sz-stat-card .sz-stat-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+    }
+}
+
 .sz-empty-icon {
     width: 4rem;
     height: 4rem;
 }
 
+/*
+ * Size comes from a custom property rather than an inline width/height pair,
+ * so the three sizes live here and the component only names which one it wants.
+ */
 .sz-avatar {
-    background: var(--primary-color, #0066fe);
-    color: #fff;
+    width: var(--sz-avatar-size, 2.5rem);
+    height: var(--sz-avatar-size, 2.5rem);
+    background: var(--sz-primary);
+    color: var(--sz-on-primary);
     font-size: .8rem;
     letter-spacing: .02em;
+}
+
+.sz-avatar--sm {
+    --sz-avatar-size: 2rem;
+}
+
+.sz-avatar--lg {
+    --sz-avatar-size: 3.25rem;
 }
 
 /* Two-line description clamp on listing cards. */
@@ -149,6 +489,196 @@ main {
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
+}
+
+/* ---------- Shared components ---------- */
+
+/*
+ * A submit button that is working.
+ *
+ * pointer-events rather than [disabled]: a disabled submit button can lose its
+ * own name and value from the request it is submitting, and the double-press
+ * this guards against is already handled by the flag in
+ * resources/js/submit-state.js. The button stays in the accessibility tree and
+ * carries aria-busy, so a screen reader is told what a sighted reader can see.
+ */
+.btn[data-sz-submit].is-busy {
+    pointer-events: none;
+    opacity: .75;
+}
+
+/*
+ * A measure on an empty state's explanation, and on a stat card's progress
+ * rail. Both were inline styles repeated in the component; they are the same
+ * numbers, now named once.
+ */
+.sz-empty-message {
+    max-width: 28rem;
+}
+
+.sz-progress-thin {
+    height: .375rem;
+}
+
+/*
+ * A filter chip is a link that removes one facet. The hover state is what says
+ * so: without it the chips read as labels rather than as controls.
+ */
+.sz-filter-chip {
+    transition: background-color var(--sz-transition-fast), color var(--sz-transition-fast);
+}
+
+.sz-filter-chip:hover,
+.sz-filter-chip:focus-visible {
+    background: var(--sz-primary) !important;
+    color: var(--sz-on-primary) !important;
+}
+
+/* ---------- Score breakdown ---------- */
+
+/*
+ * The ScholarFit breakdown is a <details>, so the browser gives us the
+ * disclosure behaviour and the keyboard for free. What it does not give us is a
+ * summary that looks like a control rather than a bulleted line, which is all
+ * this section does.
+ */
+.sz-score-breakdown {
+    border: 1px solid var(--sz-border);
+    border-radius: var(--sz-radius);
+    background: var(--sz-surface-3);
+    padding: var(--sz-space-3) var(--sz-space-4);
+}
+
+.sz-score-breakdown-summary {
+    display: flex;
+    align-items: center;
+    gap: var(--sz-space-2);
+    cursor: pointer;
+    list-style: none;
+    font-size: var(--sz-font-size-sm);
+}
+
+/* Safari draws its own triangle through ::-webkit-details-marker. */
+.sz-score-breakdown-summary::-webkit-details-marker {
+    display: none;
+}
+
+.sz-score-breakdown-summary:focus-visible {
+    outline: 2px solid var(--sz-primary);
+    outline-offset: 3px;
+    border-radius: var(--sz-radius-sm);
+}
+
+/*
+ * No rotation on the summary's icon.
+ *
+ * It was turning a quarter when the panel opened, which is the usual disclosure
+ * cue - but the usual disclosure cue is a chevron, and a bar chart on its side
+ * reads as a rendering fault rather than as state. The <summary> element already
+ * carries its expanded state to assistive tech, and the panel appearing is what
+ * says so to everyone else. Decorative motion with nothing to communicate is
+ * motion this component does not need.
+ */
+
+/*
+ * Figures that sit in a column and are meant to be compared down it - "14/20"
+ * over "18/25". Lining figures stop the slash drifting left and right as the
+ * digits change width.
+ */
+.sz-tabular {
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Disabled controls ---------- */
+
+/*
+ * Bootstrap dims a disabled .btn with opacity alone, which on the outline
+ * variants leaves a control that still reads as pressable. The cursor is the
+ * second signal, and aria-disabled on the element is the third.
+ */
+.btn:disabled,
+.btn.disabled {
+    cursor: not-allowed;
+}
+
+/*
+ * A readonly field is not a disabled one: it can be focused, selected and
+ * copied, and it submits. It should look like a field that is holding a value
+ * rather than one that is switched off, so it keeps the body colour and takes
+ * the secondary surface.
+ */
+.form-control[readonly],
+.form-select[readonly] {
+    background-color: var(--sz-surface-2);
+    color: var(--sz-text);
+}
+
+/* ---------- Applicant: match cards ---------- */
+
+/*
+ * A match card is a card, not a poster. The hover lift the scholarship cards
+ * use is right for a grid of tiles you skim; this is a list of decisions, and
+ * a row that moves under the pointer while you read it is a distraction.
+ */
+.sz-match-card {
+    border-radius: var(--sz-radius);
+}
+
+/* Keeps a filter select readable without letting it run the width of the card. */
+.sz-filter-field {
+    max-width: 22rem;
+}
+
+/* ---------- Fieldset legends used as field labels ---------- */
+
+/*
+ * A <legend class="form-label"> should look like the labels either side of it.
+ *
+ * Bootstrap's reboot sizes every legend as a heading - font-size: calc(1.275rem
+ * + .3vw), float: left, width: 100% - and .form-label sets only a margin, so it
+ * has nothing to say about any of that. The profile's "Gender" fieldset came
+ * out a third larger than "Full name" and "Date of birth" beside it, which read
+ * as a section heading rather than as the label of the two radios under it.
+ *
+ * Scoped to legends that ask to be labels, so a real legend used as a heading
+ * is untouched.
+ */
+legend.form-label {
+    float: none;
+    width: auto;
+    font-size: inherit;
+    line-height: inherit;
+}
+
+/* ---------- Applicant: calculated points ---------- */
+
+/*
+ * The points panel beside "Add subject". Points are derived from grades and
+ * never entered, so the block is styled as a readout rather than as a field:
+ * right-aligned, no border, and a note saying where the number comes from.
+ */
+.sz-points-panel {
+    text-align: right;
+    margin-left: auto;
+}
+
+@media (max-width: 575.98px) {
+    .sz-points-panel {
+        text-align: left;
+        margin-left: 0;
+    }
+}
+
+/* ---------- Applicant: unread notifications ---------- */
+
+/*
+ * An unread row is marked three ways - a rail, a tint and a badge - because the
+ * tint on its own is a shade of grey on a page made of shades of grey, and in
+ * dark mode it is very nearly the row beside it.
+ */
+.sz-notification-unread {
+    border-left: 3px solid var(--sz-primary);
+    background: var(--sz-primary-subtle);
 }
 
 /* ---------- Application timeline ---------- */
@@ -172,7 +702,7 @@ main {
 }
 
 .sz-timeline-step.is-done::before {
-    background: var(--primary-color, #0066fe);
+    background: var(--sz-primary);
 }
 
 .sz-timeline-dot {
@@ -200,45 +730,25 @@ main {
     background: var(--bs-body-bg);
 }
 
-.sz-photo-banner {
-    position: relative;
-    min-height: 22rem;
-    display: flex;
-    align-items: flex-end;
-    background: url('/assets/img/scholarship-graduate-hero.jpg') center 20% / cover no-repeat;
-    border-radius: var(--sz-radius);
-    overflow: hidden;
-    color: #fff;
+/*
+ * The error page's reading measure. It was an inline max-width, which is the
+ * one place a length cannot be themed or found again.
+ */
+.sz-error-panel {
+    max-width: 32rem;
 }
 
-.sz-photo-banner::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(0deg, rgba(4, 12, 36, .88) 0%, rgba(4, 12, 36, .4) 60%, rgba(4, 12, 36, .05) 100%);
-}
-
-.sz-photo-banner > * {
-    position: relative;
-    z-index: 1;
-}
-
+/*
+ * The provider panel, without the photograph behind it.
+ *
+ * The image is a navy banner with the word SCHOLARSHIPS set across it, and even
+ * under a gradient at 85-92% opacity the letterforms read through - so the
+ * paragraph explaining how provider verification works was laid over a second,
+ * larger word saying something else. A flat brand panel says the same thing and
+ * lets the sentence be read.
+ */
 .sz-provider-cta {
-    background:
-        linear-gradient(120deg, rgba(0, 41, 122, .92), rgba(0, 74, 173, .85)),
-        url('/assets/img/scholarship-banner-navy.jpg') center / cover no-repeat;
-}
-
-.sz-steps-photo {
-    background: url('/assets/img/scholarship-books-badge.jpg') center / cover no-repeat;
-    border-radius: var(--sz-radius);
-    min-height: 16rem;
-}
-
-.sz-badge-coin {
-    width: 100%;
-    max-width: 12rem;
-    height: auto;
+    background: linear-gradient(120deg, #00297a, #004aad);
 }
 
 .sz-step-number {
@@ -248,7 +758,7 @@ main {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: var(--primary-color, #0066fe);
+    background: var(--sz-primary);
     color: #fff;
     font-weight: 700;
 }
@@ -354,10 +864,10 @@ main {
     left: -999rem;
     top: 0;
     z-index: 2000;
-    padding: .75rem 1.25rem;
-    background: var(--bs-primary);
-    color: #fff;
-    font-weight: 600;
+    padding: var(--sz-space-3) var(--sz-space-5);
+    background: var(--sz-primary);
+    color: var(--sz-on-primary);
+    font-weight: var(--sz-weight-semibold);
     border-bottom-right-radius: var(--sz-radius);
     text-decoration: none;
 }
@@ -365,8 +875,8 @@ main {
 .sz-skip-link:focus,
 .sz-skip-link:focus-visible {
     left: 0;
-    color: #fff;
-    outline: 3px solid var(--bs-body-color);
+    color: var(--sz-on-primary);
+    outline: 3px solid var(--sz-text);
     outline-offset: 2px;
 }
 
@@ -375,11 +885,259 @@ main {
     outline: none;
 }
 
+
+/*
+ * A visible focus ring on everything that takes focus, in ScholarZim's blue.
+ *
+ * :focus-visible rather than :focus, so a mouse click does not leave a ring
+ * behind on a button while a Tab press still draws one. Bootstrap only styles
+ * .btn and the form controls; this catches the rest - nav links, dropdown
+ * items, card links, the pagination, the table row actions - which previously
+ * fell back to whatever ring the browser happened to draw, and in Chrome that
+ * is a thin black outline that all but vanishes on a dark surface.
+ *
+ * The offset is what makes it readable against a filled control: without it
+ * the ring sits on the element's own background.
+ */
+:focus-visible {
+    outline: 2px solid var(--sz-primary);
+    outline-offset: 2px;
+}
+
+/*
+ * The same ring again, at a specificity that actually wins.
+ *
+ * The bare :focus-visible above is (0,1,0) and the vendor theme carries
+ * `:is(a):hover,:is(a):focus{color:var(--accent-color);outline:none;
+ * box-shadow:none}`, which is (0,1,1). So every prose link in the app - "Forgot
+ * your password?", "Create a student account", the links in the eligibility
+ * summary - had its outline removed AND its box-shadow removed, leaving a
+ * keyboard user with no focus indicator at all. Measured by tabbing through the
+ * sign-in form in a real browser; it is invisible to any amount of reading the
+ * stylesheet, because the rule that loses is the one written here.
+ *
+ * `a:focus-visible` is also (0,1,1), and this file loads after the theme, so
+ * the tie goes to us. The element selectors below cover the rest of what takes
+ * focus without a .btn or .form-control class to its name.
+ */
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+    outline: 2px solid var(--sz-primary);
+    outline-offset: 2px;
+}
+
+/*
+ * .nav-link:focus-visible is (0,2,0) in the vendor CSS and sets outline:0 with
+ * a box-shadow in Bootstrap's blue, so the sidebar's focus ring was a different
+ * colour from every other focus ring on the page. Only the colour changes here.
+ */
+.nav-link:focus-visible {
+    box-shadow: 0 0 0 .25rem rgba(var(--sz-primary-rgb), .25);
+}
+
+/*
+ * Bootstrap's own focus shadow is keyed to ITS blue (--bs-btn-focus-shadow-rgb
+ * is 49, 132, 253 in the compiled vendor CSS, which is #0d6efd), so a focused
+ * primary button showed a halo in a different hue from the button under it.
+ * Same correction as the hover state in the button section below.
+ */
+.btn:focus-visible,
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    border-color: var(--sz-primary);
+    box-shadow: 0 0 0 .25rem rgba(var(--sz-primary-rgb), .25);
+}
+
+/*
+ * Reduced motion.
+ *
+ * Zeroing the three motion tokens turns off every transition that reads them -
+ * the drawer, the nav links, the cards - from one place. The blanket rule after
+ * it catches animation and scroll-behaviour declared anywhere else, including
+ * in the vendor theme, which has no reduced-motion handling of its own.
+ *
+ * The drawer keeps `visibility` in its transition list deliberately: with the
+ * duration at 0s it still flips instantly, and dropping the property would put
+ * the hidden menu back in the tab order. Motion is what is being removed here,
+ * not behaviour.
+ */
+@media (prefers-reduced-motion: reduce) {
+    :root {
+        --sz-transition-fast: 0s;
+        --sz-transition: 0s;
+        --sz-transition-drawer: 0s;
+    }
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Lift-on-hover is motion, not decoration; it goes with the rest. */
+    .sz-stat-card--link:hover,
+    .sz-scholarship-card:hover {
+        transform: none;
+    }
+}
+
+/* ---------- Buttons ---------- */
+
+/*
+ * ScholarZim does not have a button system of its own, and this is not one.
+ * Bootstrap's .btn-* classes stay exactly as they are in the markup; what
+ * follows only re-points the values they already use at the design tokens, so
+ * the four priorities read as one family:
+ *
+ *   primary     .btn-primary          the single action a page is asking for
+ *   secondary   .btn-outline-primary  an alternative to it
+ *   tertiary    .btn-link             navigation dressed as a control
+ *   danger      .btn-danger / -outline-danger
+ *
+ * The bug this fixes: BVite repaints .btn-primary's resting background to
+ * --primary-color (#0066FE) with a plain `background-color` declaration, but
+ * leaves Bootstrap's --bs-btn-hover-bg at #0b5ed7 - a derivative of Bootstrap's
+ * own blue. `.btn:hover` outranks `.btn-primary` on specificity, so every
+ * primary button in the app changed hue the moment a pointer touched it.
+ * Nobody would name it as a bug; it just made the interface feel unfinished.
+ */
+.btn {
+    --bs-btn-border-radius: var(--sz-radius-sm);
+    --bs-btn-font-weight: var(--sz-weight-medium);
+    transition: background-color var(--sz-transition-fast),
+                border-color var(--sz-transition-fast),
+                color var(--sz-transition-fast);
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--sz-primary);
+    --bs-btn-border-color: var(--sz-primary);
+    --bs-btn-hover-bg: var(--sz-primary-hover);
+    --bs-btn-hover-border-color: var(--sz-primary-hover);
+    --bs-btn-active-bg: var(--sz-primary-active);
+    --bs-btn-active-border-color: var(--sz-primary-active);
+    --bs-btn-disabled-bg: var(--sz-primary);
+    --bs-btn-disabled-border-color: var(--sz-primary);
+    --bs-btn-color: var(--sz-on-primary);
+    --bs-btn-hover-color: var(--sz-on-primary);
+    --bs-btn-active-color: var(--sz-on-primary);
+}
+
+/*
+ * BVite's `background-color: var(--primary-color); border: 0` is a plain
+ * declaration on .btn-primary, so it beats the custom property above on the
+ * resting state and ties on specificity with :hover losing. Restating the two
+ * as variables-driven declarations here puts every state back under the token.
+ * Loaded after the vendor CSS, so order settles the tie.
+ */
+.btn-primary,
+.btn-primary:disabled,
+.btn-primary.disabled {
+    background-color: var(--sz-primary);
+    border: 1px solid var(--sz-primary);
+}
+
+.btn-primary:hover {
+    background-color: var(--sz-primary-hover);
+    border-color: var(--sz-primary-hover);
+}
+
+.btn-primary:active,
+.btn-check:checked + .btn-primary,
+.btn-primary.active {
+    background-color: var(--sz-primary-active);
+    border-color: var(--sz-primary-active);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--sz-primary);
+    --bs-btn-border-color: var(--sz-primary);
+    --bs-btn-hover-bg: var(--sz-primary);
+    --bs-btn-hover-border-color: var(--sz-primary);
+    --bs-btn-hover-color: var(--sz-on-primary);
+    --bs-btn-active-bg: var(--sz-primary-active);
+    --bs-btn-active-border-color: var(--sz-primary-active);
+    --bs-btn-active-color: var(--sz-on-primary);
+    --bs-btn-disabled-color: var(--sz-primary);
+    --bs-btn-disabled-border-color: var(--sz-primary);
+}
+
+/* Tertiary: a control that should not compete with the other two. */
+.btn-link {
+    --bs-btn-color: var(--sz-primary);
+    --bs-btn-hover-color: var(--sz-primary-hover);
+    --bs-btn-font-weight: var(--sz-weight-medium);
+    text-decoration: none;
+}
+
+.btn-link:hover,
+.btn-link:focus-visible {
+    text-decoration: underline;
+}
+
+/*
+ * A finger's worth of button on a phone.
+ *
+ * .btn-sm is included rather than exempted: it is exactly what sits in a table
+ * row's action cell, which is the hardest thing on the page to hit accurately.
+ * Buttons inside an .input-group are left alone - growing one there would
+ * unstick it from the field it is joined to - and so are dropdown items, which
+ * get their own padding below.
+ */
+@media (max-width: 767.98px) {
+    .btn {
+        min-height: var(--sz-touch-target);
+    }
+
+    .input-group .btn {
+        min-height: 0;
+    }
+
+    .dropdown-item {
+        padding-top: var(--sz-space-2);
+        padding-bottom: var(--sz-space-2);
+    }
+}
+
+/*
+ * The same finger, on a bigger screen.
+ *
+ * Above 767.98px .btn-sm returns to its natural 29px, which clears WCAG 2.2's
+ * 24px minimum but is not a comfortable target - and a tablet in portrait is
+ * 768px wide, so the row of action buttons in a table gets smaller at exactly
+ * the width where the table stops being a stack of cards.
+ *
+ * Gated on the pointer rather than the viewport, because 768-991px is not a
+ * tablet range: it is also a desktop window that has been dragged narrower, and
+ * growing every button there would push a mouse user's layout around for no
+ * reason. `pointer: coarse` asks the question that actually matters - is the
+ * primary input a fingertip - and a browser reports `fine` as soon as a mouse
+ * is present, so a touchscreen laptop with a trackpad is left alone too.
+ *
+ * Desktop is untouched at every width. The exemptions match the rule above:
+ * a button joined to a field must not grow away from it.
+ */
+@media (min-width: 768px) and (pointer: coarse) {
+    .btn {
+        min-height: var(--sz-touch-target);
+    }
+
+    .input-group .btn {
+        min-height: 0;
+    }
+}
+
 /* ---------- Award panel ---------- */
 
 .sz-award-panel {
-    background: var(--bs-success-bg-subtle);
-    border-color: var(--bs-success-border-subtle) !important;
+    background: var(--sz-success-subtle);
+    border-color: var(--sz-success-border) !important;
 }
 
 /* ---------- The public navbar, once it collapses ---------- */
@@ -514,7 +1272,9 @@ main {
  * duplicated mobile-only table, and nothing to keep in step when a column is
  * added - the new cell just needs its data-label.
  *
- * A cell with data-label="" (checkboxes, action buttons) prints no label.
+ * A cell with data-label="" (checkboxes, action buttons) prints no label, and
+ * so does a cell with no data-label at all - the empty row a table falls back
+ * to, which spans every column and has no single column to name.
  */
 @media (max-width: 767.98px) {
     .sz-table-stack thead {
@@ -530,39 +1290,131 @@ main {
     }
 
     .sz-table-stack tr {
-        border: 1px solid var(--bs-border-color);
+        border: 1px solid var(--sz-border);
         border-radius: var(--sz-radius);
-        margin-bottom: .75rem;
-        padding: .5rem .875rem;
+        margin-bottom: var(--sz-space-3);
+        padding: var(--sz-space-2) var(--sz-space-3);
     }
 
+    /*
+     * Label in column one, everything the cell contains in column two.
+     *
+     * Grid rather than flex, and the difference is not cosmetic. Under flex,
+     * every child of the cell becomes its own column: a cell holding a title
+     * and a subtitle - the provider's listing rows, the moderation queue - put
+     * them side by side and squeezed a long scholarship name into a four-line
+     * ribbon. Under grid every child is pinned to column two and auto-placed
+     * down its rows, so one child or four, the value side reads as one block.
+     *
+     * minmax(0, 1fr) rather than 1fr: a grid track's default minimum is its
+     * content, so a long unbroken string - an email address on the admin user
+     * list - pushed the track wider than the card and was clipped by the
+     * .table-responsive wrapper rather than wrapping.
+     *
+     * The label column is 6.5rem, down from 7.5rem. On a 360px screen that is
+     * the difference between a <select> showing "ZIMSEC O" and showing enough
+     * of "ZIMSEC Ordinary Level" to tell two qualifications apart.
+     */
     .sz-table-stack td {
-        display: flex;
-        gap: 1rem;
-        align-items: flex-start;
-        justify-content: space-between;
+        display: grid;
+        grid-template-columns: 6.5rem minmax(0, 1fr);
+        gap: .25rem .75rem;
+        align-items: start;
         border: 0;
         padding: .375rem 0;
         text-align: left !important;
+        overflow-wrap: anywhere;
+        /*
+         * Content keeps its own width. A grid item stretches by default, which
+         * blew every pill badge - "Awaiting review", an application count - out
+         * to the full width of the card, and did the same to each row's
+         * "Remove" and "Suspend". Form controls opt back in below, because a
+         * select that does not fill the column is the thing that made these
+         * grids unusable on a phone in the first place.
+         */
+        justify-items: start;
+    }
+
+    .sz-table-stack td > * {
+        grid-column: 2;
+        min-width: 0;
+        /*
+         * A grid item sized by justify-items: start takes its fit-content
+         * width, and fit-content of a .text-truncate element is the whole
+         * string - white-space: nowrap makes its min-content the full name. So
+         * "Midlands Community Development Trust" on the admin user list sized
+         * its own box past the card instead of ellipsising inside it, and the
+         * .table-responsive wrapper clipped the result. Capping the item at the
+         * track width is what gives text-truncate something to truncate to.
+         */
+        max-width: 100%;
+    }
+
+    .sz-table-stack td > .form-select,
+    .sz-table-stack td > .form-control {
+        justify-self: stretch;
     }
 
     .sz-table-stack td::before {
         content: attr(data-label);
-        flex: 0 0 8rem;
-        font-weight: 600;
-        color: var(--bs-secondary-color);
+        grid-column: 1;
+        /*
+         * Stated, never inherited. The pseudo-element takes its type from the
+         * cell, so a label sat next to whatever utility class that cell happened
+         * to carry: "Points" came out in monospace because its cell is
+         * .font-monospace, and "Action" came out a size larger than "When"
+         * because the other cells in that table carry .small. Labels in one
+         * table have to look like each other.
+         */
+        font-family: var(--sz-font-sans);
+        font-size: var(--sz-font-size-sm);
+        font-weight: var(--sz-weight-semibold);
+        font-style: normal;
+        line-height: 1.5;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--sz-text-secondary);
     }
 
-    .sz-table-stack td[data-label=""]::before {
+    /* A cell with nothing to name gives its whole width to what it holds. */
+    .sz-table-stack td[data-label=""],
+    .sz-table-stack td:not([data-label]) {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    /*
+     * The colspan cell an empty table falls back to is the one exception: it
+     * does want the whole width, so its centred content stays centred.
+     */
+    .sz-table-stack td:not([data-label]) {
+        justify-items: stretch;
+    }
+
+    .sz-table-stack td[data-label=""]::before,
+    .sz-table-stack td:not([data-label])::before {
         display: none;
+    }
+
+    .sz-table-stack td[data-label=""] > *,
+    .sz-table-stack td:not([data-label]) > * {
+        grid-column: 1;
     }
 
     /* The last cell holds the row's action; give it room and its own rule. */
     .sz-table-stack td:last-child {
-        justify-content: flex-start;
-        border-top: 1px solid var(--bs-border-color);
-        margin-top: .25rem;
-        padding-top: .625rem;
+        border-top: 1px solid var(--sz-border);
+        margin-top: var(--sz-space-1);
+        padding-top: var(--sz-space-2);
+    }
+
+    /*
+     * ...except when the row's fallback is a single full-width cell. An empty
+     * state does not want a rule above it and a left-aligned indent below it.
+     */
+    .sz-table-stack td:only-child {
+        border-top: 0;
+        margin-top: 0;
+        padding-top: var(--sz-space-2);
     }
 }
 
@@ -572,8 +1424,9 @@ main {
  * The theme's own tokens (--bs-body-bg, --bs-border-color, and friends) already
  * flip with the colour mode, so almost everything here follows automatically.
  * What does not are the few places that hardcode a light-mode value: the tinted
- * hero washes, and the sidebar's drop shadow, which is invisible against a dark
- * body. Those are the only overrides below - anything else belongs in a token.
+ * hero washes. Everything else that differs by mode - the page wash, the brand
+ * hover, every shadow - is a token, redefined once in the dark block at the top
+ * of this file rather than restated as a per-component override here.
  */
 [data-bs-theme="dark"] .sz-hero {
     background:
@@ -581,14 +1434,8 @@ main {
         radial-gradient(circle at 85% 10%, rgba(0, 184, 214, .18), transparent 40%);
 }
 
-@media (max-width: 1199.98px) {
-    [data-bs-theme="dark"] .sz-sidebar {
-        box-shadow: 0 0 2rem rgba(0, 0, 0, .6);
-    }
-}
-
 [data-bs-theme="dark"] .sz-stat-card {
-    box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .35);
+    box-shadow: var(--sz-shadow-md);
 }
 
 /*

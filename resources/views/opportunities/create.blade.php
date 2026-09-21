@@ -80,7 +80,7 @@
                 @include('opportunities.partials.award-fields')
 
                 <div class="d-flex flex-wrap gap-2">
-                    <button class="btn btn-primary btn-lg" type="submit">Submit for review</button>
+                    <x-submit-button label="Submit for review" size="lg" busy-label="Submitting..." />
                     <a class="btn btn-outline-secondary btn-lg" href="{{ route('provider.dashboard') }}">Cancel</a>
                 </div>
             </form>

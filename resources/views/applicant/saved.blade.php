@@ -21,6 +21,12 @@
                            :action-href="route('opportunities.index')" />
         </div>
     @else
+        {{-- The same grid as the two listing pages: the cards title themselves h3
+             and need a section heading between them and the page h1. This one
+             escaped the sweep only because the test account had saved nothing,
+             so the empty state rendered instead of the cards. --}}
+        <h2 class="visually-hidden">Saved scholarships</h2>
+
         <div class="row g-3 g-lg-4">
             @foreach($saved as $entry)
                 @continue($entry->opportunity === null)

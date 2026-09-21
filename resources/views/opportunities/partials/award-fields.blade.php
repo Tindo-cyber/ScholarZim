@@ -9,12 +9,11 @@
      * back to old() and renders empty.
      */
     $value = static fn (string $field, $fallback = null) => $opportunity?->{$field} ?? $fallback;
-    $checked = static fn (string $field) => (bool) old($field, $opportunity?->{$field} ?? false);
 @endphp
 
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">What the award is worth</h2>
+        <h2 class="h6 fw-semibold mb-0">Funding and award</h2>
     </div>
     <div class="card-body">
         <p class="text-secondary small">
@@ -50,13 +49,8 @@
             </div>
 
             <div class="col-md-4 d-flex align-items-center">
-                <div class="form-check mb-3">
-                    <input class="form-check-input" type="checkbox" id="field-is_renewable"
-                           name="is_renewable" value="1" @checked($checked('is_renewable'))>
-                    <label class="form-check-label" for="field-is_renewable">
-                        Renewable each year
-                    </label>
-                </div>
+                <x-form.checkbox name="is_renewable" label="Renewable each year"
+                                 :checked="(bool) $value('is_renewable', false)" />
             </div>
         </div>
     </div>
@@ -64,7 +58,7 @@
 
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">Hard eligibility rules</h2>
+        <h2 class="h6 fw-semibold mb-0">General eligibility</h2>
     </div>
     <div class="card-body">
         <div class="alert alert-warning d-flex gap-2" role="note">
@@ -78,12 +72,6 @@
         </div>
 
         <div class="row">
-            <div class="col-md-6">
-                <x-form.input name="min_academic_points" label="Minimum ZIMSEC A-Level points" type="number"
-                              min="1" :max="\App\Support\Academic\AcademicCatalogue::maxZimsecALevelPoints()" step="1"
-                              :value="$value('min_academic_points')"
-                              hint="ZIMSEC A-Level only: A=5, B=4, C=3, D=2, E=1, so three A grades is 15. O-Level, Cambridge and degree results are never counted towards this." />
-            </div>
             <div class="col-md-6">
                 <x-form.input name="max_age" label="Maximum age" type="number"
                               min="10" max="99" step="1"
@@ -109,28 +97,36 @@
                                placeholder="No restriction" />
             </div>
             <div class="col-12">
-                <div class="form-check mb-0">
-                    <input class="form-check-input" type="checkbox" id="field-requires_results_certificate"
-                           name="requires_results_certificate" value="1"
-                           @checked($checked('requires_results_certificate'))>
-                    <label class="form-check-label" for="field-requires_results_certificate">
-                        Proof of academic results must be on file before applying
-                        <span class="d-block text-secondary">
-                            A results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants.
-                        </span>
-                    </label>
-                </div>
+                <x-form.checkbox name="requires_results_certificate" wrapper-class="mb-0"
+                                 label="Proof of academic results must be on file before applying"
+                                 hint="A results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants."
+                                 :checked="(bool) $value('requires_results_certificate', false)" />
             </div>
         </div>
     </div>
 </div>
 
 
+{{--
+    Academic requirements, in two clearly separated halves.
+
+    They are different rules and they are checked separately. A subject
+    requirement asks "do you hold Mathematics at B or better?"; the points rule
+    asks "do your ZIMSEC A-Level grades add up to 15?". An applicant can pass
+    one and fail the other, and the engine reports them as two outcomes.
+
+    The points field used to sit in the general eligibility card between a
+    maximum age and a required province, which invited reading it as one more
+    demographic filter. Nothing about either rule changed - only which heading
+    they sit under.
+--}}
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">Required subjects (optional)</h2>
+        <h2 class="h6 fw-semibold mb-0">Academic requirements (optional)</h2>
     </div>
     <div class="card-body">
+        <h3 class="sz-eyebrow">Subject requirements</h3>
+
         <p class="text-secondary small">
             If this award requires applicants to hold specific subjects at a minimum grade, list them here.
             Applicants who do not hold a required subject, or whose grade falls short, are told they are not
@@ -146,7 +142,7 @@
         @endif
 
         <div class="table-responsive">
-            <table class="table table-sm align-middle mb-2" id="subject-requirements-table">
+            <table class="table table-sm align-middle mb-2 sz-table-stack" id="subject-requirements-table">
                 <thead>
                     <tr>
                         <th scope="col" style="width:34%">Qualification</th>
@@ -158,7 +154,7 @@
                 <tbody id="subject-requirements-list">
                     @foreach(($opportunity?->subjectRequirements ?? []) as $idx => $existing)
                         <tr class="subject-requirement-row">
-                            <td>
+                            <td data-label="Qualification">
                                 <select class="form-select form-select-sm qualification-select"
                                         name="subject_requirements[{{ $idx }}][qualification_id]"
                                         aria-label="Qualification">
@@ -176,7 +172,7 @@
                                 empty grade without it, which is the same data loss this whole
                                 section was fixed to prevent.
                             --}}
-                            <td>
+                            <td data-label="Subject">
                                 <select class="form-select form-select-sm subject-select"
                                         name="subject_requirements[{{ $idx }}][subject_id]"
                                         data-selected="{{ $existing->subject_id }}"
@@ -188,7 +184,7 @@
                                     @endforeach
                                 </select>
                             </td>
-                            <td>
+                            <td data-label="Minimum grade">
                                 {{-- This field previously rendered readonly and unnamed, so it was
                                      never submitted and every edit reset the rule to "any grade". --}}
                                 <select class="form-select form-select-sm grade-select"
@@ -202,7 +198,7 @@
                                     @endforeach
                                 </select>
                             </td>
-                            <td class="text-end">
+                            <td class="text-end" data-label="">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
                             </td>
                         </tr>
@@ -213,7 +209,7 @@
 
         <template id="subject-requirement-template">
             <tr class="subject-requirement-row">
-                <td>
+                <td data-label="Qualification">
                     <select class="form-select form-select-sm qualification-select"
                             name="subject_requirements[__IDX__][qualification_id]" aria-label="Qualification">
                         <option value="">Select qualification</option>
@@ -222,15 +218,15 @@
                         @endforeach
                     </select>
                 </td>
-                <td>
+                <td data-label="Subject">
                     <select class="form-select form-select-sm subject-select"
                             name="subject_requirements[__IDX__][subject_id]" aria-label="Subject" disabled></select>
                 </td>
-                <td>
+                <td data-label="Minimum grade">
                     <select class="form-select form-select-sm grade-select"
                             name="subject_requirements[__IDX__][minimum_grade]" aria-label="Minimum grade" disabled></select>
                 </td>
-                <td class="text-end">
+                <td class="text-end" data-label="">
                     <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
                 </td>
             </tr>
@@ -240,6 +236,24 @@
             Add a required subject
         </button>
 
+        <hr class="my-4">
+
+        <h3 class="sz-eyebrow">Total A-Level points</h3>
+
+        <p class="text-secondary small">
+            A separate rule from the subjects above, and checked separately. It asks whether the
+            applicant's ZIMSEC A-Level grades add up to a total, whatever those subjects are.
+        </p>
+
+        <div class="row">
+            <div class="col-md-6">
+                <x-form.input name="min_academic_points" label="Minimum ZIMSEC A-Level points" type="number"
+                              min="1" :max="\App\Support\Academic\AcademicCatalogue::maxZimsecALevelPoints()" step="1"
+                              :value="$value('min_academic_points')"
+                              hint="ZIMSEC A-Level only: A=5, B=4, C=3, D=2, E=1, so three A grades is 15. O-Level, Cambridge and degree results are never counted towards this." />
+            </div>
+        </div>
+
         {{--
             Built in the controller rather than inline: Blade's directive parser
             reads the argument to @json by bracket matching, and an arrow
@@ -248,123 +262,19 @@
         --}}
         <script type="application/json" id="subject-requirement-catalogue">@json($qualificationCatalogue)</script>
 
-        <script>
-            /**
-             * Qualification drives subject and grade together. Both lists come
-             * from the qualification rows themselves, so the form cannot offer
-             * a grade the server would reject - the grades a board awards and
-             * the grades this picker shows are the same list.
-             */
-            (function () {
-                var listEl = document.getElementById('subject-requirements-list');
-                var addButton = document.getElementById('add-subject-requirement');
-                var templateEl = document.getElementById('subject-requirement-template');
-                var catalogueEl = document.getElementById('subject-requirement-catalogue');
-                if (!listEl || !addButton || !templateEl || !catalogueEl) return;
+        {{--
+            The behaviour that drives this grid lives in
+            resources/js/subject-requirements.js, bundled by Vite and served
+            from the application's own origin.
 
-                var catalogue = JSON.parse(catalogueEl.textContent || '{}');
-                var nextIdx = listEl.querySelectorAll('.subject-requirement-row').length;
+            It used to be an inline <script> right here, and the app's
+            Content-Security-Policy is `script-src 'self'` - which an inline
+            script is not. The browser refused to run it, so "Add a required
+            subject" did nothing on either the create or the edit form. The
+            policy was right and the markup was wrong; the markup moved.
 
-                function fill(select, options, selected, blankLabel) {
-                    select.innerHTML = '';
-                    var blank = document.createElement('option');
-                    blank.value = '';
-                    blank.textContent = blankLabel;
-                    select.appendChild(blank);
-
-                    options.forEach(function (option) {
-                        var el = document.createElement('option');
-                        el.value = option.value;
-                        el.textContent = option.label;
-                        if (String(selected) === String(option.value)) el.selected = true;
-                        select.appendChild(el);
-                    });
-
-                    select.disabled = options.length === 0;
-                }
-
-                function sync(row) {
-                    var qualSelect = row.querySelector('.qualification-select');
-                    var subjectSelect = row.querySelector('.subject-select');
-                    var gradeSelect = row.querySelector('.grade-select');
-                    if (!qualSelect || !subjectSelect || !gradeSelect) return;
-
-                    var entry = catalogue[qualSelect.value] || { subjects: [], grades: [] };
-
-                    fill(
-                        subjectSelect,
-                        entry.subjects.map(function (s) { return { value: s.id, label: s.name }; }),
-                        subjectSelect.dataset.selected || subjectSelect.value,
-                        'Select subject'
-                    );
-
-                    // The subject's own scale where it has one - the Cambridge
-                    // IGCSE 9-1 syllabuses - otherwise the qualification's. The
-                    // two are never offered together: a 9-1 syllabus cannot be
-                    // given an A*-G bar, because the scales do not convert.
-                    var subject = entry.subjects.filter(function (s) {
-                        return String(s.id) === String(subjectSelect.value);
-                    })[0];
-                    var grades = (subject && subject.grades) ? subject.grades : entry.grades;
-
-                    fill(
-                        gradeSelect,
-                        grades.map(function (g) { return { value: g, label: g }; }),
-                        gradeSelect.dataset.selected || gradeSelect.value,
-                        'Any grade'
-                    );
-
-                    // Cleared once populated, so re-syncing after a subject
-                    // change reads the provider's actual choice rather than
-                    // resetting to whatever the page loaded with.
-                    delete subjectSelect.dataset.selected;
-                    delete gradeSelect.dataset.selected;
-
-                    // A blank grade is a valid choice - the subject is required
-                    // but no bar is set on it - so the grade select stays usable
-                    // even when no grades are configured.
-                    gradeSelect.disabled = grades.length === 0;
-                }
-
-                function attach(row) {
-                    var qualSelect = row.querySelector('.qualification-select');
-                    if (qualSelect) {
-                        qualSelect.addEventListener('change', function () {
-                            var subjectSelect = row.querySelector('.subject-select');
-                            var gradeSelect = row.querySelector('.grade-select');
-                            if (subjectSelect) delete subjectSelect.dataset.selected;
-                            if (gradeSelect) delete gradeSelect.dataset.selected;
-                            sync(row);
-                        });
-                    }
-
-                    // Changing the subject can change the scale it is graded
-                    // on, so the grade list is rebuilt with it.
-                    var subjectSelect = row.querySelector('.subject-select');
-                    if (subjectSelect) {
-                        subjectSelect.addEventListener('change', function () { sync(row); });
-                    }
-
-                    var removeButton = row.querySelector('.remove-row');
-                    if (removeButton) {
-                        removeButton.addEventListener('click', function () { row.remove(); });
-                    }
-
-                    sync(row);
-                }
-
-                addButton.addEventListener('click', function () {
-                    var html = templateEl.innerHTML.replace(/__IDX__/g, String(nextIdx++));
-                    var host = document.createElement('tbody');
-                    host.innerHTML = html.trim();
-                    var row = host.querySelector('.subject-requirement-row');
-                    if (!row) return;
-                    listEl.appendChild(row);
-                    attach(row);
-                });
-
-                listEl.querySelectorAll('.subject-requirement-row').forEach(attach);
-            })();
-        </script>
+            The JSON block above stays: a data block is not executed, so CSP
+            has no opinion about it.
+        --}}
     </div>
 </div>

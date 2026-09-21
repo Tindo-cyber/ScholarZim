@@ -2,6 +2,48 @@
 
 @section('title', 'Reports')
 
+@php
+    /**
+     * The exports that exist, grouped by what they are about rather than by the
+     * file they produce.
+     *
+     * Before this the page was eight buttons in one flat grid, coloured red for
+     * PDF and green for Excel - the two tones this application uses everywhere
+     * else for "something went wrong" and "something succeeded". Read by
+     * category instead, the one asymmetry in the set becomes visible and
+     * explainable: recommendations are a PDF only, and saying so is better than
+     * leaving a gap in a grid where an Excel button would otherwise be.
+     *
+     * Nothing here generates anything new. Each entry is an existing route.
+     */
+    $reports = [
+        [
+            'title' => 'Users',
+            'description' => 'Name, email, phone, role and account status, for every account.',
+            'pdf' => 'admin.reports.users.pdf',
+            'excel' => 'admin.reports.users.xlsx',
+        ],
+        [
+            'title' => 'Opportunities',
+            'description' => 'Title, awarding body, education level, field, location and deadline.',
+            'pdf' => 'admin.reports.opportunities.pdf',
+            'excel' => 'admin.reports.opportunities.xlsx',
+        ],
+        [
+            'title' => 'Applications',
+            'description' => 'Applicant, listing, current status and the date it was submitted.',
+            'pdf' => 'admin.reports.applications.pdf',
+            'excel' => 'admin.reports.applications.xlsx',
+        ],
+        [
+            'title' => 'Recommendations',
+            'description' => 'Listings with their awarding body, ScholarFit match percentage and deadline.',
+            'pdf' => 'admin.reports.recommendations.pdf',
+            'excel' => null,
+        ],
+    ];
+@endphp
+
 @section('content')
 
     <x-page-header title="Reports"
@@ -9,51 +51,70 @@
                    eyebrow="Data exports" />
 
     <div class="card mb-4">
-        <div class="card-body p-4">
-            <h2 class="h6 fw-bold mb-1">
-                <x-icon name="download" class="text-secondary me-1" />Export reports
-            </h2>
-            <p class="small text-secondary mb-3">Download platform data as PDF or Excel.</p>
-            <div class="row g-2">
-                @foreach([
-                    'admin.reports.users.pdf' => 'Users PDF',
-                    'admin.reports.opportunities.pdf' => 'Opportunities PDF',
-                    'admin.reports.applications.pdf' => 'Applications PDF',
-                    'admin.reports.recommendations.pdf' => 'Recommendations PDF',
-                ] as $route => $label)
-                    <div class="col-12 col-sm-6 col-lg-3">
-                        <a class="btn btn-sm btn-outline-danger w-100" href="{{ route($route) }}">{{ $label }}</a>
-                    </div>
-                @endforeach
+        <div class="card-header">
+            {{-- "Export reports", not "Exports": ReportExportTest asserts on this
+                 heading to prove the hub rendered, so the string is load-bearing. --}}
+            <h2 class="h6 fw-semibold mb-0">Export reports</h2>
+        </div>
 
-                @foreach([
-                    'admin.reports.users.xlsx' => 'Users Excel',
-                    'admin.reports.opportunities.xlsx' => 'Opportunities Excel',
-                    'admin.reports.applications.xlsx' => 'Applications Excel',
-                ] as $route => $label)
-                    <div class="col-12 col-sm-6 col-lg-3">
-                        <a class="btn btn-sm btn-outline-success w-100" href="{{ route($route) }}">{{ $label }}</a>
+        <ul class="list-group list-group-flush">
+            @foreach($reports as $report)
+                <li class="list-group-item d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                    <div class="min-w-0">
+                        <span class="fw-semibold d-block">{{ $report['title'] }}</span>
+                        <span class="small text-secondary">{{ $report['description'] }}</span>
                     </div>
-                @endforeach
 
-                <div class="col-12 col-sm-6 col-lg-3">
-                    <a class="btn btn-sm btn-outline-secondary w-100" href="{{ route('admin.audit') }}">Full audit log</a>
-                </div>
-            </div>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                           href="{{ route($report['pdf']) }}">
+                            <x-icon name="download" :size="14" />PDF
+                        </a>
+
+                        @if($report['excel'])
+                            <a class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
+                               href="{{ route($report['excel']) }}">
+                                <x-icon name="download" :size="14" />Excel
+                            </a>
+                        @else
+                            <span class="small text-secondary align-self-center">PDF only</span>
+                        @endif
+                    </div>
+                </li>
+            @endforeach
+        </ul>
+
+        <div class="card-footer small text-secondary">
+            Every export is generated from live data at the moment you ask for it, and reflects
+            everything on the platform - not the filters on any other page.
         </div>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h2 class="h6 fw-bold mb-0">Export notes</h2>
+            <h2 class="h6 fw-semibold mb-0">Elsewhere</h2>
         </div>
-        <div class="card-body">
-            <ul class="small text-secondary mb-0 ps-3">
-                <li class="mb-2">PDF reports are formatted for printing and examiner review.</li>
-                <li class="mb-2">Excel exports open in Microsoft Excel or Google Sheets for further analysis.</li>
-                <li>Audit history is available separately on the <a href="{{ route('admin.audit') }}">audit log</a> page.</li>
-            </ul>
-        </div>
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div class="min-w-0">
+                    <span class="fw-semibold d-block">Audit history</span>
+                    <span class="small text-secondary">
+                        Who did what, and when. Filterable by actor, action and entity, and not part of
+                        the exports above.
+                    </span>
+                </div>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.audit') }}">Open audit log</a>
+            </li>
+            <li class="list-group-item d-flex flex-wrap gap-3 align-items-center justify-content-between">
+                <div class="min-w-0">
+                    <span class="fw-semibold d-block">Platform analytics</span>
+                    <span class="small text-secondary">
+                        Twelve months of sign-ups, listings and applications, on screen rather than as a file.
+                    </span>
+                </div>
+                <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.analytics') }}">Open analytics</a>
+            </li>
+        </ul>
     </div>
 
 @endsection
