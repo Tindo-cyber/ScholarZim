@@ -42,6 +42,7 @@
                            :action-href="route('applicant.profile')" />
         </div>
     @else
+        <h2 class="h6 fw-bold mb-3">Matches for you</h2>
         <p class="text-secondary small" aria-live="polite">
             {{ count($matches) }} {{ \Illuminate\Support\Str::plural('scholarship', count($matches)) }} matched your profile.
         </p>

@@ -2,10 +2,16 @@
 
 namespace Tests\Feature;
 
+use App\Models\AcademicQualification;
+use App\Models\AcademicResult;
+use App\Models\AcademicSubject;
+use App\Models\ApplicantProfile;
 use App\Models\Application;
 use App\Models\Opportunity;
+use App\Models\OpportunitySubjectRequirement;
 use App\Models\User;
 use App\Services\RecommendationService;
+use App\Support\Academic\AcademicCatalogue;
 use App\Support\ApplicationStatus;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
@@ -273,6 +279,46 @@ class RecommendationTest extends TestCase
         $this->assertStringContainsString("don't qualify", $html);
         $this->assertStringContainsString('NOT ELIGIBLE', $html);
         $this->assertStringContainsString('Province: ZZZ-Not-A-Real-Province required', $html);
+    }
+
+    /**
+     * Two independent reasons, from two different requirement types, both
+     * shown - and the subject one names the grade required alongside the
+     * grade actually held, not just that it failed.
+     */
+    public function test_multiple_failed_requirements_are_each_shown_with_required_and_actual_values(): void
+    {
+        $aLevel = AcademicQualification::findByKey(AcademicCatalogue::ZIMSEC_A_LEVEL);
+        $mathematics = AcademicSubject::where('qualification_id', $aLevel->id)
+            ->where('name', 'Mathematics')->firstOrFail();
+
+        $profile = ApplicantProfile::where('user_id', $this->student->user_id)->firstOrFail();
+
+        AcademicResult::updateOrCreate(
+            [
+                'profile_id' => $profile->profile_id,
+                'qualification_id' => $aLevel->id,
+                'subject_id' => $mathematics->id,
+            ],
+            ['result' => 'C', 'derived_points' => $mathematics->pointsFor('C')]
+        );
+
+        $gated = $this->gatedListing('Doubly Gated Award', ['required_province' => 'ZZZ-Not-A-Real-Province']);
+
+        OpportunitySubjectRequirement::create([
+            'opportunity_id' => $gated->opportunity_id,
+            'qualification_id' => $aLevel->id,
+            'subject_id' => $mathematics->id,
+            'minimum_grade' => 'A',
+        ]);
+
+        $html = $this->actingAs($this->student->refresh())
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Province: ZZZ-Not-A-Real-Province required', $html);
+        $this->assertStringContainsString('Mathematics: A required, you have C.', $html);
     }
 
     /** A listing built to fail one or more stated requirements for the seeded student. */

@@ -168,10 +168,11 @@ class EligibilityExplanationTest extends TestCase
         $this->assertStringContainsString('Why this score', $this->detail($bare));
     }
 
-    /** And the wizard still lets them apply. */
+    /** And the wizard still lets them apply, once the profile-completeness gate clears. */
     public function test_a_bare_listing_still_offers_the_application_form(): void
     {
         $bare = $this->listing('Open Community Bursary');
+        $this->giveResults(['Mathematics' => 'A']);
 
         $this->assertStringContainsString('Submit application', $this->wizard($bare));
     }

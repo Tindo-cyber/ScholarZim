@@ -11,7 +11,33 @@
     <div class="row g-4">
         <div class="col-xl-8">
 
-            @if($fit && ! $fit->meetsRequirements())
+            @if(! $profile->isComplete())
+                {{--
+                    Gate one, before gate two is even worth showing: ScholarFit
+                    cannot check a listing's requirements against information
+                    the profile does not have yet, so the eligibility card
+                    below is not rendered until this one clears - the same
+                    order ApplicationService enforces server-side.
+                --}}
+                <div class="card border-danger">
+                    <div class="card-header bg-danger-subtle">
+                        <h2 class="h6 fw-semibold mb-0">COMPLETE YOUR PROFILE FIRST</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>ScholarFit needs the rest of your profile before it can check this scholarship's requirements.</p>
+                        <ul class="mb-3">
+                            @foreach($profile->missingFields() as $field)
+                                <li>{{ $field }}</li>
+                            @endforeach
+                        </ul>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-primary" href="{{ route('applicant.profile') }}">Complete my profile</a>
+                            <a class="btn btn-outline-secondary"
+                               href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
+                        </div>
+                    </div>
+                </div>
+            @elseif($fit && ! $fit->meetsRequirements())
                 {{--
                     The submission would be refused server-side regardless of
                     what is filled in below, so the form itself is not shown -

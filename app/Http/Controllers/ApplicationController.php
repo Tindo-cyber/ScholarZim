@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ProfileIncompleteException;
 use App\Services\ApplicantProfileService;
 use App\Services\ApplicationService;
 use App\Services\OpportunityService;
@@ -94,6 +95,8 @@ class ApplicationController extends Controller
                 $data,
                 $request->file('document')
             );
+        } catch (ProfileIncompleteException $e) {
+            return back()->withInput()->with('errorMessage', $e->getMessage())->with('profileIncomplete', true);
         } catch (\RuntimeException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
@@ -106,6 +109,8 @@ class ApplicationController extends Controller
     {
         try {
             $application = $this->applicationService->quickApply($opportunityId, $request->user());
+        } catch (ProfileIncompleteException $e) {
+            return back()->with('errorMessage', $e->getMessage())->with('profileIncomplete', true);
         } catch (\RuntimeException $e) {
             return back()->with('errorMessage', $e->getMessage());
         }

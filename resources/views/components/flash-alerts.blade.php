@@ -11,7 +11,14 @@
 @if(session('errorMessage'))
     <div class="alert alert-danger alert-dismissible fade show d-flex gap-2" role="alert">
         <x-icon name="x-circle" />
-        <div>{{ session('errorMessage') }}</div>
+        <div class="flex-grow-1">
+            {{ session('errorMessage') }}
+            @if(session('profileIncomplete'))
+                <div class="mt-2">
+                    <a class="btn btn-sm btn-outline-danger" href="{{ route('applicant.profile') }}">Complete my profile</a>
+                </div>
+            @endif
+        </div>
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 @endif

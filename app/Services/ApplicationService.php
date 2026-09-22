@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\ProfileIncompleteException;
 use App\Models\Application;
 use App\Models\AuditLog;
 use App\Models\Opportunity;
@@ -268,12 +269,24 @@ class ApplicationService
             throw new RuntimeException('The deadline for this scholarship has passed.');
         }
 
+        $profile = $this->profileService->forUser($user);
+
+        // Gate one, before gate two ever runs: ScholarFit cannot tell whether
+        // a listing's requirements are met from a profile that never states
+        // the education level, field, institution or academic record it
+        // needs to check them against. This is deliberately the same
+        // definition ApplicantProfile::isComplete() already uses for the
+        // profile checklist and completion ring - not a second, narrower
+        // notion of "complete enough to apply" invented here.
+        if (! $profile->isComplete()) {
+            throw new ProfileIncompleteException($profile->missingFields());
+        }
+
         // The same hard requirements ScholarFit already showed the applicant on
         // the listing page and the wizard, checked again here so the gate is
         // real rather than advisory - a direct POST cannot buy its way past a
         // pathway rule, a minimum level, or any other stated requirement just
         // because the frontend happened not to enforce it.
-        $profile = $this->profileService->forUser($user);
         $unmet = $this->eligibilityEvaluator->unmetReasons($profile, $opportunity, AcademicRecord::fromProfile($profile));
 
         if ($unmet !== []) {

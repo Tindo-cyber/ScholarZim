@@ -45,6 +45,18 @@ class ScholarshipRequirementTest extends TestCase
         $this->aLevel = AcademicQualification::findByKey(AcademicCatalogue::ZIMSEC_A_LEVEL);
 
         $this->studentProfile()->academicResults()->delete();
+
+        // Chipo's seeded profile is deliberately missing a results certificate -
+        // that fixture exists to demo an incomplete profile elsewhere, not to be
+        // this file's subject. Every test here is about the requirements a
+        // listing states, exercised through scoreOne() or the apply gate, and
+        // the profile-completeness gate that now runs before either would
+        // otherwise mask that with an unrelated "complete your profile" refusal.
+        $this->studentProfile()->update([
+            'results_certificate_path' => 'profiles/demo/chipo-results.pdf',
+            'results_certificate_filename' => 'chipo-o-level-results.pdf',
+            'results_uploaded_at' => now(),
+        ]);
     }
 
     private function studentProfile(): ApplicantProfile
