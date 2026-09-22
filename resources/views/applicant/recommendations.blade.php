@@ -151,4 +151,32 @@
         </div>
     @endif
 
+    @if(! empty($notEligible))
+        <h2 class="h6 fw-bold mt-5 mb-3">Scholarships you don't qualify for yet</h2>
+        <p class="text-secondary small mb-3">
+            These state requirements your profile doesn't currently meet.
+        </p>
+
+        <div class="d-grid gap-3">
+            @foreach($notEligible as $match)
+                @php $opportunity = $match->opportunity; @endphp
+                <article class="card sz-match-card">
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <h3 class="h6 fw-bold mb-1">
+                                <a class="text-body text-decoration-none stretched-link"
+                                   href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">
+                                    {{ $opportunity->title }}
+                                </a>
+                            </h3>
+                            <p class="small text-secondary mb-0">{{ $opportunity->awardingBody() }}</p>
+                        </div>
+
+                        <x-eligibility-summary :fit="$match" variant="full" class="mb-0" />
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    @endif
+
 @endsection

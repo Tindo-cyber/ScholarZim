@@ -29,6 +29,7 @@ class RecommendationController extends Controller
         return view('applicant.recommendations', [
             'profile' => $profile,
             'matches' => $this->recommendationService->forUser($user, 24, $minimumScore),
+            'notEligible' => $this->recommendationService->notEligibleForUser($user, 6),
             'minimumScore' => $minimumScore,
             'savedIds' => $this->savedScholarshipService->savedIds($user),
             'appliedIds' => $this->applicationService->appliedIds($user),

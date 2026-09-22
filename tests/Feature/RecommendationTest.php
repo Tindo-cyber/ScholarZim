@@ -7,6 +7,7 @@ use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\RecommendationService;
 use App\Support\ApplicationStatus;
+use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -201,6 +202,96 @@ class RecommendationTest extends TestCase
         foreach ($filtered as $scored) {
             $this->assertGreaterThanOrEqual($best, $scored->matchScore);
         }
+    }
+
+    // ------------------------------------------- what does not qualify, and why --
+
+    /**
+     * The Matches page used to simply drop everything a student did not
+     * qualify for, with no way to see why a specific listing was missing.
+     * notEligibleForUser() is the other half of forUser(): the same catalogue,
+     * kept to the listings that failed a stated requirement instead.
+     */
+    public function test_not_eligible_for_user_returns_only_listings_with_unmet_requirements(): void
+    {
+        $gated = $this->gatedListing('Province Gated Award', ['required_province' => 'ZZZ-Not-A-Real-Province']);
+
+        $results = app(RecommendationService::class)->notEligibleForUser($this->student, 20);
+        $ids = array_map(fn ($scored) => (int) $scored->opportunity->opportunity_id, $results);
+
+        $this->assertContains($gated->opportunity_id, $ids);
+        $this->assertNotContains($gated->opportunity_id, $this->rankedIds());
+
+        foreach ($results as $scored) {
+            $this->assertFalse($scored->meetsRequirements());
+            $this->assertSame(0, $scored->matchScore);
+        }
+    }
+
+    public function test_not_eligible_for_user_orders_by_fewest_unmet_requirements_first(): void
+    {
+        $oneFailure = $this->gatedListing('One Reason Award', [
+            'required_province' => 'ZZZ-Not-A-Real-Province',
+        ]);
+
+        $twoFailures = $this->gatedListing('Two Reason Award', [
+            'required_province' => 'ZZZ-Not-A-Real-Province',
+            'min_academic_points' => 999,
+        ]);
+
+        $ids = array_map(
+            fn ($scored) => (int) $scored->opportunity->opportunity_id,
+            app(RecommendationService::class)->notEligibleForUser($this->student, 20)
+        );
+
+        $this->assertLessThan(
+            array_search($twoFailures->opportunity_id, $ids, true),
+            array_search($oneFailure->opportunity_id, $ids, true),
+            'the listing failing on fewer requirements comes first'
+        );
+    }
+
+    public function test_not_eligible_for_user_respects_the_limit(): void
+    {
+        $this->gatedListing('First Gated Award', ['required_province' => 'ZZZ-Not-A-Real-Province']);
+        $this->gatedListing('Second Gated Award', ['required_province' => 'ZZZ-Not-A-Real-Province']);
+
+        $results = app(RecommendationService::class)->notEligibleForUser($this->student, 1);
+
+        $this->assertCount(1, $results);
+    }
+
+    public function test_the_recommendations_page_shows_why_a_listing_is_not_eligible(): void
+    {
+        $this->gatedListing('Province Gated Award', ['required_province' => 'ZZZ-Not-A-Real-Province']);
+
+        $html = $this->actingAs($this->student)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString("don't qualify", $html);
+        $this->assertStringContainsString('NOT ELIGIBLE', $html);
+        $this->assertStringContainsString('Province: ZZZ-Not-A-Real-Province required', $html);
+    }
+
+    /** A listing built to fail one or more stated requirements for the seeded student. */
+    private function gatedListing(string $title, array $overrides = []): Opportunity
+    {
+        return Opportunity::create(array_merge([
+            'provider_user_id' => User::where('email', 'provider@scholarzim.co.zw')->firstOrFail()->user_id,
+            'provider_name' => 'Gated Provider',
+            'title' => $title,
+            'description' => 'A listing used to exercise the not-eligible list.',
+            'funding_type' => 'Full Scholarship',
+            'country' => 'Zimbabwe',
+            'target_country' => 'Zimbabwe',
+            'deadline' => Carbon::today()->addDays(30),
+            'status' => OpportunityStatus::ACTIVE,
+            'moderation_status' => OpportunityModerationStatus::APPROVED,
+            'submitted_at' => Carbon::now()->subDay(),
+            'created_at' => Carbon::now(),
+        ], $overrides));
     }
 
     // --------------------------------------------------------------- helpers --

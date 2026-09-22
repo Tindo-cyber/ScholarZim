@@ -37,6 +37,52 @@ class RecommendationService
      */
     public function forUser(User $user, int $limit = 12, int $minimumScore = 0): array
     {
+        $ranked = array_filter(
+            $this->rankedCandidates($user),
+            static fn (ScoredOpportunity $s) => $s->meetsRequirements()
+                && $s->matchScore >= $minimumScore
+        );
+
+        $ranked = array_values($ranked);
+
+        return $limit > 0 ? array_slice($ranked, 0, $limit) : $ranked;
+    }
+
+    /**
+     * Listings the applicant does not currently qualify for, closest first.
+     *
+     * Sorted by how few stated requirements are unmet, so a student one
+     * subject grade away from qualifying is shown before one who fails on
+     * every axis. Match score is meaningless here - it is always zero for
+     * anything that fails a requirement (see ScholarFitEngine::evaluate) -
+     * so this takes no score filter.
+     *
+     * @return array<int, ScoredOpportunity>
+     */
+    public function notEligibleForUser(User $user, int $limit = 6): array
+    {
+        $ineligible = array_values(array_filter(
+            $this->rankedCandidates($user),
+            static fn (ScoredOpportunity $s) => ! $s->meetsRequirements()
+        ));
+
+        usort($ineligible, static function (ScoredOpportunity $a, ScoredOpportunity $b) {
+            return [count($a->breakdown->failedRequirements()), $a->opportunity->opportunity_id]
+                <=> [count($b->breakdown->failedRequirements()), $b->opportunity->opportunity_id];
+        });
+
+        return $limit > 0 ? array_slice($ineligible, 0, $limit) : $ineligible;
+    }
+
+    /**
+     * Every open, publicly visible listing the applicant could apply to,
+     * scored and ranked - eligible and ineligible alike. forUser() and
+     * notEligibleForUser() each filter this to the half they want.
+     *
+     * @return array<int, ScoredOpportunity>
+     */
+    private function rankedCandidates(User $user): array
+    {
         $profile = $user->applicantProfile;
 
         if (! $profile) {
@@ -62,15 +108,7 @@ class RecommendationService
             ->with(['subjectRequirements', 'subjectRequirements.subject.qualification', 'subjectRequirements.qualification'])
             ->get();
 
-        $ranked = array_filter(
-            $this->engine->rank($profile, $candidates),
-            static fn (ScoredOpportunity $s) => $s->meetsRequirements()
-                && $s->matchScore >= $minimumScore
-        );
-
-        $ranked = array_values($ranked);
-
-        return $limit > 0 ? array_slice($ranked, 0, $limit) : $ranked;
+        return $this->engine->rank($profile, $candidates);
     }
 
     /** Score a single listing, for the detail page's "your fit" panel. */
