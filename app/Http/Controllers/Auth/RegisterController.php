@@ -29,7 +29,7 @@ class RegisterController extends Controller
             'full_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:50'],
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
             'terms' => ['accepted'],
         ]);
 
@@ -56,7 +56,7 @@ class RegisterController extends Controller
             'organisation_type' => ['required', Rule::in(ProviderOrgType::ALL)],
             'registration_number' => ['required', 'string', 'max:100'],
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
             'terms' => ['accepted'],
         ]);
 

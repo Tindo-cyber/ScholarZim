@@ -29,7 +29,7 @@ class AccountController extends Controller
     {
         $data = $request->validate([
             'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
         ]);
 
         $request->user()->update(['password_hash' => Hash::make($data['password'])]);

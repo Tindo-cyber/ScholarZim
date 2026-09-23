@@ -96,7 +96,7 @@
             </li>
             <li class="text-secondary" data-rule="letter">
                 <x-icon name="circle" :size="14" data-icon-pending /><x-icon name="check-circle" :size="14" class="d-none" data-icon-met />
-                At least one letter
+                At least one uppercase letter
             </li>
             <li class="text-secondary" data-rule="number">
                 <x-icon name="circle" :size="14" data-icon-pending /><x-icon name="check-circle" :size="14" class="d-none" data-icon-met />

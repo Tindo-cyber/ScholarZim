@@ -38,7 +38,7 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:50'],
             'role_name' => ['required', Rule::in(RoleNames::ALL)],
-            'password' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
         ]);
 
         $user = $this->adminUserService->createUser($data, $request->user());

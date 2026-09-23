@@ -27,7 +27,7 @@
             var value = event.target.value;
             var met = {
                 length: value.length >= 8,
-                letter: /[A-Za-z]/.test(value),
+                letter: /[A-Z]/.test(value),
                 number: /[0-9]/.test(value),
             };
 
