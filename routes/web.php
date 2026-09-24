@@ -149,15 +149,6 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT])->group(function () {
         ->whereNumber('id')
         ->name('applicant.saved.destroy');
 
-    Route::get('/applicant/held-back', [Applicant\HeldBackScholarshipController::class, 'index'])
-        ->name('applicant.held-back');
-    Route::post('/applicant/held-back/{id}', [Applicant\HeldBackScholarshipController::class, 'store'])
-        ->whereNumber('id')
-        ->name('applicant.held-back.store');
-    Route::post('/applicant/held-back/{id}/remove', [Applicant\HeldBackScholarshipController::class, 'destroy'])
-        ->whereNumber('id')
-        ->name('applicant.held-back.destroy');
-
     Route::get('/my-applications', [ApplicationController::class, 'myApplications'])->name('applications.mine');
 
     Route::post('/applications/{applicationId}/withdraw', [ApplicationController::class, 'withdraw'])

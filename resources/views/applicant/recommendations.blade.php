@@ -148,24 +148,6 @@
                                     {{ $isSaved ? 'Saved' : 'Save' }}
                                 </button>
                             </form>
-
-                            {{--
-                                Distinct from Save on purpose: Save is a watchlist
-                                entry that leaves the listing exactly where it was.
-                                Holding one back removes it from this list - see
-                                RecommendationService::rankedCandidates() - until
-                                it is released again from the Held Back page.
-                            --}}
-                            <form method="POST" class="m-0"
-                                  action="{{ route('applicant.held-back.store', $opportunity->opportunity_id) }}">
-                                @csrf
-                                <button class="btn btn-sm btn-outline-secondary d-inline-flex align-items-center gap-1"
-                                        type="submit"
-                                        aria-label="Hold back {{ $opportunity->title }} - stop showing it as an active match">
-                                    <x-icon name="eye-off" :size="14" />
-                                    Hold back
-                                </button>
-                            </form>
                         </div>
                     </div>
                 </article>

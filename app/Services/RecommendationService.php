@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
-use App\Services\HeldBackScholarshipService;
 use App\Services\ScholarFit\ScholarFitEngine;
 use App\Services\ScholarFit\ScoredOpportunity;
 
@@ -22,10 +21,8 @@ use App\Services\ScholarFit\ScoredOpportunity;
  */
 class RecommendationService
 {
-    public function __construct(
-        private readonly ScholarFitEngine $engine,
-        private readonly HeldBackScholarshipService $heldBackScholarshipService,
-    ) {
+    public function __construct(private readonly ScholarFitEngine $engine)
+    {
     }
 
     /**
@@ -34,9 +31,7 @@ class RecommendationService
      * Listings they have already applied to are dropped: a recommendation they
      * cannot act on is noise. So are listings whose stated requirements they do
      * not meet - a "recommendation" they would be turned away from is worse than
-     * noise. The detail page still explains why, via scoreOne(). And so are
-     * listings the applicant has deliberately held back - see
-     * HeldBackScholarshipService - until they release one.
+     * noise. The detail page still explains why, via scoreOne().
      *
      * @return array<int, ScoredOpportunity>
      */
@@ -107,18 +102,9 @@ class RecommendationService
             ->pluck('opportunity_id')
             ->all();
 
-        // A listing the applicant deliberately set aside - see
-        // HeldBackScholarshipService - is excluded the same way an applied-to
-        // one is: still visible to the applicant elsewhere (its own Held Back
-        // list, the detail page), just not offered back to them here until
-        // they release it.
-        $heldBackIds = $this->heldBackScholarshipService->heldBackIds($user);
-
-        $excludedIds = array_unique([...$blockedIds, ...$heldBackIds]);
-
         $candidates = Opportunity::query()
             ->publiclyVisible()
-            ->when($excludedIds !== [], fn ($q) => $q->whereNotIn('opportunity_id', $excludedIds))
+            ->when($blockedIds !== [], fn ($q) => $q->whereNotIn('opportunity_id', $blockedIds))
             ->with(['subjectRequirements', 'subjectRequirements.subject.qualification', 'subjectRequirements.qualification'])
             ->get();
 

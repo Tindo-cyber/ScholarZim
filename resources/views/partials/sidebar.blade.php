@@ -50,8 +50,6 @@
                                     :active="request()->routeIs('opportunities.index')">Find scholarships</x-nav-item>
                         <x-nav-item :href="route('applicant.saved')" icon="bookmark"
                                     :active="request()->routeIs('applicant.saved')">Saved scholarships</x-nav-item>
-                        <x-nav-item :href="route('applicant.held-back')" icon="eye-off"
-                                    :active="request()->routeIs('applicant.held-back')">Held back scholarships</x-nav-item>
                     </x-nav-section>
 
                     <x-nav-section label="Applications">
