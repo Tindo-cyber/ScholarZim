@@ -226,8 +226,8 @@ class ProfileController extends Controller
 
         $age = \Illuminate\Support\Carbon::parse($dateOfBirth)->age;
 
-        if ($age < 7) {
-            $validator->errors()->add('date_of_birth', 'You must be at least 7 years old to use this platform.');
+        if ($age < 12) {
+            $validator->errors()->add('date_of_birth', 'You must be at least 12 years old to use this platform.');
             return;
         }
 

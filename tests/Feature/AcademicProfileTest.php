@@ -6,7 +6,9 @@ use App\Models\AcademicQualification;
 use App\Models\AcademicResult;
 use App\Models\AcademicSubject;
 use App\Models\ApplicantProfile;
+use App\Models\Opportunity;
 use App\Models\User;
+use App\Services\ApplicationService;
 use App\Services\ScholarFit\AcademicRecord;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
@@ -475,6 +477,67 @@ class AcademicProfileTest extends TestCase
         $this->assertSame(0, $profile->fresh()->academicResults()->count());
     }
 
+    /** Same gate, a higher rung: A-Level is refused exactly like O-Level was. */
+    public function test_a_primary_applicant_cannot_post_an_a_level_result(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+        $profile->academicResults()->delete();
+
+        $this->actingAs($pupil)
+            ->post('/applicant/profile', [
+                'full_name' => $pupil->full_name,
+                'education_level' => EducationLevel::PRIMARY,
+                'province' => 'Harare',
+                'guardian_name' => 'Rudo Marufu',
+                'guardian_phone' => '+263 772 111 222',
+                'guardian_relationship' => 'Mother',
+                'academic_results_submitted' => '1',
+                'academic_subject_results' => [[
+                    'qualification_id' => $this->aLevel->id,
+                    'subject_id' => $this->subject($this->aLevel, 'Mathematics')->id,
+                    'result' => 'A',
+                ]],
+            ])
+            ->assertSessionHasErrors('academic_subject_results.0.qualification_id');
+
+        $this->assertSame(0, $profile->fresh()->academicResults()->count());
+    }
+
+    /**
+     * And the highest rung: Tertiary has no subjects of its own - a degree
+     * classification is recorded once on the profile instead - so this posts
+     * an arbitrary subject under it to prove the qualification gate itself
+     * refuses a Primary applicant before any subject is even considered.
+     */
+    public function test_a_primary_applicant_cannot_post_a_tertiary_result(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+        $profile->academicResults()->delete();
+
+        $tertiary = AcademicQualification::findByKey(AcademicCatalogue::TERTIARY);
+
+        $this->actingAs($pupil)
+            ->post('/applicant/profile', [
+                'full_name' => $pupil->full_name,
+                'education_level' => EducationLevel::PRIMARY,
+                'province' => 'Harare',
+                'guardian_name' => 'Rudo Marufu',
+                'guardian_phone' => '+263 772 111 222',
+                'guardian_relationship' => 'Mother',
+                'academic_results_submitted' => '1',
+                'academic_subject_results' => [[
+                    'qualification_id' => $tertiary->id,
+                    'subject_id' => $this->subject($this->aLevel, 'Mathematics')->id,
+                    'result' => 'First Class',
+                ]],
+            ])
+            ->assertSessionHasErrors('academic_subject_results.0.qualification_id');
+
+        $this->assertSame(0, $profile->fresh()->academicResults()->count());
+    }
+
     /**
      * Levels at or below are offered, because holding O-Level results is the
      * ordinary case for an A-Level applicant rather than an exception.
@@ -619,6 +682,75 @@ class AcademicProfileTest extends TestCase
         foreach ($profile->academicResults as $result) {
             $this->assertNull($result->points());
         }
+    }
+
+    // -------------------------------------- primary profile completeness --
+
+    /**
+     * A Primary applicant is complete with exactly what the Primary pathway
+     * checklist asks for - see ApplicantProfile::completionChecklist(). No
+     * field of study, no document, no academic results and no gender are
+     * ever asked of this branch, so none of them can appear as missing.
+     */
+    public function test_a_primary_applicant_is_complete_without_higher_education_fields(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+        $profile->academicResults()->delete();
+
+        $this->actingAs($pupil)
+            ->post('/applicant/profile', [
+                'full_name' => $pupil->full_name,
+                'education_level' => EducationLevel::PRIMARY,
+                'institution_name' => 'Chinhoyi Primary School',
+                'province' => 'Mashonaland West',
+                'date_of_birth' => $profile->date_of_birth->toDateString(),
+                'guardian_name' => 'Grace Marufu',
+                'guardian_phone' => '+263 773 111 001',
+                'guardian_relationship' => 'Mother',
+                'biography' => 'Grade 7 pupil sitting the transition to Form 1 next year.',
+            ])
+            ->assertSessionHasNoErrors();
+
+        $fresh = $profile->fresh();
+
+        $this->assertTrue($fresh->isComplete(), 'missing: ' . implode(', ', $fresh->missingFields()));
+        $this->assertSame([], $fresh->missingFields());
+        $this->assertNull($fresh->gender, 'gender was never asked for and must not have been required');
+        $this->assertSame(0, $fresh->academicResults()->count(), 'no academic result was posted, and none was required');
+    }
+
+    /** The same rule the A-Level version already proves, for the Primary branch of the checklist. */
+    public function test_gender_does_not_affect_primary_profile_completeness(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+
+        $this->assertNull($profile->gender, 'the seeded fixture never sets gender');
+
+        $labels = array_column($profile->completionChecklist(), 'label');
+        $this->assertNotContains('Gender', $labels);
+        $this->assertTrue($profile->isComplete(), 'missing: ' . implode(', ', $profile->missingFields()));
+    }
+
+    /**
+     * Gate one of application submission - ApplicantProfile::isComplete() -
+     * does not stand between a complete Primary applicant and a listing
+     * built for them, gender included.
+     */
+    public function test_a_complete_primary_applicant_passes_the_profile_completeness_gate(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+
+        $this->assertNull($profile->gender);
+        $this->assertTrue($profile->isComplete(), 'missing: ' . implode(', ', $profile->missingFields()));
+
+        $opportunity = Opportunity::where('title', 'Chinhoyi Form 1 Transition Bursary')->firstOrFail();
+
+        $application = app(ApplicationService::class)->quickApply($opportunity->opportunity_id, $pupil);
+
+        $this->assertSame($opportunity->opportunity_id, $application->opportunity_id);
     }
 
     // ---------------------------------------------------------------- gender --

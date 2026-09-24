@@ -142,22 +142,30 @@ class ScholarFitLocationTest extends TestCase
             ->assertSessionHasErrors('date_of_birth');
     }
 
-    public function test_an_age_below_seven_is_rejected(): void
+    /**
+     * Below the platform-wide floor, whatever the stated education level -
+     * O-Level rather than the default Undergraduate, so this exercises only
+     * the age-12 floor and not the separate tier/age consistency check
+     * (Undergraduate alone requires 14+, which would mask what this asserts).
+     */
+    public function test_an_age_below_twelve_is_rejected(): void
     {
         $this->actingAs($this->student)
             ->post('/applicant/profile', $this->form([
-                'date_of_birth' => Carbon::today()->subYears(6)->toDateString(),
+                'education_level' => EducationLevel::O_LEVEL,
+                'date_of_birth' => Carbon::today()->subYears(11)->toDateString(),
             ]))
             ->assertSessionHasErrors('date_of_birth');
     }
 
-    public function test_exactly_seven_years_old_is_accepted(): void
+    public function test_exactly_twelve_years_old_is_accepted(): void
     {
         $this->actingAs($this->student)
             ->post('/applicant/profile', $this->form([
-                'date_of_birth' => Carbon::today()->subYears(7)->toDateString(),
+                'education_level' => EducationLevel::O_LEVEL,
+                'date_of_birth' => Carbon::today()->subYears(12)->toDateString(),
             ]))
-            ->assertRedirect();
+            ->assertSessionHasNoErrors();
     }
 
     public function test_a_normal_adult_age_is_accepted(): void
@@ -166,6 +174,6 @@ class ScholarFitLocationTest extends TestCase
             ->post('/applicant/profile', $this->form([
                 'date_of_birth' => Carbon::today()->subYears(21)->toDateString(),
             ]))
-            ->assertRedirect();
+            ->assertSessionHasNoErrors();
     }
 }

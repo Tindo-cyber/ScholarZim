@@ -37,7 +37,7 @@
                             <div class="col-md-6">
                                 <x-form.input name="date_of_birth" label="Date of birth" type="date"
                                               :value="$profile->date_of_birth?->format('Y-m-d')"
-                                              max="{{ now()->toDateString() }}"
+                                              max="{{ now()->subYears(12)->toDateString() }}"
                                               hint="Some awards have an age limit. Without this we cannot check one for you." />
                             </div>
                             <div class="col-md-6">
