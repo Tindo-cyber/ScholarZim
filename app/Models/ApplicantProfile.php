@@ -237,6 +237,43 @@ class ApplicantProfile extends Model
         return $this->academicResults()->exists();
     }
 
+    /**
+     * Whether this profile has an academic fact recorded specifically for
+     * the given education level - not for any level it happens to hold.
+     *
+     * Reuses the one existing notion of "an academic fact" -
+     * hasStructuredResults() or a degree classification, the same pair
+     * completionChecklist() already reads - scoped to one level, so a
+     * Primary result recorded years ago cannot stand in for an O-Level one
+     * that was never entered. Used to decide whether an applicant may claim
+     * a higher qualification than the one already on file - see
+     * ProfileController::assertProgressionIsSequential().
+     *
+     * The academic catalogue only distinguishes Primary, O-Level and
+     * A-Level as separate qualification families; everything from
+     * Certificate upward shares the one degree_classification field (see
+     * AcademicCatalogue), so this cannot subdivide the tertiary-and-above
+     * group any further than the data it has.
+     */
+    public function hasAcademicFactFor(?string $educationLevel): bool
+    {
+        $canonical = EducationLevel::canonical($educationLevel);
+
+        if ($canonical === null) {
+            return false;
+        }
+
+        $tier = EducationLevel::tier($canonical);
+
+        if ($tier === EducationLevel::TIER_PRIMARY || $tier === EducationLevel::TIER_SECONDARY) {
+            return $this->academicResults()
+                ->whereHas('qualification', fn ($query) => $query->where('education_level', $canonical))
+                ->exists();
+        }
+
+        return filled($this->degree_classification);
+    }
+
     public function documentPath(string $type): ?string
     {
         $prefix = self::DOCUMENT_TYPES[$type] ?? null;
@@ -369,10 +406,16 @@ class ApplicantProfile extends Model
             'hint' => 'Needed to check age limits on an award.'];
 
         if ($isPrimary) {
-            // A Primary applicant's own results are not the relevant academic
-            // fact yet; whether a guardian is standing behind the application is.
+            // Whether a guardian is standing behind the application, and the
+            // Grade 7 results themselves - a Form 1 listing's own subject
+            // requirements are checked against exactly these (see
+            // EligibilityEvaluator), so a "complete" Primary profile needs
+            // them recorded, the same as any other level needs its own
+            // results.
             $items[] = ['label' => 'Guardian details', 'value' => $this->guardian_name, 'anchor' => 'guardian',
                 'hint' => 'Required for the Form 1 pathway - Primary applicants apply with a guardian.'];
+            $items[] = ['label' => 'Academic results', 'value' => $this->hasStructuredResults() ?: null, 'anchor' => 'academic-results',
+                'hint' => 'Your Grade 7 learning areas and results, entered one by one.'];
         } else {
             // Any structured result counts, whatever the board. Asking a
             // Cambridge A-Level applicant for ZIMSEC A-Level results - or an

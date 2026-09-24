@@ -7,6 +7,7 @@ use App\Models\AcademicQualification;
 use App\Models\AcademicSubject;
 use App\Models\ApplicantProfile;
 use App\Services\ApplicantProfileService;
+use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Services\ScholarFit\Taxonomy\SettlementType;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
@@ -125,14 +126,20 @@ class ProfileController extends Controller
             // problem this structured form exists to end.
         ]);
 
+        // Read before anything below changes it, so the progression check
+        // below judges this request against what was already true - not
+        // against evidence the same request is also trying to supply.
+        $currentProfile = $this->profileService->forUser($request->user());
+
         // Cross-field rules - each needs two of the fields above together, which
         // a per-field rule list cannot express - validated as a second pass
         // over the data that already passed the first.
         \Illuminate\Support\Facades\Validator::make($data, [])
-            ->after(function (Validator $validator) use ($data) {
+            ->after(function (Validator $validator) use ($data, $currentProfile) {
                 $this->assertGuardianRequirementsMet($validator, $data);
                 $this->assertAgeIsConsistent($validator, $data);
                 $this->assertLocalityMatchesProvince($validator, $data);
+                $this->assertProgressionIsSequential($validator, $data, $currentProfile);
             })
             ->validate();
 
@@ -181,6 +188,50 @@ class ProfileController extends Controller
 
         if (blank($data['guardian_relationship'] ?? null)) {
             $validator->errors()->add('guardian_relationship', 'State the guardian\'s relationship to the applicant.');
+        }
+    }
+
+    /**
+     * An applicant may not claim a higher qualification than the one
+     * already on file until that one has an academic fact behind it - see
+     * ApplicantProfile::hasAcademicFactFor(). Rungs are compared on
+     * EducationLadder, the same ordering the rest of the platform already
+     * uses to reason about how far apart two levels are.
+     *
+     * $currentProfile is read before this request touched anything, so a
+     * save cannot both supply the missing evidence and spend it in the same
+     * breath - completing O-Level and moving on to A-Level is two saves,
+     * not one.
+     *
+     * Only a genuine step up is gated. Lowering the level, resubmitting the
+     * same one, or stating one for the first time (nothing to have
+     * completed yet) are never blocked - and this is a platform rule about
+     * what an applicant may claim about themselves, not a statement about
+     * scholarship eligibility, which is unaffected and continues to judge
+     * only a listing's own stated requirements.
+     */
+    private function assertProgressionIsSequential(Validator $validator, array $data, ApplicantProfile $currentProfile): void
+    {
+        $newLevel = $data['education_level'] ?? null;
+        $currentLevel = $currentProfile->education_level;
+
+        if (blank($newLevel) || blank($currentLevel)) {
+            return;
+        }
+
+        $currentRung = EducationLadder::rung($currentLevel);
+        $newRung = EducationLadder::rung($newLevel);
+
+        if ($currentRung === null || $newRung === null || $newRung <= $currentRung) {
+            return;
+        }
+
+        if (! $currentProfile->hasAcademicFactFor($currentLevel)) {
+            $validator->errors()->add(
+                'education_level',
+                'Record your ' . EducationLevel::label($currentLevel) . ' results before moving on to '
+                    . EducationLevel::label($newLevel) . '.'
+            );
         }
     }
 

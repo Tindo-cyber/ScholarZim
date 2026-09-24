@@ -698,6 +698,8 @@ class AcademicProfileTest extends TestCase
         $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
         $profile->academicResults()->delete();
 
+        $primary = AcademicQualification::findByKey(AcademicCatalogue::ZIMBABWE_PRIMARY);
+
         $this->actingAs($pupil)
             ->post('/applicant/profile', [
                 'full_name' => $pupil->full_name,
@@ -709,7 +711,9 @@ class AcademicProfileTest extends TestCase
                 'guardian_phone' => '+263 773 111 001',
                 'guardian_relationship' => 'Mother',
                 'biography' => 'Grade 7 pupil sitting the transition to Form 1 next year.',
-            ])
+            ] + $this->academicFields([
+                ['qualification' => $primary, 'subject' => 'Mathematics', 'result' => '2'],
+            ]))
             ->assertSessionHasNoErrors();
 
         $fresh = $profile->fresh();
@@ -717,7 +721,20 @@ class AcademicProfileTest extends TestCase
         $this->assertTrue($fresh->isComplete(), 'missing: ' . implode(', ', $fresh->missingFields()));
         $this->assertSame([], $fresh->missingFields());
         $this->assertNull($fresh->gender, 'gender was never asked for and must not have been required');
-        $this->assertSame(0, $fresh->academicResults()->count(), 'no academic result was posted, and none was required');
+        $this->assertSame(1, $fresh->academicResults()->count(), 'Grade 7 results are required for Primary completeness');
+    }
+
+    /** Without them, the profile is told exactly that - not a vaguer "incomplete profile". */
+    public function test_a_primary_applicant_without_academic_results_is_marked_incomplete(): void
+    {
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+        $profile->academicResults()->delete();
+
+        $fresh = $profile->fresh();
+
+        $this->assertFalse($fresh->isComplete());
+        $this->assertContains('Academic results', $fresh->missingFields());
     }
 
     /** The same rule the A-Level version already proves, for the Primary branch of the checklist. */

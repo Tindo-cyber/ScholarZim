@@ -497,6 +497,12 @@ class DatabaseSeeder extends Seeder
             'Commerce' => 'C',
         ], 2025);
 
+        $this->subjectResults('kudzai.marufu@scholarzim.co.zw', AcademicCatalogue::ZIMBABWE_PRIMARY, [
+            'Mathematics' => '2',
+            'English' => '2',
+            'Shona' => '1',
+        ], 2025);
+
         $this->degreeClassification('student@scholarzim.co.zw', 'Upper Second (2:1)');
         $this->degreeClassification('blessing.moyana@scholarzim.co.zw', 'First Class');
     }
