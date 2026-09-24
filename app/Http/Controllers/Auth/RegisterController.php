@@ -26,9 +26,9 @@ class RegisterController extends Controller
     public function registerApplicant(Request $request)
     {
         $data = $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
+            'full_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
             'terms' => ['accepted'],
         ]);
@@ -50,9 +50,13 @@ class RegisterController extends Controller
     public function registerProvider(Request $request)
     {
         $data = $request->validate([
+            // Not FormOptions::NAME_PATTERN: this is an organisation or
+            // contact name ("Chikafu Education Trust"), free text for the
+            // same reason institution_name is - see FormOptions::NAME_PATTERN's
+            // own docblock.
             'full_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'organisation_type' => ['required', Rule::in(ProviderOrgType::ALL)],
             'registration_number' => ['required', 'string', 'max:100'],
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],

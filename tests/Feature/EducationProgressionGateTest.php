@@ -258,7 +258,7 @@ class EducationProgressionGateTest extends TestCase
     {
         return $this->form($applicant, array_merge([
             'guardian_name' => 'A Guardian',
-            'guardian_phone' => '+263 771 000 000',
+            'guardian_phone' => '0771000000',
             'guardian_relationship' => 'Mother',
         ], $overrides));
     }

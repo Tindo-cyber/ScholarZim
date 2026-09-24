@@ -43,9 +43,12 @@
                     <form method="POST" action="{{ route('admin.users.store') }}" novalidate>
                         @csrf
 
-                        <x-form.input name="full_name" label="Full name" required autofocus />
+                        <x-form.input name="full_name" label="Full name" required autofocus
+                                      pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." />
                         <x-form.input name="email" label="Email address" type="email" required />
-                        <x-form.input name="phone" label="Phone number" type="tel" />
+                        <x-form.input name="phone" label="Phone number" type="tel"
+                                      inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"
+                                      hint="Optional. 10 digits, no spaces or country code, e.g. 0771234567." />
 
                         <x-form.select name="role_name" label="Role"
                                        :options="collect($roles)->mapWithKeys(fn ($r) => [$r => \App\Support\RoleNames::displayLabel($r)])->all()"

@@ -29,10 +29,13 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-6">
-                                <x-form.input name="full_name" label="Full name" :value="auth()->user()->full_name" required />
+                                <x-form.input name="full_name" label="Full name" :value="auth()->user()->full_name" required
+                                              pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." />
                             </div>
                             <div class="col-md-6">
-                                <x-form.input name="phone" label="Phone number" type="tel" :value="auth()->user()->phone" />
+                                <x-form.input name="phone" label="Phone number" type="tel" :value="auth()->user()->phone"
+                                              inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"
+                                              hint="Optional. 10 digits, no spaces or country code, e.g. 0771234567." />
                             </div>
                             <div class="col-md-6">
                                 <x-form.input name="date_of_birth" label="Date of birth" type="date"
@@ -179,11 +182,14 @@
                         <div class="row">
                             <div class="col-md-4">
                                 <x-form.input name="guardian_name" label="Guardian full name"
-                                              :value="$profile->guardian_name" />
+                                              :value="$profile->guardian_name"
+                                              pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." />
                             </div>
                             <div class="col-md-4">
                                 <x-form.input name="guardian_phone" label="Guardian phone number" type="tel"
-                                              :value="$profile->guardian_phone" />
+                                              :value="$profile->guardian_phone"
+                                              inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"
+                                              hint="10 digits, no spaces or country code, e.g. 0771234567." />
                             </div>
                             <div class="col-md-4">
                                 <x-form.input name="guardian_relationship" label="Relationship to applicant"

@@ -281,6 +281,65 @@ class RecommendationTest extends TestCase
         $this->assertStringContainsString('Province: ZZZ-Not-A-Real-Province required', $html);
     }
 
+    /** Eligible scholarships must never render below the ones the applicant does not qualify for. */
+    public function test_eligible_matches_render_before_ineligible_ones(): void
+    {
+        $this->gatedListing('Ordering Ineligible Award', ['required_province' => 'ZZZ-Not-A-Real-Province']);
+
+        $html = $this->actingAs($this->student)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $eligibleHeading = strpos($html, 'Matches for you');
+        $ineligibleHeading = strpos($html, "don't qualify for yet");
+
+        $this->assertNotFalse($eligibleHeading, 'the eligible section must render');
+        $this->assertNotFalse($ineligibleHeading, 'the ineligible section must render');
+        $this->assertLessThan(
+            $ineligibleHeading,
+            $eligibleHeading,
+            'eligible scholarships must appear before ones the applicant does not qualify for'
+        );
+    }
+
+    /**
+     * The card template puts "Eligible" ahead of the score dial for every
+     * card it renders, so a reader cannot see a percentage - "60% / Moderate
+     * confidence" - before knowing it belongs to a listing they qualify for.
+     * See recommendations.blade.php's own comment on the card's ordering.
+     */
+    public function test_the_eligible_badge_renders_before_the_score_on_every_match_card(): void
+    {
+        // A listing with a stated requirement the student actually meets
+        // (their seeded province), so the compact eligibility-summary shows
+        // the literal "Eligible" badge rather than "No stated requirements".
+        $eligible = $this->gatedListing('Eligible Ordering Award', ['required_province' => 'Harare']);
+
+        $html = $this->actingAs($this->student)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $titlePosition = strpos($html, $eligible->title);
+        $this->assertNotFalse($titlePosition, 'the eligible listing must appear on the page');
+
+        // Searched from the title onward: "Eligible" and "ScholarFit score"
+        // both appear more than once on the page (other cards, filter copy),
+        // so only what follows this specific card's own title says anything
+        // about this card's order.
+        $eligiblePosition = strpos($html, 'Eligible', $titlePosition);
+        $scorePosition = strpos($html, 'ScholarFit score', $titlePosition);
+
+        $this->assertNotFalse($eligiblePosition, 'the card must show an eligibility badge');
+        $this->assertNotFalse($scorePosition, 'the card must show a match score');
+        $this->assertLessThan(
+            $scorePosition,
+            $eligiblePosition,
+            'eligibility must be readable before the match percentage on the card'
+        );
+    }
+
     /**
      * Two independent reasons, from two different requirement types, both
      * shown - and the subject one names the grade required alongside the

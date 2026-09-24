@@ -253,7 +253,7 @@ class ProviderDecisionEmailTest extends TestCase
         $this->post('/register/provider', [
             'full_name' => 'Chikafu Education Trust',
             'email' => 'decision.probe@example.test',
-            'phone' => '+263771234567',
+            'phone' => '0771234567',
             'organisation_type' => ProviderOrgType::ALL[0],
             'registration_number' => 'PVO/2024/001',
             'certificate' => UploadedFile::fake()->create('registration.pdf', 40, 'application/pdf'),

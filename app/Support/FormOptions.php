@@ -134,6 +134,28 @@ final class FormOptions
     /** Sorts that only make sense once a signed-in applicant has a profile. */
     public const MATCH_SORT = 'match';
 
+    /**
+     * A person's name: letters (any script - \p{L} rather than A-Z, so a
+     * name is not assumed to be English), spaces, hyphens and apostrophes -
+     * "Anne-Marie" and "O'Brien" are ordinary names, not exceptions. No
+     * digits and no other punctuation. Applied only where a field actually
+     * holds a person's own name (an applicant, a guardian, an
+     * admin-created account) - never to `full_name` on provider
+     * registration, which this product uses as the organisation or
+     * contact-person name ("Chikafu Education Trust") and is free text for
+     * that reason.
+     */
+    public const NAME_PATTERN = "/^[\p{L}\s'\-]+$/u";
+
+    /**
+     * A Zimbabwean local phone number: exactly ten digits, nothing else -
+     * no country code, no spaces, no dashes. Deliberately not normalised
+     * from another format (e.g. stripping a leading +263) - the platform
+     * has no established normalisation step today, and silently rewriting
+     * what an applicant typed is a different feature from validating it.
+     */
+    public const PHONE_PATTERN = '/^\d{10}$/';
+
     private function __construct()
     {
     }

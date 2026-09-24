@@ -279,7 +279,7 @@ class AcademicProfileTest extends TestCase
         // A submission that carries no academic section at all - no marker, no
         // rows - exactly as a different form on the same route would post.
         $this->actingAs($this->student)
-            ->post('/applicant/profile', $this->baseFields(['phone' => '+263 771 555 000']))
+            ->post('/applicant/profile', $this->baseFields(['phone' => '0771555000']))
             ->assertSessionHasNoErrors();
 
         $profile = $this->profile();
@@ -463,7 +463,7 @@ class AcademicProfileTest extends TestCase
                 'education_level' => EducationLevel::PRIMARY,
                 'province' => 'Harare',
                 'guardian_name' => 'Rudo Marufu',
-                'guardian_phone' => '+263 772 111 222',
+                'guardian_phone' => '0772111222',
                 'guardian_relationship' => 'Mother',
                 'academic_results_submitted' => '1',
                 'academic_subject_results' => [[
@@ -490,7 +490,7 @@ class AcademicProfileTest extends TestCase
                 'education_level' => EducationLevel::PRIMARY,
                 'province' => 'Harare',
                 'guardian_name' => 'Rudo Marufu',
-                'guardian_phone' => '+263 772 111 222',
+                'guardian_phone' => '0772111222',
                 'guardian_relationship' => 'Mother',
                 'academic_results_submitted' => '1',
                 'academic_subject_results' => [[
@@ -524,7 +524,7 @@ class AcademicProfileTest extends TestCase
                 'education_level' => EducationLevel::PRIMARY,
                 'province' => 'Harare',
                 'guardian_name' => 'Rudo Marufu',
-                'guardian_phone' => '+263 772 111 222',
+                'guardian_phone' => '0772111222',
                 'guardian_relationship' => 'Mother',
                 'academic_results_submitted' => '1',
                 'academic_subject_results' => [[
@@ -662,7 +662,7 @@ class AcademicProfileTest extends TestCase
             'institution_name' => 'Chitungwiza Primary',
             'province' => 'Harare',
             'guardian_name' => 'Rudo Marufu',
-            'guardian_phone' => '+263 772 111 222',
+            'guardian_phone' => '0772111222',
             'guardian_relationship' => 'Mother',
             'academic_results_submitted' => '1',
             'academic_subject_results' => [
@@ -708,7 +708,7 @@ class AcademicProfileTest extends TestCase
                 'province' => 'Mashonaland West',
                 'date_of_birth' => $profile->date_of_birth->toDateString(),
                 'guardian_name' => 'Grace Marufu',
-                'guardian_phone' => '+263 773 111 001',
+                'guardian_phone' => '0773111001',
                 'guardian_relationship' => 'Mother',
                 'biography' => 'Grade 7 pupil sitting the transition to Form 1 next year.',
             ] + $this->academicFields([

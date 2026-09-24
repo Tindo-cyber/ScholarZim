@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\AdminUserService;
 use App\Support\AccountStatus;
+use App\Support\FormOptions;
 use App\Support\RoleNames;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -34,9 +35,9 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
+            'full_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'role_name' => ['required', Rule::in(RoleNames::ALL)],
             'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
         ]);

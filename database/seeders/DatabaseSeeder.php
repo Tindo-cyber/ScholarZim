@@ -128,7 +128,7 @@ class DatabaseSeeder extends Seeder
             [
                 'role_id' => Role::where('role_name', RoleNames::PROVIDER)->value('role_id'),
                 'full_name' => 'Zimbabwe Education Trust',
-                'phone' => '+263 242 700 000',
+                'phone' => '0242700000',
                 'password_hash' => Hash::make('ChangeMe123'),
                 'account_status' => AccountStatus::ACTIVE,
                 'email_verified' => true,
@@ -163,7 +163,7 @@ class DatabaseSeeder extends Seeder
             [
                 'role_id' => Role::where('role_name', RoleNames::PROVIDER)->value('role_id'),
                 'full_name' => 'Midlands Community Development Trust',
-                'phone' => '+263 771 900 000',
+                'phone' => '0771900000',
                 'password_hash' => Hash::make('ChangeMe123'),
                 'account_status' => AccountStatus::PENDING,
                 'email_verified' => true,
@@ -203,7 +203,7 @@ class DatabaseSeeder extends Seeder
             [
                 'role_id' => Role::where('role_name', RoleNames::APPLICANT)->value('role_id'),
                 'full_name' => 'Tendai Moyo',
-                'phone' => '+263 771 000 000',
+                'phone' => '0771000000',
                 'password_hash' => Hash::make('ChangeMe123'),
                 'account_status' => AccountStatus::ACTIVE,
                 'email_verified' => true,
@@ -267,7 +267,7 @@ class DatabaseSeeder extends Seeder
             [
                 'role_id' => Role::where('role_name', RoleNames::APPLICANT)->value('role_id'),
                 'full_name' => 'Chipo Ncube',
-                'phone' => '+263 772 000 000',
+                'phone' => '0772000000',
                 'password_hash' => Hash::make('ChangeMe123'),
                 'account_status' => AccountStatus::ACTIVE,
                 'email_verified' => true,
@@ -308,7 +308,7 @@ class DatabaseSeeder extends Seeder
             [
                 'role_id' => Role::where('role_name', RoleNames::APPLICANT)->value('role_id'),
                 'full_name' => 'Kudzai Marufu',
-                'phone' => '+263 773 111 000',
+                'phone' => '0773111000',
                 'password_hash' => Hash::make('ChangeMe123'),
                 'account_status' => AccountStatus::ACTIVE,
                 'email_verified' => true,
@@ -325,7 +325,7 @@ class DatabaseSeeder extends Seeder
                 'date_of_birth' => Carbon::today()->subYears(12)->toDateString(),
                 'citizenship' => 'Zimbabwean',
                 'guardian_name' => 'Grace Marufu',
-                'guardian_phone' => '+263 773 111 001',
+                'guardian_phone' => '0773111001',
                 'guardian_relationship' => 'Mother',
                 'guardian_confirmed_at' => Carbon::now()->subWeek(),
                 'biography' => 'Grade 7 pupil sitting the transition to Form 1 next year.',
@@ -349,7 +349,7 @@ class DatabaseSeeder extends Seeder
             [
                 'role_id' => Role::where('role_name', RoleNames::APPLICANT)->value('role_id'),
                 'full_name' => 'Farai Sibanda',
-                'phone' => '+263 774 222 000',
+                'phone' => '0774222000',
                 'password_hash' => Hash::make('ChangeMe123'),
                 'account_status' => AccountStatus::ACTIVE,
                 'email_verified' => true,
@@ -389,7 +389,7 @@ class DatabaseSeeder extends Seeder
             [
                 'role_id' => Role::where('role_name', RoleNames::APPLICANT)->value('role_id'),
                 'full_name' => 'Tanaka Chirwa',
-                'phone' => '+263 775 333 000',
+                'phone' => '0775333000',
                 'password_hash' => Hash::make('ChangeMe123'),
                 'account_status' => AccountStatus::ACTIVE,
                 'email_verified' => true,
@@ -427,7 +427,7 @@ class DatabaseSeeder extends Seeder
             [
                 'role_id' => Role::where('role_name', RoleNames::APPLICANT)->value('role_id'),
                 'full_name' => 'Blessing Moyana',
-                'phone' => '+263 776 444 000',
+                'phone' => '0776444000',
                 'password_hash' => Hash::make('ChangeMe123'),
                 'account_status' => AccountStatus::ACTIVE,
                 'email_verified' => true,

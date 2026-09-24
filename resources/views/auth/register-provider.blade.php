@@ -57,7 +57,9 @@
 
             <x-form.input name="full_name" label="Organisation or contact name" required autocomplete="organization" autofocus />
             <x-form.input name="email" label="Work email address" type="email" required autocomplete="email" />
-            <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel" />
+            <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
+                          inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"
+                          hint="Optional. 10 digits, no spaces or country code, e.g. 0771234567." />
 
             <h2 class="h6 fw-semibold text-uppercase text-secondary mt-4 mb-3">Organisation</h2>
 

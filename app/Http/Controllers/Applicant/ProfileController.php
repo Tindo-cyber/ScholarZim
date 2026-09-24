@@ -78,8 +78,8 @@ class ProfileController extends Controller
     public function update(Request $request)
     {
         $data = $request->validate([
-            'full_name' => ['required', 'string', 'max:255'],
-            'phone' => ['nullable', 'string', 'max:50'],
+            'full_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
+            'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'education_level' => ['nullable', Rule::in(EducationLevel::APPLICANT_LEVELS)],
             'institution_name' => ['nullable', 'string', 'max:255'],
             // Free text everywhere: the platform does not require an
@@ -96,8 +96,8 @@ class ProfileController extends Controller
             'locality' => ['nullable', 'string', 'max:100'],
             'settlement_type' => ['nullable', Rule::in(SettlementType::ALL)],
             'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1920-01-01'],
-            'guardian_name' => ['nullable', 'string', 'max:255'],
-            'guardian_phone' => ['nullable', 'string', 'max:50'],
+            'guardian_name' => ['nullable', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
+            'guardian_phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'guardian_relationship' => ['nullable', 'string', 'max:100'],
             'guardian_confirmed' => ['nullable', 'boolean'],
             'biography' => ['nullable', 'string', 'max:5000'],

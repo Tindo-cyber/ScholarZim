@@ -11,10 +11,12 @@
     <form method="POST" action="{{ route('register') }}" novalidate>
         @csrf
 
-        <x-form.input name="full_name" label="Full name" required autocomplete="name" autofocus />
+        <x-form.input name="full_name" label="Full name" required autocomplete="name" autofocus
+                      pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." />
         <x-form.input name="email" label="Email address" type="email" required autocomplete="email" />
         <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
-                      hint="Optional. Used only for deadline reminders." />
+                      inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"
+                      hint="Optional. 10 digits, no spaces or country code, e.g. 0771234567." />
 
         <x-form.input name="password" label="Password" type="password" required
                       autocomplete="new-password" :strength-check="true" />

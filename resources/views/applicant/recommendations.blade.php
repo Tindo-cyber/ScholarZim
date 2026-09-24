@@ -60,57 +60,60 @@
                     The order of this card is the argument it makes.
 
                     What the scholarship is, then whether the student can apply,
-                    then why it fits, and only then the number. The score used to
-                    be the first thing in the row - a large dial in the left
-                    column - which put a percentage in front of a reader before
-                    they knew what it was a percentage of, and sat a confident
-                    "92%" beside listings they were not eligible for.
+                    then why it fits, and only then the number. A score dial
+                    sharing the title's own row put a percentage in front of a
+                    reader before they had read "Eligible" - easy to misread as
+                    a comment on eligibility itself, e.g. "60% / Moderate
+                    confidence" beside a listing the applicant fully qualifies
+                    for. Eligibility is therefore established first and alone;
+                    the score, a hint about fit rather than a verdict, follows
+                    once it has something to be read against.
                 --}}
                 <article class="card sz-match-card">
                     <div class="card-body">
-                        <div class="d-flex flex-nowrap align-items-start gap-3 mb-2">
-                            <div class="min-w-0 flex-grow-1">
-                                <h2 class="h6 fw-bold mb-1">
-                                    <a class="text-body text-decoration-none stretched-link"
-                                       href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">
-                                        {{ $opportunity->title }}
-                                    </a>
-                                </h2>
-                                <p class="small text-secondary mb-0">{{ $opportunity->awardingBody() }}</p>
-                            </div>
+                        <div class="mb-2">
+                            <h2 class="h6 fw-bold mb-1">
+                                <a class="text-body text-decoration-none stretched-link"
+                                   href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">
+                                    {{ $opportunity->title }}
+                                </a>
+                            </h2>
+                            <p class="small text-secondary mb-0">{{ $opportunity->awardingBody() }}</p>
+                        </div>
 
-                            {{-- Secondary to the title, and kept to the smaller size:
+                        <x-eligibility-summary :fit="$match" variant="compact" class="mb-3" />
+
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+                            <ul class="list-unstyled d-flex flex-wrap gap-3 small text-secondary mb-0">
+                                <li class="d-flex align-items-center gap-1">
+                                    <x-icon name="calendar" :size="14" />
+                                    {{ $opportunity->deadline?->format('d M Y') ?? 'No deadline' }}
+                                </li>
+                                @if($opportunity->education_level)
+                                    <li class="d-flex align-items-center gap-1">
+                                        <x-icon name="file-text" :size="14" />
+                                        {{ \App\Support\EducationLevel::label($opportunity->education_level) }}
+                                    </li>
+                                @endif
+                                @if($opportunity->target_field)
+                                    <li class="d-flex align-items-center gap-1">
+                                        <x-icon name="stars" :size="14" />{{ $opportunity->target_field }}
+                                    </li>
+                                @endif
+                                @if($opportunity->formattedAward())
+                                    <li class="d-flex align-items-center gap-1">
+                                        <x-icon name="coins" :size="14" />{{ $opportunity->formattedAward() }}
+                                    </li>
+                                @endif
+                            </ul>
+
+                            {{-- Secondary to eligibility, and kept to the smaller size:
                                  a match score is a hint about fit, not a verdict. --}}
                             <div class="text-center flex-shrink-0 position-relative z-1">
                                 <x-match-score :score="$match->matchScore"
                                                :label="$match->breakdown->confidenceLabel" />
                             </div>
                         </div>
-
-                        <x-eligibility-summary :fit="$match" variant="compact" class="mb-3" />
-
-                        <ul class="list-unstyled d-flex flex-wrap gap-3 small text-secondary mb-3">
-                            <li class="d-flex align-items-center gap-1">
-                                <x-icon name="calendar" :size="14" />
-                                {{ $opportunity->deadline?->format('d M Y') ?? 'No deadline' }}
-                            </li>
-                            @if($opportunity->education_level)
-                                <li class="d-flex align-items-center gap-1">
-                                    <x-icon name="file-text" :size="14" />
-                                    {{ \App\Support\EducationLevel::label($opportunity->education_level) }}
-                                </li>
-                            @endif
-                            @if($opportunity->target_field)
-                                <li class="d-flex align-items-center gap-1">
-                                    <x-icon name="stars" :size="14" />{{ $opportunity->target_field }}
-                                </li>
-                            @endif
-                            @if($opportunity->formattedAward())
-                                <li class="d-flex align-items-center gap-1">
-                                    <x-icon name="coins" :size="14" />{{ $opportunity->formattedAward() }}
-                                </li>
-                            @endif
-                        </ul>
 
                         <div class="d-grid gap-2 mb-3">
                             <x-score-breakdown :fit="$match" />
