@@ -7,6 +7,7 @@ use App\Services\AdminUserService;
 use App\Support\AccountStatus;
 use App\Support\FormOptions;
 use App\Support\RoleNames;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -51,7 +52,14 @@ class UserController extends Controller
 
     public function approveProvider(Request $request, int $id)
     {
-        $user = $this->adminUserService->approveProvider($id, $request->user());
+        try {
+            $user = $this->adminUserService->approveProvider($id, $request->user());
+        } catch (ModelNotFoundException $e) {
+            // Not the "refused" case below - an unknown id stays a plain 404.
+            throw $e;
+        } catch (\RuntimeException $e) {
+            return back()->with('errorMessage', $e->getMessage());
+        }
 
         return back()->with('successMessage', $user->displayName() . ' can now publish scholarships.');
     }
@@ -60,7 +68,13 @@ class UserController extends Controller
     {
         $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
 
-        $user = $this->adminUserService->rejectProvider($id, $request->user(), $data['reason']);
+        try {
+            $user = $this->adminUserService->rejectProvider($id, $request->user(), $data['reason']);
+        } catch (ModelNotFoundException $e) {
+            throw $e;
+        } catch (\RuntimeException $e) {
+            return back()->with('errorMessage', $e->getMessage());
+        }
 
         return back()->with('successMessage', 'Provider ' . $user->displayName() . ' was rejected.');
     }

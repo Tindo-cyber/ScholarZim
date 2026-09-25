@@ -86,7 +86,7 @@ class AdminUserService
 
     public function approveProvider(int $userId, User $admin): User
     {
-        $user = User::with('providerProfile')->findOrFail($userId);
+        $user = $this->requireProvider($userId);
 
         $user->update(['account_status' => AccountStatus::ACTIVE]);
         $user->providerProfile?->update([
@@ -116,7 +116,7 @@ class AdminUserService
 
     public function rejectProvider(int $userId, User $admin, string $reason): User
     {
-        $user = User::with('providerProfile')->findOrFail($userId);
+        $user = $this->requireProvider($userId);
 
         $user->update(['account_status' => AccountStatus::REJECTED]);
         $user->providerProfile?->update([
@@ -195,6 +195,27 @@ class AdminUserService
 
         if ($user->is_super_admin) {
             throw new RuntimeException('The super admin account cannot be modified.');
+        }
+
+        return $user;
+    }
+
+    /**
+     * Provider verification only ever means something for a Provider
+     * account. The UI never links these routes against any other kind of
+     * user - the dashboard's pending-provider list is built from
+     * ProviderProfile rows, which only exist for provider registrations -
+     * but the id in the URL is still an admin-supplied request value, and a
+     * wrong one must not be able to flip an Applicant's or Administrator's
+     * own account_status and send them a "your provider account..."
+     * notification for an account that was never a provider's.
+     */
+    private function requireProvider(int $userId): User
+    {
+        $user = User::with('providerProfile')->findOrFail($userId);
+
+        if ($user->roleName() !== RoleNames::PROVIDER) {
+            throw new RuntimeException('Only a provider account can be verified this way.');
         }
 
         return $user;

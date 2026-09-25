@@ -138,6 +138,69 @@ class ProviderVerificationTest extends TestCase
         $this->assertSame(AccountStatus::PENDING, $provider->fresh()->account_status);
     }
 
+    /**
+     * Provider verification only ever means something for a Provider
+     * account. Approving/rejecting an id that is not one must not flip that
+     * account's own status or tell them their "provider account" was
+     * decided on, whatever it actually is.
+     */
+    public function test_approving_a_non_provider_account_is_refused(): void
+    {
+        $applicant = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
+        $originalStatus = $applicant->account_status;
+
+        $this->actingAs($this->admin)
+            ->post('/admin/users/providers/' . $applicant->user_id . '/approve')
+            ->assertRedirect();
+
+        $this->assertSame($originalStatus, $applicant->fresh()->account_status);
+        $this->assertDatabaseMissing('notifications', [
+            'user_id' => $applicant->user_id,
+            'type' => NotificationType::PROVIDER_APPROVED,
+        ]);
+    }
+
+    public function test_rejecting_a_non_provider_account_is_refused(): void
+    {
+        $applicant = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
+        $originalStatus = $applicant->account_status;
+
+        $this->actingAs($this->admin)
+            ->post('/admin/users/providers/' . $applicant->user_id . '/reject', [
+                'reason' => 'Wrong id, typed by mistake.',
+            ])
+            ->assertRedirect();
+
+        $this->assertSame($originalStatus, $applicant->fresh()->account_status);
+        $this->assertDatabaseMissing('notifications', [
+            'user_id' => $applicant->user_id,
+            'type' => NotificationType::PROVIDER_REJECTED,
+        ]);
+    }
+
+    /** Same refusal for an admin id, so one admin cannot accidentally relabel another's account via this route either. */
+    public function test_approving_an_admin_account_is_refused(): void
+    {
+        $otherAdmin = User::create([
+            'role_id' => $this->admin->role_id,
+            'full_name' => 'Second Admin',
+            'email' => 'second-admin@scholarzim.co.zw',
+            'password_hash' => bcrypt('ChangeMe123'),
+            'account_status' => AccountStatus::ACTIVE,
+            'email_verified' => true,
+        ]);
+
+        $this->actingAs($this->admin)
+            ->post('/admin/users/providers/' . $otherAdmin->user_id . '/approve')
+            ->assertRedirect();
+
+        $this->assertSame(AccountStatus::ACTIVE, $otherAdmin->fresh()->account_status);
+        $this->assertDatabaseMissing('audit_log', [
+            'action' => AuditAction::APPROVE_PROVIDER,
+            'entity_id' => $otherAdmin->user_id,
+        ]);
+    }
+
     // ------------------------------------------------------------- helpers --
 
     private function register(): User
