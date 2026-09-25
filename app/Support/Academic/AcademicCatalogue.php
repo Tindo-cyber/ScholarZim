@@ -253,10 +253,18 @@ final class AcademicCatalogue
     public static function subjects(string $key): array
     {
         return match ($key) {
+            // The five approved Primary learning-area categories. Languages
+            // is not one subject - a Grade 7 pupil sits more than one - so it
+            // stays as the separate subjects a Primary pupil actually holds
+            // results in (English, Shona, Ndebele) rather than being
+            // collapsed into a single row that could carry only one grade.
+            // See database/migrations/2025_01_01_000006_correct_primary_subject_catalogue.php
+            // for how the subjects this replaced were retired rather than
+            // deleted - any applicant result or scholarship rule that
+            // already pointed at one of them still reads correctly.
             self::ZIMBABWE_PRIMARY => self::pairs([
-                'Mathematics', 'English', 'Shona', 'Ndebele', 'General Paper',
-                'Agriculture', 'Heritage-Social Studies', 'Physical Education, Arts and Sport',
-                'Information and Communication Technology', 'Religious and Moral Education',
+                'Mathematics', 'Physical Education', 'Science and Technology', 'Social Science',
+                'English', 'Shona', 'Ndebele',
             ]),
 
             self::ZIMSEC_O_LEVEL => self::pairs([
