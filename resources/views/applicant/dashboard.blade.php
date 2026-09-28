@@ -49,7 +49,7 @@
                 <div class="card-body">
                     @if(empty($recommendations))
                         <x-empty-state title="No matches yet"
-                                       message="Complete your profile so ScholarFit can score open scholarships against it."
+                                       message="Complete your profile so ScholarFit can check open scholarships against it."
                                        icon="stars"
                                        action-label="Complete my profile"
                                        :action-href="route('applicant.profile')" />
@@ -57,7 +57,7 @@
                         <div class="row g-3">
                             @foreach($recommendations as $match)
                                 <div class="col-md-6">
-                                    <x-scholarship-card :opportunity="$match->opportunity" :score="$match->matchScore"
+                                    <x-scholarship-card :opportunity="$match->opportunity"
                                                         :saved="in_array($match->opportunity->opportunity_id, $savedIds, true)"
                                                         :applied="in_array($match->opportunity->opportunity_id, $appliedIds, true)"
                                                         :accepted="$accepted[$match->opportunity->opportunity_id] ?? null" />
@@ -102,14 +102,9 @@
 
         <div class="col-xl-4">
 
-            <div class="card mb-4">
-                <div class="card-body text-center">
-                    <x-match-score :score="$stats['topMatch']" label="Best match" size="lg" />
-                    <p class="small text-secondary mt-3 mb-0">
-                        Your strongest ScholarFit score across all open listings.
-                    </p>
-                </div>
-            </div>
+            <x-stat-card label="Eligible matches" :value="$stats['eligibleMatches']" icon="stars" tone="primary"
+                         hint="Open scholarships whose stated requirements you currently meet."
+                         :href="route('applicant.recommendations')" class="mb-4" />
 
             {{-- The same checklist the profile shows, from the same component. It used
                  to be a dial plus a bare list of gaps here and an annotated checklist

@@ -37,7 +37,7 @@
         ],
         [
             'title' => 'Recommendations',
-            'description' => 'Listings with their awarding body, ScholarFit match percentage and deadline.',
+            'description' => 'Each applicant\'s eligible listings, with their awarding body and deadline.',
             'pdf' => 'admin.reports.recommendations.pdf',
             'excel' => null,
         ],

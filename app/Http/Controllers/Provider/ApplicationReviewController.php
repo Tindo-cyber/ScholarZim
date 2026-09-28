@@ -41,7 +41,7 @@ class ApplicationReviewController extends Controller
             // this applicant's profile lines up with what the listing asks for.
             // Null when either side of the comparison is missing.
             'fit' => $application->user && $application->opportunity
-                ? $this->recommendationService->scoreOne($application->user, $application->opportunity)
+                ? $this->recommendationService->evaluateOne($application->user, $application->opportunity)
                 : null,
             // A decided or withdrawn application yields false, which collapses
             // the decision form - offering buttons whose every outcome would be

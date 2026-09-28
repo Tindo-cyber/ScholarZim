@@ -33,7 +33,6 @@ class SourceAssetController extends Controller
         'profile-form.js' => ['js/profile-form.js', 'text/javascript'],
         'academic-results.js' => ['js/academic-results.js', 'text/javascript'],
         'subject-requirements.js' => ['js/subject-requirements.js', 'text/javascript'],
-        'scholarfit-weights.js' => ['js/scholarfit-weights.js', 'text/javascript'],
         'bulk-select.js' => ['js/bulk-select.js', 'text/javascript'],
         'pwa.js' => ['js/pwa.js', 'text/javascript'],
     ];
@@ -46,7 +45,6 @@ class SourceAssetController extends Controller
         'profile-form.js',
         'academic-results.js',
         'subject-requirements.js',
-        'scholarfit-weights.js',
         'bulk-select.js',
         'pwa.js',
     ];

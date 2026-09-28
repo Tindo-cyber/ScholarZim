@@ -1,6 +1,6 @@
 # ScholarZim Viva Demo Script
 
-**Duration:** 12–15 minutes
+**Duration:** 10–13 minutes
 **Password for every demo account:** `ChangeMe123` — **local/demo only, never for
 production.** These accounts are seeded only into a local database; production
 seeding is disabled and none of them exist on a deployed instance.
@@ -38,10 +38,10 @@ than a constructed one.
 
 | Role | Email | State | Use in demo |
 |------|-------|-------|--------------|
-| Admin | `admin@scholarzim.co.zw` | ACTIVE, super admin | Provider verification, moderation, audit log, reports, ScholarFit weights |
+| Admin | `admin@scholarzim.co.zw` | ACTIVE, super admin | Provider verification, moderation, audit log, reports |
 | Provider (active) | `provider@scholarzim.co.zw` | ACTIVE, verified | Post listings, review applications |
 | Provider (pending) | `trust@scholarzim.co.zw` | PENDING | Live admin verification |
-| Applicant, Undergraduate | `student@scholarzim.co.zw` | ACTIVE, full document set incl. transcript | Full apply flow, ScholarFit high match |
+| Applicant, Undergraduate | `student@scholarzim.co.zw` | ACTIVE, full document set incl. transcript | Full apply flow, an eligible ScholarFit match |
 | Applicant, A-Level (incomplete) | `chipo.ncube@scholarzim.co.zw` | ACTIVE, no documents at all | Completeness checklist, a pathway block, a certificate block |
 | Applicant, Primary | `kudzai.marufu@scholarzim.co.zw` | ACTIVE, guardian details on file | Guardian-assisted Form 1 pathway, everything else blocked |
 | Applicant, O-Level | `farai.sibanda@scholarzim.co.zw` | ACTIVE, results certificate | O-Level reaching A-Level and a qualifying Undergraduate award |
@@ -67,10 +67,10 @@ states — see Step 4. Password for every account: `ChangeMe123`.
 
 ## Step 2 — The education pathway and progressive profile (4 min)
 
-**Talking point:** Current education level, target level, pathway, scholarship-specific rules
-and ScholarFit's match score are five separate things — see
-`App\Services\ScholarFit\EducationPathway` and `EligibilityEvaluator`. ScholarFit never prints a
-percentage next to a listing an applicant cannot actually apply to.
+**Talking point:** Current education level, target level, pathway, and scholarship-specific
+rules are four separate things — see `App\Services\ScholarFit\EducationPathway` and
+`EligibilityEvaluator`. ScholarFit is eligibility-based: it never prints a score, only
+**Eligible** or **Not eligible** and the exact requirement behind that verdict.
 
 1. Log in as **`kudzai.marufu@scholarzim.co.zw`** (Primary) and open `/applicant/profile` — the
    form shows only what a Primary pupil's profile needs: no field of study, no academic-results
@@ -84,12 +84,12 @@ percentage next to a listing an applicant cannot actually apply to.
    Undergraduate in one step, regardless of how the listing is configured
 3. Log out, log in as **`farai.sibanda@scholarzim.co.zw`** (O-Level). Open **My matches**:
    **"Rural Schools A-Level Support Fund"** and **"Zimbabwe Tech Futures Undergraduate Bursary"**
-   both score normally — O-Level may reach A-Level, and this particular Undergraduate listing
+   both show as **eligible** — O-Level may reach A-Level, and this particular Undergraduate listing
    accepts O-Level applicants directly. Open **"Midlands Engineering Excellence Award"**
    instead (also Undergraduate-targeted): **not eligible** — that specific provider has set a
    minimum qualifying level of A-Level, a rule narrower than the general pathway
 4. Log out, log in as **`tanaka.chirwa@scholarzim.co.zw`** (A-Level) and open the same
-   **"Midlands Engineering Excellence Award"** — she meets the floor exactly, and scores normally
+   **"Midlands Engineering Excellence Award"** — she meets the floor exactly, and shows as eligible
 5. Log out, log in as **`chipo.ncube@scholarzim.co.zw`** (A-Level, no documents) — the
    completeness badge reads **In progress**. Open **"Harare Health Sciences Postgraduate Grant"**
    (Masters-targeted): not eligible, for two independent reasons at once — A-Level cannot reach
@@ -136,8 +136,9 @@ written reason.
 
 1. Log out → log in as **`provider@scholarzim.co.zw`**
 2. Open `/provider/applications` — the pending application from Step 3 is there
-3. Open it: applicant profile, ScholarFit score, and (if on file) the applicant's results
-   certificate or transcript — whichever their education level actually uses — are all visible
+3. Open it: applicant profile, the ScholarFit eligibility check, and (if on file) the applicant's
+   results certificate or transcript — whichever their education level actually uses — are all
+   visible
 4. Try **Accept** or **Reject** with the reason left blank — refused
 5. Submit a real reason → the application leaves the pending queue; the applicant's
    notification and status update are immediate
@@ -159,20 +160,7 @@ written reason.
 
 ---
 
-## Step 6 — Tuning ScholarFit (2 min)
-
-**Talking point:** The weights are a configuration an administrator can change, not a constant
-compiled into the code.
-
-1. As the admin, open **ScholarFit weights**
-2. Move a slider — the total turns red and Save is disabled until the weights sum to 100
-3. Lower the weight on field of study, save, and reload a student's recommendations — the
-   ranking changes
-4. Press **Reset to defaults** to restore the shipped weighting
-
----
-
-## Step 7 — Reports and quality evidence (2 min)
+## Step 6 — Reports and quality evidence (2 min)
 
 1. As the admin, open **Reports** and download a PDF and an Excel export — confirm the file
    opens and the row count matches what is in the database
@@ -184,7 +172,7 @@ compiled into the code.
 
 ---
 
-## Step 8 — Security highlights (2 min)
+## Step 7 — Security highlights (2 min)
 
 Cover briefly (see [security.md](security.md)):
 

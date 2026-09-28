@@ -223,7 +223,7 @@ class PrimarySubjectCatalogueTest extends TestCase
     {
         $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
 
-        $fit = app(RecommendationService::class)->scoreOne(
+        $fit = app(RecommendationService::class)->evaluateOne(
             $pupil,
             \App\Models\Opportunity::where('title', 'Chinhoyi Form 1 Transition Bursary')->firstOrFail()
         );

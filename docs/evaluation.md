@@ -19,7 +19,7 @@ table went stale the first time a suite was renamed and nobody caught it:
 |------|------------------|
 | Authentication | Session login/logout for all three roles, wrong password, unknown email, throttling, suspended accounts, bcrypt hashing, the legacy `password_hash` column mapping |
 | Application workflow | Submit → Pending → Accept/Reject, duplicate-application blocking, withdrawal and re-application, decision reason required, ownership enforcement, concurrent-submission handling |
-| ScholarFit | Weighted scoring, the hard-requirement pass/fail path, eligibility edge cases, ranking order, location scoring |
+| ScholarFit | The hard-requirement pass/fail path, eligibility edge cases, and deadline-order ranking |
 | Authorization | Cross-account access to applications/documents/notifications, provider-to-provider isolation, admin-only routes, suspension ending a live session |
 | Discovery | Browse, keyword search, filters, saved scholarships |
 | Provider verification | Registration, admin approval/rejection, the `account.active` gate on publishing |
@@ -29,7 +29,7 @@ table went stale the first time a suite was renamed and nobody caught it:
 | PWA | Manifest and service worker content, precache scope (no private pages, no non-GET requests cached), offline fallback |
 | Database / deployment | TLS certificate-authority path resolution, the container entrypoint's `APP_KEY` and CA-permission handling, empty-database safety for the public pages |
 | Storage configuration | The private disk's root is read from `FILESYSTEM_ROOT` rather than hard-coded; documents are written under whatever root is configured, a root change does not silently resolve an old file, a document copied to a new root resolves under its original relative path unchanged, and download authorization is unaffected by where the disk physically points |
-| Education pathway / eligibility | All fifteen brief-specified pathway scenarios (Primary→Form 1 through A-Level→PhD), a hard pathway failure as a real eligibility block (not a scoring penalty), a listing's own stricter minimum level, no GPA field anywhere, a transcript on file not manufacturing an academic score by itself, a missing locality never reducing a province-wide match, and a real HTTP submission refused for a pathway violation - not only excluded from recommendations |
+| Education pathway / eligibility | All fifteen brief-specified pathway scenarios (Primary→Form 1 through A-Level→PhD), an unusual progression reported as a note rather than a refusal, a listing's own stricter minimum level, no GPA field anywhere, a transcript on file not satisfying a points requirement by itself, country never being a hard eligibility requirement, and a real HTTP submission refused for a pathway violation - not only excluded from recommendations |
 
 ## Continuous integration
 

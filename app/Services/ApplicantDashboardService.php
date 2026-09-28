@@ -5,24 +5,22 @@ namespace App\Services;
 use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
-use App\Services\ScholarFit\ScoredOpportunity;
 use App\Support\ApplicationStatus;
 use Illuminate\Support\Carbon;
 
 class ApplicantDashboardService
 {
     public function __construct(
-        private readonly RecommendationService $recommendationService,
         private readonly SavedScholarshipService $savedScholarshipService,
     ) {
     }
 
     /**
-     * @param  array<int, ScoredOpportunity>  $recommendations  pre-computed via
-     *         RecommendationService::forUser(), used to derive the top match
-     *         score without re-scoring every listing.
+     * @param  array<int, \App\Services\ScholarFit\EligibilityResult>  $eligibleMatches
+     *         pre-computed via RecommendationService::forUser(), used to count
+     *         eligible matches without evaluating the catalogue twice.
      */
-    public function stats(User $user, array $recommendations = []): array
+    public function stats(User $user, array $eligibleMatches = []): array
     {
         $applications = Application::where('user_id', $user->user_id);
 
@@ -39,9 +37,7 @@ class ApplicantDashboardService
                 ->count(),
             'saved' => $this->savedScholarshipService->count($user),
             'profileCompletion' => $user->applicantProfile?->completionPercentage() ?? 0,
-            'topMatch' => $recommendations === []
-                ? $this->recommendationService->topMatchScore($user)
-                : ($recommendations[0]->matchScore ?? 0),
+            'eligibleMatches' => count($eligibleMatches),
         ];
     }
 

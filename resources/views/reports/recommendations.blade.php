@@ -6,10 +6,9 @@
         <table>
             <thead>
             <tr>
-                <th style="width:36%">Opportunity</th>
-                <th style="width:28%">Provider</th>
-                <th style="width:18%">Match %</th>
-                <th style="width:18%">Deadline</th>
+                <th style="width:45%">Opportunity</th>
+                <th style="width:35%">Provider</th>
+                <th style="width:20%">Deadline</th>
             </tr>
             </thead>
             <tbody>
@@ -17,7 +16,6 @@
                 <tr>
                     <td>{{ $match->opportunity->title ?: '—' }}</td>
                     <td>{{ $match->opportunity->provider_name ?: '—' }}</td>
-                    <td>{{ $match->matchScore }}%</td>
                     <td>{{ $match->opportunity->deadline?->format('d M Y') ?: '—' }}</td>
                 </tr>
             @endforeach

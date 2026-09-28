@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\Opportunity;
 use App\Models\User;
-use App\Services\ScholarFit\ScholarFitEngine;
 use App\Services\ScholarFit\Taxonomy\SettlementType;
 use App\Support\EducationLevel;
 use App\Support\FormOptions;
@@ -76,11 +75,8 @@ class ScholarFitLocationTest extends TestCase
         $this->assertNotContains('Rural', FormOptions::ZIMBABWE_PROVINCES);
     }
 
-    /**
-     * The whole point of the column: a listing aimed at rural students scores
-     * higher for one than for an otherwise identical urban applicant.
-     */
-    public function test_a_rural_targeted_award_ranks_a_rural_student_above_an_urban_one(): void
+    /** Settlement type is not a hard eligibility gate: it never disqualifies an applicant. */
+    public function test_a_rural_targeted_award_does_not_disqualify_an_urban_applicant(): void
     {
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
         $opportunity->update([
@@ -88,37 +84,26 @@ class ScholarFitLocationTest extends TestCase
             'deadline' => Carbon::today()->addDays(20),
         ]);
 
-        $engine = app(ScholarFitEngine::class);
         $profile = $this->student->applicantProfile;
-
-        $profile->update(['settlement_type' => SettlementType::RURAL]);
-        $rural = $engine->evaluate($profile->fresh(), $opportunity)->matchScore;
-
         $profile->update(['settlement_type' => SettlementType::URBAN]);
-        $urban = $engine->evaluate($profile->fresh(), $opportunity)->matchScore;
 
-        $this->assertGreaterThan(
-            $urban,
-            $rural,
-            'a listing that targets rural applicants must actually prefer one'
-        );
+        $fit = app(\App\Services\RecommendationService::class)->evaluateOne($this->student->fresh(), $opportunity);
+
+        $this->assertTrue($fit->meetsRequirements(), 'settlement type is not a stated requirement anyone can fail');
     }
 
-    /** An unstated settlement type is unknown, so it neither helps nor blocks. */
-    public function test_not_stating_a_settlement_type_is_not_treated_as_urban(): void
+    /** An unstated settlement type never disqualifies either. */
+    public function test_not_stating_a_settlement_type_is_not_treated_as_a_failure(): void
     {
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
         $opportunity->update(['target_settlement_type' => SettlementType::RURAL]);
 
-        $engine = app(ScholarFitEngine::class);
         $profile = $this->student->applicantProfile;
-
         $profile->update(['settlement_type' => null]);
 
-        $scored = $engine->evaluate($profile->fresh(), $opportunity);
+        $fit = app(\App\Services\RecommendationService::class)->evaluateOne($this->student->fresh(), $opportunity);
 
-        $this->assertTrue($scored->meetsRequirements(), 'a blank settlement type must never disqualify');
-        $this->assertGreaterThan(0, $scored->breakdown->dimension('location')->points());
+        $this->assertTrue($fit->meetsRequirements(), 'a blank settlement type must never disqualify');
     }
 
     /** The minimum a valid profile POST needs, so each test states only its point. */

@@ -154,34 +154,19 @@
 
             @if($fit)
                 {{--
-                    Guidance, not a verdict. ScholarFit says how well this
-                    applicant's profile lines up with what the listing asks for;
-                    the decision below is entirely the provider's.
+                    Guidance, not a verdict. ScholarFit says whether this
+                    applicant's profile meets what the listing states it
+                    requires; the decision below is entirely the provider's.
                 --}}
                 <div class="card mb-4">
                     <div class="card-header">
-                        <h2 class="h6 fw-semibold mb-0">ScholarFit match</h2>
+                        <h2 class="h6 fw-semibold mb-0">Eligibility check</h2>
                     </div>
                     <div class="card-body">
-                        {{--
-                            Eligibility first, score second - the same order the applicant
-                            sees it in, and the same component. A provider was previously
-                            shown a percentage with no statement of whether the applicant
-                            actually meets the rules the listing states, which is the one
-                            thing the engine can answer definitively.
-                        --}}
-                        <x-eligibility-summary :fit="$fit" variant="compact" class="mb-3" />
-
-                        <div class="text-center">
-                            <x-match-score :score="$fit->matchScore" :label="$fit->breakdown->confidenceLabel" />
-                        </div>
-
-                        <p class="small text-secondary mt-3">{{ $fit->breakdown->explanation }}</p>
-
-                        <x-score-breakdown :fit="$fit" />
+                        <x-eligibility-summary :fit="$fit" variant="compact" class="mb-0" />
 
                         <p class="small text-secondary mt-3 mb-0">
-                            A guide to how well the profile fits this listing. The decision is yours.
+                            A guide to whether the profile meets this listing's stated requirements. The decision is yours.
                         </p>
                     </div>
                 </div>

@@ -218,38 +218,11 @@
 
                         @if($fit)
                             {{--
-                                Eligibility first and on its own terms: which
-                                requirements were met, which were not, or that the
-                                listing set none. The score follows separately below,
-                                and only when the applicant is actually eligible - a
-                                percentage beside "you do not meet this rule" is a
-                                number that invites an argument rather than an answer.
+                                Eligibility, on its own terms: which requirements
+                                were met, which were not, or that the listing set
+                                none.
                             --}}
                             <x-eligibility-summary :fit="$fit" />
-
-                            @if($fit->meetsRequirements())
-                                <div class="text-center mb-3">
-                                    <x-match-score :score="$fit->matchScore"
-                                                   :label="$fit->breakdown->confidenceLabel"
-                                                   size="lg" />
-                                </div>
-
-                                <p class="small text-secondary text-center">{{ $fit->breakdown->explanation }}</p>
-
-                                {{--
-                                    One row per dimension, read straight off the
-                                    same DimensionResult objects the score was
-                                    summed from - so what a student is told here
-                                    cannot drift away from what they were scored.
-                                    Open on this page, where the score is what
-                                    the reader came for.
-                                --}}
-                                <div class="mt-4 mb-3">
-                                    <x-score-breakdown :fit="$fit" :open="true" />
-                                </div>
-
-                                <x-score-fixes :fit="$fit" variant="alert" class="mb-3" />
-                            @endif
                         @endif
 
                         <div class="d-grid gap-2">

@@ -36,8 +36,8 @@
      * second density, not a second opinion - which is why it lives here rather
      * than in a component of its own.
      */
-    $rules = \App\Services\ScholarFit\RequirementOutcome::rules($fit->breakdown->requirementOutcomes);
-    $notes = $fit->breakdown->advisoryNotes();
+    $rules = \App\Services\ScholarFit\RequirementOutcome::rules($fit->outcomes);
+    $notes = $fit->advisoryNotes();
     $eligible = $fit->meetsRequirements();
     $stated = $rules !== [];
     $met = count(array_filter($rules, static fn ($o) => $o->passed));

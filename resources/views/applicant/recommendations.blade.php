@@ -5,7 +5,7 @@
 @section('content')
 
     <x-page-header title="My matches"
-                   subtitle="Open scholarships ranked by how well they fit your profile."
+                   subtitle="Open scholarships whose stated requirements your profile currently meets."
                    eyebrow="ScholarFit">
         <x-slot:actions>
             <a class="btn btn-outline-secondary" href="{{ route('applicant.profile') }}">Improve my profile</a>
@@ -19,24 +19,10 @@
         <x-profile-progress :profile="$profile" class="mb-4" />
     @endif
 
-    <form method="GET" action="{{ route('applicant.recommendations') }}" class="card mb-4">
-        <div class="card-body d-flex flex-wrap gap-3 align-items-end">
-            <div class="flex-grow-1 sz-filter-field">
-                <label class="form-label" for="min_score">Minimum match score</label>
-                <select class="form-select" id="min_score" name="min_score">
-                    @foreach([0 => 'Show everything', 45 => 'Moderate fit and above (45%+)', 75 => 'Strong fit only (75%+)'] as $value => $label)
-                        <option value="{{ $value }}" @selected($minimumScore === $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </div>
-            <button class="btn btn-outline-primary" type="submit">Apply filter</button>
-        </div>
-    </form>
-
     @if(empty($matches))
         <div class="card">
-            <x-empty-state title="No matches at this threshold"
-                           message="Lower the minimum score, or add more detail to your profile so more listings qualify."
+            <x-empty-state title="No matches yet"
+                           message="Add more detail to your profile so more listings qualify."
                            icon="stars"
                            action-label="Edit my profile"
                            :action-href="route('applicant.profile')" />
@@ -57,17 +43,9 @@
                 @endphp
 
                 {{--
-                    The order of this card is the argument it makes.
-
-                    What the scholarship is, then whether the student can apply,
-                    then why it fits, and only then the number. A score dial
-                    sharing the title's own row put a percentage in front of a
-                    reader before they had read "Eligible" - easy to misread as
-                    a comment on eligibility itself, e.g. "60% / Moderate
-                    confidence" beside a listing the applicant fully qualifies
-                    for. Eligibility is therefore established first and alone;
-                    the score, a hint about fit rather than a verdict, follows
-                    once it has something to be read against.
+                    The order of this card is the argument it makes: what the
+                    scholarship is, then whether the student is eligible for
+                    it and why, then whether they can apply.
                 --}}
                 <article class="card sz-match-card">
                     <div class="card-body">
@@ -83,42 +61,28 @@
 
                         <x-eligibility-summary :fit="$match" variant="compact" class="mb-3" />
 
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
-                            <ul class="list-unstyled d-flex flex-wrap gap-3 small text-secondary mb-0">
+                        <ul class="list-unstyled d-flex flex-wrap gap-3 small text-secondary mb-3">
+                            <li class="d-flex align-items-center gap-1">
+                                <x-icon name="calendar" :size="14" />
+                                {{ $opportunity->deadline?->format('d M Y') ?? 'No deadline' }}
+                            </li>
+                            @if($opportunity->education_level)
                                 <li class="d-flex align-items-center gap-1">
-                                    <x-icon name="calendar" :size="14" />
-                                    {{ $opportunity->deadline?->format('d M Y') ?? 'No deadline' }}
+                                    <x-icon name="file-text" :size="14" />
+                                    {{ \App\Support\EducationLevel::label($opportunity->education_level) }}
                                 </li>
-                                @if($opportunity->education_level)
-                                    <li class="d-flex align-items-center gap-1">
-                                        <x-icon name="file-text" :size="14" />
-                                        {{ \App\Support\EducationLevel::label($opportunity->education_level) }}
-                                    </li>
-                                @endif
-                                @if($opportunity->target_field)
-                                    <li class="d-flex align-items-center gap-1">
-                                        <x-icon name="stars" :size="14" />{{ $opportunity->target_field }}
-                                    </li>
-                                @endif
-                                @if($opportunity->formattedAward())
-                                    <li class="d-flex align-items-center gap-1">
-                                        <x-icon name="coins" :size="14" />{{ $opportunity->formattedAward() }}
-                                    </li>
-                                @endif
-                            </ul>
-
-                            {{-- Secondary to eligibility, and kept to the smaller size:
-                                 a match score is a hint about fit, not a verdict. --}}
-                            <div class="text-center flex-shrink-0 position-relative z-1">
-                                <x-match-score :score="$match->matchScore"
-                                               :label="$match->breakdown->confidenceLabel" />
-                            </div>
-                        </div>
-
-                        <div class="d-grid gap-2 mb-3">
-                            <x-score-breakdown :fit="$match" />
-                            <x-score-fixes :fit="$match" />
-                        </div>
+                            @endif
+                            @if($opportunity->target_field)
+                                <li class="d-flex align-items-center gap-1">
+                                    <x-icon name="stars" :size="14" />{{ $opportunity->target_field }}
+                                </li>
+                            @endif
+                            @if($opportunity->formattedAward())
+                                <li class="d-flex align-items-center gap-1">
+                                    <x-icon name="coins" :size="14" />{{ $opportunity->formattedAward() }}
+                                </li>
+                            @endif
+                        </ul>
 
                         <div class="d-flex flex-wrap gap-2 position-relative z-1">
                             @if($acceptedApplication)

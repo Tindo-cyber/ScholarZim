@@ -125,8 +125,6 @@
                     </x-nav-section>
 
                     <x-nav-section label="System">
-                        <x-nav-item :href="route('admin.scholarfit')" icon="stars"
-                                    :active="request()->routeIs('admin.scholarfit')">ScholarFit</x-nav-item>
                         <x-nav-item :href="route('admin.audit')" icon="shield"
                                     :active="request()->routeIs('admin.audit')">Audit log</x-nav-item>
                     </x-nav-section>

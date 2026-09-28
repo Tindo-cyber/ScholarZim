@@ -47,7 +47,7 @@ something that was deliberately removed, not a regression.
       Undergraduate-targeted but requiring at least A-Level) refuses an applicant below that
       floor even though the general pathway would otherwise allow them
 - [ ] No GPA field exists anywhere in the applicant profile, provider listing form, or
-      ScholarFit scoring config
+      ScholarFit's eligibility rules
 
 ## Provider verification
 

@@ -6,7 +6,6 @@ use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\OpportunityModerationService;
-use App\Services\ScholarFit\ScholarFitEngine;
 use App\Support\ApplicationStatus;
 use App\Support\EducationLevel;
 use App\Support\OpportunityModerationStatus;
@@ -114,25 +113,5 @@ class WorkflowTest extends TestCase
         );
 
         $this->assertDatabaseHas('notifications', ['type' => 'APPLICATION_ACCEPTED']);
-    }
-
-    public function test_scholarfit_scores_a_strong_match_higher_than_a_weak_one(): void
-    {
-        $profile = User::where('email', 'student@scholarzim.co.zw')->firstOrFail()->applicantProfile;
-        $engine = app(ScholarFitEngine::class);
-
-        $strong = $engine->evaluate(
-            $profile,
-            Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail()
-        );
-
-        $weak = $engine->evaluate(
-            $profile,
-            Opportunity::where('title', 'Agribusiness Innovation Research Grant')->firstOrFail()
-        );
-
-        $this->assertGreaterThan($weak->matchScore, $strong->matchScore);
-        $this->assertLessThanOrEqual(100, $strong->matchScore);
-        $this->assertNotEmpty($strong->breakdown->dimensionResults);
     }
 }

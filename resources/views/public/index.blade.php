@@ -104,7 +104,7 @@
                 @foreach([
                     ['search', 'Discover opportunities', 'Search and filter every published scholarship by field of study, education level, province, funding type and closing date.'],
                     ['person', 'Build your applicant profile', 'Record your education level, field, results and documents once. Everything else on the platform reads from it.'],
-                    ['stars', 'See how well each one fits', 'ScholarFit compares your profile against what a listing states and scores it out of 100, showing the reason for every point.'],
+                    ['stars', 'See whether you\'re eligible', 'ScholarFit compares your profile against what a listing states and tells you whether you qualify, with the reason either way.'],
                     ['file-text', 'Apply and track', 'Apply through a guided form, then follow each application from submitted to the provider\'s decision and their reason for it.'],
                 ] as [$icon, $title, $copy])
                     <div class="col-md-6 col-lg-3">
@@ -129,24 +129,24 @@
                 <div class="col-lg-5">
                     <h2 class="h3 fw-bold mb-2">How ScholarFit works</h2>
                     <p class="text-secondary mb-3">
-                        ScholarFit reads what a scholarship says it wants and compares it with what you
-                        have recorded. It answers two separate questions, in this order.
+                        ScholarFit reads what a scholarship says it wants and checks it against what you
+                        have recorded. It answers one question: do you meet what this listing requires?
                     </p>
 
                     {{--
                         Said plainly, because the distinction is the whole design
                         of the engine and the easiest thing for a visitor to
-                        misread. ScholarFit ranks; it does not admit anyone, and
-                        the provider decides every award.
+                        misread. ScholarFit checks eligibility; it does not admit
+                        anyone, and the provider decides every award.
                     --}}
                     <div class="alert alert-primary d-flex gap-2 mb-0" role="note">
                         <x-icon name="shield" :size="18" class="flex-shrink-0 mt-1" />
                         <div>
-                            <p class="fw-semibold mb-1">A match score is not a decision.</p>
+                            <p class="fw-semibold mb-1">Eligibility is not an award.</p>
                             <p class="mb-0 small">
-                                Eligibility is answered first, from the rules the provider states. The score
-                                only ranks how closely you fit. Every award is decided by the provider who
-                                posted the scholarship.
+                                ScholarFit tells you whether you meet what a listing states it requires -
+                                not who wins it. Every award is decided by the provider who posted the
+                                scholarship.
                             </p>
                         </div>
                     </div>
@@ -157,7 +157,6 @@
                         @foreach([
                             ['Build your profile', 'Education level, field of study, results and supporting documents.'],
                             ['Understand eligibility', 'Each listing states its own requirements. You are told which you meet and which you do not, with the actual figures.'],
-                            ['See how well an opportunity matches', 'A score out of 100 across six dimensions, each one shown with the reason it scored what it did.'],
                             ['Apply and track', 'Submit through the guided form and follow the status until the provider decides.'],
                         ] as $index => [$title, $copy])
                             <li class="card">

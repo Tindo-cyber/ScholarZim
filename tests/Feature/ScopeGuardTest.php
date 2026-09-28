@@ -83,4 +83,57 @@ class ScopeGuardTest extends TestCase
 
         $this->assertCount(0, $apiRoutes, 'a route under /api has appeared - the public API was deliberately removed');
     }
+
+    /**
+     * ScholarFit's weighted scoring engine (v1 through v3: matchScore,
+     * per-dimension weights, confidence labels, an admin weight editor) was
+     * removed in favour of a purely eligibility-based mechanism - no score,
+     * no percentage, no weighted ranking. This guards against it quietly
+     * coming back through a matcher class, a config file, or an admin route.
+     */
+    public function test_scholarfit_has_no_weighted_scoring_mechanism(): void
+    {
+        $removedClasses = [
+            'App\\Services\\ScholarFit\\ScholarFitEngine',
+            'App\\Services\\ScholarFit\\ScoredOpportunity',
+            'App\\Services\\ScholarFit\\MatchBreakdown',
+            'App\\Services\\ScholarFit\\DimensionResult',
+            'App\\Services\\ScholarFit\\Matchers\\AcademicMatcher',
+            'App\\Services\\ScholarFit\\Matchers\\EducationMatcher',
+            'App\\Services\\ScholarFit\\Matchers\\FieldMatcher',
+            'App\\Services\\ScholarFit\\Matchers\\LocationMatcher',
+            'App\\Services\\ScholarFit\\Matchers\\DeadlineMatcher',
+            'App\\Services\\ScholarFit\\Matchers\\CertificateMatcher',
+            'App\\Services\\ScholarFit\\Taxonomy\\FieldTaxonomy',
+            'App\\Http\\Controllers\\Admin\\ScholarFitController',
+        ];
+
+        foreach ($removedClasses as $class) {
+            $this->assertFalse(
+                class_exists($class),
+                $class . ' exists again - confirm this is an intentional decision to reintroduce weighted '
+                    . 'scoring, not a stale-brief rebuild'
+            );
+        }
+
+        $this->assertFalse(
+            method_exists(\App\Services\RecommendationService::class, 'topMatchScore'),
+            'topMatchScore() has reappeared - there is no score left to report'
+        );
+
+        $this->assertNull(config('scholarfit'), 'config/scholarfit.php (weights, credit fractions) has reappeared');
+
+        $adminRoutes = collect(\Illuminate\Support\Facades\Route::getRoutes())
+            ->filter(fn ($route) => str_starts_with($route->uri(), 'admin/scholarfit'));
+        $this->assertCount(0, $adminRoutes, 'an admin weight-configuration route has reappeared');
+
+        // The eligibility result carries requirement outcomes and an
+        // explanation, never a score.
+        $properties = array_map(
+            static fn (\ReflectionProperty $p) => $p->getName(),
+            (new \ReflectionClass(\App\Services\ScholarFit\EligibilityResult::class))->getProperties()
+        );
+        $this->assertNotContains('matchScore', $properties);
+        $this->assertNotContains('score', $properties);
+    }
 }

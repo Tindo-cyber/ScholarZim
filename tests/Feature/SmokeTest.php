@@ -104,7 +104,6 @@ class SmokeTest extends TestCase
         $this->actingAs($user)->get('/admin/analytics')->assertOk();
         $this->actingAs($user)->get('/admin/audit-log')->assertOk();
         $this->actingAs($user)->get('/admin/search?q=Tendai')->assertOk();
-        $this->actingAs($user)->get('/admin/scholarfit')->assertOk();
     }
 
     /**

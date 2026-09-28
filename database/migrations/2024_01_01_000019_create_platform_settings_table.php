@@ -7,9 +7,8 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Admin-editable settings that must outlive a deploy, keyed by dotted name.
  *
- * Currently holds the ScholarFit weights. config/scholarfit.php stays the source
- * of the defaults; a row here overrides it, and deleting the row restores the
- * shipped weighting.
+ * Read through SettingsService, which falls back to a shipped config default
+ * when no row exists for a key.
  */
 return new class extends Migration
 {

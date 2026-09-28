@@ -1,9 +1,7 @@
 <?php
 
 /**
- * Platform knobs that are not about scoring.
- *
- * ScholarFit keeps its own file; this is for the rest.
+ * Platform knobs unrelated to ScholarFit eligibility.
  */
 return [
 

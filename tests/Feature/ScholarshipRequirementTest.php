@@ -49,7 +49,7 @@ class ScholarshipRequirementTest extends TestCase
         // Chipo's seeded profile is deliberately missing a results certificate -
         // that fixture exists to demo an incomplete profile elsewhere, not to be
         // this file's subject. Every test here is about the requirements a
-        // listing states, exercised through scoreOne() or the apply gate, and
+        // listing states, exercised through evaluateOne() or the apply gate, and
         // the profile-completeness gate that now runs before either would
         // otherwise mask that with an unrelated "complete your profile" refusal.
         $this->studentProfile()->update([
@@ -319,12 +319,12 @@ class ScholarshipRequirementTest extends TestCase
             'derived_points' => $maths->pointsFor('8'),
         ]);
 
-        $fit = app(RecommendationService::class)->scoreOne($this->student->refresh(), $opportunity->refresh());
+        $fit = app(RecommendationService::class)->evaluateOne($this->student->refresh(), $opportunity->refresh());
 
         $this->assertTrue($fit->meetsRequirements(), 'an 8 clears a bar of 6');
         $this->assertContains(
             'Cambridge IGCSE Mathematics (9-1): 6 required, you have 8.',
-            array_map(fn ($o) => $o->message, $fit->breakdown->metRequirements())
+            array_map(fn ($o) => $o->message, $fit->metRequirements())
         );
 
         // And a 4 does not.
@@ -332,12 +332,12 @@ class ScholarshipRequirementTest extends TestCase
             ->where('subject_id', $maths->id)
             ->update(['result' => '4']);
 
-        $failed = app(RecommendationService::class)->scoreOne($this->student->refresh(), $opportunity);
+        $failed = app(RecommendationService::class)->evaluateOne($this->student->refresh(), $opportunity);
 
         $this->assertFalse($failed->meetsRequirements());
         $this->assertContains(
             'Mathematics (9-1): 6 required, you have 4.',
-            $failed->breakdown->unmetRequirements
+            $failed->failureMessages()
         );
     }
 
@@ -390,12 +390,12 @@ class ScholarshipRequirementTest extends TestCase
             ]);
         }
 
-        $fit = app(RecommendationService::class)->scoreOne($this->student->refresh(), $opportunity);
+        $fit = app(RecommendationService::class)->evaluateOne($this->student->refresh(), $opportunity);
 
         $this->assertFalse($fit->meetsRequirements());
         $this->assertStringContainsString(
             'ZIMSEC Advanced Level points: 12 required',
-            implode(' ', $fit->breakdown->unmetRequirements)
+            implode(' ', $fit->failureMessages())
         );
     }
 
@@ -409,12 +409,12 @@ class ScholarshipRequirementTest extends TestCase
         // A + B + A is 14.
         $this->giveStudentResults(['Mathematics' => 'A', 'Physics' => 'B', 'Chemistry' => 'A']);
 
-        $fit = app(RecommendationService::class)->scoreOne($this->student->refresh(), $opportunity);
+        $fit = app(RecommendationService::class)->evaluateOne($this->student->refresh(), $opportunity);
 
         $this->assertTrue($fit->meetsRequirements());
         $this->assertContains(
             'ZIMSEC Advanced Level points: 12 required, you have 14.',
-            array_map(fn ($o) => $o->message, $fit->breakdown->metRequirements())
+            array_map(fn ($o) => $o->message, $fit->metRequirements())
         );
     }
 
@@ -435,13 +435,12 @@ class ScholarshipRequirementTest extends TestCase
         // Maths A passes, Physics D fails, Chemistry absent. Points: 5+2 = 7.
         $this->giveStudentResults(['Mathematics' => 'A', 'Physics' => 'D']);
 
-        $fit = app(RecommendationService::class)->scoreOne($this->student->refresh(), $opportunity);
+        $fit = app(RecommendationService::class)->evaluateOne($this->student->refresh(), $opportunity);
 
         $this->assertFalse($fit->meetsRequirements());
-        $this->assertSame(0, $fit->matchScore, 'a failed hard rule withholds the score entirely');
 
-        $met = array_map(fn ($o) => $o->message, $fit->breakdown->metRequirements());
-        $unmet = $fit->breakdown->unmetRequirements;
+        $met = array_map(fn ($o) => $o->message, $fit->metRequirements());
+        $unmet = $fit->failureMessages();
 
         $this->assertContains('ZIMSEC Advanced Level Mathematics: B required, you have A.', $met);
         $this->assertContains('Physics: C required, you have D.', $unmet);
@@ -467,7 +466,7 @@ class ScholarshipRequirementTest extends TestCase
         $this->giveStudentResults(['Mathematics' => 'D']);
         $student = $this->student->refresh();
 
-        $fit = app(RecommendationService::class)->scoreOne($student, $opportunity);
+        $fit = app(RecommendationService::class)->evaluateOne($student, $opportunity);
         $this->assertFalse($fit->meetsRequirements());
 
         $this->expectException(\RuntimeException::class);
@@ -485,15 +484,15 @@ class ScholarshipRequirementTest extends TestCase
         $this->giveStudentResults(['Mathematics' => 'A']);
         $student = $this->student->refresh();
 
-        $this->assertTrue(app(RecommendationService::class)->scoreOne($student, $opportunity)->meetsRequirements());
+        $this->assertTrue(app(RecommendationService::class)->evaluateOne($student, $opportunity)->meetsRequirements());
 
         $application = app(ApplicationService::class)->submit($opportunity->opportunity_id, $student, []);
 
         $this->assertSame($opportunity->opportunity_id, $application->opportunity_id);
     }
 
-    /** Hard eligibility and match score stay separate concepts. */
-    public function test_a_high_match_score_cannot_reopen_a_failed_hard_rule(): void
+    /** An otherwise strong profile fit cannot reopen one failed hard rule. */
+    public function test_a_good_profile_fit_cannot_reopen_a_failed_hard_rule(): void
     {
         $opportunity = $this->approve($this->createListing([
             'title' => 'Perfect Fit But Gated',
@@ -504,13 +503,10 @@ class ScholarshipRequirementTest extends TestCase
         // Everything else about this applicant matches; only the subject fails.
         $this->giveStudentResults(['Mathematics' => 'E']);
 
-        $fit = app(RecommendationService::class)->scoreOne($this->student->refresh(), $opportunity);
+        $fit = app(RecommendationService::class)->evaluateOne($this->student->refresh(), $opportunity);
 
         $this->assertFalse($fit->meetsRequirements());
-        $this->assertSame(0, $fit->matchScore);
-
-        // The breakdown is still filled in, so the student can see where they stand.
-        $this->assertNotEmpty($fit->breakdown->dimensions());
+        $this->assertContains('Mathematics: A required, you have E.', $fit->failureMessages());
     }
 
     // -------------------------------------------------------------- security --

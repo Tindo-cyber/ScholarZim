@@ -237,7 +237,6 @@ class AuthorizationTest extends TestCase
             'user export' => ['GET', '/admin/reports/users.xlsx'],
             'applications export' => ['GET', '/admin/reports/applications.pdf'],
             'audit log' => ['GET', '/admin/audit-log'],
-            'scholarfit weights' => ['GET', '/admin/scholarfit'],
             'platform search' => ['GET', '/admin/search'],
         ];
     }

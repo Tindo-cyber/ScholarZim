@@ -111,7 +111,7 @@
 
                     <p class="small text-secondary mb-0">
                         The fields you fill in here feed ScholarFit directly: education level, field of study,
-                        province/locality, and deadline are what students are scored against.
+                        province/locality, and deadline are what students are checked against.
                     </p>
                 </div>
             </div>

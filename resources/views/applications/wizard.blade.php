@@ -57,7 +57,7 @@
                             the one or two things that actually fell short.
                         --}}
                         <ul class="list-unstyled d-grid gap-2 mb-3">
-                            @foreach(\App\Services\ScholarFit\RequirementOutcome::rules($fit->breakdown->requirementOutcomes) as $outcome)
+                            @foreach(\App\Services\ScholarFit\RequirementOutcome::rules($fit->outcomes) as $outcome)
                                 <li class="d-flex gap-2 align-items-start">
                                     <x-icon :name="$outcome->passed ? 'check-circle' : 'x-circle'" :size="16"
                                             class="flex-shrink-0 mt-1 {{ $outcome->passed ? 'text-success' : 'text-danger' }}" />
@@ -71,7 +71,7 @@
                             An unusual progression is not a requirement anyone failed, and
                             showing it beside the rules with a red cross would say it was.
                         --}}
-                        @foreach($fit->breakdown->advisoryNotes() as $note)
+                        @foreach($fit->advisoryNotes() as $note)
                             <p class="small text-secondary d-flex gap-2 align-items-start">
                                 <x-icon name="shield" :size="16" class="flex-shrink-0 mt-1" />
                                 <span>{{ $note->message }}</span>
@@ -200,22 +200,6 @@
         </div>
 
         <div class="col-xl-4">
-            {{--
-                No percentage when a stated requirement is not met - the main
-                column already explains why in full, and a number next to
-                "you cannot apply" only invites the reader to argue with it.
-            --}}
-            @if($fit && $fit->meetsRequirements())
-                <div class="card mb-4">
-                    <div class="card-body text-center">
-                        <x-match-score :score="$fit->matchScore" :label="$fit->breakdown->confidenceLabel" size="lg" />
-                        <p class="small text-secondary mt-3 mb-0">{{ $fit->breakdown->explanation }}</p>
-                    </div>
-                </div>
-
-                <x-score-fixes :fit="$fit" variant="alert" />
-            @endif
-
             @if($opportunity->deadline)
                 <div class="alert alert-secondary small mt-4 mb-0">
                     Applications close {{ $opportunity->deadline->format('d M Y') }}

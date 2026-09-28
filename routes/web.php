@@ -231,9 +231,6 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN])->prefix('admin')->name('
     // credential, only a fingerprint of it.
     Route::get('/mail-diagnostics', Admin\MailDiagnosticsController::class)->name('mail.diagnostics');
 
-    Route::get('/scholarfit', [Admin\ScholarFitController::class, 'index'])->name('scholarfit');
-    Route::post('/scholarfit', [Admin\ScholarFitController::class, 'update'])->name('scholarfit.update');
-    Route::post('/scholarfit/reset', [Admin\ScholarFitController::class, 'reset'])->name('scholarfit.reset');
     Route::get('/search', [Admin\SearchController::class, 'index'])->name('search');
 
     Route::get('/reports', [Admin\ReportController::class, 'hub'])->name('reports');

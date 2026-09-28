@@ -28,9 +28,9 @@
             sidebar, the topbar and the footer sideways with it instead of
             letting the .table-responsive that contains it scroll on its own.
 
-            The audit log is where it showed: SettingsService records a weights
-            change as 'ScholarFit weights set to ' . json_encode($weights), and
-            that JSON has no space in it to break at.
+            The audit log is where it showed: an audit entry can carry a long
+            unbroken value - a JSON blob, a token, a path - with no space in it
+            to break at.
         --}}
         <div class="sz-main flex-grow-1 min-w-0">
             @include('partials.topbar')

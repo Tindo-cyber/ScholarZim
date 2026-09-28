@@ -75,7 +75,7 @@
                     <span>Scholar<span class="text-primary">Zim</span></span>
                 </div>
                 <p class="text-secondary mb-0">
-                    Scholarship discovery and applications for Zimbabwean students, with a match score
+                    Scholarship discovery and applications for Zimbabwean students, with eligibility
                     that explains itself.
                 </p>
             </div>

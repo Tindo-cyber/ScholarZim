@@ -80,7 +80,7 @@ Seeded accounts, **for local and demo use only** — all share the password
 |--------------------|-------------------------------------------------------|
 | Eloquent models    | `app/Models`                                          |
 | Business services  | `app/Services`                                        |
-| ScholarFit scoring | `app/Services/ScholarFit`                             |
+| ScholarFit eligibility | `app/Services/ScholarFit`                          |
 | Constants/enums    | `app/Support`                                         |
 | Controllers        | `app/Http/Controllers` (Admin, Applicant, Provider, Auth) |
 | Role guards        | `app/Http/Middleware/EnsureUserHasRole.php`           |
@@ -147,14 +147,14 @@ database compatibility only and appear nowhere in the UI or in new business logi
   `FileDownloadController`, so every read is authorised and sensitive reads are audited.
 - **Email preferences gate email only.** In-app notifications are always written; the
   three category toggles decide what gets emailed.
-- **ScholarFit recommends; the provider decides.** The match percentage answers "how well
-  does this scholarship fit this student's profile?" and nothing else. It never decides
-  who gets a scholarship — that is the provider's Accept/Reject, made by a person with a
-  written reason.
-- **Stated requirements zero the match.** A requirement the listing states and the profile
-  does not meet drops the listing out of that student's recommendations rather than
-  reducing its score, because a high percentage next to "you do not meet this rule" would
-  be a lie. A requirement the provider did not set is never held against anyone.
+- **ScholarFit recommends; the provider decides.** It answers "does this student meet what
+  this scholarship requires?" and nothing else. It never decides who gets a scholarship —
+  that is the provider's Accept/Reject, made by a person with a written reason.
+- **Stated requirements gate the recommendation, not a score.** A requirement the listing
+  states and the profile does not meet drops the listing out of that student's
+  recommendations; it is shown instead in a separate "not eligible" list with the specific
+  requirement, and the required and actual value, so the student can see what to fix. A
+  requirement the provider did not set is never held against anyone.
 - **Withdrawal is the applicant's own decision**, so it does not lock them out: a withdrawn
   application can be replaced with a fresh one while the listing is still open. The row
   stays either way, so the provider sees the seat released rather than the record vanishing.
@@ -172,7 +172,7 @@ database compatibility only and appear nowhere in the UI or in new business logi
 | Users | PDF, Excel |
 | Opportunities | PDF, Excel |
 | Applications | PDF, Excel |
-| Recommendations (per applicant, with match scores) | PDF |
+| Recommendations (per applicant's eligible listings) | PDF |
 
 PDFs are composed from Blade views in `resources/views/reports`; the spreadsheets keep the
 same sheet names and column order the Spring exporter used, so archived files stay
@@ -199,42 +199,35 @@ php artisan schedule:run
 ## ScholarFit
 
 ScholarFit is the recommendation component: given a student's profile and a listing, it
-answers **"how well do these match?"** as a percentage. It is a decision *support* tool, not
-the decision — the provider accepts or rejects, by hand, with a reason.
+answers **"does this student meet what this listing requires?"** and, where not, exactly
+which requirement fell short. It is a decision *support* tool, not the decision — the
+provider accepts or rejects, by hand, with a reason. There is no score or match
+percentage anywhere in it.
 
-`app/Services/ScholarFit/ScholarFitEngine.php` scores a profile against a listing out of
-100.
+`app/Services/ScholarFit/EligibilityEvaluator.php` is the authoritative rule set, checking
+every requirement a listing actually states: whether the applicant's current education
+level can ever reach what the listing targets at all
+(`app/Services/ScholarFit/EducationPathway.php` — an explicit adjacency table, e.g. O-Level
+may reach Undergraduate but never Masters, checked independently of any single listing's
+configuration; this is advisory, not a gate), whether *this specific* listing has raised its
+own minimum qualifying level narrower than the general pathway
+(`Opportunity::minimum_education_level`), required subjects at a stated grade under a stated
+qualification, minimum ZIMSEC A-Level points, an age ceiling, a required province, and proof
+of academic results on file (a results certificate for O/A-Level applicants, a transcript for
+everyone from Certificate level upward — there is no GPA field anywhere on the platform).
+Each is one plain check producing one plain sentence naming the required and actual value.
 
-**Weighted dimensions** decide how good a match is; a miss costs points. The defaults are
-the original weights — academic record 20, education level 25, field of study 25, location
-15, deadline 10, results certificate 5 — and they now live in `config/scholarfit.php`. An
-administrator can retune them at `/admin/scholarfit`; the override is stored in
-`platform_settings` and read through `SettingsService`, which falls back to the config
-file, so deleting the row restores the shipped weighting. The six must total 100, since
-every score is presented to students as a percentage.
+Any unmet requirement keeps the listing out of that student's recommendations — it is shown
+instead in a separate "scholarships you don't qualify for yet" list, with the specific
+requirements met and unmet. A requirement the provider did not set is never held against
+anyone, and this same evaluator runs again inside `ApplicationService::submit()`, so the
+gate is enforced on the actual submission, not only on what the recommendations list
+chooses to show.
 
-**Stated requirements** are checked alongside them by
-`app/Services/ScholarFit/EligibilityEvaluator.php`, checked first and separately from the
-weighted score: whether the applicant's current education level can ever reach what the
-listing targets at all (`app/Services/ScholarFit/EducationPathway.php` — an explicit
-adjacency table, e.g. O-Level may reach Undergraduate but never Masters, checked
-independently of any single listing's configuration), whether *this specific* listing has
-raised its own minimum qualifying level narrower than the general pathway
-(`Opportunity::minimum_education_level`), minimum A-Level points, an age ceiling, a required
-citizenship or province, and proof of academic results on file (a results certificate for
-O/A-Level applicants, a transcript for everyone from Certificate level upward — there is no
-GPA field anywhere on the platform). Each is one plain check producing one plain sentence,
-and any unmet requirement forces the match to 0% and keeps the listing out of that student's
-recommendations — never a low percentage next to "you are not eligible". A requirement the
-provider did not set is never held against anyone, and this same evaluator runs again inside
-`ApplicationService::submit()`, so the gate is enforced on the actual submission, not only on
-what the recommendations list chooses to show.
-
-The engine returns a per-dimension breakdown, the score, and what is holding it back. Each
-dimension shortfall carries the profile field that fixes it, so the UI renders it as a link
-rather than a complaint. Rankings are computed on demand rather than cached — a catalogue
-sweep is two queries and a sort, which is cheaper than proving a cached ranking is still
-true.
+`RecommendationService` evaluates a student's whole catalogue on demand rather than caching
+it — a sweep is two queries and a filter, which is cheaper than proving a cached result is
+still true. Eligible listings are ordered by deadline, soonest first, since there is no
+score left to rank them by.
 
 ## Email
 
@@ -502,8 +495,7 @@ document-type test, not a coverage gap). Run `php artisan test` for the current 
 one will drift as the suite grows.
 
 - `SmokeTest` renders every authenticated page for each role and checks the role guards.
-- `WorkflowTest` covers the moderation gate, the apply-once rule, provider decisions, and
-  ScholarFit ranking.
+- `WorkflowTest` covers the moderation gate, the apply-once rule, and provider decisions.
 - `ApplicationDecisionTest` covers the whole simplified workflow: applying, the pending
   start, the duplicate rule, accept and reject with a reason, that a reason is required,
   that neither decision can become the other, that no second award step exists, the two
@@ -523,15 +515,17 @@ one will drift as the suite grows.
   static assets, that navigations are never written to a cache, that non-GET and
   cross-origin requests are not intercepted, and that the offline page renders identically
   signed in and signed out.
-- `RecommendationTest` covers what reaches the recommendations page: usable percentages,
-  best-first order, and the listings deliberately left out.
-- `ScholarFitEligibilityTest` is the scoring truth table: which requirements zero a match,
-  what a blank profile field says, and that scores follow the configured weights.
+- `RecommendationTest` covers what reaches the recommendations page: only eligible listings,
+  deadline-soonest ordering, the listings deliberately left out, and the separate
+  not-eligible list with its reasons.
+- `ScholarFitEligibilityTest` is the eligibility truth table: which requirements exclude an
+  applicant outright, what a blank profile field says, and what a missing field prompts the
+  student to add.
 - `AwardAndDiscoveryTest` covers award values, value sorting and filtering, and the view
   counter behind the provider's numbers.
 - `AccountSecurityTest` covers signing out other sessions and account deletion (including
   the provider refusal while listings are live).
-- `AdminSettingsTest` covers the ScholarFit weight editor and bulk moderation.
+- `AdminSettingsTest` covers bulk moderation.
 - `ReportExportTest` downloads every PDF and Excel export, asserting real file signatures
   and that non-admins are refused.
 - `ReminderJobTest` covers the reminder jobs, including idempotency and the deadline

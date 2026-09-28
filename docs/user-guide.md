@@ -48,22 +48,26 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 - Saving is a bookmark — nothing is emailed about it, and you can unsave at any time.
 - You are reminded when a scholarship you saved or applied to is closing within three days.
 
-### Understanding your match score
+### Understanding ScholarFit eligibility
 
-- The percentage is how well your profile fits the listing across six weighted dimensions.
-  Each one you miss costs points, and the panel says which.
-- **"You are not eligible"** is different. Two rules apply to every listing regardless of what
-  the provider configured: whether your current education level can ever reach what the
-  listing targets (a Primary pupil cannot apply for a Masters award, no matter how the listing
-  is set up), and whether this specific listing has raised its own minimum qualifying level.
-  On top of those, providers can set their own hard rules — a minimum points figure, an age
-  limit, a citizenship or province requirement, proof of academic results on file. Failing any
-  one of these means you cannot be considered, so no percentage is shown, the listing is left
-  out of your recommendations, and applying to it directly is refused.
+- ScholarFit is not a score or a percentage. It checks whether your profile meets what a
+  listing actually requires, and shows **Eligible** or **Not eligible** with the exact
+  reasons either way.
+- Two rules apply to every listing regardless of what the provider configured: whether your
+  current education level can ever reach what the listing targets (a Primary pupil cannot
+  apply for a Masters award, no matter how the listing is set up), and whether this specific
+  listing has raised its own minimum qualifying level.
+- On top of those, providers can set their own hard rules — a minimum points figure, required
+  subject grades, an age limit, a province requirement, proof of academic results on file.
+  Failing any one of these means you cannot be considered: the listing is left out of your
+  recommendations (it appears instead in "scholarships you don't qualify for yet", with the
+  reason), and applying to it directly is refused.
 - If we simply do not have the information to check a rule, we ask for it rather than ruling
-  you out. Filling in your date of birth and citizenship lets us check age and citizenship
-  rules for you.
-- Everything holding a score back links straight to the profile field that fixes it.
+  you out. Filling in your date of birth and province, for example, lets us check age and
+  province rules for you.
+- Every requirement you did meet is shown too, not just the ones you failed, so a refusal
+  reads as a verdict on the one or two things that fell short rather than on your whole
+  profile.
 
 ### Account
 
@@ -117,7 +121,7 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 ### Reviewing applications
 
 - Open an application from the inbox to see the student, their profile, their documents and
-  their ScholarFit match, then press **Accept** or **Reject**.
+  their ScholarFit eligibility check, then press **Accept** or **Reject**.
 - Both decisions require a written reason. The applicant reads it verbatim, in their email
   and on their application page.
 - Both decisions are final. Accepting *is* granting the scholarship — there is no separate
@@ -164,16 +168,6 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 ### Audit log
 
 - Review security and compliance events (logins, certificate views, application actions).
-
-### ScholarFit weights
-
-- `/admin/scholarfit` sets how much each of the six dimensions contributes to a match score.
-- They must total exactly 100, since every score is shown to students as a percentage — the
-  running total on the page turns red and blocks saving until it does.
-- A worked example on the same page shows what the numbers do before you commit to them.
-- **Reset to defaults** restores the weighting the platform ships with.
-- These weights do not control hard eligibility. Those rules are set per listing by the
-  provider, and a student who fails one scores nothing whatever the weights say.
 
 ### Reports
 

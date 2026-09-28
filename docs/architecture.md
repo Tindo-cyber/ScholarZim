@@ -110,7 +110,7 @@ sequenceDiagram
 
 ### ScholarFit recommendations
 
-Rule-based scoring in `app/Services/ScholarFit/ScholarFitEngine.php` matches applicant profile fields (education level, field of study, country) against opportunity criteria. Results appear on the applicant dashboard and via `/api/applicant/recommendations`.
+Rule-based eligibility checking in `app/Services/ScholarFit/EligibilityEvaluator.php` matches an applicant's profile and structured academic results against each opportunity's stated requirements (education level, subject grades, academic points, age, province, results certificate). Eligible listings appear on the applicant dashboard and the matches page; ineligible ones are shown too, with the specific requirement that was not met.
 
 ## Database strategy
 

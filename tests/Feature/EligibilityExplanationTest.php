@@ -159,15 +159,6 @@ class EligibilityExplanationTest extends TestCase
         }
     }
 
-    /** A bare listing is still scored and still recommended - only the wording changed. */
-    public function test_a_bare_listing_still_shows_a_match_score(): void
-    {
-        $bare = $this->listing('Open Community Bursary');
-        $this->giveResults(['Mathematics' => 'A', 'Physics' => 'B']);
-
-        $this->assertStringContainsString('Why this score', $this->detail($bare));
-    }
-
     /** And the wizard still lets them apply, once the profile-completeness gate clears. */
     public function test_a_bare_listing_still_offers_the_application_form(): void
     {
@@ -201,23 +192,6 @@ class EligibilityExplanationTest extends TestCase
         }
     }
 
-    /** Eligibility and the score stay separate concepts on the page. */
-    public function test_eligibility_and_match_score_are_shown_separately(): void
-    {
-        $gated = $this->listing('Engineering Excellence Award', ['min_academic_points' => 12]);
-        $this->require($gated, 'Mathematics', 'B');
-        $this->giveResults(['Mathematics' => 'A', 'Physics' => 'B', 'Chemistry' => 'A']);
-
-        $html = $this->detail($gated);
-
-        $eligibility = strpos($html, 'ELIGIBLE');
-        $score = strpos($html, 'Why this score');
-
-        $this->assertNotFalse($eligibility);
-        $this->assertNotFalse($score);
-        $this->assertLessThan($score, $eligibility, 'eligibility is stated before, and apart from, the score');
-    }
-
     // ----------------------------------------------- C/D. ineligible cases --
 
     public function test_an_ineligible_applicant_sees_the_failed_requirement_with_both_values(): void
@@ -231,9 +205,6 @@ class EligibilityExplanationTest extends TestCase
             $this->assertStringContainsString('NOT ELIGIBLE', $html);
             $this->assertStringContainsString('Mathematics: B required, you have D.', $html);
         }
-
-        // No score is offered beside a refusal.
-        $this->assertStringNotContainsString('Why this score', $this->detail($gated));
     }
 
     /** Every failure is listed, not just the first. */

@@ -42,49 +42,19 @@ class RecommendationTest extends TestCase
         $this->student = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
     }
 
-    // --------------------------------------------------- the score is useful --
+    // --------------------------------------------------- eligible listings --
 
-    public function test_scholarfit_produces_a_usable_match_percentage(): void
+    public function test_recommendations_come_back_soonest_deadline_first(): void
     {
-        $recommendations = app(RecommendationService::class)->forUser($this->student, 20);
-
-        $this->assertNotEmpty($recommendations, 'the seeded student must match something');
-
-        foreach ($recommendations as $scored) {
-            $this->assertGreaterThan(0, $scored->matchScore);
-            $this->assertLessThanOrEqual(100, $scored->matchScore);
-            $this->assertNotSame('', $scored->breakdown->explanation);
-        }
-    }
-
-    public function test_recommendations_come_back_best_match_first(): void
-    {
-        $scores = array_map(
-            static fn ($scored) => $scored->matchScore,
+        $deadlines = array_map(
+            static fn ($fit) => $fit->opportunity->deadline?->timestamp ?? PHP_INT_MAX,
             app(RecommendationService::class)->forUser($this->student, 20)
         );
 
-        $sorted = $scores;
-        rsort($sorted);
+        $sorted = $deadlines;
+        sort($sorted);
 
-        $this->assertSame($sorted, $scores);
-    }
-
-    public function test_the_recommendations_page_renders_scores(): void
-    {
-        $this->actingAs($this->student)
-            ->get('/applicant/recommendations')
-            ->assertOk()
-            ->assertSee('%', false);
-    }
-
-    /** The headline number on the dashboard is the best live match. */
-    public function test_the_top_match_score_matches_the_best_recommendation(): void
-    {
-        $service = app(RecommendationService::class);
-        $all = $service->forUser($this->student, 0);
-
-        $this->assertSame($all[0]->matchScore, $service->topMatchScore($this->student));
+        $this->assertSame($sorted, $deadlines);
     }
 
     public function test_a_student_with_no_profile_gets_no_recommendations(): void
@@ -99,7 +69,6 @@ class RecommendationTest extends TestCase
         ]);
 
         $this->assertSame([], app(RecommendationService::class)->forUser($stranger));
-        $this->assertSame(0, app(RecommendationService::class)->topMatchScore($stranger));
     }
 
     // ------------------------------------------------- what gets left out --
@@ -197,19 +166,6 @@ class RecommendationTest extends TestCase
         $this->assertCount(count($all) - 1, $page);
     }
 
-    public function test_a_minimum_score_filters_the_weakest_matches(): void
-    {
-        $service = app(RecommendationService::class);
-        $all = $service->forUser($this->student, 0);
-        $best = $all[0]->matchScore;
-
-        $filtered = $service->forUser($this->student, 0, $best);
-
-        foreach ($filtered as $scored) {
-            $this->assertGreaterThanOrEqual($best, $scored->matchScore);
-        }
-    }
-
     // ------------------------------------------- what does not qualify, and why --
 
     /**
@@ -230,7 +186,6 @@ class RecommendationTest extends TestCase
 
         foreach ($results as $scored) {
             $this->assertFalse($scored->meetsRequirements());
-            $this->assertSame(0, $scored->matchScore);
         }
     }
 
@@ -303,13 +258,8 @@ class RecommendationTest extends TestCase
         );
     }
 
-    /**
-     * The card template puts "Eligible" ahead of the score dial for every
-     * card it renders, so a reader cannot see a percentage - "60% / Moderate
-     * confidence" - before knowing it belongs to a listing they qualify for.
-     * See recommendations.blade.php's own comment on the card's ordering.
-     */
-    public function test_the_eligible_badge_renders_before_the_score_on_every_match_card(): void
+    /** A listing whose stated requirement the student meets shows the "Eligible" badge. */
+    public function test_an_eligible_match_shows_the_eligible_badge(): void
     {
         // A listing with a stated requirement the student actually meets
         // (their seeded province), so the compact eligibility-summary shows
@@ -324,20 +274,12 @@ class RecommendationTest extends TestCase
         $titlePosition = strpos($html, $eligible->title);
         $this->assertNotFalse($titlePosition, 'the eligible listing must appear on the page');
 
-        // Searched from the title onward: "Eligible" and "ScholarFit score"
-        // both appear more than once on the page (other cards, filter copy),
-        // so only what follows this specific card's own title says anything
-        // about this card's order.
+        // Searched from the title onward: "Eligible" appears more than once on
+        // the page (other cards), so only what follows this specific card's
+        // own title says anything about this card.
         $eligiblePosition = strpos($html, 'Eligible', $titlePosition);
-        $scorePosition = strpos($html, 'ScholarFit score', $titlePosition);
 
         $this->assertNotFalse($eligiblePosition, 'the card must show an eligibility badge');
-        $this->assertNotFalse($scorePosition, 'the card must show a match score');
-        $this->assertLessThan(
-            $scorePosition,
-            $eligiblePosition,
-            'eligibility must be readable before the match percentage on the card'
-        );
     }
 
     /**

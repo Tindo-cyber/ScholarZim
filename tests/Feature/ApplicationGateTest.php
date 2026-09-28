@@ -98,18 +98,13 @@ class ApplicationGateTest extends TestCase
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'Agribusiness Innovation Research Grant')->firstOrFail();
 
-        $fit = app(\App\Services\RecommendationService::class)->scoreOne($farai, $opportunity);
+        $fit = app(\App\Services\RecommendationService::class)->evaluateOne($farai, $opportunity);
 
         $this->assertTrue($fit->meetsRequirements(), 'nothing stated, nothing refused');
 
-        $notes = array_map(fn ($n) => $n->message, $fit->breakdown->advisoryNotes());
+        $notes = array_map(fn ($n) => $n->message, $fit->advisoryNotes());
         $this->assertNotEmpty($notes);
         $this->assertStringContainsString('not a usual next step', implode(' ', $notes));
-
-        // And it ranks poorly on the education dimension rather than being hidden.
-        $education = $fit->breakdown->dimension('education');
-        $this->assertNotNull($education);
-        $this->assertSame(0, $education->points());
     }
 
     public function test_an_o_level_applicant_is_refused_a_phd_award_that_requires_a_degree(): void
@@ -234,5 +229,27 @@ class ApplicationGateTest extends TestCase
         $response->assertOk();
         $response->assertSee('NOT ELIGIBLE');
         $response->assertDontSee('Submit application');
+    }
+
+    /**
+     * A passed deadline refuses a submission regardless of how well the
+     * applicant otherwise fits - checked directly by ApplicationService, not
+     * by ScholarFit's eligibility rules, which are about the listing's stated
+     * academic/education requirements rather than its own open/closed state.
+     */
+    public function test_a_submission_is_refused_once_the_deadline_has_passed(): void
+    {
+        $student = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity->forceFill(['deadline' => now()->subDay()->toDateString()])->save();
+
+        $this->actingAs($student)
+            ->post('/apply/' . $opportunity->opportunity_id . '/quick')
+            ->assertSessionHas('errorMessage', 'The deadline for this scholarship has passed.');
+
+        $this->assertDatabaseMissing('applications', [
+            'user_id' => $student->user_id,
+            'opportunity_id' => $opportunity->opportunity_id,
+        ]);
     }
 }

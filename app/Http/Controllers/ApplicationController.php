@@ -56,7 +56,7 @@ class ApplicationController extends Controller
         return view('applications.wizard', [
             'opportunity' => $opportunity,
             'profile' => $profile,
-            'fit' => $this->recommendationService->scoreOne($user, $opportunity),
+            'fit' => $this->recommendationService->evaluateOne($user, $opportunity),
             'missingDocumentTypes' => $profile->missingRequiredDocumentTypes(),
         ]);
     }

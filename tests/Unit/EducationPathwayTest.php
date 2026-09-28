@@ -4,9 +4,10 @@ namespace Tests\Unit;
 
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
+use App\Services\ScholarFit\AcademicRecord;
 use App\Services\ScholarFit\EducationPathway;
 use App\Services\ScholarFit\EligibilityEvaluator;
-use App\Services\ScholarFit\ScholarFitEngine;
+use App\Services\ScholarFit\RequirementOutcome;
 use App\Support\EducationLevel;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -15,10 +16,9 @@ use Tests\TestCase;
  * The progression table itself: what usually follows what.
  *
  * The cases below record which steps Zimbabwean education recognises as
- * ordinary. They are no longer eligibility rules - a step absent from the
- * table is unusual, not forbidden, and the tests further down prove it is
- * reported as a note while the listing's own stated requirements decide who
- * may apply.
+ * ordinary. They are not eligibility rules - a step absent from the table is
+ * unusual, not forbidden, and the tests further down prove it is reported as
+ * a note while the listing's own stated requirements decide who may apply.
  */
 class EducationPathwayTest extends TestCase
 {
@@ -97,13 +97,13 @@ class EducationPathwayTest extends TestCase
     {
         $profile = new ApplicantProfile(['education_level' => EducationLevel::PRIMARY]);
         $opportunity = new Opportunity(['education_level' => EducationLevel::MASTERS]);
-        $record = \App\Services\ScholarFit\AcademicRecord::fromProfile($profile);
+        $record = AcademicRecord::fromProfile($profile);
 
         $outcomes = app(EligibilityEvaluator::class)->evaluate($profile, $opportunity, $record);
 
         $this->assertSame([], app(EligibilityEvaluator::class)->unmetReasons($profile, $opportunity, $record));
 
-        $notes = \App\Services\ScholarFit\RequirementOutcome::notes($outcomes);
+        $notes = RequirementOutcome::notes($outcomes);
         $this->assertCount(1, $notes);
         $this->assertFalse($notes[0]->passed, 'recorded as an unusual step');
         $this->assertTrue($notes[0]->advisory, 'and never counted against the applicant');
@@ -124,7 +124,7 @@ class EducationPathwayTest extends TestCase
         $unmet = app(EligibilityEvaluator::class)->unmetReasons(
             $profile,
             $opportunity,
-            \App\Services\ScholarFit\AcademicRecord::fromProfile($profile)
+            AcademicRecord::fromProfile($profile)
         );
 
         $this->assertCount(1, $unmet);
@@ -133,69 +133,43 @@ class EducationPathwayTest extends TestCase
     }
 
     /**
-     * An unusual step still scores, and scores badly. That is the difference
-     * between ranking someone low and refusing them: the listing states no
-     * requirement, so ScholarFit reports a poor fit rather than a closed door,
-     * and the education dimension carries the judgement.
+     * A recognised progression and an unusual one are told apart in the note
+     * itself - the recognised one is reported as such, the unusual one is
+     * flagged. Neither refuses anybody; the difference is what the applicant
+     * is told, not a number.
      */
-    public function test_an_unusual_progression_scores_poorly_rather_than_being_refused(): void
+    public function test_a_recognised_progression_is_marked_differently_from_an_unusual_one(): void
     {
-        $scored = app(ScholarFitEngine::class)->evaluate(
-            new ApplicantProfile(['education_level' => EducationLevel::O_LEVEL]),
-            new Opportunity(['education_level' => EducationLevel::PHD, 'deadline' => now()->addDays(10)])
-        );
+        $note = function (string $target): RequirementOutcome {
+            $profile = new ApplicantProfile(['education_level' => EducationLevel::O_LEVEL, 'province' => 'Harare']);
+            $opportunity = new Opportunity(['education_level' => $target]);
 
-        $this->assertTrue($scored->meetsRequirements(), 'nothing stated, nothing refused');
-        $this->assertStringContainsString('ELIGIBLE', $scored->explain());
-        $this->assertStringContainsString('not a usual next step', $scored->explain());
+            $notes = RequirementOutcome::notes(
+                app(EligibilityEvaluator::class)->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile))
+            );
 
-        $this->assertSame(0, $scored->breakdown->dimension('education')?->points());
-        $this->assertLessThan(50, $scored->matchScore);
+            return $notes[0];
+        };
+
+        $diploma = $note(EducationLevel::DIPLOMA);
+        $phd = $note(EducationLevel::PHD);
+
+        $this->assertTrue($diploma->passed, 'a recognised route is not flagged unusual');
+        $this->assertFalse($phd->passed, 'an unusual one is flagged as such');
     }
 
-    /**
-     * A recognised progression is credited on its own terms, not on how many
-     * rungs separate the two levels.
-     *
-     * O-Level to a polytechnic diploma is three rungs apart and one of the
-     * ordinary routes out of O-Level. Scoring it by distance alone put it level
-     * with O-Level to a PhD, which would have under-recommended a real
-     * candidate just as surely as the old gate over-refused one.
-     */
-    public function test_a_recognised_progression_outscores_an_unusual_one_at_the_same_distance(): void
+    /** A genuinely eligible applicant has no unmet requirements. */
+    public function test_an_eligible_pathway_produces_no_unmet_requirements(): void
     {
-        $profile = fn () => new ApplicantProfile([
-            'education_level' => EducationLevel::O_LEVEL,
-            'province' => 'Harare',
+        $profile = new ApplicantProfile(['education_level' => EducationLevel::A_LEVEL, 'province' => 'Harare']);
+        $opportunity = new Opportunity([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'required_province' => 'Harare',
         ]);
 
-        $score = fn (string $target) => app(ScholarFitEngine::class)->evaluate(
-            $profile(),
-            new Opportunity(['education_level' => $target, 'deadline' => now()->addDays(10)])
-        )->breakdown->dimension('education')?->points();
+        $outcomes = app(EligibilityEvaluator::class)->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile));
 
-        $diploma = $score(EducationLevel::DIPLOMA);
-        $phd = $score(EducationLevel::PHD);
-
-        $this->assertGreaterThan(0, $diploma, 'a recognised route earns credit');
-        $this->assertSame(0, $phd, 'an unusual one does not');
-        $this->assertGreaterThan($phd, $diploma);
-    }
-
-    /** The mirror image: a genuinely eligible applicant does receive a score. */
-    public function test_an_eligible_pathway_produces_a_real_score(): void
-    {
-        $scored = app(ScholarFitEngine::class)->evaluate(
-            new ApplicantProfile(['education_level' => EducationLevel::A_LEVEL, 'province' => 'Harare']),
-            new Opportunity([
-                'education_level' => EducationLevel::UNDERGRADUATE,
-                'required_province' => 'Harare',
-                'deadline' => now()->addDays(10),
-            ])
-        );
-
-        $this->assertTrue($scored->meetsRequirements());
-        $this->assertGreaterThan(0, $scored->matchScore);
+        $this->assertSame([], RequirementOutcome::failures($outcomes));
     }
 
     /** O-Level applicants may reach Undergraduate awards in the general pathway;
@@ -223,99 +197,82 @@ class EducationPathwayTest extends TestCase
         $unmet = app(EligibilityEvaluator::class)->evaluate(
             $profile,
             $opportunity,
-            \App\Services\ScholarFit\AcademicRecord::fromProfile($profile)
+            AcademicRecord::fromProfile($profile)
         );
 
-        $this->assertNotEmpty($unmet, 'the general pathway is open, but this specific listing requires more');
+        $this->assertNotEmpty(
+            RequirementOutcome::failures($unmet),
+            'the general pathway is open, but this specific listing requires more'
+        );
     }
 
     // ------------------------------------------------------------ GPA + docs --
 
-    /** GPA is not a profile field, and cannot appear as scoring input. */
+    /** GPA is not a profile field, and cannot appear as eligibility input. */
     public function test_gpa_is_not_a_recognised_profile_field(): void
     {
         $this->assertNotContains('gpa', (new ApplicantProfile())->getFillable());
     }
 
     /**
-     * A transcript on file is evidence, not a score by itself - it satisfies
-     * the certificate *gate*, but the academic *scoring* dimension still reads
-     * the applicant's stated results independently. Uploading a document must
-     * not silently invent an academic record.
+     * A transcript on file is evidence, not an academic record by itself - it
+     * satisfies the certificate requirement, but a stated points floor still
+     * reads the applicant's actual results independently. Uploading a
+     * document must not silently manufacture a qualifying record.
      */
-    public function test_a_transcript_alone_does_not_manufacture_an_academic_score(): void
+    public function test_a_transcript_alone_does_not_satisfy_a_points_requirement(): void
     {
-        $withTranscriptNoResults = app(ScholarFitEngine::class)->evaluate(
-            new ApplicantProfile([
-                'education_level' => EducationLevel::UNDERGRADUATE,
-                'transcript_path' => 'transcripts/on-file.pdf',
-            ]),
-            new Opportunity(['min_academic_points' => 10, 'deadline' => now()->addDays(10)])
-        );
+        $profile = new ApplicantProfile([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'transcript_path' => 'transcripts/on-file.pdf',
+        ]);
+        $opportunity = new Opportunity(['min_academic_points' => 10]);
+
+        $outcomes = app(EligibilityEvaluator::class)->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile));
 
         // A points floor the profile cannot answer is a prompt to add it, not
         // a hard block and not a free pass either.
-        $this->assertFalse($withTranscriptNoResults->meetsRequirements());
+        $this->assertNotEmpty(RequirementOutcome::failures($outcomes));
     }
 
     // -------------------------------------------------------------- location --
 
-    /** A missing locality must not cost a province-wide match anything. */
-    public function test_missing_locality_does_not_reduce_a_province_wide_match(): void
-    {
-        $withLocality = app(ScholarFitEngine::class)->evaluate(
-            new ApplicantProfile(['province' => 'Midlands', 'locality' => 'Gweru']),
-            new Opportunity(['required_province' => 'Midlands', 'deadline' => now()->addDays(10)])
-        )->breakdown->dimension('location')->ratio;
-
-        $withoutLocality = app(ScholarFitEngine::class)->evaluate(
-            new ApplicantProfile(['province' => 'Midlands', 'locality' => null]),
-            new Opportunity(['required_province' => 'Midlands', 'deadline' => now()->addDays(10)])
-        )->breakdown->dimension('location')->ratio;
-
-        $this->assertSame($withLocality, $withoutLocality);
-    }
-
-    /** No country field is required anywhere in scoring - Zimbabwe is implicit. */
-    public function test_no_country_value_is_required_for_a_full_location_match(): void
+    /** Country is implicit - Zimbabwe-only - and is never a hard eligibility requirement. */
+    public function test_country_is_not_a_hard_eligibility_requirement(): void
     {
         $profile = new ApplicantProfile(['province' => 'Bulawayo']);
-        $opportunity = new Opportunity(['required_province' => 'Bulawayo', 'deadline' => now()->addDays(10)]);
+        $opportunity = new Opportunity(['required_province' => 'Bulawayo']);
 
         $this->assertNull($profile->country);
         $this->assertNull($opportunity->country);
 
-        $ratio = app(ScholarFitEngine::class)->evaluate($profile, $opportunity)
-            ->breakdown->dimension('location')->ratio;
+        $outcomes = app(EligibilityEvaluator::class)->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile));
 
-        $this->assertSame(1.0, $ratio);
+        $this->assertSame([], RequirementOutcome::failures($outcomes));
     }
 
     // -------------------------------------------------------------- matching --
 
-    /** A profile change is reflected the next time it is scored - nothing is cached. */
-    public function test_changing_the_profile_changes_the_match(): void
+    /** A profile change is reflected the next time it is checked - nothing is cached. */
+    public function test_changing_the_profile_changes_the_outcome(): void
     {
-        $engine = app(ScholarFitEngine::class);
-        $opportunity = new Opportunity([
-            'education_level' => EducationLevel::UNDERGRADUATE,
-            'target_field' => 'Computer Science & IT',
-            'deadline' => now()->addDays(10),
-        ]);
+        $opportunity = new Opportunity(['required_province' => 'Harare']);
 
-        $before = $engine->evaluate(
-            new ApplicantProfile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Law']),
-            $opportunity
-        )->matchScore;
+        $wrongProvince = new ApplicantProfile(['province' => 'Bulawayo']);
+        $before = app(EligibilityEvaluator::class)->evaluate(
+            $wrongProvince,
+            $opportunity,
+            AcademicRecord::fromProfile($wrongProvince)
+        );
 
-        $after = $engine->evaluate(
-            new ApplicantProfile([
-                'education_level' => EducationLevel::UNDERGRADUATE,
-                'field_of_study' => 'Computer Science & IT',
-            ]),
-            $opportunity
-        )->matchScore;
+        $rightProvince = new ApplicantProfile(['province' => 'Harare']);
+        $after = app(EligibilityEvaluator::class)->evaluate(
+            $rightProvince,
+            $opportunity,
+            AcademicRecord::fromProfile($rightProvince)
+        );
 
-        $this->assertGreaterThan($before, $after);
+        $this->assertNotEmpty(RequirementOutcome::failures($before));
+        $this->assertSame([], RequirementOutcome::failures($after));
     }
 }

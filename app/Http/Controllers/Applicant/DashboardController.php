@@ -27,12 +27,13 @@ class DashboardController extends Controller
         $user = $request->user();
         $profile = $this->profileService->forUser($user);
 
-        $recommendations = $this->recommendationService->forUser($user, 4);
+        $eligibleMatches = $this->recommendationService->forUser($user, 0);
+        $recommendations = array_slice($eligibleMatches, 0, 4);
 
         return view('applicant.dashboard', [
             'greeting' => Greeting::forUser($user->full_name),
             'profile' => $profile,
-            'stats' => $this->dashboardService->stats($user, $recommendations),
+            'stats' => $this->dashboardService->stats($user, $eligibleMatches),
             'recentApplications' => $this->dashboardService->recentApplications($user),
             'upcomingDeadlines' => $this->dashboardService->upcomingDeadlines($user),
             'recommendations' => $recommendations,

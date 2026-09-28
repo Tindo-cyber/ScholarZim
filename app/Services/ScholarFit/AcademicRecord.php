@@ -26,9 +26,8 @@ use App\Support\EducationLevel;
  * must read as "this qualification is not counted in points" rather than as
  * zero.
  *
- * Built once per evaluation and handed to both the eligibility layer and the
- * scoring matchers, so the points an applicant is refused for are the same
- * points a matcher awards them for.
+ * Built once per evaluation and handed to the eligibility layer, so every
+ * requirement checked against a qualification's points reads the same totals.
  *
  * The free-text parser that preceded this is gone. It read a number out of
  * whatever an applicant had typed - "14 points at A-Level" - which made the
@@ -227,76 +226,6 @@ final class AcademicRecord
     public function hasComparableALevelPoints(): bool
     {
         return $this->zimsecALevelPoints() !== null;
-    }
-
-    /**
-     * Strength on the record's own terms, for listings that set no points
-     * floor, as a fraction of the academic weight.
-     *
-     * Graded on ZIMSEC A-Level points where the applicant has them, since
-     * that is the only scale this product measures. An applicant whose
-     * qualifications are unpointed - O-Level, Cambridge, Primary - is read on
-     * how much of a record they have rather than being scored against a scale
-     * their board does not use.
-     */
-    public function standaloneStrength(): float
-    {
-        $config = config('scholarfit.academic');
-
-        if (! $this->isPresent()) {
-            return 0.0;
-        }
-
-        $points = $this->zimsecALevelPoints();
-
-        if ($points !== null) {
-            return match (true) {
-                $points >= (float) $config['strong_points'] => (float) $config['strong_record'],
-                $points >= (float) $config['sound_points'] => (float) $config['sound_record'],
-                default => (float) $config['thin_record'],
-            };
-        }
-
-        if ($this->degreeClassification !== null && $this->subjectCount() === 0) {
-            return (float) $config['sound_record'];
-        }
-
-        // An unpointed record is judged on its completeness, not converted on
-        // to a scale its qualification does not have.
-        return $this->subjectCount() >= (int) $config['sound_subjects']
-            ? (float) $config['sound_record']
-            : (float) $config['thin_record'];
-    }
-
-    /** How the record reads in a one-line explanation. */
-    public function summary(): string
-    {
-        if (! $this->isPresent()) {
-            return 'No academic results on your profile';
-        }
-
-        $parts = [];
-
-        $points = $this->zimsecALevelPoints();
-
-        if ($points !== null) {
-            $parts[] = self::formatPoints($points).' ZIMSEC A-Level points';
-        }
-
-        foreach ($this->qualificationKeys() as $key) {
-            if ($key === AcademicCatalogue::ZIMSEC_A_LEVEL && $points !== null) {
-                continue;
-            }
-
-            $count = count($this->resultsFor($key));
-            $parts[] = $count.' '.$this->qualificationName($key).' '.($count === 1 ? 'result' : 'results');
-        }
-
-        if ($this->degreeClassification !== null) {
-            $parts[] = $this->degreeClassification;
-        }
-
-        return implode('; ', $parts);
     }
 
     /** Points read back as a whole number where they are one, which they always are today. */

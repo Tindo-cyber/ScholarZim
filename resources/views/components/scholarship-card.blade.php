@@ -1,6 +1,5 @@
 @props([
     'opportunity',
-    'score' => null,
     'saved' => false,
     'applied' => false,
     // The viewer's accepted application for this listing, if they have one.
@@ -50,10 +49,6 @@
 
                 <p class="small text-secondary mb-0">{{ $opportunity->awardingBody() }}</p>
             </div>
-
-            @if($score !== null)
-                <x-match-score :score="$score" :show-label="false" class="position-relative z-1" />
-            @endif
         </div>
 
         @if($award)
