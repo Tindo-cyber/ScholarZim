@@ -2,7 +2,7 @@
 
 @section('title', 'Create your student account')
 @section('aside_heading', 'Start matching in minutes.')
-@section('aside_copy', 'Create your account, complete your profile, and see scored matches straight away.')
+@section('aside_copy', 'Create your account, complete your profile, and see which scholarships you qualify for straight away.')
 
 @section('content')
     <h1 class="h3 fw-bold mb-1">Create your student account</h1>
@@ -12,7 +12,7 @@
         @csrf
 
         <x-form.input name="full_name" label="Full name" required autocomplete="name" autofocus
-                      pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." />
+                      pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." data-name-input />
         <x-form.input name="email" label="Email address" type="email" required autocomplete="email" />
         <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
                       inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"

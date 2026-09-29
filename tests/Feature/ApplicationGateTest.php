@@ -59,7 +59,7 @@ class ApplicationGateTest extends TestCase
     public function test_a_primary_pupil_is_not_refused_by_a_listing_that_states_no_requirement(): void
     {
         $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
 
         $this->assertNull($opportunity->minimum_education_level, 'fixture must state no minimum');
 
@@ -77,7 +77,7 @@ class ApplicationGateTest extends TestCase
     public function test_a_primary_pupil_is_refused_once_the_listing_requires_a_level(): void
     {
         $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
         $opportunity->forceFill(['minimum_education_level' => \App\Support\EducationLevel::A_LEVEL])->save();
 
         $this->actingAs($kudzai)->post('/apply/' . $opportunity->opportunity_id . '/quick');
@@ -127,7 +127,7 @@ class ApplicationGateTest extends TestCase
     public function test_an_o_level_applicant_can_apply_to_an_undergraduate_award_without_a_minimum(): void
     {
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
 
         $this->actingAs($farai)
             ->post('/apply/' . $opportunity->opportunity_id . '/quick')
@@ -240,7 +240,7 @@ class ApplicationGateTest extends TestCase
     public function test_a_submission_is_refused_once_the_deadline_has_passed(): void
     {
         $student = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
         $opportunity->forceFill(['deadline' => now()->subDay()->toDateString()])->save();
 
         $this->actingAs($student)

@@ -88,7 +88,7 @@ class ApplicationLifecycleTest extends TestCase
 
     private function application(): Application
     {
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')
             ->firstOrFail();
 
         return Application::create([

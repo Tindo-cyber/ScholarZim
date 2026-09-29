@@ -149,6 +149,14 @@
             </ul>
         </nav>
 
+        {{--
+            Identity only, no action here. Sign out already lives one place -
+            the username menu in the topbar - and this card used to carry a
+            second one of its own, labelled "Exit" but doing exactly the same
+            POST to the same route. Two controls for one action is worse than
+            one, especially when they are worded differently for what turns
+            out to be an identical result.
+        --}}
         <div class="border-top p-3">
             <div class="d-flex align-items-center gap-2">
                 <x-avatar :user="$user" />
@@ -156,10 +164,6 @@
                     <div class="fw-semibold text-truncate">{{ $user->displayName() }}</div>
                     <div class="small text-secondary">{{ \App\Support\RoleNames::displayLabel($role) }}</div>
                 </div>
-                <form method="POST" action="{{ route('logout') }}" class="m-0">
-                    @csrf
-                    <button class="btn btn-sm btn-outline-secondary" type="submit" title="Sign out">Exit</button>
-                </form>
             </div>
         </div>
     </div>

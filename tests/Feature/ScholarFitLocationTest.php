@@ -78,7 +78,7 @@ class ScholarFitLocationTest extends TestCase
     /** Settlement type is not a hard eligibility gate: it never disqualifies an applicant. */
     public function test_a_rural_targeted_award_does_not_disqualify_an_urban_applicant(): void
     {
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
         $opportunity->update([
             'target_settlement_type' => SettlementType::RURAL,
             'deadline' => Carbon::today()->addDays(20),
@@ -95,7 +95,7 @@ class ScholarFitLocationTest extends TestCase
     /** An unstated settlement type never disqualifies either. */
     public function test_not_stating_a_settlement_type_is_not_treated_as_a_failure(): void
     {
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
         $opportunity->update(['target_settlement_type' => SettlementType::RURAL]);
 
         $profile = $this->student->applicantProfile;

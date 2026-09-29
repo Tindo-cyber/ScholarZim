@@ -26,7 +26,7 @@ class ApplicationTrackerTest extends TestCase
 
         $this->applicant = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
         $this->otherApplicant = User::where('email', 'blessing.moyana@scholarzim.co.zw')->firstOrFail();
-        $this->opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $this->opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
         $this->otherOpportunity = Opportunity::where('title', 'Rural Schools A-Level Support Fund')->firstOrFail();
 
         Application::whereIn('user_id', [$this->applicant->user_id, $this->otherApplicant->user_id])->delete();

@@ -35,8 +35,17 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
+        // A provider account created here uses full_name as an organisation
+        // or contact name ("Chikafu Education Trust"), the same field
+        // provider self-registration leaves unrestricted - the letters-only
+        // rule is a person-name rule and would reject a legitimate
+        // organisation name that happens to contain a digit.
+        $nameRule = $request->input('role_name') === RoleNames::PROVIDER
+            ? ['required', 'string', 'max:255']
+            : ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN];
+
         $data = $request->validate([
-            'full_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
+            'full_name' => $nameRule,
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'role_name' => ['required', Rule::in(RoleNames::ALL)],

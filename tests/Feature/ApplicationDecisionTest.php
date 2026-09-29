@@ -359,7 +359,7 @@ class ApplicationDecisionTest extends TestCase
 
     private function openListing(): Opportunity
     {
-        return Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        return Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
     }
 
     private function applicationFor(Opportunity $opportunity, string $status): Application

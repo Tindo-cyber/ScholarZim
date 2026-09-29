@@ -273,7 +273,7 @@ class ApplicationStateTransitionTest extends TestCase
 
     private function application(string $status, ?string $title = null, ?User $user = null): Application
     {
-        $opportunity = Opportunity::where('title', $title ?? 'Zimbabwe Tech Futures Undergraduate Bursary')
+        $opportunity = Opportunity::where('title', $title ?? 'Zimbabwe Tech Futures Bursary')
             ->firstOrFail();
 
         return Application::updateOrCreate(

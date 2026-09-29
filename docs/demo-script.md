@@ -78,15 +78,18 @@ rules are four separate things — see `App\Services\ScholarFit\EducationPathway
    Change the education level dropdown to **Undergraduate** in another tab (do not save) to show
    the same form growing a field-of-study, transcript and year-of-study section live — this is
    client-side progressive disclosure; the server enforces the same rules independently
-2. Open **My matches** — only **"Chinhoyi Form 1 Transition Bursary"** appears. Open
-   **"Zimbabwe Tech Futures Undergraduate Bursary"** directly instead: no percentage is shown at
-   all, just **"You cannot apply to this scholarship"** and the reason — Primary cannot reach
-   Undergraduate in one step, regardless of how the listing is configured
+2. Open **My matches** — **"Chinhoyi Form 1 Transition Bursary"** and **"Zimbabwe Tech Futures
+   Bursary"** both appear as **eligible**: the second states no education-level requirement
+   anywhere (no minimum, and its title/description name no level explicitly), so nothing refuses
+   her. Open it directly to show the advisory note: Primary to Undergraduate is flagged as "not a
+   usual next step" - reported, never a refusal. Open **"Midlands Engineering Excellence Award"**
+   instead: **not eligible** - its title names no level either, but that specific provider has
+   set an explicit minimum qualifying level of A-Level
 3. Log out, log in as **`farai.sibanda@scholarzim.co.zw`** (O-Level). Open **My matches**:
-   **"Rural Schools A-Level Support Fund"** and **"Zimbabwe Tech Futures Undergraduate Bursary"**
-   both show as **eligible** — O-Level may reach A-Level, and this particular Undergraduate listing
-   accepts O-Level applicants directly. Open **"Midlands Engineering Excellence Award"**
-   instead (also Undergraduate-targeted): **not eligible** — that specific provider has set a
+   **"Rural Schools A-Level Support Fund"** and **"Zimbabwe Tech Futures Bursary"**
+   both show as **eligible** — O-Level may reach A-Level, and this particular listing states no
+   level requirement at all. Open **"Midlands Engineering Excellence Award"**
+   again: **not eligible** — that specific provider has set a
    minimum qualifying level of A-Level, a rule narrower than the general pathway
 4. Log out, log in as **`tanaka.chirwa@scholarzim.co.zw`** (A-Level) and open the same
    **"Midlands Engineering Excellence Award"** — she meets the floor exactly, and shows as eligible
@@ -112,7 +115,7 @@ the apply route is refused exactly the same way the UI already showed it would b
 1. As **`student@scholarzim.co.zw`**, track his existing application at `/my-applications` —
    **"Midlands Engineering Excellence Award"** sits at **Pending** (Undergraduate comfortably
    clears that listing's A-Level floor)
-2. Open **"Zimbabwe Tech Futures Undergraduate Bursary"**, which he has not applied to, and
+2. Open **"Zimbabwe Tech Futures Bursary"**, which he has not applied to, and
    apply — personal statement; a supporting document is optional since his profile already
    carries a transcript
 3. Try applying to the same listing again — blocked, one application per student per

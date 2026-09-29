@@ -322,6 +322,223 @@ class RecommendationTest extends TestCase
         $this->assertStringContainsString('Mathematics: A required, you have C.', $html);
     }
 
+    // ------------------------------ title/description education level, end to end --
+
+    /**
+     * The full worked example end to end, through the real recommendations
+     * page rather than the evaluator in isolation: a listing with no
+     * structured education requirement, but a title that plainly states one,
+     * correctly excludes a Primary applicant from her eligible matches and
+     * lists it instead under "scholarships you don't qualify for yet" - an
+     * empty structured-requirements table must never read as "eligible for
+     * everyone".
+     */
+    public function test_a_primary_applicant_is_not_recommended_an_undergraduate_titled_award(): void
+    {
+        $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+
+        $award = $this->gatedListing('Undergraduate Computer Science Scholarship', [
+            'description' => 'A well-funded award for high-achieving students.',
+        ]);
+
+        $html = $this->actingAs($kudzai)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($award->title, $html, 'it must still appear, in the not-eligible list');
+
+        $ineligibleHeading = strpos($html, "don't qualify for yet");
+        $titlePosition = strpos($html, $award->title);
+
+        $this->assertNotFalse($ineligibleHeading, 'the not-eligible section must render');
+        $this->assertGreaterThan(
+            $ineligibleHeading,
+            $titlePosition,
+            'a title-stated education level must place this in the not-eligible list, not the eligible one'
+        );
+        $this->assertStringContainsString('intended for Undergraduate students', $html);
+        $this->assertStringContainsString('identified from the scholarship title', $html);
+    }
+
+    /** The mirror image: an Undergraduate applicant is correctly recommended the same listing. */
+    public function test_an_undergraduate_applicant_is_recommended_an_undergraduate_titled_award(): void
+    {
+        $award = $this->gatedListing('Undergraduate Computer Science Scholarship', [
+            'description' => 'A well-funded award for high-achieving students.',
+        ]);
+
+        $html = $this->actingAs($this->student)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($award->title, $html);
+
+        $eligibleHeading = strpos($html, 'Matches for you');
+        $titlePosition = strpos($html, $award->title);
+        $ineligibleHeading = strpos($html, "don't qualify for yet");
+
+        $this->assertNotFalse($eligibleHeading);
+        // The listing's card must sit between the eligible heading and the
+        // not-eligible one (or the end of the page, if nothing is ineligible).
+        $this->assertGreaterThan($eligibleHeading, $titlePosition);
+        if ($ineligibleHeading !== false) {
+            $this->assertLessThan($ineligibleHeading, $titlePosition);
+        }
+    }
+
+    /**
+     * Undergraduate is a recognised step toward Masters (see
+     * EducationPathway::VALID_TARGETS[UNDERGRADUATE]), so the same
+     * Undergraduate applicant is correctly recommended a Master's-titled
+     * award through progression, not excluded from it. This used to assert
+     * exclusion; that assertion never actually checked which section the
+     * listing rendered in, so it kept passing after the underlying
+     * eligibility outcome changed underneath it.
+     */
+    public function test_an_undergraduate_applicant_is_recommended_a_masters_titled_award(): void
+    {
+        $award = $this->gatedListing("Master's Research Scholarship", [
+            'description' => 'A well-funded award for high-achieving students.',
+        ]);
+
+        $html = $this->actingAs($this->student)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $eligibleHeading = strpos($html, 'Matches for you');
+        // Blade escapes the rendered title, so its apostrophe becomes &#039;.
+        $titlePosition = strpos($html, e($award->title));
+        $ineligibleHeading = strpos($html, "don't qualify for yet");
+
+        $this->assertNotFalse($eligibleHeading);
+        $this->assertNotFalse($titlePosition);
+        $this->assertGreaterThan($eligibleHeading, $titlePosition);
+        if ($ineligibleHeading !== false) {
+            $this->assertLessThan($ineligibleHeading, $titlePosition);
+        }
+    }
+
+    /** A PhD-titled award stays out of reach: Undergraduate has no recognised direct pathway to PHD. */
+    public function test_an_undergraduate_applicant_is_not_recommended_a_phd_titled_award(): void
+    {
+        $award = $this->gatedListing('PhD Research Scholarship', [
+            'description' => 'A well-funded award for high-achieving students.',
+        ]);
+
+        $html = $this->actingAs($this->student)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($award->title, $html, 'it must still appear, in the not-eligible list');
+
+        $ineligibleHeading = strpos($html, "don't qualify for yet");
+        $titlePosition = strpos($html, $award->title);
+
+        $this->assertNotFalse($ineligibleHeading, 'the not-eligible section must render');
+        $this->assertGreaterThan($ineligibleHeading, $titlePosition, 'a PhD title must place this in the not-eligible list');
+        $this->assertStringContainsString('intended for PhD students', $html);
+    }
+
+    /**
+     * The end-to-end progression case that motivated this fix: a Primary
+     * applicant is recommended a "High School Scholarship" because Form 1 -
+     * EducationPathway's own modelled entry point into secondary school
+     * from Primary - is a recognised next step, even though "high school"
+     * reads as O_LEVEL and Primary's table row does not list O_LEVEL
+     * directly.
+     */
+    public function test_a_primary_applicant_is_recommended_a_high_school_titled_award(): void
+    {
+        $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+
+        $award = $this->gatedListing('High School Scholarship', [
+            'description' => 'A well-funded award for high-achieving students.',
+        ]);
+
+        $html = $this->actingAs($kudzai)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $eligibleHeading = strpos($html, 'Matches for you');
+        $titlePosition = strpos($html, $award->title);
+        $ineligibleHeading = strpos($html, "don't qualify for yet");
+
+        $this->assertNotFalse($eligibleHeading);
+        $this->assertNotFalse($titlePosition);
+        $this->assertGreaterThan($eligibleHeading, $titlePosition);
+        if ($ineligibleHeading !== false) {
+            $this->assertLessThan($ineligibleHeading, $titlePosition);
+        }
+    }
+
+    /** The reverse: an applicant who has already progressed past secondary school is not this award's audience. */
+    public function test_an_undergraduate_applicant_is_not_recommended_a_high_school_titled_award(): void
+    {
+        $award = $this->gatedListing('High School Scholarship', [
+            'description' => 'A well-funded award for high-achieving students.',
+        ]);
+
+        $html = $this->actingAs($this->student)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($award->title, $html, 'it must still appear, in the not-eligible list');
+
+        $ineligibleHeading = strpos($html, "don't qualify for yet");
+        $titlePosition = strpos($html, $award->title);
+
+        $this->assertNotFalse($ineligibleHeading, 'the not-eligible section must render');
+        $this->assertGreaterThan($ineligibleHeading, $titlePosition, 'an applicant past this level must place it in the not-eligible list');
+        $this->assertStringContainsString('intended for O Level students', $html);
+    }
+
+    /** A description-only condition (no title wording, no structured requirement) is still caught. */
+    public function test_a_description_only_education_condition_excludes_an_incompatible_applicant(): void
+    {
+        $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+
+        $award = $this->gatedListing('Community Futures Award', [
+            'description' => 'Funding is available to students pursuing a bachelor\'s degree.',
+        ]);
+
+        $html = $this->actingAs($kudzai)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString($award->title, $html);
+        $this->assertStringContainsString('intended for Undergraduate students', $html);
+        $this->assertStringContainsString('identified from the scholarship description', $html);
+    }
+
+    /** A listing with genuinely no education-level statement anywhere reaches every level. */
+    public function test_a_listing_with_no_education_level_statement_reaches_a_primary_applicant(): void
+    {
+        $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+
+        $award = $this->gatedListing('Community Futures Award', [
+            'description' => 'This scholarship supports promising students from underserved communities.',
+        ]);
+
+        $html = $this->actingAs($kudzai)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $eligibleHeading = strpos($html, 'Matches for you');
+        $titlePosition = strpos($html, $award->title);
+
+        $this->assertNotFalse($eligibleHeading);
+        $this->assertNotFalse($titlePosition);
+        $this->assertGreaterThan($eligibleHeading, $titlePosition, 'nothing stated, nothing refused - it belongs in the eligible list');
+    }
+
     /** A listing built to fail one or more stated requirements for the seeded student. */
     private function gatedListing(string $title, array $overrides = []): Opportunity
     {

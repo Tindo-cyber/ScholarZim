@@ -89,7 +89,7 @@ class ApplicationDecisionEmailTest extends TestCase
         $html = $this->renderQueued();
 
         $this->assertStringContainsString('accepted', $html);
-        $this->assertStringContainsString('Zimbabwe Tech Futures Undergraduate Bursary', $html);
+        $this->assertStringContainsString('Zimbabwe Tech Futures Bursary', $html);
         $this->assertStringContainsString(
             '/applications/' . $application->application_id . '/confirmation',
             $html,
@@ -272,7 +272,7 @@ class ApplicationDecisionEmailTest extends TestCase
 
     private function pendingApplication(): Application
     {
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
 
         return Application::updateOrCreate(
             ['user_id' => $this->student->user_id, 'opportunity_id' => $opportunity->opportunity_id],

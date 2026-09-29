@@ -37,7 +37,7 @@
                 --}}
                 <p class="h2 fw-bold mb-3">@yield('aside_heading', 'Find scholarships you actually qualify for.')</p>
                 <p class="opacity-75 mb-4">
-                    @yield('aside_copy', 'ScholarFit scores every listing against your profile and shows you exactly which criteria you meet — and which ones to fix.')
+                    @yield('aside_copy', 'ScholarFit checks every listing against your profile and shows you exactly which criteria you meet — and which ones to fix.')
                 </p>
 
                 @hasSection('aside_steps')
@@ -50,7 +50,7 @@
                         </li>
                         <li class="d-flex gap-3">
                             <span class="sz-auth-tick">2</span>
-                            <span>Get ranked matches with a transparent score.</span>
+                            <span>See exactly which scholarships you're eligible for, and why.</span>
                         </li>
                         <li class="d-flex gap-3">
                             <span class="sz-auth-tick">3</span>

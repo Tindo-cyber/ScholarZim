@@ -105,7 +105,7 @@ class AwardAndDiscoveryTest extends TestCase
 
         $this->assertContains('Stated Value Award', $titles);
         // Every seeded listing leaves its value unstated.
-        $this->assertNotContains('Zimbabwe Tech Futures Undergraduate Bursary', $titles);
+        $this->assertNotContains('Zimbabwe Tech Futures Bursary', $titles);
     }
 
     /**
@@ -132,7 +132,7 @@ class AwardAndDiscoveryTest extends TestCase
 
     public function test_viewing_a_listing_counts_towards_the_provider_funnel(): void
     {
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
 
         $this->get('/scholarships/' . $opportunity->opportunity_id)->assertOk();
 
@@ -146,7 +146,7 @@ class AwardAndDiscoveryTest extends TestCase
     /** A provider looking at their own post is not an audience. */
     public function test_a_providers_own_visit_is_not_counted(): void
     {
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
 
         $this->actingAs($this->provider)
             ->get('/scholarships/' . $opportunity->opportunity_id)

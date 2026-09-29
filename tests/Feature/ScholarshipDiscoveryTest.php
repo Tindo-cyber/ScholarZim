@@ -143,7 +143,7 @@ class ScholarshipDiscoveryTest extends TestCase
 
     private function listing(): Opportunity
     {
-        return Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        return Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
     }
 
     /** @return array<int, string> */

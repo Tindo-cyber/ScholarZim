@@ -30,7 +30,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <x-form.input name="full_name" label="Full name" :value="auth()->user()->full_name" required
-                                              pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." />
+                                              pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." data-name-input />
                             </div>
                             <div class="col-md-6">
                                 <x-form.input name="phone" label="Phone number" type="tel" :value="auth()->user()->phone"
@@ -183,7 +183,7 @@
                             <div class="col-md-4">
                                 <x-form.input name="guardian_name" label="Guardian full name"
                                               :value="$profile->guardian_name"
-                                              pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." />
+                                              pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." data-name-input />
                             </div>
                             <div class="col-md-4">
                                 <x-form.input name="guardian_phone" label="Guardian phone number" type="tel"

@@ -120,6 +120,40 @@ class InputValidationHardeningTest extends TestCase
         $this->assertNotNull(User::where('email', 'new-admin-user@example.test')->first());
     }
 
+    /**
+     * The same full_name field is an organisation name when the admin picks
+     * "Provider" from the role list on this one form - the letters-only rule
+     * must not follow it there, the same exception provider self-registration
+     * already gets.
+     */
+    public function test_an_admin_created_providers_full_name_is_not_restricted_to_letters(): void
+    {
+        $admin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.store'), $this->adminUserFields([
+                'full_name' => '3 Rivers Education Trust',
+                'email' => 'new-provider-user@example.test',
+                'role_name' => RoleNames::PROVIDER,
+            ]))
+            ->assertSessionDoesntHaveErrors('full_name');
+
+        $this->assertNotNull(User::where('email', 'new-provider-user@example.test')->first());
+    }
+
+    /** The letters-only rule still applies to an admin-created applicant, regardless of role-field ordering. */
+    public function test_an_admin_created_applicants_full_name_with_numbers_is_still_rejected(): void
+    {
+        $admin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
+
+        $this->actingAs($admin)
+            ->post(route('admin.users.store'), $this->adminUserFields([
+                'full_name' => 'Applicant42',
+                'role_name' => RoleNames::APPLICANT,
+            ]))
+            ->assertSessionHasErrors('full_name');
+    }
+
     // ------------------------------------------------------------ phones --
 
     public function test_ten_digits_is_accepted(): void

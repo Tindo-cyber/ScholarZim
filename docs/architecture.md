@@ -112,6 +112,8 @@ sequenceDiagram
 
 Rule-based eligibility checking in `app/Services/ScholarFit/EligibilityEvaluator.php` matches an applicant's profile and structured academic results against each opportunity's stated requirements (education level, subject grades, academic points, age, province, results certificate). Eligible listings appear on the applicant dashboard and the matches page; ineligible ones are shown too, with the specific requirement that was not met.
 
+An empty structured-requirements table is not itself eligibility: `app/Services/ScholarFit/DescriptionEligibility.php` reads a small, fixed vocabulary of explicit conditions (education level, field of study, a short list of named skills/technologies) out of the listing's free-text description when no structured requirement already covers the same concept. Education-level and field-of-study conditions are evaluated against the profile exactly like a structured requirement. A skill/technology condition has no authoritative profile field behind it, so it is reported as an advisory note rather than invented as a pass or a failure. This is pattern matching against a fixed vocabulary, not free-text understanding - see the class's own docblock for the exact rules.
+
 ## Database strategy
 
 - **Schema source of truth:** `database/migrations/` — one migration per table, each reversible.

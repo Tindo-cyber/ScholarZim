@@ -61,7 +61,7 @@ class WorkflowTest extends TestCase
     public function test_applicant_can_apply_once_only(): void
     {
         $user = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
 
         $statement = str_repeat('I want this scholarship because it changes what I can finish. ', 3);
 

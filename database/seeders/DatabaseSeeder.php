@@ -548,7 +548,7 @@ class DatabaseSeeder extends Seeder
     private function opportunities(User $provider): void
     {
         $listings = [
-            ['Zimbabwe Tech Futures Undergraduate Bursary', 'Computer Science & IT', EducationLevel::UNDERGRADUATE, 'Full Scholarship', 45],
+            ['Zimbabwe Tech Futures Bursary', 'Computer Science & IT', EducationLevel::UNDERGRADUATE, 'Full Scholarship', 45],
             ['Midlands Engineering Excellence Award', 'Engineering', EducationLevel::UNDERGRADUATE, 'Tuition Only', 12],
             ['Harare Health Sciences Postgraduate Grant', 'Medicine & Health Sciences', EducationLevel::MASTERS, 'Tuition + Accommodation', 90],
             ['Rural Schools A-Level Support Fund', 'General Secondary', EducationLevel::A_LEVEL, 'Partial Scholarship', 30],
@@ -586,9 +586,9 @@ class DatabaseSeeder extends Seeder
 
         // A genuine hard requirement on one listing, so a viva can show "Requirements
         // not met" - no percentage, an explicit reason - rather than only ever
-        // demonstrating a weighted score. Restricted to Manicaland: Chipo and Farai
-        // (seeded there) meet it, Tendai (Harare) does not, which is the pairing
-        // that makes the difference visible without narrating it.
+        // demonstrating every listing as an eligible match. Restricted to Manicaland:
+        // Chipo and Farai (seeded there) meet it, Tendai (Harare) does not, which is
+        // the pairing that makes the difference visible without narrating it.
         Opportunity::where('title', 'Rural Schools A-Level Support Fund')
             ->update(['required_province' => 'Manicaland']);
 
@@ -597,7 +597,7 @@ class DatabaseSeeder extends Seeder
         // met" here specifically because of the missing document, which is the
         // one demonstration that ties her incomplete profile to a visible
         // consequence rather than only a checklist badge. Blessing has her
-        // transcript, so her score for this listing is unaffected.
+        // transcript, so this requirement remains met for her.
         Opportunity::where('title', 'Harare Health Sciences Postgraduate Grant')
             ->update(['requires_results_certificate' => true]);
 
@@ -636,7 +636,7 @@ class DatabaseSeeder extends Seeder
      * deliberately rather than stacked on one.
      *
      * The first pass put PENDING, ACCEPTED and REJECTED all on the primary
-     * demo student, against "Zimbabwe Tech Futures Undergraduate Bursary" and
+     * demo student, against "Zimbabwe Tech Futures Bursary" and
      * "Harare Health Sciences Postgraduate Grant" - which turned out to be the
      * two listings eleven other test files already use as "the seeded
      * student's next free listing to apply to". Every one of them broke on the

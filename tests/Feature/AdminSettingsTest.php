@@ -60,7 +60,7 @@ class AdminSettingsTest extends TestCase
     public function test_an_already_reviewed_listing_is_skipped_not_fatal(): void
     {
         $pending = $this->pendingListing('Bulk Award Four');
-        $alreadyLive = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $alreadyLive = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
 
         $this->actingAs($this->admin)
             ->post('/admin/opportunities/bulk-review', [
@@ -77,7 +77,7 @@ class AdminSettingsTest extends TestCase
     /** A prompt to look, never an automatic refusal. */
     public function test_the_moderation_preview_flags_a_likely_duplicate(): void
     {
-        $original = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $original = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
         $copy = $this->pendingListing($original->title . ' 2026');
 
         $this->actingAs($this->admin)

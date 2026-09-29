@@ -70,7 +70,7 @@ class AccountSecurityTest extends TestCase
 
     public function test_deleting_an_account_takes_its_dependent_rows_with_it(): void
     {
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Undergraduate Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
 
         Application::create([
             'user_id' => $this->student->user_id,

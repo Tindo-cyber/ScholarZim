@@ -49,6 +49,25 @@ final class RequirementOutcome
 
     public const TYPE_CERTIFICATE = 'certificate';
 
+    /**
+     * An eligibility condition read from the listing's free-text description
+     * rather than from a structured requirement field - only used when no
+     * structured requirement already covers the same concept, so the two
+     * never disagree with each other.
+     */
+    public const TYPE_DESCRIPTION_EDUCATION_LEVEL = 'description_education_level';
+
+    public const TYPE_DESCRIPTION_FIELD = 'description_field';
+
+    /**
+     * A condition the description states explicitly, but which the
+     * applicant profile has no authoritative field to check - e.g. a named
+     * programming language. Always advisory: reported so the applicant sees
+     * it was noticed, never counted as a pass or a failure, because doing
+     * either would be inventing evidence the profile does not have.
+     */
+    public const TYPE_DESCRIPTION_UNSUPPORTED = 'description_unsupported';
+
     private function __construct(
         public readonly string $type,
         public readonly bool $passed,

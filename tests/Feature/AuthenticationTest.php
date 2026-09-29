@@ -87,6 +87,45 @@ class AuthenticationTest extends TestCase
 
     // -------------------------------------------------------------- refusals --
 
+    /** A request with no password field at all must fail validation, not fall through to Auth::attempt(). */
+    public function test_a_missing_password_field_is_rejected(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw'])
+            ->assertSessionHasErrors('password');
+
+        $this->assertGuest();
+    }
+
+    public function test_an_empty_password_is_rejected(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => ''])
+            ->assertSessionHasErrors('password');
+
+        $this->assertGuest();
+    }
+
+    /**
+     * The global TrimStrings middleware trims a whitespace-only value down to
+     * an empty string before validation ever sees it, so this is refused by
+     * the same "password is required" rule as a genuinely empty one - not by
+     * a fuzzy hash mismatch.
+     */
+    public function test_a_whitespace_only_password_is_rejected(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => '   '])
+            ->assertSessionHasErrors('password');
+
+        $this->assertGuest();
+    }
+
+    public function test_a_null_password_is_rejected(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => null])
+            ->assertSessionHasErrors('password');
+
+        $this->assertGuest();
+    }
+
     public function test_a_wrong_password_is_rejected(): void
     {
         $this->post('/login', [
@@ -233,6 +272,101 @@ class AuthenticationTest extends TestCase
         $this->assertSame('session', config('auth.guards.web.driver'));
         $this->assertSame(User::class, config('auth.providers.users.model'));
         $this->assertSame(['web'], array_keys(config('auth.guards')));
+    }
+
+    // -------------------------------------------------- authentication state --
+
+    /**
+     * The sign-in page must present only the unauthenticated experience - no
+     * dashboard shortcut, no sign-out control, no authenticated navigation -
+     * whether reached fresh, or by a guest who was never signed in at all.
+     */
+    public function test_the_sign_in_page_shows_no_authenticated_controls_for_a_guest(): void
+    {
+        $html = $this->get('/login')->assertOk()->getContent();
+
+        $this->assertStringNotContainsStringIgnoringCase('go to dashboard', $html);
+        $this->assertStringNotContainsStringIgnoringCase('sign out', $html);
+        $this->assertStringNotContainsString('szSidebar', $html, 'the authenticated shell must not render on a guest page');
+    }
+
+    /**
+     * A signed-in user hitting /login must follow the existing guest-route
+     * behaviour (redirected to their dashboard) rather than being shown a
+     * login form at all - the two must never be visible together.
+     */
+    public function test_an_authenticated_user_visiting_login_is_redirected_away(): void
+    {
+        $user = $this->userFor('student@scholarzim.co.zw');
+
+        // The existing guest-route behaviour (RouteServiceProvider::HOME):
+        // redirected to the public landing page, which itself offers "Go to
+        // dashboard" - never shown the login form together with it.
+        $this->actingAs($user)->get('/login')->assertRedirect('/');
+    }
+
+    /**
+     * After signing out, the login page must show the same clean,
+     * unauthenticated state as a guest who was never signed in - proving
+     * logout actually clears the state the sign-in page reads, not just
+     * that the guard reports guest().
+     */
+    public function test_after_sign_out_the_login_page_shows_no_authenticated_controls(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
+        $this->assertAuthenticated();
+
+        $this->post('/logout')->assertRedirect('/');
+        $this->assertGuest();
+
+        $html = $this->get('/login')->assertOk()->getContent();
+
+        $this->assertStringNotContainsStringIgnoringCase('go to dashboard', $html);
+        $this->assertStringNotContainsStringIgnoringCase('sign out', $html);
+    }
+
+    /**
+     * The public landing page's own "Go to dashboard" / "Sign in" toggle
+     * must track the real guard state, not a stale one - checked on both
+     * sides of an actual sign-out so a regression here cannot hide behind
+     * a fixture that happens to start logged out.
+     */
+    public function test_the_public_landing_page_reflects_the_real_guard_state(): void
+    {
+        $guestHtml = $this->get('/')->assertOk()->getContent();
+        $this->assertStringContainsString('Sign in', $guestHtml);
+        $this->assertStringNotContainsStringIgnoringCase('go to dashboard', $guestHtml);
+
+        $user = $this->userFor('student@scholarzim.co.zw');
+        $authedHtml = $this->actingAs($user)->get('/')->assertOk()->getContent();
+        $this->assertStringContainsStringIgnoringCase('go to dashboard', $authedHtml);
+    }
+
+    // ------------------------------------------------------------- navigation --
+
+    /** "Exit" was a second, redundant sign-out control - see partials/sidebar.blade.php. */
+    public function test_exit_is_not_rendered_anywhere_in_the_authenticated_shell(): void
+    {
+        $user = $this->userFor('student@scholarzim.co.zw');
+
+        $html = $this->actingAs($user)->get('/applicant/dashboard')->assertOk()->getContent();
+
+        $this->assertDoesNotMatchRegularExpression('/>\s*Exit\s*</', $html);
+    }
+
+    /** The single remaining sign-out control lives in the username menu. */
+    public function test_sign_out_remains_available_from_the_username_menu(): void
+    {
+        $user = $this->userFor('student@scholarzim.co.zw');
+
+        $html = $this->actingAs($user)->get('/applicant/dashboard')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Sign out', $html);
+        $this->assertMatchesRegularExpression(
+            '/action="[^"]*\/logout"[^>]*>.*?<button[^>]*>\s*Sign out\s*<\/button>/s',
+            $html,
+            'Sign out must submit to the logout route'
+        );
     }
 
     // ------------------------------------------------------------- helpers --

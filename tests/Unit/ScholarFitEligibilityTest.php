@@ -399,6 +399,510 @@ class ScholarFitEligibilityTest extends TestCase
         $this->assertStringContainsString('no ZIMSEC Advanced Level results', implode(' ', $fit->failureMessages()));
     }
 
+    // ------------------------------------ description-stated conditions --
+
+    /**
+     * An empty structured-requirements table is not itself evidence of
+     * eligibility - only the absence of any stated condition, structured or
+     * described, is. A description with no eligibility marker at all states
+     * none.
+     */
+    public function test_a_description_with_no_eligibility_marker_leaves_the_listing_eligible(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['description' => 'This scholarship supports bright, community-minded students.'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /**
+     * Descriptive, aspirational language - "interested in technology" - is
+     * never converted into a requirement, even though it names a concept
+     * (technology) this class could otherwise recognise. The sentence has no
+     * eligibility marker ("for", "must be", ...), so nothing is read from it.
+     */
+    public function test_ordinary_descriptive_text_is_not_converted_into_a_requirement(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['description' => 'This scholarship aims to support students interested in technology and innovation.'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /**
+     * The flagship case this was built for: no structured requirement at
+     * all, but the description states one ("undergraduate ... students") a
+     * Primary applicant genuinely does not meet.
+     */
+    public function test_a_description_stated_education_level_condition_is_evaluated_and_fails(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['description' => 'This scholarship is for undergraduate Computer Science students.'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString(
+            'This scholarship is intended for Undergraduate students (identified from the scholarship description)',
+            implode(' ', $fit->failureMessages())
+        );
+    }
+
+    /** The mirror image: an applicant who genuinely meets a description-stated condition. */
+    public function test_a_description_stated_education_level_condition_is_satisfied(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
+            $this->opportunity(['description' => 'This scholarship is for undergraduate Computer Science students.'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+
+        $met = array_map(fn ($o) => $o->message, $fit->metRequirements());
+        $this->assertTrue(collect($met)->contains(fn ($m) => str_contains($m, 'intended for Undergraduate students')));
+        $this->assertTrue(collect($met)->contains(fn ($m) => str_contains($m, 'Computer Science & IT')));
+    }
+
+    /** Both conditions in the same description fail independently, and both are named. */
+    public function test_multiple_failed_description_conditions_are_all_reported(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY, 'field_of_study' => null], grades: []),
+            $this->opportunity(['description' => 'This scholarship is for undergraduate Computer Science students.'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+
+        $reasons = $fit->failureMessages();
+        $this->assertGreaterThanOrEqual(2, count($reasons));
+        $this->assertTrue(collect($reasons)->contains(fn ($m) => str_contains($m, 'intended for Undergraduate students')));
+        $this->assertTrue(collect($reasons)->contains(fn ($m) => str_contains($m, 'Computer Science & IT required')));
+    }
+
+    /**
+     * A named skill/technology - PHP - has no authoritative field on the
+     * applicant profile at all. It must never be invented as a pass or a
+     * failure; it is reported as a condition the profile cannot confirm,
+     * and it never blocks an otherwise-eligible applicant.
+     */
+    public function test_an_unsupported_skill_condition_is_reported_but_never_blocks_eligibility(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
+            $this->opportunity(['description' => 'This scholarship is intended for students with PHP programming skills.'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements(), 'an unsupported condition must never fail the applicant');
+        $this->assertSame([], $fit->failureMessages(), 'an unsupported condition is never counted as a failure either');
+
+        $unsupported = array_filter(
+            $fit->advisoryNotes(),
+            fn ($note) => $note->type === RequirementOutcome::TYPE_DESCRIPTION_UNSUPPORTED
+        );
+        $this->assertNotEmpty($unsupported, 'the unsupported condition must still be reported');
+
+        foreach ($unsupported as $note) {
+            $this->assertStringContainsString('does not contain evidence', $note->message);
+        }
+    }
+
+    /**
+     * Once a listing states an explicit minimum_education_level, that
+     * structured rule is authoritative for this concept - the description's
+     * own wording is not independently re-checked against it, so the two
+     * can never disagree with each other.
+     */
+    public function test_a_structured_minimum_level_takes_precedence_over_the_description(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::A_LEVEL, 'province' => 'Harare']),
+            $this->opportunity([
+                'minimum_education_level' => EducationLevel::A_LEVEL,
+                'description' => 'This scholarship is for undergraduate students.',
+            ])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /** The same precedence holds when the conflicting wording is in the title rather than the description. */
+    public function test_a_structured_minimum_level_takes_precedence_over_the_title(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
+            $this->opportunity([
+                'title' => "Master's Scholarship",
+                'minimum_education_level' => EducationLevel::UNDERGRADUATE,
+            ])
+        );
+
+        $this->assertTrue(
+            $fit->meetsRequirements(),
+            'the structured Undergraduate minimum is authoritative, even though the title says "Master\'s"'
+        );
+    }
+
+    /** "Postgraduate" stated in the description alone, with no structured requirement and no title wording. */
+    public function test_a_postgraduate_description_is_detected(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['description' => 'This grant is open to postgraduate students.'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('Postgraduate', implode(' ', $fit->failureMessages()));
+    }
+
+    /**
+     * The exact phrasing from the brief: "currently enrolled in secondary
+     * school". An Undergraduate applicant has already progressed past
+     * secondary school, so this is not their audience - the same rule that
+     * refuses an Undergraduate applicant a title-stated "Primary School
+     * Scholarship". This used to pass on the reasoning that an Undergraduate
+     * "already clears an O-Level floor", which was the floor/prerequisite
+     * comparison a structured minimum_education_level uses, not the
+     * progression-toward comparison a title/description level - who the
+     * award is *for* - actually needs.
+     */
+    public function test_secondary_school_enrollment_in_the_description_is_detected(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
+            $this->opportunity(['description' => 'This opportunity is open to students currently enrolled in secondary school.'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+
+        $failed = array_map(fn ($o) => $o->message, $fit->failedRequirements());
+        $this->assertTrue(collect($failed)->contains(fn ($m) => str_contains($m, 'identified from the scholarship description')));
+    }
+
+    /** "Doctoral Research Scholarship" - the brief's own exact PhD-title example. */
+    public function test_a_doctoral_research_title_is_detected(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
+            $this->opportunity(['title' => 'Doctoral Research Scholarship'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('PhD', implode(' ', $fit->failureMessages()));
+    }
+
+    // ------------------------------------- education level from the title --
+
+    /**
+     * A title is read for a level with no eligibility marker required - see
+     * DescriptionEligibility's docblock. "Undergraduate Scholarship" states
+     * its audience by convention; a Primary applicant does not meet it.
+     */
+    public function test_a_bare_title_states_an_education_level_condition(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => 'Undergraduate Scholarship 2027'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString(
+            'intended for Undergraduate students (identified from the scholarship title)',
+            implode(' ', $fit->failureMessages())
+        );
+    }
+
+    /**
+     * "Master's Scholarship" names MASTERS specifically, not the more
+     * general POSTGRADUATE - and Undergraduate is a recognised step toward
+     * MASTERS (see EducationPathway::VALID_TARGETS), so an Undergraduate
+     * applicant is eligible through progression, not just an exact match.
+     */
+    public function test_a_masters_title_is_detected_and_an_undergraduate_applicant_progresses_toward_it(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
+            $this->opportunity(['title' => "Master's Research Scholarship"])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+
+        $met = array_map(fn ($o) => $o->message, $fit->metRequirements());
+        $this->assertTrue(collect($met)->contains(fn ($m) => str_contains($m, 'Masters')));
+    }
+
+    /** A PhD title still refuses an Undergraduate applicant: Undergraduate has no direct pathway to PHD. */
+    public function test_a_masters_title_still_refuses_an_applicant_with_no_pathway_to_it(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => "Master's Research Scholarship"])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('Masters', implode(' ', $fit->failureMessages()));
+    }
+
+    /**
+     * The apostrophe-free plural is at least as common a spelling as the
+     * possessive one, and word-boundary matching means the singular
+     * "master"/"bachelor" phrases never match inside it - this needs its own
+     * entries in the phrase table, which this guards.
+     */
+    public function test_the_apostrophe_free_plural_spellings_are_detected(): void
+    {
+        $mastersFit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => 'Masters Research Scholarship'])
+        );
+        $this->assertFalse($mastersFit->meetsRequirements());
+        $this->assertStringContainsString('Masters', implode(' ', $mastersFit->failureMessages()));
+
+        $bachelorsFit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => 'Bachelors Scholarship'])
+        );
+        $this->assertFalse($bachelorsFit->meetsRequirements());
+        $this->assertStringContainsString('Undergraduate', implode(' ', $bachelorsFit->failureMessages()));
+    }
+
+    /**
+     * "Postgraduate" alone, without "master's", is read as the more general
+     * POSTGRADUATE level - and Undergraduate progresses toward it too (see
+     * EducationPathway::VALID_TARGETS), the same as it does toward MASTERS.
+     */
+    public function test_a_postgraduate_title_is_detected(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
+            $this->opportunity(['title' => 'Postgraduate Research Scholarship'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+
+        $met = array_map(fn ($o) => $o->message, $fit->metRequirements());
+        $this->assertTrue(collect($met)->contains(fn ($m) => str_contains($m, 'Postgraduate')));
+    }
+
+    /** A Postgraduate title still refuses a Primary applicant: Primary has no recognised pathway to it. */
+    public function test_a_postgraduate_title_still_refuses_an_applicant_with_no_pathway_to_it(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => 'Postgraduate Research Scholarship'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('Postgraduate', implode(' ', $fit->failureMessages()));
+    }
+
+    /**
+     * "High School" has no dedicated canonical level of its own - it reads
+     * as O_LEVEL, the same rung EducationLevel's own legacy spelling table
+     * already treats a bare "secondary" as sitting on. An O-Level applicant
+     * meets it exactly.
+     */
+    public function test_a_high_school_title_is_detected_and_an_o_level_applicant_meets_it(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::O_LEVEL, 'field_of_study' => null]),
+            $this->opportunity(['title' => 'High School Scholarship'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    public function test_a_primary_school_title_is_detected(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => 'Primary School Scholarship'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /**
+     * A Primary applicant progressing toward secondary school is eligible
+     * for a "High School Scholarship", even though "high school" reads as
+     * O_LEVEL and EducationPathway's table only lists FORM_1 as Primary's
+     * usual next step - Form 1 is that table's own modelled entry point
+     * into secondary school, so progression toward the general "secondary"
+     * description is read through it. Not the over-generalised "any
+     * applicant below the target level is eligible": see
+     * test_a_bare_title_states_an_education_level_condition and
+     * test_a_postgraduate_title_still_refuses_an_applicant_with_no_pathway_to_it
+     * for Primary applicants correctly refused elsewhere.
+     */
+    public function test_a_primary_applicant_progresses_toward_a_high_school_titled_award(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => 'High School Scholarship'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+
+        $met = array_map(fn ($o) => $o->message, $fit->metRequirements());
+        $this->assertTrue(collect($met)->contains(fn ($m) => str_contains($m, 'O Level')));
+    }
+
+    /** Same progression, stated as "secondary school" rather than "high school". */
+    public function test_a_primary_applicant_progresses_toward_a_secondary_school_titled_award(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => 'Secondary School Scholarship'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /**
+     * The reverse of test_a_high_school_title_is_detected_and_an_o_level
+     * _applicant_meets_it: an applicant who has already progressed past
+     * secondary school is not this award's audience either. A title/
+     * description level names who the award is *for*, not a floor everyone
+     * above also clears - that comparison is what minimum_education_level
+     * is for, and this listing states none.
+     */
+    public function test_an_undergraduate_applicant_does_not_meet_a_high_school_titled_award(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
+            $this->opportunity(['title' => 'High School Scholarship'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('O Level', implode(' ', $fit->failureMessages()));
+    }
+
+    /**
+     * Multiple named levels are still read as progression, not exact
+     * equality: an O-Level applicant meets "Undergraduate and Master's
+     * Scholarship" by progressing toward Undergraduate (see
+     * EducationPathway::VALID_TARGETS[O_LEVEL]), without being at either
+     * named level exactly.
+     */
+    public function test_multiple_allowed_levels_are_satisfied_by_progressing_toward_one_of_them(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::O_LEVEL, 'field_of_study' => null]),
+            $this->opportunity(['title' => "Undergraduate and Master's Scholarship"])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    public function test_a_phd_title_is_detected_and_an_undergraduate_applicant_fails_it(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
+            $this->opportunity(['title' => 'PhD Scholarship'])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('PhD', implode(' ', $fit->failureMessages()));
+    }
+
+    /** "for bachelor's degree students" in the description names UNDERGRADUATE, the same as the word itself. */
+    public function test_bachelors_degree_phrasing_in_the_description_is_detected(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['description' => "This award is open to students pursuing a bachelor's degree."])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('Undergraduate', implode(' ', $fit->failureMessages()));
+    }
+
+    // --------------------------------------------------- multiple levels --
+
+    /**
+     * "Undergraduate and Master's" states two acceptable levels, not one -
+     * an applicant at either exactly is eligible for the condition. See
+     * test_multiple_allowed_levels_are_satisfied_by_progressing_toward_one
+     * _of_them for the same rule applied via progression rather than an
+     * exact match.
+     */
+    public function test_multiple_allowed_levels_are_satisfied_by_the_lower_one(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
+            $this->opportunity(['title' => "Undergraduate and Master's Scholarship"])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /** The same listing refuses an applicant below both allowed levels. */
+    public function test_multiple_allowed_levels_still_refuse_an_applicant_below_all_of_them(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['title' => "Undergraduate and Master's Scholarship"])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('Undergraduate or Masters', implode(' ', $fit->failureMessages()));
+    }
+
+    // ------------------------------- descriptive text is not a condition --
+
+    /**
+     * Naming a level while describing the award's research focus, or an
+     * applicant's advantage, is not an eligibility statement - none of
+     * these three carry one of DescriptionEligibility's markers.
+     */
+    public function test_a_research_focus_mention_is_not_converted_into_a_requirement(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['description' => 'Scholarship research focuses on undergraduate education.'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    public function test_an_advantage_mention_is_not_converted_into_a_requirement(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['description' => 'Previous undergraduate research experience is an advantage.'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    public function test_a_list_of_programmes_offered_is_not_converted_into_a_requirement(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['description' => 'Study opportunities include undergraduate and postgraduate programmes.'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /** Guards against drift between this class's field aliases and the real, canonical list. */
+    public function test_every_recognised_field_of_study_phrase_maps_to_a_real_field(): void
+    {
+        $phrases = (new \ReflectionClass(\App\Services\ScholarFit\DescriptionEligibility::class))
+            ->getConstant('FIELD_OF_STUDY_PHRASES');
+
+        foreach ($phrases as $phrase => $field) {
+            $this->assertContains(
+                $field,
+                \App\Support\FormOptions::FIELDS_OF_STUDY,
+                "\"$phrase\" maps to \"$field\", which is not a recognised field of study"
+            );
+        }
+    }
+
     // ----------------------------------------- subject requirements --
 
     /**

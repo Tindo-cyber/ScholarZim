@@ -562,7 +562,7 @@ class ApplicationConcurrencyTest extends TestCase
         return app(ApplicationService::class);
     }
 
-    private function opportunity(string $title = 'Zimbabwe Tech Futures Undergraduate Bursary'): Opportunity
+    private function opportunity(string $title = 'Zimbabwe Tech Futures Bursary'): Opportunity
     {
         return Opportunity::where('title', $title)->firstOrFail();
     }

@@ -58,6 +58,20 @@ use App\Support\EducationLevel;
 final class EligibilityEvaluator
 {
     /**
+     * Ordinal position of each EducationLevel::TIER_* constant, oldest
+     * first. Used only by descriptionEducationLevel() to tell whether an
+     * applicant's tier is genuinely *later* than a title/description level's
+     * tier - a fact rung order can't answer on its own, since PRIMARY < 0,
+     * SECONDARY and POSTGRADUATE both contain several rungs each.
+     */
+    private const TIER_RANKS = [
+        EducationLevel::TIER_PRIMARY => 0,
+        EducationLevel::TIER_SECONDARY => 1,
+        EducationLevel::TIER_TERTIARY => 2,
+        EducationLevel::TIER_POSTGRADUATE => 3,
+    ];
+
+    /**
      * Every stated requirement, passed and failed.
      *
      * @return array<int, RequirementOutcome>
@@ -76,6 +90,7 @@ final class EligibilityEvaluator
                 $this->province($profile, $opportunity),
                 $this->certificate($profile, $opportunity),
             ],
+            $this->descriptionConditions($profile, $opportunity, $record),
         )));
     }
 
@@ -454,6 +469,286 @@ final class EligibilityEvaluator
             'Proof of results: '.$document.' is on file.',
             required: $document,
             actual: $document,
+        );
+    }
+
+    /**
+     * Conditions read out of the listing's description rather than a
+     * structured field - see DescriptionEligibility. This is what stops an
+     * empty structured-requirements table from meaning "eligible for
+     * everyone": a provider who wrote "for undergraduate Computer Science
+     * students" into the description, but never used the requirement
+     * builder, has still stated a condition, and it is checked here.
+     *
+     * @return array<int, RequirementOutcome>
+     */
+    private function descriptionConditions(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
+    {
+        $conditions = DescriptionEligibility::conditions($opportunity->title, $opportunity->description);
+        $outcomes = [];
+
+        // Every EDUCATION_LEVEL condition - title and description alike -
+        // is grouped into one combined outcome, because "for undergraduate
+        // and master's students" is one condition with two acceptable
+        // answers, not two separate ones.
+        $educationConditions = array_values(array_filter(
+            $conditions,
+            static fn (DescriptionCondition $c) => $c->kind === DescriptionEligibility::EDUCATION_LEVEL
+        ));
+
+        if ($educationConditions !== []) {
+            $outcome = $this->descriptionEducationLevel($profile, $opportunity, $record, $educationConditions);
+
+            if ($outcome !== null) {
+                $outcomes[] = $outcome;
+            }
+        }
+
+        foreach ($conditions as $condition) {
+            $outcome = match ($condition->kind) {
+                DescriptionEligibility::FIELD_OF_STUDY => $this->descriptionFieldOfStudy($profile, $condition),
+                DescriptionEligibility::UNSUPPORTED => $this->descriptionUnsupported($condition),
+                default => null,
+            };
+
+            if ($outcome !== null) {
+                $outcomes[] = $outcome;
+            }
+        }
+
+        return $outcomes;
+    }
+
+    /**
+     * One combined outcome for every education-level condition the title and
+     * description state between them, using the same progression-toward
+     * comparison the advisory `progression()` note already makes, not the
+     * "at least this level" floor minimumLevel() uses for a structured
+     * minimum.
+     *
+     * The two are different concepts. `minimum_education_level` is a stated
+     * prerequisite - "you must already hold at least this" - and rightly
+     * lets anyone above it through. A title or description level names who
+     * the award is *for* - the level the applicant is currently at or
+     * moving toward - so someone who has already passed it (an Undergraduate
+     * applicant against "Primary School Scholarship") is not its audience
+     * either, and belongs on the not-eligible list just as much as someone
+     * who has not reached it yet. Reusing EducationPathway::isValid() keeps
+     * that judgement identical to the one the advisory note already makes,
+     * rather than inventing a second progression hierarchy.
+     *
+     * "Already passed" is judged by EducationLevel's tier
+     * (PRIMARY/SECONDARY/TERTIARY/POSTGRADUATE), not by the finer rung
+     * EducationLadder orders levels on: O-Level and A-Level share the
+     * SECONDARY tier, and Postgraduate/Masters/PhD share the POSTGRADUATE
+     * one, so a rung above the named level within the *same* tier is still
+     * that level's audience - a Masters applicant still meets a listing
+     * titled for "Postgraduate" students - and only a rung in a genuinely
+     * later tier is read as having moved past it.
+     *
+     * Never runs alongside a structured minimum: once a listing states one
+     * explicitly, that is the authoritative rule for this concept, and the
+     * title/description are not independently re-checked against it - the
+     * two are never allowed to disagree with each other.
+     *
+     * More than one distinct level ("Undergraduate and Master's
+     * Scholarship") is read as *either* being acceptable - the applicant
+     * need only be at, or progressing toward, one of them.
+     *
+     * @param  array<int, DescriptionCondition>  $conditions  every EDUCATION_LEVEL condition detected, title and description alike
+     */
+    private function descriptionEducationLevel(
+        ApplicantProfile $profile,
+        Opportunity $opportunity,
+        AcademicRecord $record,
+        array $conditions,
+    ): ?RequirementOutcome {
+        if (filled($opportunity->minimum_education_level)) {
+            return null;
+        }
+
+        $sourcesByLevel = [];
+
+        foreach ($conditions as $condition) {
+            $sourcesByLevel[$condition->value][$condition->source] = true;
+        }
+
+        $levels = array_keys($sourcesByLevel);
+        usort($levels, static fn (string $a, string $b) => (EducationLadder::rung($a) ?? 0) <=> (EducationLadder::rung($b) ?? 0));
+
+        $labels = implode(' or ', array_map(static fn (string $l) => EducationLevel::label($l), $levels));
+
+        $sources = [];
+
+        foreach ($sourcesByLevel as $levelSources) {
+            foreach (array_keys($levelSources) as $source) {
+                $sources[$source] = true;
+            }
+        }
+
+        // "title", "description", or "title and description" - title first,
+        // matching the order it is actually read in.
+        $sourceLabel = implode(' and ', array_filter([
+            isset($sources[DescriptionCondition::SOURCE_TITLE]) ? 'title' : null,
+            isset($sources[DescriptionCondition::SOURCE_DESCRIPTION]) ? 'description' : null,
+        ]));
+
+        $applicantLevel = EducationLevel::canonical($profile->education_level);
+        $heldLabel = EducationLevel::label($profile->education_level);
+        $applicantTier = EducationLevel::tier($applicantLevel);
+
+        $exactMatch = $applicantLevel !== null && in_array($applicantLevel, $levels, true);
+        $sameTierAsAny = ! $exactMatch && $applicantTier !== null
+            && in_array($applicantTier, array_map(static fn (string $l) => EducationLevel::tier($l), $levels), true);
+        $progressesForward = ! $exactMatch && ! $sameTierAsAny
+            && $applicantLevel !== null && $this->progressesTowardAny($applicantLevel, $levels);
+
+        $statedLevelMeets = $applicantLevel === null || $exactMatch || $sameTierAsAny || $progressesForward;
+
+        if ($statedLevelMeets) {
+            $progressionNote = $progressesForward
+                ? ', a recognised step toward this level'
+                : '';
+
+            return RequirementOutcome::pass(
+                RequirementOutcome::TYPE_DESCRIPTION_EDUCATION_LEVEL,
+                'This scholarship is intended for '.$labels.' students (identified from the scholarship '.$sourceLabel
+                    .'), and your profile states '.$heldLabel.$progressionNote.'.',
+                required: $labels,
+                actual: $heldLabel,
+            );
+        }
+
+        foreach ($levels as $level) {
+            // Ranked by tier, not by rung: a level within a *later* tier than
+            // every level named here (Undergraduate against a Primary/
+            // Secondary-tier condition) has moved past this audience
+            // entirely, and a past record of having reached it is not
+            // evidence of belonging to it now. Two levels sharing a tier
+            // (O-Level/A-Level; Postgraduate/Masters/PhD) never reach this
+            // loop at all - $sameTierAsAny already passed them above.
+            if ($applicantTier !== null && self::TIER_RANKS[$applicantTier] > (self::TIER_RANKS[EducationLevel::tier($level)] ?? PHP_INT_MAX)) {
+                continue;
+            }
+
+            $evidence = $record->qualificationAtOrAbove($level);
+
+            if ($evidence !== null) {
+                return RequirementOutcome::pass(
+                    RequirementOutcome::TYPE_DESCRIPTION_EDUCATION_LEVEL,
+                    'This scholarship is intended for '.$labels.' students (identified from the scholarship '.$sourceLabel
+                        .'), and your results show '.$evidence.'.',
+                    required: $labels,
+                    actual: $evidence,
+                );
+            }
+        }
+
+        return RequirementOutcome::fail(
+            RequirementOutcome::TYPE_DESCRIPTION_EDUCATION_LEVEL,
+            'This scholarship is intended for '.$labels.' students (identified from the scholarship '.$sourceLabel
+                .'), but your profile states '.$heldLabel.'.',
+            required: $labels,
+            actual: $heldLabel,
+        );
+    }
+
+    /**
+     * Whether the applicant's current level is, or usually progresses
+     * toward, at least one of the levels a title or description names.
+     *
+     * Reuses EducationPathway::isValid() - the same progression table
+     * `progression()`'s advisory note already relies on - rather than a
+     * second hierarchy. An exact match is checked separately by the caller,
+     * because PRIMARY's own table entry lists only FORM_1: nothing
+     * "progresses to" a level already held, so the table has no reason to
+     * list a level against itself there the way every other level's row
+     * does.
+     *
+     * FORM_1 is EducationPathway's modelled entry point into secondary
+     * school from Primary. "High school"/"secondary school" phrasing maps
+     * to O_LEVEL as the general audience description of that same tier (see
+     * DescriptionEligibility::EDUCATION_LEVEL_PHRASES), so a Primary
+     * applicant's progression toward a description/title-stated O_LEVEL is
+     * read through the Form 1 step the table already recognises.
+     *
+     * @param  array<int, string>  $levels
+     */
+    private function progressesTowardAny(string $applicantLevel, array $levels): bool
+    {
+        foreach ($levels as $level) {
+            if (EducationPathway::isValid($applicantLevel, $level)) {
+                return true;
+            }
+
+            if ($level === EducationLevel::O_LEVEL
+                && $applicantLevel === EducationLevel::PRIMARY
+                && EducationPathway::isValid(EducationLevel::PRIMARY, EducationLevel::FORM_1)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * There is no structured field-of-study requirement anywhere in the
+     * system to defer to, so a description-stated field is always checked
+     * against ApplicantProfile::field_of_study.
+     */
+    private function descriptionFieldOfStudy(ApplicantProfile $profile, DescriptionCondition $condition): RequirementOutcome
+    {
+        $requiredField = $condition->value;
+
+        if (blank($profile->field_of_study)) {
+            // Field of study is not a meaningful concept at every level (see
+            // EducationLevel::usesFieldOfStudy()) - a blank value at a level
+            // that never asks for one is not evidence of failing to state
+            // it, but the description's condition still cannot be confirmed.
+            $addIt = EducationLevel::usesFieldOfStudy($profile->education_level)
+                ? ' - add your field of study so we can check.'
+                : '.';
+
+            return RequirementOutcome::fail(
+                RequirementOutcome::TYPE_DESCRIPTION_FIELD,
+                'Scholarship description states: '.$requiredField.' required, but your profile has no field of study recorded'.$addIt,
+                required: $requiredField,
+                actual: null,
+            );
+        }
+
+        if (strcasecmp(trim($profile->field_of_study), trim($requiredField)) === 0) {
+            return RequirementOutcome::pass(
+                RequirementOutcome::TYPE_DESCRIPTION_FIELD,
+                'Scholarship description states: '.$requiredField.' required, your profile states '.$profile->field_of_study.'.',
+                required: $requiredField,
+                actual: $profile->field_of_study,
+            );
+        }
+
+        return RequirementOutcome::fail(
+            RequirementOutcome::TYPE_DESCRIPTION_FIELD,
+            'Scholarship description states: '.$requiredField.' required, your profile states '.$profile->field_of_study.'.',
+            required: $requiredField,
+            actual: $profile->field_of_study,
+        );
+    }
+
+    /**
+     * A condition the description states but the applicant profile has no
+     * field to check - see RequirementOutcome::TYPE_DESCRIPTION_UNSUPPORTED.
+     * Always advisory: reported, never a pass and never a failure, because
+     * either would be inventing evidence the profile does not have.
+     */
+    private function descriptionUnsupported(DescriptionCondition $condition): RequirementOutcome
+    {
+        return RequirementOutcome::note(
+            RequirementOutcome::TYPE_DESCRIPTION_UNSUPPORTED,
+            false,
+            'Scholarship description states "'.$condition->matchedPhrase.'" as an intended condition, but your profile '
+                .'does not contain evidence to check it.',
+            required: $condition->matchedPhrase,
+            actual: null,
         );
     }
 }
