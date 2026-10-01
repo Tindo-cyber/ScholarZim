@@ -57,6 +57,41 @@ class ProviderVerificationTest extends TestCase
         ]);
     }
 
+    /**
+     * The one step of this workflow an administrator cannot do their job
+     * without: opening the certificate itself, not just its filename in the
+     * dashboard list. Previously untested end to end.
+     */
+    public function test_an_administrator_can_open_the_registration_certificate(): void
+    {
+        $provider = $this->register();
+
+        $response = $this->actingAs($this->admin)
+            ->get(route('admin.providers.certificate', $provider->user_id));
+
+        $response->assertOk();
+        $response->assertHeader('Content-Type', 'application/pdf');
+    }
+
+    /** The route sits behind the admin role gate, so another provider cannot reach it at all - not even their own reviewer's queue. */
+    public function test_a_provider_cannot_open_another_providers_certificate(): void
+    {
+        $provider = $this->register();
+
+        $otherProvider = User::create([
+            'role_id' => $provider->role_id,
+            'full_name' => 'Another Provider',
+            'email' => 'another-provider@example.test',
+            'password_hash' => bcrypt('ChangeMe123'),
+            'account_status' => AccountStatus::ACTIVE,
+            'email_verified' => true,
+        ]);
+
+        $this->actingAs($otherProvider)
+            ->get(route('admin.providers.certificate', $provider->user_id))
+            ->assertForbidden();
+    }
+
     public function test_an_unverified_provider_cannot_publish(): void
     {
         $provider = $this->register();

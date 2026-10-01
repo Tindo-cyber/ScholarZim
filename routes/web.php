@@ -60,7 +60,12 @@ Route::get('/offline', [\App\Http\Controllers\PwaController::class, 'offline'])-
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('guest')->group(function () {
+// no_store: a browser's back-forward cache can otherwise restore one of these
+// pages verbatim after the auth state that produced it has changed - most
+// visibly, landing back on a rendered "/login" after having signed in and out
+// again, showing whatever it looked like at the moment it was cached rather
+// than what the server would render now.
+Route::middleware(['guest', 'cache.headers:no_store'])->group(function () {
     Route::get('/login', [Auth\LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [Auth\LoginController::class, 'login'])->middleware('throttle:10,1');
 
@@ -92,7 +97,10 @@ Route::post('/logout', [Auth\LoginController::class, 'logout'])->name('logout');
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('auth')->group(function () {
+// Same no_store reasoning as the guest group above, for the signed-in side:
+// a cached dashboard/account page must not be replayable by the back button
+// after sign-out.
+Route::middleware(['auth', 'cache.headers:no_store'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/verify-email', [Auth\EmailVerificationController::class, 'notice'])->name('verification.notice');
@@ -130,7 +138,7 @@ Route::middleware('auth')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:' . RoleNames::APPLICANT])->group(function () {
+Route::middleware(['auth', 'role:' . RoleNames::APPLICANT, 'cache.headers:no_store'])->group(function () {
     Route::get('/applicant/dashboard', [Applicant\DashboardController::class, 'index'])->name('applicant.dashboard');
 
     Route::get('/applicant/profile', [Applicant\ProfileController::class, 'edit'])->name('applicant.profile');
@@ -176,7 +184,7 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT])->group(function () {
 | see their status; publishing routes additionally require an active account.
 */
 
-Route::middleware(['auth', 'role:' . RoleNames::PROVIDER])->group(function () {
+Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_store'])->group(function () {
     Route::get('/provider/dashboard', [Provider\DashboardController::class, 'index'])->name('provider.dashboard');
 
     Route::get('/provider/analytics', [Provider\AnalyticsController::class, 'index'])->name('provider.analytics');
@@ -221,7 +229,7 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER])->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:' . RoleNames::ADMIN])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [Admin\DashboardController::class, 'index'])->name('dashboard');
     Route::get('/analytics', [Admin\AnalyticsController::class, 'index'])->name('analytics');
     Route::get('/audit-log', [Admin\AuditLogController::class, 'index'])->name('audit');

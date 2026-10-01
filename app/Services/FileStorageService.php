@@ -9,6 +9,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use League\Flysystem\FilesystemException;
 use RuntimeException;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpFoundation\ResponseHeaderBag;
@@ -238,20 +239,37 @@ class FileStorageService
             abort(404, 'File not found.');
         }
 
-        $response = new StreamedResponse(function () use ($stream): void {
-            fpassthru($stream);
-            fclose($stream);
-        }, 200, [
+        $headers = [
             'Content-Type' => $mime,
-            'Content-Length' => $disk->size($path),
             'Content-Disposition' => HeaderUtils::makeDisposition(
                 $disposition,
                 $name,
                 str_replace('%', '', Str::ascii($name))
             ),
-        ]);
+        ];
 
-        return $response;
+        // Content-Length only helps the browser render a progress bar - the
+        // stream below still delivers the file correctly without it. Unlike
+        // mimeType() and readStream() above, the underlying disk driver's
+        // size() has no built-in fallback for a metadata call that fails
+        // (Laravel's FilesystemAdapter does not catch it the way it does for
+        // those two), so a transient hiccup fetching size from a remote disk
+        // must not turn a file that exists() and readStream() just
+        // confirmed is readable into a 500 for whoever is trying to open it.
+        try {
+            $headers['Content-Length'] = $disk->size($path);
+        } catch (FilesystemException $e) {
+            Log::warning('Could not determine file size while serving a download; continuing without Content-Length.', [
+                'path' => $path,
+                'disk' => $record->disk ?? $this->diskName(),
+                'exception' => $e->getMessage(),
+            ]);
+        }
+
+        return new StreamedResponse(function () use ($stream): void {
+            fpassthru($stream);
+            fclose($stream);
+        }, 200, $headers);
     }
 
     /**

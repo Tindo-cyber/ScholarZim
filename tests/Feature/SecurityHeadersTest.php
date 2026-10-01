@@ -29,6 +29,35 @@ class SecurityHeadersTest extends TestCase
         $response->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
     }
 
+    /**
+     * A browser's back-forward cache can otherwise restore this exact page
+     * after the auth state that produced it has changed - most visibly, the
+     * login form reappearing (or, worse, whatever an authenticated redirect
+     * away from it looked like) after the user has since signed in and out
+     * again. no_store makes the page ineligible for that cache, so the back
+     * button always re-asks the server rather than replaying a stale render.
+     */
+    public function test_the_login_page_is_never_cached(): void
+    {
+        $this->get('/login')
+            ->assertHeader('Cache-Control', 'no-store, private');
+    }
+
+    /**
+     * Same reasoning, the signed-in side: a cached dashboard must not survive
+     * sign-out via the back button. /dashboard itself is only a redirect to
+     * the role-specific one (DashboardController forwards by role), so this
+     * checks the page that actually renders.
+     */
+    public function test_the_dashboard_is_never_cached(): void
+    {
+        $user = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
+
+        $this->actingAs($user)
+            ->get('/applicant/dashboard')
+            ->assertHeader('Cache-Control', 'no-store, private');
+    }
+
     public function test_csp_blocks_inline_and_third_party_scripts(): void
     {
         $csp = $this->get('/')->headers->get('Content-Security-Policy');
