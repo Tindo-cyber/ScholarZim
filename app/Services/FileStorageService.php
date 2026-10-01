@@ -251,9 +251,14 @@ class FileStorageService
      * before this - discards exactly the detail needed to tell those
      * causes apart in the logs.
      *
+     * Public so Admin\StorageDiagnosticsController - which deliberately checks
+     * the disk directly rather than through exists() above, to see the raw
+     * exception instead of exists()'s own caught/logged/false - can format it
+     * the same way.
+     *
      * @return array<int, string>
      */
-    private function exceptionChain(\Throwable $e): array
+    public function exceptionChain(\Throwable $e): array
     {
         $chain = [];
 

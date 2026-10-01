@@ -266,6 +266,9 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
     Route::get('/providers/{userId}/certificate', [FileDownloadController::class, 'providerCertificate'])
         ->whereNumber('userId')
         ->name('providers.certificate');
+    Route::get('/providers/{userId}/certificate/diagnose', [Admin\StorageDiagnosticsController::class, 'providerCertificate'])
+        ->whereNumber('userId')
+        ->name('providers.certificate.diagnose');
 
     Route::post('/opportunities/bulk-review', [Admin\ModerationController::class, 'bulkReview'])
         ->name('moderation.bulk');
