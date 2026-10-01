@@ -21,12 +21,12 @@ use Illuminate\Support\Str;
  * of the admin area.
  *
  * providerCertificate() is read-only. writeTest() is not - it performs a
- * real put()/exists()/delete() round trip against the configured disk,
- * under a "diagnostics/" prefix that no application code reads from or
- * writes to, so it can answer "does a write actually succeed with the
- * credentials configured right now" directly, rather than inferring it from
- * a real registration attempt and a log pipeline that may itself be
- * misconfigured.
+ * real write()/fileExists()/delete() round trip against the configured
+ * disk's raw Flysystem driver, under a "diagnostics/" prefix that no
+ * application code reads from or writes to, so it can answer "does a write
+ * actually succeed with the credentials configured right now" directly,
+ * rather than inferring it from a real registration attempt and a log
+ * pipeline that may itself be misconfigured.
  *
  * No credential is ever returned, the same guarantee MailDiagnosticsController
  * makes for the Mailgun key: what comes back for AWS_ACCESS_KEY_ID and
@@ -114,14 +114,21 @@ class StorageDiagnosticsController extends Controller
     }
 
     /**
-     * A real put() -> exists() -> delete() round trip against the configured
-     * disk, under a path no other code ever touches.
+     * A real write() -> fileExists() -> delete() round trip against the
+     * configured disk, under a path no other code ever touches.
      *
-     * put() carries the identical risk store()'s storeAs() does: with
-     * 'throw' => false (every disk in config/filesystems.php), a refused
-     * write returns false rather than throwing. This checks both - a thrown
-     * exception and a clean false - at every stage, so whichever way the
-     * current credentials fail, the real error surfaces here.
+     * Goes through Storage::disk()->getDriver() - the raw
+     * League\Flysystem\FilesystemOperator - rather than through
+     * Illuminate\Filesystem\FilesystemAdapter's own put()/delete(). That
+     * wrapper catches UnableToWriteFile itself when 'throw' => false (every
+     * disk in config/filesystems.php), and with 'report' => true on the s3
+     * disk it hands the exception to the framework's own exception handler
+     * to log - which routes through the same production log channel that,
+     * moments earlier, produced no visible line at all for an uncaught
+     * RuntimeException during a real registration attempt. Whatever is
+     * wrong with that pipeline, this diagnostic cannot depend on it: the
+     * raw driver throws directly, so the real exception is in this
+     * response whether or not anything would have reached the logs.
      */
     public function writeTest(FileStorageService $fileStorage): JsonResponse
     {
@@ -130,30 +137,23 @@ class StorageDiagnosticsController extends Controller
         $contents = 'ScholarZim storage diagnostic write test - ' . now()->toIso8601String();
 
         $result = ['disk' => $diskName, 'path' => $path];
+        $driver = Storage::disk($diskName)->getDriver();
 
         try {
-            $put = Storage::disk($diskName)->put($path, $contents);
+            $driver->write($path, $contents);
         } catch (\Throwable $e) {
             return response()->json($result + [
-                'stage' => 'put',
+                'stage' => 'write',
                 'succeeded' => false,
                 'exception_chain' => $fileStorage->exceptionChain($e),
             ], 503);
         }
 
-        if ($put === false) {
-            return response()->json($result + [
-                'stage' => 'put',
-                'succeeded' => false,
-                'reason' => 'put() returned false without throwing - the write was refused by the disk.',
-            ], 503);
-        }
-
         try {
-            $exists = Storage::disk($diskName)->exists($path);
+            $exists = $driver->fileExists($path);
         } catch (\Throwable $e) {
             return response()->json($result + [
-                'stage' => 'exists',
+                'stage' => 'fileExists',
                 'succeeded' => false,
                 'exception_chain' => $fileStorage->exceptionChain($e),
             ], 503);
@@ -162,7 +162,7 @@ class StorageDiagnosticsController extends Controller
         $cleanupExceptionChain = null;
 
         try {
-            Storage::disk($diskName)->delete($path);
+            $driver->delete($path);
         } catch (\Throwable $e) {
             // The round trip itself already answered the real question by
             // this point - a failure to clean up afterward is noted, not

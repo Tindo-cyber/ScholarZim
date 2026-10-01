@@ -196,36 +196,31 @@ class StorageDiagnosticsEndpointTest extends TestCase
         Storage::disk('s3')->assertMissing($path);
     }
 
-    public function test_a_put_that_returns_false_is_reported_without_throwing(): void
+    /**
+     * The raw Flysystem driver's write() has a void return type and always
+     * throws on failure - unlike Illuminate\Filesystem\FilesystemAdapter's
+     * own put(), which can return false without throwing. Going through
+     * getDriver() (see the controller) means there is no "returned false"
+     * case left to report for this stage; only a thrown exception.
+     */
+    public function test_a_write_that_throws_is_reported_with_its_full_exception_chain(): void
     {
-        $failingDisk = Mockery::mock(FilesystemContract::class);
-        $failingDisk->shouldReceive('put')->once()->andReturn(false);
-        Storage::shouldReceive('disk')->with('s3')->andReturn($failingDisk);
-
-        $this->actingAs($this->admin())
-            ->get('/admin/storage-diagnostics/write-test')
-            ->assertStatus(503)
-            ->assertJsonPath('stage', 'put')
-            ->assertJsonPath('succeeded', false)
-            ->assertJsonPath('reason', fn ($v) => str_contains($v, 'refused'));
-    }
-
-    public function test_a_put_that_throws_is_reported_with_its_full_exception_chain(): void
-    {
-        $failingDisk = Mockery::mock(FilesystemContract::class);
-        $failingDisk->shouldReceive('put')->once()->andThrow(
+        $failingDriver = Mockery::mock(\League\Flysystem\FilesystemOperator::class);
+        $failingDriver->shouldReceive('write')->once()->andThrow(
             \League\Flysystem\UnableToWriteFile::atLocation(
                 'diagnostics/irrelevant.txt',
                 'disk failure',
                 new RuntimeException('AWS HTTP error: Client error: `PUT ...` resulted in a `403 Forbidden` response: InvalidAccessKeyId')
             )
         );
+        $failingDisk = Mockery::mock(\Illuminate\Filesystem\FilesystemAdapter::class);
+        $failingDisk->shouldReceive('getDriver')->once()->andReturn($failingDriver);
         Storage::shouldReceive('disk')->with('s3')->andReturn($failingDisk);
 
         $this->actingAs($this->admin())
             ->get('/admin/storage-diagnostics/write-test')
             ->assertStatus(503)
-            ->assertJsonPath('stage', 'put')
+            ->assertJsonPath('stage', 'write')
             ->assertJsonPath('succeeded', false)
             ->assertJsonCount(2, 'exception_chain')
             ->assertJsonPath('exception_chain.1', fn ($v) => str_contains($v, 'InvalidAccessKeyId'));
