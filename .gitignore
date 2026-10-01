@@ -16,6 +16,11 @@
 # Local QA credentials file: holds real account passwords for production QA and
 # must never be committed. Kept out of the tree entirely.
 qa-credentials.env
+# Dusk's local environment file and the dedicated sqlite database it points
+# at - isolates browser tests from whatever database a developer is using
+# for manual local testing. See tests/DuskTestCase.php.
+.env.dusk.local
+/database/testing.sqlite
 .phpunit.result.cache
 Homestead.json
 Homestead.yaml

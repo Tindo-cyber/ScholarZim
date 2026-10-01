@@ -552,7 +552,35 @@ one will drift as the suite grows.
   this is the test that fails if one is quietly rebuilt from a stale brief or template instead
   of the removal being revisited on purpose.
 
-## Running in Docker
+### Browser tests (Dusk)
+
+`php artisan test` runs every test above at the HTTP level - no JavaScript ever executes.
+`tests/Browser/` instead drives a real Chrome browser, for the handful of things that only
+happen client-side (for example `resources/js/name-input.js` stripping digits as a name
+field is typed into, which an HTTP request can't observe either way).
+
+One-time setup:
+
+```bash
+php artisan dusk:chrome-driver --detect   # match the Chrome actually installed
+```
+
+Dusk needs a real server to point the browser at, running against its own disposable
+database - never the database you use for manual testing, and never production. Two
+terminals:
+
+```bash
+# Terminal 1 - serve against a throwaway sqlite file, not your normal .env
+APP_URL=http://127.0.0.1:8000 DB_CONNECTION=sqlite DB_DATABASE=database/testing.sqlite \
+  MAIL_MAILER=array QUEUE_CONNECTION=sync php artisan serve --port=8000
+
+# Terminal 2
+php artisan migrate:fresh --seed --env=dusk.local   # first run / whenever fixtures change
+php artisan dusk
+```
+
+`.env.dusk.local` (gitignored, same as `.env`) holds those same overrides so you don't have
+to retype them - see it for the full list and why each one is set that way.
 
 ```bash
 docker compose up --build
