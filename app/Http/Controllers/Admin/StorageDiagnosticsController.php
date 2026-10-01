@@ -7,6 +7,7 @@ use App\Models\ProviderProfile;
 use App\Services\FileStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 /**
  * Admin\MailDiagnosticsController's counterpart for the document disk.
@@ -17,7 +18,15 @@ use Illuminate\Support\Facades\Storage;
  * way to be answered without a code path that answers it from a browser.
  *
  * Administrator-only, behind the same auth and role middleware as the rest
- * of the admin area. Read-only - it never writes, never deletes.
+ * of the admin area.
+ *
+ * providerCertificate() is read-only. writeTest() is not - it performs a
+ * real put()/exists()/delete() round trip against the configured disk,
+ * under a "diagnostics/" prefix that no application code reads from or
+ * writes to, so it can answer "does a write actually succeed with the
+ * credentials configured right now" directly, rather than inferring it from
+ * a real registration attempt and a log pipeline that may itself be
+ * misconfigured.
  *
  * No credential is ever returned, the same guarantee MailDiagnosticsController
  * makes for the Mailgun key: what comes back for AWS_ACCESS_KEY_ID and
@@ -27,10 +36,11 @@ use Illuminate\Support\Facades\Storage;
  * anything else. The bucket, region and endpoint are not credentials and are
  * returned as configured.
  *
- * Deliberately scoped to one provider's certificate rather than any disk
- * path generically - that is the one question actually in front of us, and
- * a path taken from the URL and handed to the storage layer is exactly the
- * kind of surface this project does not add without a reason.
+ * providerCertificate() is deliberately scoped to one provider's certificate
+ * rather than any disk path generically - that is the one question actually
+ * in front of us, and a path taken from the URL and handed to the storage
+ * layer is exactly the kind of surface this project does not add without a
+ * reason.
  */
 class StorageDiagnosticsController extends Controller
 {
@@ -101,6 +111,71 @@ class StorageDiagnosticsController extends Controller
             'stage_2_provider_profile' => $providerProfile,
             'stage_3_existence_check' => $existenceCheck,
         ], 200);
+    }
+
+    /**
+     * A real put() -> exists() -> delete() round trip against the configured
+     * disk, under a path no other code ever touches.
+     *
+     * put() carries the identical risk store()'s storeAs() does: with
+     * 'throw' => false (every disk in config/filesystems.php), a refused
+     * write returns false rather than throwing. This checks both - a thrown
+     * exception and a clean false - at every stage, so whichever way the
+     * current credentials fail, the real error surfaces here.
+     */
+    public function writeTest(FileStorageService $fileStorage): JsonResponse
+    {
+        $diskName = (string) config('filesystems.default');
+        $path = 'diagnostics/write-test-' . now()->format('YmdHis') . '-' . Str::random(8) . '.txt';
+        $contents = 'ScholarZim storage diagnostic write test - ' . now()->toIso8601String();
+
+        $result = ['disk' => $diskName, 'path' => $path];
+
+        try {
+            $put = Storage::disk($diskName)->put($path, $contents);
+        } catch (\Throwable $e) {
+            return response()->json($result + [
+                'stage' => 'put',
+                'succeeded' => false,
+                'exception_chain' => $fileStorage->exceptionChain($e),
+            ], 503);
+        }
+
+        if ($put === false) {
+            return response()->json($result + [
+                'stage' => 'put',
+                'succeeded' => false,
+                'reason' => 'put() returned false without throwing - the write was refused by the disk.',
+            ], 503);
+        }
+
+        try {
+            $exists = Storage::disk($diskName)->exists($path);
+        } catch (\Throwable $e) {
+            return response()->json($result + [
+                'stage' => 'exists',
+                'succeeded' => false,
+                'exception_chain' => $fileStorage->exceptionChain($e),
+            ], 503);
+        }
+
+        $cleanupExceptionChain = null;
+
+        try {
+            Storage::disk($diskName)->delete($path);
+        } catch (\Throwable $e) {
+            // The round trip itself already answered the real question by
+            // this point - a failure to clean up afterward is noted, not
+            // treated as the test having failed.
+            $cleanupExceptionChain = $fileStorage->exceptionChain($e);
+        }
+
+        return response()->json($result + [
+            'stage' => 'complete',
+            'succeeded' => $exists === true,
+            'exists_after_write' => $exists,
+            'cleanup_exception_chain' => $cleanupExceptionChain,
+        ], $exists === true ? 200 : 503);
     }
 
     /** @return array{configured: bool, length: int, sha256_prefix: ?string} */

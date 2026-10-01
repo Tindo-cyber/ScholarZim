@@ -171,6 +171,66 @@ class StorageDiagnosticsEndpointTest extends TestCase
             ->assertJsonPath('stage_3_existence_check.exception_chain.1', fn ($v) => str_contains($v, 'AccessDenied'));
     }
 
+    // ------------------------------------------------------------ write test --
+
+    public function test_the_write_test_is_closed_to_a_non_administrator(): void
+    {
+        $this->actingAs($this->student())
+            ->get('/admin/storage-diagnostics/write-test')
+            ->assertForbidden();
+    }
+
+    public function test_a_successful_round_trip_is_reported_and_cleans_up_after_itself(): void
+    {
+        Storage::fake('s3');
+
+        $response = $this->actingAs($this->admin())
+            ->get('/admin/storage-diagnostics/write-test')
+            ->assertOk()
+            ->assertJsonPath('stage', 'complete')
+            ->assertJsonPath('succeeded', true)
+            ->assertJsonPath('exists_after_write', true);
+
+        $path = $response->json('path');
+        $this->assertStringStartsWith('diagnostics/', $path);
+        Storage::disk('s3')->assertMissing($path);
+    }
+
+    public function test_a_put_that_returns_false_is_reported_without_throwing(): void
+    {
+        $failingDisk = Mockery::mock(FilesystemContract::class);
+        $failingDisk->shouldReceive('put')->once()->andReturn(false);
+        Storage::shouldReceive('disk')->with('s3')->andReturn($failingDisk);
+
+        $this->actingAs($this->admin())
+            ->get('/admin/storage-diagnostics/write-test')
+            ->assertStatus(503)
+            ->assertJsonPath('stage', 'put')
+            ->assertJsonPath('succeeded', false)
+            ->assertJsonPath('reason', fn ($v) => str_contains($v, 'refused'));
+    }
+
+    public function test_a_put_that_throws_is_reported_with_its_full_exception_chain(): void
+    {
+        $failingDisk = Mockery::mock(FilesystemContract::class);
+        $failingDisk->shouldReceive('put')->once()->andThrow(
+            \League\Flysystem\UnableToWriteFile::atLocation(
+                'diagnostics/irrelevant.txt',
+                'disk failure',
+                new RuntimeException('AWS HTTP error: Client error: `PUT ...` resulted in a `403 Forbidden` response: InvalidAccessKeyId')
+            )
+        );
+        Storage::shouldReceive('disk')->with('s3')->andReturn($failingDisk);
+
+        $this->actingAs($this->admin())
+            ->get('/admin/storage-diagnostics/write-test')
+            ->assertStatus(503)
+            ->assertJsonPath('stage', 'put')
+            ->assertJsonPath('succeeded', false)
+            ->assertJsonCount(2, 'exception_chain')
+            ->assertJsonPath('exception_chain.1', fn ($v) => str_contains($v, 'InvalidAccessKeyId'));
+    }
+
     // ------------------------------------------------------------- helpers --
 
     private function providerWithCertificate(): ProviderProfile
