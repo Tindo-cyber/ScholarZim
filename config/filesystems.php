@@ -81,6 +81,19 @@ return [
             'endpoint' => env('AWS_ENDPOINT'),
             'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', false),
             'throw' => false,
+            // 'throw' => false means a failed read (mimeType(), readStream(),
+            // put()) is caught inside Illuminate\Filesystem\FilesystemAdapter
+            // and turned into a clean false/null return rather than an
+            // exception - but without 'report' => true, that caught
+            // exception is also never logged anywhere: shouldReport() reads
+            // this exact key and defaults to false. The result was a R2
+            // failure - wrong credentials, wrong bucket, an endpoint that
+            // stopped resolving - that left no trace at all, not even in
+            // the container's own log stream, while every caller correctly
+            // saw "file not found" and nothing else. This does not change
+            // what any method returns, only whether its cause is visible
+            // when it fails.
+            'report' => true,
         ],
 
     ],

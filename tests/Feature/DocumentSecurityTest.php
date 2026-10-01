@@ -13,10 +13,13 @@ use App\Services\FileStorageService;
 use App\Support\AccountStatus;
 use App\Support\ApplicationStatus;
 use Database\Seeders\DatabaseSeeder;
+use Illuminate\Contracts\Filesystem\Filesystem as FilesystemContract;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Mockery;
 use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use Tests\TestCase;
@@ -271,6 +274,110 @@ class DocumentSecurityTest extends TestCase
         $this->assertSame(64, strlen($record->checksum), 'a sha256 hex digest');
         $this->assertNotNull($record->created_at);
         $this->assertSame(DocumentFile::SCAN_PENDING, $record->scan_status);
+    }
+
+    /**
+     * storeAs() returns false, not an exception, when the configured disk
+     * refuses a write - every disk in config/filesystems.php either sets
+     * throw=false explicitly (local, public) or leaves it unset, which
+     * Laravel's FilesystemAdapter defaults to false too (s3). Without the
+     * check this guards, that false is coerced into an empty string by
+     * PHP's weak typing against store()'s string return type, and a caller
+     * such as RegistrationService saves that empty path as if it were real
+     * - registration reports success, and the failure only surfaces later,
+     * confusingly, as "file not found" for whoever first tries to open it.
+     */
+    public function test_a_failed_write_throws_instead_of_recording_an_empty_path(): void
+    {
+        // Mocked rather than forced via real filesystem permissions: the
+        // disk a provider's certificate lands on in production is S3-
+        // compatible object storage, and the failure this guards against -
+        // storeAs() returning false - is defined by the Filesystem contract
+        // itself, not by any one driver's particular way of refusing a
+        // write.
+        $failingDisk = Mockery::mock(FilesystemContract::class);
+        $failingDisk->shouldReceive('putFileAs')->once()->andReturn(false);
+        Storage::shouldReceive('disk')->with($this->testDisk())->andReturn($failingDisk);
+
+        try {
+            $this->expectException(RuntimeException::class);
+            $this->expectExceptionMessage('Failed to store the uploaded file');
+
+            $this->storage()->store($this->pdf(), 'provider-certificates');
+        } finally {
+            $this->assertDatabaseCount('document_files', 0);
+        }
+    }
+
+    /**
+     * exists() is the one call in respond() with no built-in fallback:
+     * Illuminate\Filesystem\FilesystemAdapter only catches readStream()/
+     * mimeType()/put() internally, not exists(), and League\Flysystem's S3
+     * adapter re-throws anything that is not a clean "no such key" (wrong
+     * credentials, wrong bucket, an endpoint that stopped resolving) as
+     * UnableToCheckFileExistence. Before this guard, that reached
+     * respond() uncaught - an admin opening a provider's certificate
+     * during a real R2 misconfiguration got a raw 500, not the 404 the
+     * surrounding code is written to produce for a merely-missing file.
+     */
+    public function test_a_disk_error_checking_existence_is_a_clean_503_not_an_uncaught_crash(): void
+    {
+        $failingDisk = Mockery::mock(FilesystemContract::class);
+        $failingDisk->shouldReceive('exists')->once()
+            ->andThrow($this->wrappedExistenceFailure());
+        Storage::shouldReceive('disk')->with($this->testDisk())->andReturn($failingDisk);
+
+        Log::shouldReceive('error')->once()->withArgs(
+            fn (string $message, array $context) => $this->assertsFullExceptionChain($message, $context)
+        );
+
+        try {
+            $this->storage()->respond('provider-certificates/does-not-matter.pdf');
+            $this->fail('Expected an HttpException.');
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            $this->assertSame(503, $e->getStatusCode());
+        }
+    }
+
+    /** The standalone exists() carries the identical risk for every other caller - FileDownloadController's abort_unless() checks among them. */
+    public function test_exists_returns_false_rather_than_throwing_when_the_disk_cannot_be_checked(): void
+    {
+        $failingDisk = Mockery::mock(FilesystemContract::class);
+        $failingDisk->shouldReceive('exists')->once()
+            ->andThrow($this->wrappedExistenceFailure());
+        Storage::shouldReceive('disk')->with($this->testDisk())->andReturn($failingDisk);
+
+        Log::shouldReceive('warning')->once()->withArgs(
+            fn (string $message, array $context) => $this->assertsFullExceptionChain($message, $context)
+        );
+
+        $this->assertFalse($this->storage()->exists('provider-certificates/does-not-matter.pdf'));
+    }
+
+    /**
+     * A realistic two-level wrap: Flysystem's own generic
+     * UnableToCheckFileExistence ("Unable to check existence for: ...")
+     * around the kind of specific, actionable message an AWS SDK
+     * S3Exception actually carries (an error code and HTTP status R2
+     * returned). The regression this guards against is logging only the
+     * outer message and silently discarding this inner one.
+     */
+    private function wrappedExistenceFailure(): \League\Flysystem\UnableToCheckFileExistence
+    {
+        return \League\Flysystem\UnableToCheckFileExistence::forLocation(
+            'provider-certificates/does-not-matter.pdf',
+            new RuntimeException('AWS HTTP error: Client error: `HEAD ...` resulted in a `403 Forbidden` response: AccessDenied')
+        );
+    }
+
+    private function assertsFullExceptionChain(string $message, array $context): bool
+    {
+        $this->assertArrayHasKey('exception_chain', $context);
+        $this->assertCount(2, $context['exception_chain']);
+        $this->assertStringContainsString('UnableToCheckFileExistence', $context['exception_chain'][0]);
+        $this->assertStringContainsString('AccessDenied', $context['exception_chain'][1]);
+
+        return true;
     }
 
     public function test_the_checksum_detects_a_file_changed_underneath_the_record(): void

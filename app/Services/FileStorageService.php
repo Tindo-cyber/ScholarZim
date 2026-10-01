@@ -93,6 +93,24 @@ class FileStorageService
 
         $path = $file->storeAs(trim($folder, '/'), $name, $this->diskName());
 
+        // storeAs() returns false, not an exception, on a failed write - none
+        // of the disks configured in config/filesystems.php set 'throw' =>
+        // true. Without this check, a bad or missing credential for the
+        // configured disk is silently swallowed: $path becomes false, PHP's
+        // weak typing coerces that to an empty string against this method's
+        // string return type and recordMetadata()'s string $path parameter,
+        // and a DocumentFile row - and whatever caller saved this path,
+        // such as a ProviderProfile's certificate_path - ends up pointing at
+        // nothing. Registration (or whichever upload this was) then reports
+        // success, and the failure only surfaces later and confusingly, as
+        // "file not found" for whoever first tries to open it.
+        if ($path === false) {
+            throw new RuntimeException(
+                'Failed to store the uploaded file on disk "' . $this->diskName() . '" - '
+                . 'the write was refused. Check that disk\'s credentials and configuration.'
+            );
+        }
+
         $this->recordMetadata($path, $name, $original, $mime, $size, $uploader, $checksum);
 
         return $path;
@@ -185,9 +203,66 @@ class FileStorageService
         return hash_equals((string) $record->checksum, $computed);
     }
 
+    /**
+     * Whether a path exists on the configured disk - false if it genuinely
+     * does not, and also false (logged) if the disk could not even be asked.
+     *
+     * exists() is not one of the methods Illuminate\Filesystem\FilesystemAdapter
+     * wraps in its own try/catch (that is readStream()/mimeType()/put() only)
+     * - it calls straight through to League\Flysystem, whose S3 adapter
+     * re-throws anything that is not a clean "no such key" from the API
+     * (wrong credentials, wrong bucket, an endpoint that stopped resolving)
+     * as UnableToCheckFileExistence. Left unguarded, every caller of this
+     * method - including the abort_unless() checks in FileDownloadController
+     * - would turn a storage-layer problem into an uncaught 500 instead of
+     * the 404 they are written to produce for a merely-missing file.
+     */
     public function exists(?string $path): bool
     {
-        return filled($path) && $this->disk()->exists($path);
+        if (blank($path)) {
+            return false;
+        }
+
+        try {
+            return $this->disk()->exists($path);
+        } catch (FilesystemException $e) {
+            Log::warning('Could not check whether a file exists on the configured disk.', [
+                'path' => $path,
+                'disk' => $this->diskName(),
+                'exception_chain' => $this->exceptionChain($e),
+            ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Every exception in the chain, outermost first, as "ClassName: message".
+     *
+     * League\Flysystem's own exceptions - UnableToCheckFileExistence,
+     * UnableToReadFile, and the rest - carry a generic message
+     * ("Unable to check existence for: {path}") and wrap the real cause as
+     * their $previous exception: the AWS SDK's own S3Exception (with the
+     * actual AccessDenied/SignatureDoesNotMatch/NoSuchBucket error code and
+     * HTTP status Cloudflare R2 returned) or, one level deeper still, a
+     * Guzzle transport exception for a DNS/connection failure that never
+     * got an HTTP response at all. Logging only $e->getMessage() on the
+     * outer exception - which is what the two catch blocks below did
+     * before this - discards exactly the detail needed to tell those
+     * causes apart in the logs.
+     *
+     * @return array<int, string>
+     */
+    private function exceptionChain(\Throwable $e): array
+    {
+        $chain = [];
+
+        do {
+            $chain[] = get_class($e) . ': ' . $e->getMessage();
+            $e = $e->getPrevious();
+        } while ($e !== null);
+
+        return $chain;
     }
 
     public function absolutePath(string $path): string
@@ -220,7 +295,27 @@ class FileStorageService
             ? Storage::disk($record->disk)
             : $this->disk();
 
-        if (! $disk->exists($path)) {
+        // Not $this->exists(): that method's own try/catch would report
+        // "false" here the same as a file that is genuinely missing. This
+        // caller can tell the two apart, and should - a storage-layer
+        // problem (wrong credentials, wrong bucket, an endpoint that
+        // stopped resolving) is not the same fact as "no such file", and
+        // collapsing them into the same 404 is exactly what left this kind
+        // of failure undiagnosable before 'report' => true on the s3 disk
+        // (see config/filesystems.php) gave it anywhere to be logged.
+        try {
+            $fileExists = $disk->exists($path);
+        } catch (FilesystemException $e) {
+            Log::error('Could not check whether a document exists on the configured disk.', [
+                'path' => $path,
+                'disk' => $record->disk ?? $this->diskName(),
+                'exception_chain' => $this->exceptionChain($e),
+            ]);
+
+            abort(503, 'Unable to reach document storage right now. Please try again shortly.');
+        }
+
+        if (! $fileExists) {
             abort(404, 'File not found.');
         }
 
