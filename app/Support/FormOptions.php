@@ -153,6 +153,13 @@ final class FormOptions
      * from another format (e.g. stripping a leading +263) - the platform
      * has no established normalisation step today, and silently rewriting
      * what an applicant typed is a different feature from validating it.
+     *
+     * Applied to an applicant's own phone number and a guardian's, never to
+     * a provider's - a provider's work/organisation number is international
+     * and may be a landline or carry an extension, which this pattern
+     * cannot express without becoming the kind of all-formats regex it was
+     * written to avoid being. See App\Rules\InternationalPhoneNumber for
+     * that rule instead.
      */
     public const PHONE_PATTERN = '/^\d{10}$/';
 

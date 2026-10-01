@@ -70,13 +70,24 @@ class ApplicantProfile extends Model
         'transcript' => 'transcript',
     ];
 
-    /** documentType => label shown to the applicant. */
+    /**
+     * documentType => label shown to the applicant.
+     *
+     * 'transcript' reads as "Academic Certificate / Proof of Study" rather
+     * than "Academic transcript": a current undergraduate has no
+     * graduation certificate yet, and the softer label covers what they
+     * actually hold (a proof-of-study/enrolment letter) as well as what a
+     * postgraduate applicant holds (a completed previous qualification
+     * certificate) - requiredDocumentTypes() asks for this same stored
+     * column/upload at both tiers, just with a different accompanying
+     * document set.
+     */
     public const DOCUMENT_LABELS = [
         'results' => 'Results certificate',
         'cv' => 'CV / resume',
         'passport' => 'ID or passport',
         'recommendation' => 'Recommendation letter',
-        'transcript' => 'Academic transcript',
+        'transcript' => 'Academic Certificate / Proof of Study',
     ];
 
     /** documentType => name used when renaming an uploaded file. */
@@ -85,7 +96,7 @@ class ApplicantProfile extends Model
         'cv' => 'CV',
         'passport' => 'ID or Passport',
         'recommendation' => 'Recommendation Letter',
-        'transcript' => 'Academic Transcript',
+        'transcript' => 'Academic Certificate or Proof of Study',
     ];
 
     public function user(): BelongsTo
@@ -320,14 +331,18 @@ class ApplicantProfile extends Model
      */
     public function hasRequiredAcademicEvidence(): bool
     {
-        // A Primary applicant is asked for no document at all - see
-        // requiredDocumentTypes(), which returns an empty list for the
-        // guardian-assisted Form 1 pathway. Reading this as "needs a
+        // A Primary applicant's academic evidence is their structured Grade 7
+        // results, not a stored document - unconditionally true here
+        // regardless of whether requiredDocumentTypes()'s own 'results'
+        // upload has actually been provided yet, since quick-apply does not
+        // enforce that wizard checklist and a Form 1 listing's "requires
+        // results certificate" is really asking about proof of results,
+        // which the structured data already is. Reading this as "needs a
         // transcript" made a Form 1 listing that ticked
-        // requires_results_certificate refuse every Primary pupil for a
-        // document ScholarZim never invites them to upload, and their Grade 7
-        // results - the thing that listing actually cares about - could not
-        // rescue them. An unsatisfiable requirement is not a requirement.
+        // requires_results_certificate refuse every Primary pupil over a
+        // document that question was never really about, and their Grade 7
+        // results could not rescue them. An unsatisfiable requirement is not
+        // a requirement.
         if (EducationLevel::isPrimary($this->education_level)) {
             return true;
         }
@@ -338,25 +353,35 @@ class ApplicantProfile extends Model
     }
 
     /**
-     * O/A-Level applicants are asked for their results certificate; everyone
-     * from Certificate level upward is asked for the full document set (CV,
-     * ID, transcript, and a recommendation letter) in place of it, since a
-     * transcript is the tertiary-and-above equivalent of a school results
-     * paper, not an addition to it.
+     * A Primary applicant is asked for their results alone - no
+     * recommendation letter, which stays specific to O-Level and above.
+     * O/A-Level applicants are asked for their results certificate plus a
+     * recommendation letter; a postgraduate applicant's evidence is the
+     * previous tertiary qualification certificate they already hold, not a
+     * CV or ID - the document set below that is for someone still entering
+     * tertiary study, who has a current proof of study rather than a
+     * completed one to show, and an identity document a continuing
+     * postgraduate relationship with a provider does not re-ask for.
      */
     public function requiredDocumentTypes(): array
     {
         if (EducationLevel::isPrimary($this->education_level)) {
-            // A Primary applicant applies through the guardian-assisted Form 1
-            // pathway; no document here is required to start that.
-            return [];
-        }
-
-        if (EducationLevel::usesSchoolResults($this->education_level)) {
+            // The guardian-assisted Form 1 pathway still asks for proof of
+            // the Grade 7 results themselves - the same 'results' upload
+            // O/A-Level uses - just without the recommendation letter those
+            // levels also ask for.
             return ['results'];
         }
 
-        return ['cv', 'passport', 'recommendation', 'transcript'];
+        if (EducationLevel::usesSchoolResults($this->education_level)) {
+            return ['results', 'recommendation'];
+        }
+
+        if (EducationLevel::tier($this->education_level) === EducationLevel::TIER_POSTGRADUATE) {
+            return ['transcript', 'recommendation'];
+        }
+
+        return ['transcript', 'passport', 'recommendation'];
     }
 
     public function missingRequiredDocumentTypes(): array

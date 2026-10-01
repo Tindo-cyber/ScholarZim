@@ -251,6 +251,20 @@
                             grades from one examination board are never converted into another's.
                         </p>
 
+                        {{--
+                            The qualification choices below were rendered for the education level
+                            this page loaded with. Changing "Current education level" above does not
+                            re-fetch that list live - it still reflects your previous answer until you
+                            save - so this says so plainly rather than leaving a stale dropdown to
+                            speak for itself. Toggled by profile-form.js, which already listens for
+                            this same change event for section visibility.
+                        --}}
+                        <p class="alert alert-info small d-none" id="academic-level-stale-notice" role="note">
+                            The qualifications listed below still match your previous education level.
+                            Save your profile with the new level selected above, then reopen this page
+                            to choose from the updated list.
+                        </p>
+
                         @error('academic_subject_results')
                             <div class="alert alert-danger small">{{ $message }}</div>
                         @enderror

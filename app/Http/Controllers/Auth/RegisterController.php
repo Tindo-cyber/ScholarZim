@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Rules\InternationalPhoneNumber;
 use App\Services\RegistrationService;
 use App\Support\FormOptions;
 use App\Support\ProviderOrgType;
@@ -56,7 +57,10 @@ class RegisterController extends Controller
             // own docblock.
             'full_name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
+            // Not FormOptions::PHONE_PATTERN: a provider's own work/organisation
+            // number is international and may be a landline, a switchboard, or
+            // carry an extension - see InternationalPhoneNumber's own docblock.
+            'phone' => ['nullable', 'string', new InternationalPhoneNumber()],
             'organisation_type' => ['required', Rule::in(ProviderOrgType::ALL)],
             'registration_number' => ['required', 'string', 'max:100'],
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],

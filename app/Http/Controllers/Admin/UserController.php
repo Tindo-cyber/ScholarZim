@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Rules\InternationalPhoneNumber;
 use App\Services\AdminUserService;
 use App\Support\AccountStatus;
 use App\Support\FormOptions;
@@ -40,14 +41,23 @@ class UserController extends Controller
         // provider self-registration leaves unrestricted - the letters-only
         // rule is a person-name rule and would reject a legitimate
         // organisation name that happens to contain a digit.
-        $nameRule = $request->input('role_name') === RoleNames::PROVIDER
+        $isProvider = $request->input('role_name') === RoleNames::PROVIDER;
+
+        $nameRule = $isProvider
             ? ['required', 'string', 'max:255']
             : ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN];
+
+        // Same reasoning as the name rule above: a provider account's phone
+        // is a work/organisation number, international and possibly a
+        // landline or switchboard - see InternationalPhoneNumber's docblock.
+        $phoneRule = $isProvider
+            ? ['nullable', 'string', new InternationalPhoneNumber()]
+            : ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN];
 
         $data = $request->validate([
             'full_name' => $nameRule,
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
+            'phone' => $phoneRule,
             'role_name' => ['required', Rule::in(RoleNames::ALL)],
             'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
         ]);

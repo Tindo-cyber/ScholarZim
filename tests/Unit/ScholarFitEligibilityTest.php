@@ -851,6 +851,172 @@ class ScholarFitEligibilityTest extends TestCase
         $this->assertStringContainsString('Undergraduate or Masters', implode(' ', $fit->failureMessages()));
     }
 
+    // --------------------------------------------- entry qualification --
+
+    /**
+     * The distinction the description's marker makes: a bare target
+     * ("University Undergraduate Scholarship") would let an O-Level
+     * applicant through by progression, but "requires an A-Level
+     * qualification for entry" states a *prerequisite*, not an audience -
+     * checked the same floor way minimum_education_level is, so an O-Level
+     * applicant who has not reached A-Level yet does not meet it even
+     * though A-Level is their ordinary next step.
+     */
+    public function test_a_description_requiring_a_level_refuses_an_o_level_applicant(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::O_LEVEL, 'field_of_study' => null], grades: []),
+            $this->opportunity([
+                'education_level' => null,
+                'title' => 'University Undergraduate Scholarship',
+                'description' => 'This scholarship requires an A-Level qualification for entry.',
+            ])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $failed = implode(' ', $fit->failureMessages());
+        $this->assertStringContainsString('requires A Level', $failed);
+        $this->assertStringContainsString('entry qualification', $failed);
+    }
+
+    /** The same listing, met: an A-Level applicant clears both the target (by progression) and the stated entry floor (exactly). */
+    public function test_a_description_requiring_a_level_is_met_by_an_a_level_applicant(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::A_LEVEL, 'field_of_study' => null]),
+            $this->opportunity([
+                'education_level' => null,
+                'title' => 'University Undergraduate Scholarship',
+                'description' => 'This scholarship requires an A-Level qualification for entry.',
+            ])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /**
+     * Independent gates: meeting the target does not excuse missing a
+     * separate, stricter entry requirement. An Undergraduate applicant
+     * clearly meets (is in fact already past) "for undergraduate study",
+     * but a description that separately requires a Master's degree for
+     * entry still refuses them - the two conditions are checked
+     * independently, not "whichever is easier".
+     */
+    public function test_entry_qualification_is_not_satisfied_merely_by_meeting_the_target(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE], grades: []),
+            $this->opportunity([
+                'education_level' => null,
+                'title' => 'University Undergraduate Scholarship',
+                'description' => "Applicants must have a master's degree to enter this programme.",
+            ])
+        );
+
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('entry qualification', implode(' ', $fit->failureMessages()));
+    }
+
+    /** Evidence beats a stale profile field here too, the same as the structured minimum_education_level check does. */
+    public function test_entry_qualification_is_met_by_recorded_evidence_even_when_the_profile_field_is_lower(): void
+    {
+        $profile = $this->profileWithAcademicResults(
+            [AcademicCatalogue::ZIMSEC_A_LEVEL => ['Mathematics' => 'A', 'Physics' => 'B', 'Chemistry' => 'A']],
+            ['education_level' => EducationLevel::O_LEVEL, 'field_of_study' => null]
+        );
+
+        $fit = $this->evaluate($profile, $this->opportunity([
+            'education_level' => null,
+            'description' => 'This award requires an A-Level qualification.',
+        ]));
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /** Once a listing states a structured minimum, the description is not independently re-checked against the same concept. */
+    public function test_a_structured_minimum_takes_precedence_over_a_description_entry_requirement(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::O_LEVEL], grades: []),
+            $this->opportunity([
+                'education_level' => null,
+                'minimum_education_level' => EducationLevel::O_LEVEL,
+                'description' => 'This award requires an A-Level qualification.',
+            ])
+        );
+
+        // The structured minimum (O-Level) is what actually governs - the
+        // conflicting free-text sentence is never consulted.
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /** "A-Level"/"O-Level" stated literally, not just via the "secondary"/"high school" umbrella, are detected as target levels from a bare title. */
+    public function test_a_literal_a_level_title_is_detected_and_an_o_level_applicant_progresses_toward_it(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::O_LEVEL, 'field_of_study' => null]),
+            $this->opportunity(['education_level' => null, 'title' => 'A-Level Scholarship'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /** The reverse: an applicant who has already passed O-Level/A-Level (both SECONDARY tier) for a literal "O-Level Scholarship" still matches, same-tier. */
+    public function test_a_literal_o_level_title_is_met_by_an_a_level_applicant(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::A_LEVEL], grades: ['Mathematics' => 'A']),
+            $this->opportunity(['education_level' => null, 'title' => 'O-Level Scholarship'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /**
+     * "University"/"polytechnic" are read only from a marked description
+     * sentence, never the bare title - a provider's own institution name
+     * very plausibly contains either word ("Midlands State University
+     * Alumni Fund"), and the title has no marker requirement to filter
+     * that out.
+     */
+    public function test_a_university_scholarship_open_to_o_level_students_is_eligible(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::O_LEVEL, 'field_of_study' => null]),
+            $this->opportunity([
+                'education_level' => null,
+                'description' => 'This university scholarship is open to students with O-Level results.',
+            ])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
+    /** The bare title form of the same word names an institution at least as often as an audience, so it is deliberately not read at all. */
+    public function test_university_in_a_bare_title_is_not_read_as_a_condition(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+            $this->opportunity(['education_level' => null, 'title' => 'Midlands State University Alumni Fund'])
+        );
+
+        $this->assertTrue($fit->meetsRequirements(), 'a bare title naming a university is not an age/level condition');
+    }
+
+    /** "Polytechnic" targets DIPLOMA - the closest existing level - and, like "university", only from a marked description sentence. */
+    public function test_a_polytechnic_scholarship_open_to_o_level_students_is_eligible(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::O_LEVEL, 'field_of_study' => null]),
+            $this->opportunity([
+                'education_level' => null,
+                'description' => 'This polytechnic scholarship is open to students with O-Level results.',
+            ])
+        );
+
+        $this->assertTrue($fit->meetsRequirements());
+    }
+
     // ------------------------------- descriptive text is not a condition --
 
     /**

@@ -14,15 +14,17 @@ use Tests\TestCase;
 
 /**
  * Two field-level rules, applied only where the field's own meaning calls
- * for them: a person's name never carries a digit, and a Zimbabwean phone
- * number is exactly ten digits and nothing else - see
- * FormOptions::NAME_PATTERN and FormOptions::PHONE_PATTERN, the one
- * definition every route below shares.
+ * for them: a person's name never carries a digit, and an applicant's or
+ * guardian's Zimbabwean phone number is exactly ten digits and nothing else
+ * - see FormOptions::NAME_PATTERN and FormOptions::PHONE_PATTERN.
  *
- * Deliberately excluded: provider registration's own `full_name`, which
- * this product uses as an organisation or contact name ("Chikafu Education
- * Trust") rather than a person's name - see the comment on that validation
- * rule in RegisterController::registerProvider().
+ * Deliberately excluded from both: provider registration's own `full_name`,
+ * which this product uses as an organisation or contact name ("Chikafu
+ * Education Trust") rather than a person's name, and its `phone`, a
+ * work/organisation number validated by App\Rules\InternationalPhoneNumber
+ * instead - see the comments on those validation rules in
+ * RegisterController::registerProvider(). The provider phone rule's own
+ * tests live in ProviderPhoneValidationTest, not here.
  */
 class InputValidationHardeningTest extends TestCase
 {

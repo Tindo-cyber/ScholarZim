@@ -26,13 +26,17 @@ use App\Support\EducationLevel;
  * The title is read without needing an eligibility marker: a title is short
  * and definitional by convention, and every example this was built against
  * - "Undergraduate Scholarship", "Master's Scholarship", "PhD Scholarship" -
- * states its audience with no surrounding sentence to carry one. The
- * description is read more carefully: a sentence there only becomes a
- * condition when it also contains one of a short list of explicit
- * eligibility markers ("must be", "for ... students", "is open to", ...) -
- * "Previous undergraduate research experience is an advantage" names a level
- * without stating a condition, and is deliberately left alone. Within a
- * marked sentence, only phrases from a small curated vocabulary - built on
+ * states its audience with no surrounding sentence to carry one, so a title
+ * level always reads as EDUCATION_LEVEL (see that constant). The description
+ * is read more carefully: a sentence there only becomes a condition when it
+ * also contains one of two short lists of explicit markers -
+ * ENTRY_REQUIREMENT_MARKER_PATTERNS ("must have", "requires", ...) or
+ * TARGET_MARKER_PATTERNS ("for ... students", "is open to", ...), which
+ * decide whether an education-level phrase in that sentence reads as
+ * ENTRY_QUALIFICATION or EDUCATION_LEVEL respectively - "Previous
+ * undergraduate research experience is an advantage" names a level without
+ * matching either list, and is deliberately left alone. Within a marked
+ * sentence, only phrases from a small curated vocabulary - built on
  * EducationLevel's own canonical values and FormOptions::FIELDS_OF_STUDY's
  * own values - are read as conditions this system can actually check; a
  * recognised skill/technology phrase is read as a condition too, but
@@ -44,30 +48,58 @@ final class DescriptionEligibility
 {
     public const EDUCATION_LEVEL = 'education_level';
 
+    /**
+     * A level the description states as a prerequisite an applicant must
+     * already hold - "requires A-Level", "must have an A-Level
+     * qualification" - as opposed to EDUCATION_LEVEL, which names who the
+     * award is *for* in the softer, audience sense ("for A-Level students",
+     * "open to..."). The distinction matters because they are evaluated
+     * differently: see EligibilityEvaluator::descriptionEntryQualification()
+     * vs ::descriptionEducationLevel().
+     */
+    public const ENTRY_QUALIFICATION = 'entry_qualification';
+
     public const FIELD_OF_STUDY = 'field_of_study';
 
     public const UNSUPPORTED = 'unsupported';
 
     /**
-     * Regex fragments, each already word-bounded, that make a *description*
-     * sentence a statement about who may apply rather than a description of
-     * the award, its research area, or an applicant's advantage. Not applied
-     * to the title - see the class docblock.
+     * Regex fragments, each already word-bounded, that state a strict
+     * prerequisite - "you must already hold this" - rather than describing
+     * who the award is generally for. A sentence matching one of these
+     * reads its education-level phrase as ENTRY_QUALIFICATION, checked with
+     * the same "at least this level, or evidence of it" floor
+     * minimum_education_level uses, not the progression-toward comparison
+     * EDUCATION_LEVEL gets. Deliberately narrow and literal ("requires",
+     * "must have") rather than inferred from softer audience language
+     * ("open to", "for ... students") - see TARGET_MARKER_PATTERNS below,
+     * which stays on the progression comparison. Not applied to the title -
+     * see the class docblock.
+     */
+    private const ENTRY_REQUIREMENT_MARKER_PATTERNS = [
+        '/\bmust\s+be\b/',
+        '/\bmust\s+have\b/',
+        '/\brequired\s+to\b/',
+        '/\brequires?\b/',
+        '/\b(?:applicants?|candidates?)\s+must\b/',
+    ];
+
+    /**
+     * Regex fragments that make a *description* sentence a statement about
+     * who may apply, in the softer "this is the intended audience" sense -
+     * an applicant progressing toward the named level is still read as
+     * meeting it. See ENTRY_REQUIREMENT_MARKER_PATTERNS above for the
+     * stricter "must already hold this" phrasing, which is not here.
      *
      * Several allow a bounded gap ("for ... students") so phrasing like "for
      * secondary school students" matches without the marker itself having to
      * name every level that can sit in the gap.
      */
-    private const ELIGIBILITY_MARKER_PATTERNS = [
-        '/\bmust\s+be\b/',
-        '/\bmust\s+have\b/',
-        '/\brequired\s+to\b/',
-        '/\brequires?\b/',
+    private const TARGET_MARKER_PATTERNS = [
         '/\bintended\s+for\b/',
         '/\bopen\s+to\b/',
         '/\bonly\s+for\b/',
         '/\bfor\s+\S.{0,40}?\b(?:students?|applicants?|candidates?)\b/',
-        '/\b(?:applicants?|candidates?)\s+must\b/',
         '/\beligible\s+applicants?\b/',
         '/\b(?:students?|applicants?|candidates?)\s+(?:pursuing|currently\s+enrolled|enrolled|completing|studying)\b/',
         '/\bpursuing\s+an?\b/',
@@ -77,18 +109,22 @@ final class DescriptionEligibility
     ];
 
     /**
-     * Phrase => the canonical EducationLevel it names.
+     * Phrase => the canonical EducationLevel it names. Shared by both
+     * EDUCATION_LEVEL and ENTRY_QUALIFICATION conditions - the phrase
+     * vocabulary is identical; only the sentence's marker (see above)
+     * decides which comparison EligibilityEvaluator runs against it.
      *
      * "High school"/"secondary school" map to O_LEVEL: the system has no
      * single "secondary" constant, and EducationLevel::LEGACY_MAP already
-     * treats a bare "secondary" the same way. This feeds a progression
-     * comparison in EligibilityEvaluator::descriptionEducationLevel() - the
-     * same one `progression()`'s advisory note makes via EducationPathway,
-     * not the "at least this level" floor a structured
-     * minimum_education_level uses - so an applicant already at or past
-     * secondary school still clears "for secondary school students", and a
-     * Primary applicant reaches it too, through the Form 1 step
-     * EducationPathway already recognises as the ordinary next one.
+     * treats a bare "secondary" the same way. As an EDUCATION_LEVEL
+     * condition this feeds the progression comparison in
+     * EligibilityEvaluator::descriptionEducationLevel() - the same one
+     * `progression()`'s advisory note makes via EducationPathway, not the
+     * "at least this level" floor a structured minimum_education_level
+     * uses - so an applicant already at or past secondary school still
+     * clears "for secondary school students", and a Primary applicant
+     * reaches it too, through the Form 1 step EducationPathway already
+     * recognises as the ordinary next one.
      */
     private const EDUCATION_LEVEL_PHRASES = [
         'primary school' => EducationLevel::PRIMARY,
@@ -99,6 +135,15 @@ final class DescriptionEligibility
         'secondary school' => EducationLevel::O_LEVEL,
         'secondary education' => EducationLevel::O_LEVEL,
         'secondary students' => EducationLevel::O_LEVEL,
+        // The literal level names, not just the "secondary" umbrella above -
+        // "O-Level Scholarship" states a level by name the same way
+        // "Undergraduate Scholarship" does, and needs its own entry because
+        // normalise() only folds hyphens to spaces, it does not expand "O"/
+        // "A" into "ordinary"/"advanced".
+        'o level' => EducationLevel::O_LEVEL,
+        'ordinary level' => EducationLevel::O_LEVEL,
+        'a level' => EducationLevel::A_LEVEL,
+        'advanced level' => EducationLevel::A_LEVEL,
 
         'undergraduate degree' => EducationLevel::UNDERGRADUATE,
         'undergraduate student' => EducationLevel::UNDERGRADUATE,
@@ -113,6 +158,11 @@ final class DescriptionEligibility
         'bachelors' => EducationLevel::UNDERGRADUATE,
         'bachelor' => EducationLevel::UNDERGRADUATE,
         'first degree' => EducationLevel::UNDERGRADUATE,
+
+        // Unlike "university"/"polytechnic" (DESCRIPTION_ONLY_EDUCATION_LEVEL_PHRASES
+        // below), "diploma" does not plausibly name an institution rather
+        // than a level, so it is safe in the title too.
+        'diploma' => EducationLevel::DIPLOMA,
 
         "master's degree" => EducationLevel::MASTERS,
         "master's" => EducationLevel::MASTERS,
@@ -131,6 +181,33 @@ final class DescriptionEligibility
         'doctorate' => EducationLevel::PHD,
         'doctoral' => EducationLevel::PHD,
         'phd' => EducationLevel::PHD,
+    ];
+
+    /**
+     * Phrase => the canonical EducationLevel it names, read only from a
+     * marked *description* sentence - never from the title, and never
+     * word-bounded into the title-safe EDUCATION_LEVEL_PHRASES above.
+     *
+     * "University"/"polytechnic" name an institution at least as often as
+     * they name an audience: a provider's own name very plausibly contains
+     * one ("Midlands State University Alumni Scholarship", "Harare
+     * Polytechnic Trust Fund"), and the title is read with no marker
+     * requirement at all (see the class docblock), so matching these there
+     * would misread the provider's name as a stated eligibility condition.
+     * A marked description sentence ("open to university students") is a
+     * narrower, safer context - it is talking about who may apply, not
+     * naming who is giving the award.
+     *
+     * "Polytechnic" maps to DIPLOMA, the closest existing EducationLevel:
+     * Zimbabwean polytechnics award certificates and diplomas, and DIPLOMA
+     * already sits directly below UNDERGRADUATE on EducationLadder/in
+     * EducationPathway's table - the same rung a diploma-granting
+     * institution occupies today. Not a new level; see
+     * EducationLevel::TIER_TERTIARY.
+     */
+    private const DESCRIPTION_ONLY_EDUCATION_LEVEL_PHRASES = [
+        'university' => EducationLevel::UNDERGRADUATE,
+        'polytechnic' => EducationLevel::DIPLOMA,
     ];
 
     /**
@@ -207,12 +284,29 @@ final class DescriptionEligibility
         foreach (self::sentences($description) as $sentence) {
             $normalised = self::normalise($sentence);
 
-            if (! self::hasEligibilityMarker($normalised)) {
+            // Entry-requirement phrasing ("requires A-Level") takes priority
+            // over the softer audience phrasing ("open to A-Level
+            // students") when a sentence happens to match both - the
+            // stricter reading is the more specific, and therefore more
+            // informative, one. A sentence matching neither carries no
+            // condition at all, same as before this distinction existed.
+            $educationLevelKind = match (true) {
+                self::matchesAny($normalised, self::ENTRY_REQUIREMENT_MARKER_PATTERNS) => self::ENTRY_QUALIFICATION,
+                self::matchesAny($normalised, self::TARGET_MARKER_PATTERNS) => self::EDUCATION_LEVEL,
+                default => null,
+            };
+
+            if ($educationLevelKind === null) {
                 continue;
             }
 
-            foreach (self::matches($normalised, self::EDUCATION_LEVEL_PHRASES) as [$phrase, $level]) {
-                $found[] = new DescriptionCondition(self::EDUCATION_LEVEL, $level, $phrase, DescriptionCondition::SOURCE_DESCRIPTION);
+            $levelMatches = array_merge(
+                self::matches($normalised, self::EDUCATION_LEVEL_PHRASES),
+                self::matches($normalised, self::DESCRIPTION_ONLY_EDUCATION_LEVEL_PHRASES),
+            );
+
+            foreach ($levelMatches as [$phrase, $level]) {
+                $found[] = new DescriptionCondition($educationLevelKind, $level, $phrase, DescriptionCondition::SOURCE_DESCRIPTION);
             }
 
             foreach (self::matches($normalised, self::FIELD_OF_STUDY_PHRASES) as [$phrase, $field]) {
@@ -253,9 +347,10 @@ final class DescriptionEligibility
         return array_values(array_filter(array_map('trim', $pieces), fn (string $s) => $s !== ''));
     }
 
-    private static function hasEligibilityMarker(string $normalisedSentence): bool
+    /** @param  array<int, string>  $patterns */
+    private static function matchesAny(string $normalisedSentence, array $patterns): bool
     {
-        foreach (self::ELIGIBILITY_MARKER_PATTERNS as $pattern) {
+        foreach ($patterns as $pattern) {
             if (preg_match($pattern, $normalisedSentence) === 1) {
                 return true;
             }

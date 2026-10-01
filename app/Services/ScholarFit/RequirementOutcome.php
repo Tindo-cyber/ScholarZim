@@ -57,6 +57,15 @@ final class RequirementOutcome
      */
     public const TYPE_DESCRIPTION_EDUCATION_LEVEL = 'description_education_level';
 
+    /**
+     * A qualification the description states an applicant must already
+     * hold to enter - "requires A-Level" - read with the same floor
+     * comparison a structured minimum_education_level uses, not the
+     * progression-toward comparison TYPE_DESCRIPTION_EDUCATION_LEVEL gets.
+     * See DescriptionEligibility::ENTRY_QUALIFICATION.
+     */
+    public const TYPE_DESCRIPTION_ENTRY_QUALIFICATION = 'description_entry_qualification';
+
     public const TYPE_DESCRIPTION_FIELD = 'description_field';
 
     /**

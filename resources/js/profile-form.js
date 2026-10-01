@@ -36,6 +36,15 @@
 
         const showFor = document.querySelectorAll('[data-sz-tier]');
         const hideFor = document.querySelectorAll('[data-sz-tier-hide]');
+        // The qualification choices in the academic-results table were
+        // rendered server-side for whichever level this page loaded with
+        // (see ApplicantProfile::selectableQualifications()) and do not
+        // re-fetch live when this select changes - see the notice's own
+        // comment in profile.blade.php for why that is a save-and-reopen
+        // gap rather than something fixed here with a second, JS-side copy
+        // of that selection rule.
+        const staleNotice = document.getElementById('academic-level-stale-notice');
+        const initialLevel = select.value;
 
         const sync = () => {
             const tier = TIER_BY_LEVEL[select.value] || null;
@@ -49,6 +58,10 @@
                 const tiers = el.dataset.szTierHide.split(',');
                 el.hidden = tier !== null && tiers.includes(tier);
             });
+
+            if (staleNotice) {
+                staleNotice.classList.toggle('d-none', select.value === initialLevel);
+            }
         };
 
         select.addEventListener('change', sync);

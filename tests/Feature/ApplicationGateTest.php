@@ -232,6 +232,27 @@ class ApplicationGateTest extends TestCase
     }
 
     /**
+     * The refined document matrix, exercised through the real wizard: Farai
+     * (seeded with an O-Level results certificate on file, but no
+     * recommendation letter - see DatabaseSeeder) is correctly asked for the
+     * one document the new O-Level checklist adds, not for the results
+     * certificate she already has, and not for a CV or ID the matrix never
+     * asks O/A-Level applicants for at all.
+     */
+    public function test_the_wizard_asks_an_o_level_applicant_for_the_recommendation_letter_the_matrix_now_requires(): void
+    {
+        $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+
+        $response = $this->actingAs($farai)->get('/apply/' . $opportunity->opportunity_id);
+
+        $response->assertOk();
+        $response->assertSee('Recommendation letter');
+        $response->assertDontSee('CV / resume');
+        $response->assertDontSee('ID or passport');
+    }
+
+    /**
      * A passed deadline refuses a submission regardless of how well the
      * applicant otherwise fits - checked directly by ApplicationService, not
      * by ScholarFit's eligibility rules, which are about the listing's stated

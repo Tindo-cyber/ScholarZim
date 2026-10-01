@@ -504,6 +504,24 @@ final class EligibilityEvaluator
             }
         }
 
+        // Same grouping, for the separate "must already hold this" reading -
+        // see DescriptionEligibility::ENTRY_QUALIFICATION. A listing can
+        // state both at once ("Undergraduate Scholarship" in the title,
+        // "requires A-Level" in the description): the target condition
+        // above and this one are independent gates, both checked.
+        $entryConditions = array_values(array_filter(
+            $conditions,
+            static fn (DescriptionCondition $c) => $c->kind === DescriptionEligibility::ENTRY_QUALIFICATION
+        ));
+
+        if ($entryConditions !== []) {
+            $outcome = $this->descriptionEntryQualification($profile, $opportunity, $record, $entryConditions);
+
+            if ($outcome !== null) {
+                $outcomes[] = $outcome;
+            }
+        }
+
         foreach ($conditions as $condition) {
             $outcome = match ($condition->kind) {
                 DescriptionEligibility::FIELD_OF_STUDY => $this->descriptionFieldOfStudy($profile, $condition),
@@ -648,6 +666,110 @@ final class EligibilityEvaluator
             RequirementOutcome::TYPE_DESCRIPTION_EDUCATION_LEVEL,
             'This scholarship is intended for '.$labels.' students (identified from the scholarship '.$sourceLabel
                 .'), but your profile states '.$heldLabel.'.',
+            required: $labels,
+            actual: $heldLabel,
+        );
+    }
+
+    /**
+     * One combined outcome for every entry-qualification condition the
+     * description states, using the exact floor comparison minimumLevel()
+     * makes for a structured minimum_education_level - because that is
+     * precisely what this is: a provider who wrote "requires A-Level" in
+     * free text has stated the identical rule a minimum_education_level
+     * dropdown would, just without using it. Unlike
+     * descriptionEducationLevel() above, there is no progression-toward
+     * allowance and no same-tier allowance here - "requires A-Level" means
+     * A-Level specifically, the same way the structured dropdown would, so
+     * an O-Level applicant who has not yet reached it does not meet it
+     * merely because A-Level is their ordinary next step.
+     *
+     * Never runs alongside a structured minimum, for the same reason
+     * descriptionEducationLevel() does not: once a listing states one
+     * explicitly, that is the authoritative rule, and free text is not
+     * independently re-checked against it.
+     *
+     * Independent of descriptionEducationLevel(): a listing can state both
+     * at once ("Undergraduate Scholarship" in the title, "requires
+     * A-Level" in the description), and both are checked - meeting the
+     * target does not excuse missing the entry qualification, and vice
+     * versa.
+     *
+     * More than one distinct level ("requires O-Level or A-Level") is read
+     * as *either* satisfying it, the same multi-level handling
+     * descriptionEducationLevel() gives its own conditions.
+     *
+     * @param  array<int, DescriptionCondition>  $conditions  every ENTRY_QUALIFICATION condition detected, title and description alike
+     */
+    private function descriptionEntryQualification(
+        ApplicantProfile $profile,
+        Opportunity $opportunity,
+        AcademicRecord $record,
+        array $conditions,
+    ): ?RequirementOutcome {
+        if (filled($opportunity->minimum_education_level)) {
+            return null;
+        }
+
+        $levels = array_values(array_unique(array_map(static fn (DescriptionCondition $c) => $c->value, $conditions)));
+        usort($levels, static fn (string $a, string $b) => (EducationLadder::rung($a) ?? 0) <=> (EducationLadder::rung($b) ?? 0));
+
+        $lowestLevel = $levels[0];
+        $labels = implode(' or ', array_map(static fn (string $l) => EducationLevel::label($l), $levels));
+
+        $sources = [];
+
+        foreach ($conditions as $condition) {
+            $sources[$condition->source] = true;
+        }
+
+        $sourceLabel = implode(' and ', array_filter([
+            isset($sources[DescriptionCondition::SOURCE_TITLE]) ? 'title' : null,
+            isset($sources[DescriptionCondition::SOURCE_DESCRIPTION]) ? 'description' : null,
+        ]));
+
+        $applicantLevel = EducationLevel::canonical($profile->education_level);
+        $heldLabel = EducationLevel::label($profile->education_level);
+
+        $statedLevelMeets = true;
+
+        if ($applicantLevel !== null && ! in_array($applicantLevel, $levels, true)) {
+            $applicantRank = EducationLadder::rung($applicantLevel);
+            $lowestRank = EducationLadder::rung($lowestLevel);
+
+            if ($applicantRank !== null && $lowestRank !== null && $applicantRank < $lowestRank) {
+                $statedLevelMeets = false;
+            }
+        }
+
+        if ($statedLevelMeets) {
+            return RequirementOutcome::pass(
+                RequirementOutcome::TYPE_DESCRIPTION_ENTRY_QUALIFICATION,
+                'This scholarship requires '.$labels.' as an entry qualification (identified from the scholarship '
+                    .$sourceLabel.'), and your profile states '.$heldLabel.'.',
+                required: $labels,
+                actual: $heldLabel,
+            );
+        }
+
+        foreach ($levels as $level) {
+            $evidence = $record->qualificationAtOrAbove($level);
+
+            if ($evidence !== null) {
+                return RequirementOutcome::pass(
+                    RequirementOutcome::TYPE_DESCRIPTION_ENTRY_QUALIFICATION,
+                    'This scholarship requires '.$labels.' as an entry qualification (identified from the scholarship '
+                        .$sourceLabel.'), and your results show '.$evidence.'.',
+                    required: $labels,
+                    actual: $evidence,
+                );
+            }
+        }
+
+        return RequirementOutcome::fail(
+            RequirementOutcome::TYPE_DESCRIPTION_ENTRY_QUALIFICATION,
+            'This scholarship requires '.$labels.' as an entry qualification (identified from the scholarship '
+                .$sourceLabel.'), but your current qualification is '.$heldLabel.'.',
             required: $labels,
             actual: $heldLabel,
         );

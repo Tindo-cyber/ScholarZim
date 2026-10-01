@@ -242,6 +242,14 @@ class ProfileCompletenessGateTest extends TestCase
                 'results_certificate_path' => 'profiles/demo/gate-test-results.pdf',
                 'results_certificate_filename' => 'gate-test-results.pdf',
                 'results_uploaded_at' => Carbon::now(),
+                // The O-Level document checklist also asks for a
+                // recommendation letter (ApplicantProfile::requiredDocumentTypes())
+                // - set here so tests isolating a different field (institution,
+                // biography, ...) are not also, incidentally, missing a document
+                // unrelated to what they are actually exercising.
+                'recommendation_letter_path' => 'profiles/demo/gate-test-recommendation.pdf',
+                'recommendation_letter_filename' => 'gate-test-recommendation.pdf',
+                'recommendation_letter_uploaded_at' => Carbon::now(),
             ], $overrides)
         );
 
