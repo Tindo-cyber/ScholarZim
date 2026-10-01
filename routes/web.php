@@ -239,6 +239,10 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
     // credential, only a fingerprint of it.
     Route::get('/mail-diagnostics', Admin\MailDiagnosticsController::class)->name('mail.diagnostics');
 
+    // One deliberately-logged line, to confirm whether production logging
+    // actually reaches anywhere visible - see Admin\LogDiagnosticsController.
+    Route::get('/log-diagnostics', Admin\LogDiagnosticsController::class)->name('log.diagnostics');
+
     Route::get('/search', [Admin\SearchController::class, 'index'])->name('search');
 
     Route::get('/reports', [Admin\ReportController::class, 'hub'])->name('reports');
