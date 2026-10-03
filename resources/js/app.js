@@ -11,6 +11,7 @@
  */
 import './scholarzim';
 import './navigation';
+import './flash-alerts';
 import './submit-state';
 import './name-input';
 import './profile-form';

@@ -29,6 +29,7 @@ class SourceAssetController extends Controller
         'scholarzim.css' => ['css/scholarzim.css', 'text/css'],
         'scholarzim.js' => ['js/scholarzim.js', 'text/javascript'],
         'navigation.js' => ['js/navigation.js', 'text/javascript'],
+        'flash-alerts.js' => ['js/flash-alerts.js', 'text/javascript'],
         'submit-state.js' => ['js/submit-state.js', 'text/javascript'],
         'name-input.js' => ['js/name-input.js', 'text/javascript'],
         'profile-form.js' => ['js/profile-form.js', 'text/javascript'],
@@ -42,6 +43,7 @@ class SourceAssetController extends Controller
     public const FALLBACK_SCRIPTS = [
         'scholarzim.js',
         'navigation.js',
+        'flash-alerts.js',
         'submit-state.js',
         'name-input.js',
         'profile-form.js',
