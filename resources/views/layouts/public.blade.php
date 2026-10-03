@@ -28,18 +28,14 @@
         </button>
 
         <div class="collapse navbar-collapse" id="szPublicNav">
+            {{--
+                Just Home in the middle now - Browse/ScholarFit/providers are
+                the homepage's own hero CTAs and sections, and stay reachable
+                from every page through the footer below.
+            --}}
             <ul class="navbar-nav mx-auto gap-lg-2">
                 <li class="nav-item">
                     <a class="nav-link @active(request()->routeIs('home'))" href="{{ route('home') }}">Home</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link @active(request()->routeIs('scholarships.*'))" href="{{ route('scholarships.index') }}">Browse scholarships</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('home') }}#how-it-works">How it works</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('register.provider') }}">For providers</a>
                 </li>
             </ul>
 
@@ -86,7 +82,8 @@
                      page. The class keeps the appearance identical. --}}
                 <h2 class="h6 fw-semibold mb-3">Students</h2>
                 <ul class="list-unstyled d-grid gap-2 mb-0">
-                    <li><a class="link-secondary text-decoration-none" href="{{ route('scholarships.index') }}">Browse</a></li>
+                    <li><a class="link-secondary text-decoration-none" href="{{ route('scholarships.index') }}">Browse scholarships</a></li>
+                    <li><a class="link-secondary text-decoration-none" href="{{ route('scholarfit') }}">How ScholarFit works</a></li>
                     <li><a class="link-secondary text-decoration-none" href="{{ route('register') }}">Create account</a></li>
                     <li><a class="link-secondary text-decoration-none" href="{{ route('login') }}">Sign in</a></li>
                 </ul>

@@ -21,23 +21,24 @@ class PublicController extends Controller
     ) {
     }
 
-    public function landing(Request $request)
+    /**
+     * The landing page is a concise introduction now, not the catalogue
+     * itself - it no longer lists individual scholarships, so it needs
+     * none of the per-card saved/applied/accepted state that used to come
+     * with featured listings. See scholarships() for the actual browse
+     * page, which still needs all of that.
+     */
+    public function landing()
     {
         return view('public.index', [
             'stats' => $this->platformStatsService->publicStats(),
-            'featured' => $this->opportunityService->featured(6),
-            'fields' => FormOptions::FIELDS_OF_STUDY,
-            // The featured cards carry the same save button as the browse page,
-            // so they need the same saved list behind it - without it every card
-            // renders as unsaved and its button posts to the store route, so a
-            // student cannot unsave from here and re-saving is the only outcome.
-            'savedIds' => $this->savedScholarshipService->savedIds($request->user()),
-            'appliedIds' => $this->applicationService->appliedIds($request->user()),
-            // An award is a subset of "applied", and the cards say which subset:
-            // "Applied" on a scholarship the student has actually won reads as
-            // though nothing has happened yet.
-            'accepted' => $this->applicationService->acceptedByOpportunity($request->user()),
         ]);
+    }
+
+    /** The dedicated explanation page the homepage's "How ScholarFit works" / "Meet ScholarFit" CTAs link to. */
+    public function scholarFit()
+    {
+        return view('public.scholarfit');
     }
 
     public function scholarships(Request $request)

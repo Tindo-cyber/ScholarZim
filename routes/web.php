@@ -23,6 +23,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [PublicController::class, 'landing'])->name('home');
+Route::get('/how-scholarfit-works', [PublicController::class, 'scholarFit'])->name('scholarfit');
 Route::get('/scholarships', [PublicController::class, 'scholarships'])->name('scholarships.index');
 Route::get('/scholarships/{id}', [PublicController::class, 'detail'])
     ->whereNumber('id')
