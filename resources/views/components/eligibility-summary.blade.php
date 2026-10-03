@@ -39,6 +39,7 @@
     $rules = \App\Services\ScholarFit\RequirementOutcome::rules($fit->outcomes);
     $notes = $fit->advisoryNotes();
     $eligible = $fit->meetsRequirements();
+    $insufficient = $fit->hasInsufficientInformation();
     $stated = $rules !== [];
     $met = count(array_filter($rules, static fn ($o) => $o->passed));
     $unmet = count($rules) - $met;
@@ -46,7 +47,10 @@
 
 @if($variant === 'compact')
     <div {{ $attributes->merge(['class' => 'd-flex flex-wrap align-items-center gap-2']) }}>
-        @if(! $stated)
+        @if($insufficient)
+            <x-status-badge label="Complete your profile" tone="secondary" icon="shield" />
+            <span class="small text-secondary">Not enough information yet to check this one.</span>
+        @elseif(! $stated)
             <x-status-badge label="No stated requirements" tone="secondary" icon="shield" />
             <span class="small text-secondary">The provider decides who is awarded.</span>
         @elseif($eligible)
@@ -113,6 +117,31 @@
                         if any of these are out of date.
                     </p>
                 @endunless
+            </div>
+        </div>
+    </div>
+@elseif($insufficient)
+    {{--
+        Distinct from the plain "no requirements" case below: here the gap is
+        on the applicant's side, not just the provider's. Deliberately still
+        not a verdict - ELIGIBLE would be inventing a match ScholarFit never
+        checked, and NOT ELIGIBLE would blame the applicant for failing
+        requirements that were never actually tested. See
+        EligibilityResult::hasInsufficientInformation().
+    --}}
+    <div {{ $attributes->merge(['class' => 'alert alert-secondary mb-3']) }} role="note">
+        <div class="d-flex gap-2 align-items-start">
+            <x-icon name="shield" :size="20" class="flex-shrink-0 mt-1" />
+            <div>
+                <div class="fw-semibold mb-1">Complete your profile to determine eligibility</div>
+                <p class="small mb-2">
+                    This scholarship does not specify entry requirements, and your profile does not
+                    yet have enough information recorded for ScholarZim to say more than that.
+                </p>
+                <p class="small mb-0">
+                    <a href="{{ route('applicant.profile') }}">Complete your profile</a>
+                    so we can check what applies to you.
+                </p>
             </div>
         </div>
     </div>

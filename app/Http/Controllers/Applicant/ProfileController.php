@@ -87,7 +87,6 @@ class ProfileController extends Controller
             // which is suggestions only), and a Grade 7 pupil's primary school
             // is exactly as valid an answer here as a university's full name.
             'field_of_study' => ['nullable', 'string', 'max:255'],
-            'year_of_study' => ['nullable', 'integer', 'min:1', 'max:8'],
             'province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), not a fixed list - Zimbabwe has
             // far more towns and growth points than any dropdown would sensibly

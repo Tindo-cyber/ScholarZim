@@ -9,16 +9,7 @@ use App\Services\ScholarFit\AcademicRecord;
 use App\Services\ScholarFit\EligibilityEvaluator;
 use App\Services\ScholarFit\EligibilityResult;
 
-/**
- * ScholarFit-evaluated listings for a student: which open scholarships they
- * are eligible for, and which they are not - and why.
- *
- * Evaluation is pure arithmetic over listings already in memory, so checking
- * the catalogue is two queries and a filter - cheap enough to do on demand.
- * There is no score to rank eligible listings by; they are ordered by
- * deadline, soonest first, since that is the one plain fact that changes
- * which listing a student needs to see today.
- */
+
 class RecommendationService
 {
     public function __construct(private readonly EligibilityEvaluator $evaluator)
@@ -34,13 +25,22 @@ class RecommendationService
      * is worse than noise. notEligibleForUser() shows those separately, with
      * the reason.
      *
+     * Also dropped: a listing with no stated requirements at all, shown to
+     * an applicant whose profile is not yet complete enough to say anything
+     * about. meetsRequirements() is vacuously true there (nothing was
+     * checked, so nothing failed), which used to be enough on its own to
+     * call it a match - showing a student with an empty profile "matches"
+     * against scholarships nobody has actually compared them to. A listing
+     * with no requirements and a *complete* profile is untouched by this:
+     * it is genuinely open to everyone, and stays a match.
+     *
      * @return array<int, EligibilityResult>
      */
     public function forUser(User $user, int $limit = 12): array
     {
         $eligible = array_values(array_filter(
             $this->evaluatedCandidates($user),
-            static fn (EligibilityResult $r) => $r->meetsRequirements()
+            static fn (EligibilityResult $r) => $r->meetsRequirements() && ! $r->hasInsufficientInformation()
         ));
 
         usort($eligible, static function (EligibilityResult $a, EligibilityResult $b) {
@@ -110,11 +110,13 @@ class RecommendationService
             ->get();
 
         $record = AcademicRecord::fromProfile($profile);
+        $profileComplete = $profile->isComplete();
 
         return $candidates->map(
             fn (Opportunity $opportunity) => new EligibilityResult(
                 $opportunity,
-                $this->evaluator->evaluate($profile, $opportunity, $record)
+                $this->evaluator->evaluate($profile, $opportunity, $record),
+                $profileComplete,
             )
         )->all();
     }
@@ -130,7 +132,8 @@ class RecommendationService
 
         return new EligibilityResult(
             $opportunity,
-            $this->evaluator->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile))
+            $this->evaluator->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile)),
+            $profile->isComplete(),
         );
     }
 }

@@ -44,6 +44,20 @@ class SecurityHeadersTest extends TestCase
     }
 
     /**
+     * Same reasoning again, for the one page every sign-out redirects to.
+     * Without this, a plain browser refresh on the homepage after logging
+     * out could replay a cached copy of the page with the "You have been
+     * signed out" flash message still baked into the HTML, even though the
+     * server-side session had already cleared it after the one request
+     * that was entitled to see it - see LoginController::logout().
+     */
+    public function test_the_home_page_is_never_cached(): void
+    {
+        $this->get('/')
+            ->assertHeader('Cache-Control', 'no-store, private');
+    }
+
+    /**
      * Same reasoning, the signed-in side: a cached dashboard must not survive
      * sign-out via the back button. /dashboard itself is only a redirect to
      * the role-specific one (DashboardController forwards by role), so this

@@ -168,6 +168,37 @@ class EligibilityExplanationTest extends TestCase
         $this->assertStringContainsString('Submit application', $this->wizard($bare));
     }
 
+    /**
+     * The third state Issue 9 asks for, shown on the one page an applicant
+     * explicitly asks "am I eligible for this": a bare listing plus a
+     * profile ScholarFit cannot yet read anything from is neither ELIGIBLE
+     * (nothing was checked) nor NOT ELIGIBLE (nothing failed) - it is an
+     * honest "not enough information yet", with a way to fix that.
+     */
+    public function test_a_bare_listing_tells_an_incomplete_profile_to_finish_it_first(): void
+    {
+        $bare = $this->listing('Open Community Bursary');
+
+        $stranger = User::create([
+            'role_id' => $this->applicant->role_id,
+            'full_name' => 'Incomplete Profile',
+            'email' => 'bare-listing-incomplete@example.test',
+            'password_hash' => bcrypt('ChangeMe123'),
+            'account_status' => \App\Support\AccountStatus::ACTIVE,
+            'email_verified' => true,
+        ]);
+        ApplicantProfile::create(['user_id' => $stranger->user_id]);
+
+        $html = $this->actingAs($stranger)
+            ->get('/scholarships/' . $bare->opportunity_id)
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString('Complete your profile to determine eligibility', $html);
+        $this->assertStringNotContainsString('No entry requirements specified', $html);
+        $this->assertStringNotContainsString('ELIGIBLE', $html);
+    }
+
     // -------------------------------------- B. eligible gated scholarship --
 
     public function test_an_eligible_applicant_is_shown_each_requirement_they_satisfied(): void

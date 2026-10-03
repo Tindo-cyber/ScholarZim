@@ -32,40 +32,60 @@ class ApplicantProfileService
     {
         $profile = $this->forUser($user);
 
-        $isPrimary = \App\Support\EducationLevel::isPrimary($data['education_level'] ?? null);
+        /**
+         * $data[$key] when the request actually carried that key - including
+         * an empty string, which is how a nullable text field is
+         * intentionally cleared (Laravel's ConvertEmptyStringsToNull
+         * middleware turns that into a present `null` before validation, so
+         * "present" and "empty" are not the same test) - or the profile's
+         * current value when the key is missing from the request entirely.
+         *
+         * This is the distinction a flat `$data[$key] ?? null` could not
+         * make: "not submitted" and "submitted empty" both produced null,
+         * so a field genuinely absent from a request - not one the
+         * applicant actually emptied - was wiped exactly the same way. The
+         * live profile form always posts every field, submitted or
+         * cleared, so this never showed up through it; it matters the
+         * moment any other caller posts a partial update.
+         */
+        $preserve = static fn (string $key) => array_key_exists($key, $data) ? $data[$key] : $profile->{$key};
+
+        $newLevel = $preserve('education_level');
+        $isPrimary = \App\Support\EducationLevel::isPrimary($newLevel);
+        $usesFieldOfStudy = \App\Support\EducationLevel::usesFieldOfStudy($newLevel);
+        $usesTranscript = \App\Support\EducationLevel::usesTranscript($newLevel);
 
         $profile->update([
-            'education_level' => $data['education_level'] ?? null,
-            'institution_name' => $data['institution_name'] ?? null,
-            // Field of study and year of study are university-tier concepts;
-            // stored as null rather than whatever was left in the form when an
-            // applicant switches to a level neither applies to, so a profile
-            // never carries a "field of study" that no longer means anything
+            'education_level' => $newLevel,
+            'institution_name' => $preserve('institution_name'),
+            // Field of study and degree classification are tier-specific
+            // concepts, cleared outright - never merely preserved - the
+            // moment the level no longer uses them: a genuine tier change
+            // is a stronger, more specific signal than "this key happened
+            // to be missing from one request", and always wins. A profile
+            // never carries a field of study that no longer means anything
             // for its own education level.
-            'field_of_study' => \App\Support\EducationLevel::usesFieldOfStudy($data['education_level'] ?? null)
-                ? ($data['field_of_study'] ?? null)
-                : null,
-            'year_of_study' => \App\Support\EducationLevel::usesFieldOfStudy($data['education_level'] ?? null)
-                ? ($data['year_of_study'] ?? null)
-                : null,
+            'field_of_study' => $usesFieldOfStudy ? $preserve('field_of_study') : null,
+            // year_of_study is deliberately absent: no longer collected or
+            // presented (see profile.blade.php), but not written to null
+            // here either - an existing stored value is left exactly as it
+            // is rather than being overwritten with a fact nobody asked for.
             // A degree classification is the tertiary equivalent of a grade,
             // held once on the profile rather than as a subject result - which
             // is what keeps a First Class out of any A-Level points total.
-            // Cleared when the applicant moves to a level it cannot describe.
-            'degree_classification' => \App\Support\EducationLevel::usesTranscript($data['education_level'] ?? null)
-                ? ($data['degree_classification'] ?? null)
-                : null,
-            'province' => $data['province'] ?? null,
-            'locality' => $data['locality'] ?? null,
-            'settlement_type' => $data['settlement_type'] ?? null,
-            'date_of_birth' => $data['date_of_birth'] ?? null,
-            'gender' => $data['gender'] ?? null,
+            'degree_classification' => $usesTranscript ? $preserve('degree_classification') : null,
+            'province' => $preserve('province'),
+            'locality' => $preserve('locality'),
+            'settlement_type' => $preserve('settlement_type'),
+            'date_of_birth' => $preserve('date_of_birth'),
+            'gender' => $preserve('gender'),
             // Guardian fields are collected only for the Primary pathway;
-            // cleared otherwise so a profile that moves off Primary does not
-            // carry on displaying a guardian section it no longer needs.
-            'guardian_name' => $isPrimary ? ($data['guardian_name'] ?? null) : null,
-            'guardian_phone' => $isPrimary ? ($data['guardian_phone'] ?? null) : null,
-            'guardian_relationship' => $isPrimary ? ($data['guardian_relationship'] ?? null) : null,
+            // cleared outright otherwise, for the same reason field of study
+            // is above - so a profile that moves off Primary does not carry
+            // on displaying a guardian section it no longer needs.
+            'guardian_name' => $isPrimary ? $preserve('guardian_name') : null,
+            'guardian_phone' => $isPrimary ? $preserve('guardian_phone') : null,
+            'guardian_relationship' => $isPrimary ? $preserve('guardian_relationship') : null,
             'guardian_confirmed_at' => $isPrimary && filled($data['guardian_confirmed'] ?? null)
                 ? Carbon::now()
                 : ($isPrimary ? $profile->guardian_confirmed_at : null),
@@ -74,7 +94,7 @@ class ApplicantProfileService
             // no longer part of profile completeness; writing it here would
             // also have overwritten every existing production value with null
             // the moment the textarea left the form.
-            'biography' => $data['biography'] ?? null,
+            'biography' => $preserve('biography'),
         ]);
 
         if (filled($data['full_name'] ?? null) || filled($data['phone'] ?? null)) {

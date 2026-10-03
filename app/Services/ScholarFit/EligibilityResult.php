@@ -16,10 +16,16 @@ use App\Models\Opportunity;
  */
 final class EligibilityResult
 {
-    /** @param  array<int, RequirementOutcome>  $outcomes  every stated requirement, as evaluated */
+    /**
+     * @param  array<int, RequirementOutcome>  $outcomes  every stated requirement, as evaluated
+     * @param  bool  $profileComplete  whether ApplicantProfile::isComplete() was true for the
+     *                                 profile this was evaluated against - see
+     *                                 hasInsufficientInformation() for what this is used for.
+     */
     public function __construct(
         public readonly Opportunity $opportunity,
         public readonly array $outcomes,
+        public readonly bool $profileComplete = true,
     ) {
     }
 
@@ -27,6 +33,28 @@ final class EligibilityResult
     public function meetsRequirements(): bool
     {
         return RequirementOutcome::allMet($this->outcomes);
+    }
+
+    /**
+     * True when this listing states no stated requirement at all and the
+     * applicant's profile is not complete enough to say anything more than
+     * that nothing was checked.
+     *
+     * A listing with no stated requirements and a complete profile is
+     * genuinely open to everyone and stays ELIGIBLE - meetsRequirements()
+     * is vacuously true and that is correct. The gap this closes is
+     * narrower: zero stated requirements plus a profile ScholarFit cannot
+     * yet read anything from is not evidence of a match, and must not be
+     * presented as one. See RecommendationService::forUser(), which is the
+     * one place this actually changes anything - a listing with stated
+     * requirements that fail because data is missing (no date of birth, no
+     * field of study, ...) already correctly reports those as ordinary
+     * failures with a clear "add X" remediation message, which is the
+     * right behaviour and is untouched here.
+     */
+    public function hasInsufficientInformation(): bool
+    {
+        return ! $this->hasStatedRequirements() && ! $this->profileComplete;
     }
 
     /** @return array<int, RequirementOutcome> */
@@ -68,8 +96,13 @@ final class EligibilityResult
      */
     public function explanationLines(): array
     {
+        $insufficient = $this->hasInsufficientInformation();
         $eligible = $this->meetsRequirements();
-        $lines = [$eligible ? 'ELIGIBLE' : 'NOT ELIGIBLE'];
+        $lines = [match (true) {
+            $insufficient => 'INSUFFICIENT INFORMATION',
+            $eligible => 'ELIGIBLE',
+            default => 'NOT ELIGIBLE',
+        }];
 
         $rules = RequirementOutcome::rules($this->outcomes);
 
@@ -86,9 +119,13 @@ final class EligibilityResult
             $lines[] = ($note->passed ? 'Note:' : 'Please note:') . ' ' . $note->message;
         }
 
-        if ($rules === [] && $eligible) {
+        if ($rules === []) {
             $lines[] = '';
-            $lines[] = 'This scholarship states no entry requirements.';
+            $lines[] = $insufficient
+                ? 'This scholarship states no entry requirements, and your profile does not yet '
+                    . 'have enough information recorded to say more than that. Complete your profile '
+                    . 'to determine eligibility.'
+                : 'This scholarship states no entry requirements.';
         }
 
         return $lines;

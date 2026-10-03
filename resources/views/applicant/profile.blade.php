@@ -113,16 +113,20 @@
                         {{-- Tertiary and postgraduate only: field of study is not a meaningful question below this. --}}
                         <div data-sz-tier="TERTIARY,POSTGRADUATE" class="row" id="sz-field-of-study-row">
                             <div class="col-md-8">
-                                <x-form.select name="field_of_study" label="Field of study / programme"
-                                               :options="$fields" :value="$profile->field_of_study"
-                                               placeholder="Select a field" />
+                                {{--
+                                    Free text, not a select: a fixed list of broad categories
+                                    (FormOptions::FIELDS_OF_STUDY, still used for a provider's
+                                    target_field and for description-based matching) cannot
+                                    name every programme an applicant is actually enrolled in.
+                                    A saved value the list did not contain used to render with
+                                    nothing selected and silently blank itself out on the next
+                                    save, for any reason - see ApplicantProfileService::update().
+                                --}}
+                                <x-form.input name="field_of_study" label="Field of study / programme"
+                                              :value="$profile->field_of_study" maxlength="255"
+                                              hint="Type your field, e.g. Information Systems, Mining Engineering, Nursing." />
                             </div>
                             <div class="col-md-4">
-                                <x-form.input name="year_of_study" label="Year of study" type="number"
-                                              min="1" max="8" :value="$profile->year_of_study"
-                                              hint="If relevant to your programme." />
-                            </div>
-                            <div class="col-md-8">
                                 {{-- A degree class is one fact about a person, not a score per
                                      module, so it is held here rather than as subject results.
                                      That also keeps it out of any A-Level points total. --}}
@@ -494,6 +498,20 @@
                                 <p class="small text-secondary mb-2">
                                     {{ $isRequired ? 'Required before you can apply. ' : 'Optional, but recommended. ' }}{{ $help }}
                                 </p>
+
+                                {{--
+                                    Context, not a new requirement: this uploader already maps to
+                                    exactly one education level via requiredDocumentTypes(), so a
+                                    reader can tell what this document is supposed to stand as
+                                    evidence for, rather than uploading an anonymous "certificate"
+                                    with no stated context next to it.
+                                --}}
+                                @if($type === 'transcript' && (filled($profile->field_of_study) || filled($profile->degree_classification)))
+                                    <p class="small text-secondary mb-2 fst-italic">
+                                        For your {{ \App\Support\EducationLevel::label($profile->education_level) }}
+                                        studies{{ $profile->field_of_study ? ' in ' . $profile->field_of_study : '' }}{{ $profile->degree_classification ? ' (' . $profile->degree_classification . ')' : '' }}.
+                                    </p>
+                                @endif
 
                                 @if($filename)
                                     <p class="small mb-2">

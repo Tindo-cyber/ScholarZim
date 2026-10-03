@@ -22,7 +22,12 @@ use Illuminate\Support\Facades\Route;
 | shareable and indexable; only approved posts are reachable.
 */
 
-Route::get('/', [PublicController::class, 'landing'])->name('home');
+// no_store: this is the usual redirect target after logout (and the only
+// public page that is), and without it a plain browser refresh could replay
+// a cached copy of the page with that flash message still baked into the
+// HTML, even though the server-side session already cleared it after one
+// request - see LoginController::logout().
+Route::get('/', [PublicController::class, 'landing'])->middleware('cache.headers:no_store')->name('home');
 Route::get('/how-scholarfit-works', [PublicController::class, 'scholarFit'])->name('scholarfit');
 Route::get('/how-it-works', [PublicController::class, 'howItWorks'])->name('how-it-works');
 Route::get('/scholarships', [PublicController::class, 'scholarships'])->name('scholarships.index');

@@ -71,6 +71,69 @@ class RecommendationTest extends TestCase
         $this->assertSame([], app(RecommendationService::class)->forUser($stranger));
     }
 
+    /**
+     * The gap Issue 9 closes: a listing with no stated requirements evaluates
+     * to zero failures for anybody, including an applicant ScholarFit has
+     * almost nothing recorded about - meetsRequirements() is vacuously true
+     * there, which used to be read as a match on its own. An empty profile is
+     * not evidence of a fit; it is an absence of evidence, and must not
+     * appear as one.
+     */
+    public function test_a_bare_listing_is_not_recommended_to_an_incomplete_profile(): void
+    {
+        $stranger = User::create([
+            'role_id' => $this->student->role_id,
+            'full_name' => 'Incomplete Profile',
+            'email' => 'incomplete-profile@example.test',
+            'password_hash' => bcrypt('ChangeMe123'),
+            'account_status' => \App\Support\AccountStatus::ACTIVE,
+            'email_verified' => true,
+        ]);
+
+        // A profile row exists, but states nothing ScholarFit could check -
+        // the case a blank `? profile` early-return cannot tell apart from
+        // "no profile at all", which test_a_student_with_no_profile_gets_no_recommendations()
+        // above already covers separately.
+        ApplicantProfile::create(['user_id' => $stranger->user_id]);
+
+        $bare = $this->gatedListing('Bare Award For An Incomplete Profile');
+
+        $ids = array_map(
+            fn ($scored) => (int) $scored->opportunity->opportunity_id,
+            app(RecommendationService::class)->forUser($stranger, 20)
+        );
+
+        $this->assertNotContains($bare->opportunity_id, $ids);
+
+        // Not "not eligible" either - nothing was actually checked, so it
+        // must not read as a failure any more than as a match.
+        $notEligibleIds = array_map(
+            fn ($scored) => (int) $scored->opportunity->opportunity_id,
+            app(RecommendationService::class)->notEligibleForUser($stranger, 20)
+        );
+
+        $this->assertNotContains($bare->opportunity_id, $notEligibleIds);
+    }
+
+    /**
+     * The behaviour this fix must not disturb: a bare listing is genuinely
+     * open to everyone, and a complete profile with nothing to check it
+     * against still gets it as a match.
+     */
+    public function test_a_bare_listing_is_still_recommended_to_a_complete_profile(): void
+    {
+        $bare = $this->gatedListing('Bare Award For A Complete Profile');
+
+        // The seeded student already has a complete profile (used by every
+        // other test in this file), so this reuses it directly.
+        $ids = array_map(
+            fn ($scored) => (int) $scored->opportunity->opportunity_id,
+            app(RecommendationService::class)->forUser($this->student, 20)
+        );
+
+        $this->assertContains($bare->opportunity_id, $ids);
+    }
+
     // ------------------------------------------------- what gets left out --
 
     /** A recommendation the student cannot act on is noise. */

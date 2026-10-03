@@ -853,4 +853,132 @@ class AcademicProfileTest extends TestCase
 
         $this->assertCount(0, $writable, 'the academic catalogue must have no write endpoint');
     }
+
+    // ---------------------------------------------------- field of study / year --
+
+    /**
+     * Starts the fixture at Undergraduate directly rather than posting a jump
+     * up from the seeded A-Level, which assertProgressionIsSequential()
+     * correctly refuses without a recorded A-Level result on file - a real
+     * rule, just not the one these tests are about.
+     */
+    private function startAsUndergraduate(): void
+    {
+        $this->profile()->update(['education_level' => EducationLevel::UNDERGRADUATE]);
+    }
+
+    /**
+     * Field of study is free text, not a value from FormOptions::FIELDS_OF_STUDY.
+     * "Information Systems" is deliberately not one of that list's broad
+     * categories - the whole point is that an applicant's actual programme is
+     * rarely one of the dozen or so entries a fixed list could offer.
+     */
+    public function test_field_of_study_accepts_arbitrary_free_text(): void
+    {
+        $this->startAsUndergraduate();
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'field_of_study' => 'Information Systems',
+            'degree_classification' => 'Upper Second (2:1)',
+        ]))->assertSessionHasNoErrors();
+
+        $profile = $this->profile();
+
+        $this->assertSame('Information Systems', $profile->field_of_study);
+        $this->assertSame('Upper Second (2:1)', $profile->degree_classification);
+    }
+
+    /**
+     * The regression this whole fix exists for. field_of_study used to be
+     * rendered as a <select> against FormOptions::FIELDS_OF_STUDY: a saved
+     * value outside that fixed list rendered with nothing selected, and the
+     * very next save - for any reason, including one that has nothing to do
+     * with academics - silently submitted the select's empty placeholder and
+     * permanently wiped the real value. Free text removes the fixed list
+     * entirely, so there is no longer a value the form itself cannot represent.
+     */
+    public function test_an_unrelated_save_does_not_erase_a_free_text_field_of_study(): void
+    {
+        $this->startAsUndergraduate();
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'field_of_study' => 'Information Systems',
+            'degree_classification' => 'Upper Second (2:1)',
+        ]))->assertSessionHasNoErrors();
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'phone' => '0771555000',
+        ]))->assertSessionHasNoErrors();
+
+        $profile = $this->profile();
+
+        $this->assertSame('Information Systems', $profile->field_of_study, 'field of study must survive an unrelated save');
+        $this->assertSame('Upper Second (2:1)', $profile->degree_classification, 'degree classification must survive an unrelated save');
+    }
+
+    /** Year of study is no longer collected: not required, and not an available field on the form. */
+    public function test_year_of_study_is_not_required(): void
+    {
+        $this->startAsUndergraduate();
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'field_of_study' => 'Information Systems',
+        ]))->assertSessionHasNoErrors();
+
+        $this->actingAs($this->student)->get('/applicant/profile')
+            ->assertOk()
+            ->assertDontSee('Year of study')
+            ->assertDontSee('name="year_of_study"', false);
+    }
+
+    /**
+     * A historical year_of_study value (written before this field was
+     * retired from the form) is left exactly as it is by a later save,
+     * rather than being nulled out now that nothing on the form submits it.
+     */
+    public function test_an_existing_year_of_study_value_survives_a_later_save(): void
+    {
+        $this->startAsUndergraduate();
+        $this->profile()->update(['year_of_study' => 3]);
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'phone' => '0771555000',
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame(3, $this->profile()->year_of_study);
+    }
+
+    /**
+     * Degree classification is the tertiary equivalent of a grade, and stops
+     * meaning anything the moment the applicant is no longer at a degree
+     * level - ApplicantProfileService::update() clears it in that one case,
+     * same as it already does for field_of_study. This is the existing,
+     * deliberate behaviour; Issue 2 asked for regression coverage of it.
+     */
+    public function test_degree_classification_is_cleared_when_moving_off_a_degree_level(): void
+    {
+        $this->startAsUndergraduate();
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'field_of_study' => 'Information Systems',
+            'degree_classification' => 'Upper Second (2:1)',
+        ]))->assertSessionHasNoErrors();
+
+        // A downward move is never blocked by assertProgressionIsSequential(),
+        // whatever academic evidence is or is not on file.
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields([
+            'education_level' => EducationLevel::O_LEVEL,
+        ]))->assertSessionHasNoErrors();
+
+        $profile = $this->profile();
+
+        $this->assertNull($profile->field_of_study);
+        $this->assertNull($profile->degree_classification);
+    }
 }
