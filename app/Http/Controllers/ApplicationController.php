@@ -150,7 +150,7 @@ class ApplicationController extends Controller
 
         return view('applications.confirmation', [
             'application' => $application,
-            'timeline' => ApplicationStatus::timeline($application->application_status),
+            'timeline' => ApplicationStatus::timeline($application->application_status, $application->viewed_by_provider_at),
             'history' => $this->applicationService->history($application->application_id, $request->user()),
         ]);
     }

@@ -338,6 +338,107 @@ class ApplicationDecisionTest extends TestCase
             ->assertSee('Reason for your decision');
     }
 
+    // ---------------------------------------------- viewed-by-provider tracking --
+
+    /**
+     * Opening the review page is what "under review" means from the
+     * applicant's side - see ApplicationService::markViewedByProvider().
+     * There is no separate "mark as reviewing" button; looking is the signal.
+     */
+    public function test_opening_the_review_page_marks_the_application_as_viewed(): void
+    {
+        $application = $this->applicationFor($this->openListing(), ApplicationStatus::PENDING);
+        $this->assertNull($application->viewed_by_provider_at);
+
+        $this->actingAs($this->provider)
+            ->get('/provider/applications/' . $application->application_id)
+            ->assertOk();
+
+        $this->assertNotNull($application->fresh()->viewed_by_provider_at);
+    }
+
+    /** application_status is untouched - this is a timestamp, never a transition. */
+    public function test_viewing_an_application_does_not_change_its_status(): void
+    {
+        $application = $this->applicationFor($this->openListing(), ApplicationStatus::PENDING);
+
+        $this->actingAs($this->provider)
+            ->get('/provider/applications/' . $application->application_id)
+            ->assertOk();
+
+        $this->assertSame(ApplicationStatus::PENDING, $application->fresh()->application_status);
+    }
+
+    /** The whereNull() guard: opening the same application twice notifies the applicant once, not twice. */
+    public function test_opening_the_review_page_notifies_the_applicant_only_once(): void
+    {
+        $application = $this->applicationFor($this->openListing(), ApplicationStatus::PENDING);
+
+        $this->actingAs($this->provider)->get('/provider/applications/' . $application->application_id)->assertOk();
+        $this->actingAs($this->provider)->get('/provider/applications/' . $application->application_id)->assertOk();
+        $this->actingAs($this->provider)->get('/provider/applications/' . $application->application_id)->assertOk();
+
+        $this->assertSame(
+            1,
+            Notification::where('user_id', $this->student->user_id)
+                ->where('type', NotificationType::APPLICATION_VIEWED)
+                ->where('related_id', $application->application_id)
+                ->count()
+        );
+    }
+
+    /** The notification itself, with its message and link. */
+    public function test_the_applicant_is_notified_their_application_is_being_reviewed(): void
+    {
+        $opportunity = $this->openListing();
+        $application = $this->applicationFor($opportunity, ApplicationStatus::PENDING);
+
+        $this->actingAs($this->provider)
+            ->get('/provider/applications/' . $application->application_id)
+            ->assertOk();
+
+        $notification = Notification::where('user_id', $this->student->user_id)
+            ->where('type', NotificationType::APPLICATION_VIEWED)
+            ->firstOrFail();
+
+        $this->assertStringContainsString($opportunity->title, $notification->message);
+        $this->assertStringContainsString('now being reviewed', $notification->message);
+        $this->assertSame('/applications/' . $application->application_id . '/confirmation', $notification->link);
+    }
+
+    /** A decision already exists, so there is nothing left to "start reviewing" - viewing it now writes nothing. */
+    public function test_a_decided_application_is_not_marked_viewed(): void
+    {
+        $application = $this->applicationFor($this->openListing(), ApplicationStatus::ACCEPTED);
+
+        $this->actingAs($this->provider)
+            ->get('/provider/applications/' . $application->application_id)
+            ->assertOk();
+
+        $this->assertNull($application->fresh()->viewed_by_provider_at);
+        $this->assertSame(
+            0,
+            Notification::where('user_id', $this->student->user_id)
+                ->where('type', NotificationType::APPLICATION_VIEWED)
+                ->count()
+        );
+    }
+
+    /** The applicant's own tracker (my-applications) surfaces it too, not only the single-application page. */
+    public function test_the_applicant_tracker_shows_under_review_once_a_provider_has_opened_it(): void
+    {
+        $application = $this->applicationFor($this->openListing(), ApplicationStatus::PENDING);
+
+        $this->as($this->provider)
+            ->get('/provider/applications/' . $application->application_id)
+            ->assertOk();
+
+        $this->as($this->student)
+            ->get('/my-applications')
+            ->assertOk()
+            ->assertSee('Under review since');
+    }
+
     // ------------------------------------------------------------- helpers --
 
     /**

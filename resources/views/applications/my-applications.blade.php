@@ -124,6 +124,13 @@
                                 <span class="d-block small text-secondary mt-1">
                                     Withdrawn {{ $application->withdrawn_at->format('d M Y') }}
                                 </span>
+                            @elseif($application->isPending() && $application->viewed_by_provider_at)
+                                {{-- Still PENDING - see ApplicationStatus::timeline() - but a
+                                     provider has opened it, which is worth saying here too,
+                                     not only on the detail page's timeline. --}}
+                                <span class="d-block small text-secondary mt-1">
+                                    Under review since {{ $application->viewed_by_provider_at->format('d M Y') }}
+                                </span>
                             @endif
 
                             @if($application->isDecided() && $application->decision_reason)

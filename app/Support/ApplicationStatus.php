@@ -157,7 +157,16 @@ final class ApplicationStatus
      * looked at it, and the provider decided. A decided application shows its
      * own outcome as the last step rather than a generic one.
      */
-    public static function timeline(?string $status): array
+    /**
+     * $viewedAt only changes anything on a still-PENDING application: once a
+     * decision exists, "a provider opened this" is already implied by
+     * "Reviewed" being done, and ACCEPTED/REJECTED/WITHDRAWN ignore the
+     * parameter entirely. See ApplicationService::markViewedByProvider() for
+     * where that timestamp is written - application_status itself never
+     * becomes "under review"; this only changes which step lights up on the
+     * same PENDING row.
+     */
+    public static function timeline(?string $status, mixed $viewedAt = null): array
     {
         return match (self::canonical($status)) {
             self::ACCEPTED => [
@@ -176,7 +185,7 @@ final class ApplicationStatus
             ],
             default => [
                 ['label' => 'Applied', 'done' => true],
-                ['label' => 'Under review', 'done' => false],
+                ['label' => 'Under review', 'done' => filled($viewedAt)],
                 ['label' => 'Decision', 'done' => false],
             ],
         };

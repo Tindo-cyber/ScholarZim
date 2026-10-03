@@ -36,12 +36,17 @@ class Application extends Model
         'decided_at',
         'withdrawn_at',
         'withdrawal_reason',
+        // Set once, by ApplicationService::markViewedByProvider() only - not a
+        // status, just "has a provider opened this yet". See the migration
+        // that added it for why this does not touch application_status.
+        'viewed_by_provider_at',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'decided_at' => 'datetime',
         'withdrawn_at' => 'datetime',
+        'viewed_by_provider_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

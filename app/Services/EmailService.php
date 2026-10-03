@@ -164,6 +164,7 @@ class EmailService
     {
         return match ($type) {
             'APPLICATION_SUBMITTED' => 'Your application was submitted',
+            'APPLICATION_VIEWED' => 'Your application is now being reviewed',
             'APPLICATION_ACCEPTED' => 'Your scholarship application was accepted',
             'APPLICATION_REJECTED' => 'Update on your scholarship application',
             'APPLICATION_WITHDRAWN' => 'An applicant withdrew their application',

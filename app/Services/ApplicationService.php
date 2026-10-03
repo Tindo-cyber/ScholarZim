@@ -112,6 +112,63 @@ class ApplicationService
         return $application;
     }
 
+    /**
+     * Records the first time a provider opens a still-pending application,
+     * and tells the applicant once. application_status is never touched -
+     * this is a timestamp, not a transition, so the state machine and
+     * capacity logic are entirely unaffected. See the migration that added
+     * the column, and ApplicationStatus::timeline(), which is where this
+     * actually becomes visible: the existing "Under review" step, which
+     * otherwise sits permanently undone on a pending application.
+     *
+     * The whereNull() guard on the UPDATE is what makes this safe to call on
+     * every page load with no explicit lock: at most one call ever affects a
+     * row, so two providers opening the same application at once - or one
+     * provider refreshing the page twice - can never both fire the
+     * notification. Called from ApplicationReviewController::show(), not
+     * from review(): this is about looking, not deciding.
+     */
+    public function markViewedByProvider(Application $application, User $provider): void
+    {
+        if (ApplicationStatus::canonical($application->application_status) !== ApplicationStatus::PENDING) {
+            return;
+        }
+
+        $now = Carbon::now();
+
+        $updated = Application::whereKey($application->application_id)
+            ->whereNull('viewed_by_provider_at')
+            ->update(['viewed_by_provider_at' => $now]);
+
+        if ($updated === 0) {
+            return;
+        }
+
+        // So the page this request renders reflects it immediately, without
+        // a reload.
+        $application->viewed_by_provider_at = $now;
+
+        $title = $application->opportunity?->title ?? 'a scholarship';
+
+        $this->auditService->log(
+            $provider->email,
+            AuditAction::APPLICATION_VIEWED,
+            'APPLICATION',
+            $application->application_id,
+            'Opened "' . $title . '" application from ' . ($application->user?->displayName() ?? 'a deleted user')
+        );
+
+        if ($application->user) {
+            $this->notificationService->notifyUser(
+                $application->user,
+                NotificationType::APPLICATION_VIEWED,
+                'Your application to "' . $title . '" is now being reviewed by the provider.',
+                '/applications/' . $application->application_id . '/confirmation',
+                $application->application_id
+            );
+        }
+    }
+
     /** True if the applicant already has an application against this listing. */
     public function hasApplied(User $user, int $opportunityId): bool
     {

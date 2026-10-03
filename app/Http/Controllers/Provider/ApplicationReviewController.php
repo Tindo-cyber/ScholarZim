@@ -34,6 +34,11 @@ class ApplicationReviewController extends Controller
     {
         $application = $this->applicationService->findForProvider($id, $request->user());
 
+        // Opening this page is what "reviewing" means from the applicant's
+        // side - see ApplicationService::markViewedByProvider(). A no-op
+        // past the first open, or on anything already decided.
+        $this->applicationService->markViewedByProvider($application, $request->user());
+
         return view('applications.provider-review', [
             'application' => $application,
             'applicantProfile' => $application->user?->applicantProfile,
@@ -47,7 +52,7 @@ class ApplicationReviewController extends Controller
             // the decision form - offering buttons whose every outcome would be
             // refused on save is worse than offering none.
             'canDecide' => $application->awaitsDecision(),
-            'timeline' => ApplicationStatus::timeline($application->application_status),
+            'timeline' => ApplicationStatus::timeline($application->application_status, $application->viewed_by_provider_at),
         ]);
     }
 

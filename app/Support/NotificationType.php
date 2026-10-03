@@ -21,6 +21,14 @@ final class NotificationType
 
     public const APPLICATION_WITHDRAWN = 'APPLICATION_WITHDRAWN';
 
+    /**
+     * A provider has opened a still-pending application for the first time.
+     * Not a status - application_status stays PENDING throughout; see
+     * ApplicationService::markViewedByProvider(). Distinct from
+     * LEGACY_APPLICATION_UNDER_REVIEW below, which nothing new ever creates.
+     */
+    public const APPLICATION_VIEWED = 'APPLICATION_VIEWED';
+
     public const NEW_APPLICATION = 'NEW_APPLICATION';
 
     /*
@@ -71,6 +79,7 @@ final class NotificationType
     /** Every type the platform can still produce. */
     public const ALL = [
         self::APPLICATION_SUBMITTED,
+        self::APPLICATION_VIEWED,
         self::APPLICATION_ACCEPTED,
         self::APPLICATION_REJECTED,
         self::APPLICATION_WITHDRAWN,

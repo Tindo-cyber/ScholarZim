@@ -6,6 +6,7 @@ final class AuditAction
 {
     public const REGISTER = 'REGISTER';
     public const APPLY = 'APPLY';
+    public const APPLICATION_VIEWED = 'APPLICATION_VIEWED';
     public const STATUS_UPDATE = 'STATUS_UPDATE';
     public const CREATE_OPPORTUNITY = 'CREATE_OPPORTUNITY';
     public const DELETE_USER = 'DELETE_USER';
