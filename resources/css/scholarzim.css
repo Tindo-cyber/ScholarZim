@@ -724,8 +724,304 @@ legend.form-label {
         radial-gradient(circle at 85% 10%, rgba(0, 184, 214, .12), transparent 40%);
 }
 
+/*
+ * The photo hero and its overlay nav (landing page only - see body_class in
+ * public.blade.php and index.blade.php), matching the reference's own
+ * composition: the photo genuinely covers the full section - nav and
+ * headline sit directly on top of it, the same as the reference - rather
+ * than the photo being confined to one side with a flat colour filling
+ * the rest.
+ *
+ * Getting there took a specific crop, not just background-size: cover.
+ * The reference's own hero band has its headline and buttons baked into
+ * the same flat image, so no crop of it can span the full 1024px width
+ * without also capturing that text; the usable photo is the text-free
+ * right portion (public/assets/landing/hero-student.jpg). cover with a
+ * narrow crop and her face anywhere near its horizontal centre reproduced
+ * the original bug - cover is width-bound for any realistic hero aspect
+ * ratio (the crop's full width always shows, uncropped; only its height
+ * gets trimmed), so a centred face in the crop lands centred in the
+ * hero too, straight under the headline. The fix was cropping tightly
+ * enough that her face sits well to the right *within the crop itself*
+ * (see the cropping notes alongside the asset), so the same width-bound
+ * behaviour now carries her face to the right of the rendered hero
+ * instead of its middle. See the col-lg-5 text column in index.blade.php
+ * for the other half of the margin.
+ */
+.sz-hero-photo {
+    min-height: 37.5rem;
+    display: flex;
+    align-items: center;
+    background-repeat: no-repeat;
+    /*
+     * The photo layer's own position, third value: cover is width-bound
+     * here (see above), so the X value never actually crops anything -
+     * only Y does. 22%, not the 50% centre default, because the crop's
+     * own vertical centre is her collarbone, not her face; centring the
+     * crop crops her eyes off above the fold. 22% keeps the window
+     * biased toward the top of the crop, where her face actually is.
+     */
+    background-position: left top, left top, center 22%;
+    background-size: auto, auto, cover;
+}
+
+/* The reference's own gold, used the way the reference uses it: the hero's
+   second headline line, the overlay nav's active link and primary button -
+   an accent against the site's blue, not a replacement for it. */
+.sz-hero-accent {
+    color: #ffc548;
+}
+
+.sz-hero-copy {
+    color: rgba(255, 255, 255, .85);
+}
+
+/*
+ * One container width for the whole landing page - navbar, hero, feature
+ * cards, ScholarFit, the student/provider panels, the closing CTA and the
+ * footer - so their left and right edges line up instead of each section
+ * drifting to whatever Bootstrap's stepped breakpoint widths (540/720/
+ * 960/1140/1320) happen to land on at a given viewport. Landing-page-only:
+ * every other public page keeps Bootstrap's own .container.
+ */
+.sz-landing .container {
+    max-width: 1180px;
+}
+
+/*
+ * The overlay nav itself - genuinely transparent (a faint tint, not a
+ * solid-looking bar), white text, no bottom border, positioned over the
+ * hero rather than pushing it down.
+ *
+ * The header keeps Bootstrap's .bg-body class for the ordinary solid nav
+ * on every other public page - and .bg-body sets background-color with
+ * !important, which silently beat this rule's background the first time
+ * it was written here without one. The symptom was exactly the "pale bar
+ * above the hero" problem: not a translucent layer at all, but the solid
+ * near-white body colour showing through completely, opaque, un-themed by
+ * anything below. !important plus the extra class this selector already
+ * carries (two against .bg-body's one) is what actually wins now.
+ *
+ * Contrast is deliberately light-touch rather than one heavy tint: the
+ * hero photo's own gradient carries a top-edge vignette (see the inline
+ * style in index.blade.php) so the area behind the bar is reliably dark
+ * regardless of what the photo shows there; plain nav text carries a
+ * text-shadow; and Sign in / Install app keep their own tinted
+ * backgrounds (below) since they sit furthest right, over the photo's
+ * lightest area.
+ */
+.sz-landing .sz-public-nav {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    background: rgba(5, 16, 36, .22) !important;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    border-bottom: none !important;
+}
+
+.sz-landing .sz-public-nav .navbar-brand,
+.sz-landing .sz-public-nav .navbar-brand span,
+.sz-landing .sz-public-nav .nav-link,
+.sz-landing .sz-public-nav .btn-link {
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .55);
+}
+
+.sz-landing .sz-public-nav .navbar-brand .text-primary {
+    color: #ffc548 !important;
+}
+
+/* The active nav item, in the reference's gold - not colour alone: the
+   underline is the actual indicator, so it still reads for a viewer who
+   cannot separate gold from white. */
+.sz-landing .sz-public-nav .nav-link.active {
+    color: #ffc548;
+    position: relative;
+}
+
+.sz-landing .sz-public-nav .nav-link.active::after {
+    content: "";
+    position: absolute;
+    left: .5rem;
+    right: .5rem;
+    bottom: -.25rem;
+    height: 2px;
+    background: #ffc548;
+}
+
+/*
+ * Sign in as the secondary action beside the blue Get Started button,
+ * rather than a plain text link floating on the photo.
+ *
+ * The markup carries Bootstrap's .text-body utility (the same "Sign in"
+ * link styled for the ordinary solid nav elsewhere), which sets color with
+ * !important - stronger than the plain `color: #fff` above, so on its own
+ * that rule lost and the button rendered in body text's dark navy. This
+ * one matches importance and outranks it on specificity. The button's own
+ * background tint, not just the bar's, is the other half of the fix: this
+ * control sits directly over the hero photo's brightest area (the sky),
+ * and a tint of its own holds contrast there independently of whatever
+ * the frosted bar blends to at that point.
+ */
+.sz-landing .sz-public-nav .btn-link {
+    color: #fff !important;
+    background-color: rgba(5, 16, 36, .4);
+    border: 1px solid rgba(255, 255, 255, .55);
+    border-radius: var(--sz-radius-sm);
+    padding: .375rem .9rem;
+    text-decoration: none;
+}
+
+.sz-landing .sz-public-nav .btn-link:hover,
+.sz-landing .sz-public-nav .btn-link:focus-visible {
+    background: rgba(255, 255, 255, .12);
+    color: #fff;
+}
+
+/*
+ * Install app (when the browser has actually offered it - see
+ * install-app.blade.php) is the one other control here still using a
+ * stock Bootstrap variant, .btn-outline-light: border and text only, no
+ * fill. That is legible on a solid dark bar but not on this one, now that
+ * the bar itself is a light tint rather than a solid colour - white
+ * outline on white-ish photo is the same invisible-button problem Sign in
+ * had. Same fix, same tint.
+ */
+.sz-landing .sz-public-nav .btn-outline-light {
+    background-color: rgba(5, 16, 36, .4);
+    border-color: rgba(255, 255, 255, .55);
+}
+
+.sz-landing .sz-public-nav .btn-outline-light:hover,
+.sz-landing .sz-public-nav .btn-outline-light:focus-visible {
+    background-color: rgba(255, 255, 255, .12);
+    color: #fff;
+}
+
+/* Intentionally no .btn-primary override here: Get Started keeps the
+   site's one primary-button colour (--sz-primary, blue) on every page
+   including this one, rather than a gold variant that matched nothing
+   else in the product - including the Get Started button on the auth
+   pages this one leads straight to. */
+
+/*
+ * The theme toggle's icon is `fill="currentColor"`, so it already follows
+ * whatever `color` the button inherits - everywhere except here, since
+ * this button carries no .btn-link or other variant class for the nav
+ * text rule above to match. Set directly, with the same shadow for the
+ * same reason.
+ */
+.sz-landing .sz-public-nav #bd-theme {
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, .55);
+}
+
+.sz-landing .sz-public-nav #bd-theme:hover,
+.sz-landing .sz-public-nav #bd-theme:focus-visible {
+    background: rgba(255, 255, 255, .14);
+    border-radius: var(--sz-radius-sm);
+}
+
+.sz-landing .sz-public-nav .navbar-toggler {
+    border-color: rgba(255, 255, 255, .5);
+}
+
+.sz-landing .sz-public-nav .navbar-toggler-icon {
+    filter: invert(1) grayscale(1) brightness(2);
+}
+
+/* Collapsed (mobile) menu: the frosted treatment only works over the
+   photo at full width - once it drops into a stacked menu it needs its
+   own solid, readable surface rather than floating transparent text. */
+@media (max-width: 991.98px) {
+    .sz-landing .sz-public-nav .navbar-collapse.show,
+    .sz-landing .sz-public-nav .navbar-collapse.collapsing {
+        background: rgb(5, 16, 36);
+        margin: .5rem -.75rem 0;
+        padding: 1rem .75rem;
+        border-radius: var(--sz-radius-md, .5rem);
+    }
+}
+
+.sz-panel-photo {
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+/* The student/provider panels' photo, filling its column at full card
+   height rather than sitting as a small inline thumbnail beside the copy. */
+.sz-panel-photo-lg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    min-height: 12rem;
+    object-fit: cover;
+}
+
+/* The arrow between "how it works" steps - desktop only, see public/how-it-works.blade.php. */
+.sz-step-arrow {
+    position: absolute;
+    top: 2.6rem;
+    left: -1.5rem;
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+/*
+ * This crop is a clean margin of the reference's CTA photo with no text or
+ * button baked into it (see the landing assets' cropping notes), so the
+ * overlay only has to hold contrast for this page's real heading - no
+ * second, conflicting headline to hide underneath it.
+ */
+.sz-cta-photo {
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
 .sz-public-footer {
     background: var(--bs-body-bg);
+}
+
+/*
+ * The landing page's footer, in the same dark navy as its overlay nav and
+ * closing CTA - every other public page keeps the ordinary light footer
+ * that matches their ordinary solid nav.
+ */
+.sz-landing .sz-public-footer {
+    /* Bootstrap's own .mt-5 on this element would otherwise show a band of
+       the page's light background between the dark CTA above and this dark
+       footer - invisible on every other (light-on-light) public page, but a
+       visible seam once the footer itself turns navy. */
+    margin-top: 0 !important;
+    background: rgb(5, 16, 36);
+    color: rgba(255, 255, 255, .75);
+}
+
+.sz-landing .sz-public-footer .fw-bold,
+.sz-landing .sz-public-footer h2 {
+    color: #fff;
+}
+
+.sz-landing .sz-public-footer .text-secondary {
+    color: rgba(255, 255, 255, .65) !important;
+}
+
+.sz-landing .sz-public-footer .link-secondary {
+    color: rgba(255, 255, 255, .75) !important;
+}
+
+.sz-landing .sz-public-footer .link-secondary:hover,
+.sz-landing .sz-public-footer .link-secondary:focus-visible {
+    color: #fff !important;
+}
+
+.sz-landing .sz-public-footer hr {
+    border-color: rgba(255, 255, 255, .15);
+    opacity: 1;
 }
 
 /*

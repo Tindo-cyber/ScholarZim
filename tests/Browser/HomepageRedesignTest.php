@@ -6,96 +6,198 @@ use Laravel\Dusk\Browser;
 use Tests\DuskTestCase;
 
 /**
- * The redesigned public landing page: concise, with the catalogue/ScholarFit
- * explanation/provider details extracted to their own pages rather than all
- * living on the homepage. These checks are the ones a Feature test can't
- * make - that the hero CTAs actually navigate in a real browser, that the
- * page has no console errors, and that it holds together at a phone width.
+ * The photo-led public landing page, built to the agreed visual reference
+ * (hero photo + overlay nav, three feature cards, a ScholarFit panel, large
+ * student/provider panels, a photo-backed closing CTA) in the existing
+ * ScholarZim palette with a gold accent. The landing page introduces the
+ * platform rather than reproducing it: the full "how it works" process and
+ * the scholarship catalogue each live on their own page, which these tests
+ * also cover. The rest is what a Feature test can't check - that the CTAs
+ * actually navigate in a real browser, that the overlay nav and its mobile
+ * menu both work, that the page has no console errors, and that it holds
+ * together at a phone width.
  */
 class HomepageRedesignTest extends DuskTestCase
 {
-    public function test_the_homepage_shows_the_concise_hero_and_key_sections(): void
+    public function test_the_homepage_shows_the_hero_and_key_sections(): void
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/')
-                ->assertSee('Find scholarships that fit your profile.')
-                // .sz-eyebrow is upper-cased by CSS (text-transform), and
-                // Dusk's assertSee checks the browser-rendered text, not the
-                // source markup - same reason the old homepage's identical
-                // "On ScholarZim right now" eyebrow would have failed too.
-                ->assertSee('SCHOLARZIM AT A GLANCE')
-                ->assertSee('ScholarZim brings the scholarship process together')
-                ->assertSee('How ScholarZim works')
-                ->assertSee('Meet ScholarFit')
-                ->assertSee('Are you an organisation offering scholarships?')
-                ->assertDontSee('Closing soon')
-                ->assertDontSee('Browse by field of study');
+                ->assertSee('Discover Opportunities.')
+                ->assertSee('Build Your Future.')
+                ->assertSee('ScholarFit helps you find opportunities that fit your profile.')
+                ->assertSee('Your next opportunity could start here.')
+                ->assertSee('Reach students through a structured scholarship platform.')
+                ->assertSee('Ready to discover your next opportunity?')
+                // The full three-step process is its own page now - see
+                // test_the_how_it_works_page_shows_the_three_steps - so the
+                // landing page introduces it instead of reproducing it.
+                ->assertDontSee('Create Your Profile')
+                ->assertDontSee('Apply & Track')
+                // No stats card on this design, and no scoring language.
+                ->assertDontSee('ScholarFit score')
+                ->assertDontSee('match percentage');
         });
     }
 
-    public function test_the_find_scholarships_cta_navigates_to_the_catalogue(): void
+    public function test_the_hero_find_scholarships_cta_navigates_to_the_catalogue(): void
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/')
-                ->clickLink('Find scholarships')
+                ->clickLink('Find Scholarships')
                 ->assertRouteIs('scholarships.index');
         });
     }
 
-    public function test_the_how_scholarfit_works_cta_navigates_to_the_dedicated_page(): void
+    public function test_the_hero_learn_how_it_works_cta_navigates_to_the_how_it_works_page(): void
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/')
-                ->clickLink('How ScholarFit works')
-                ->assertRouteIs('scholarfit')
-                ->assertSee('Eligibility is not an award.')
-                ->assertSee('Is ScholarZim free for students?');
+                ->clickLink('Learn How It Works')
+                ->assertRouteIs('how-it-works')
+                ->assertSee('Create Your Profile')
+                ->assertSee('Apply & Track');
         });
     }
 
-    public function test_the_for_providers_ctas_navigate_to_provider_registration(): void
+    public function test_the_how_it_works_page_shows_the_three_steps(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->visit('/how-it-works')
+                ->assertSee('How ScholarZim Works')
+                ->assertSee('Create Your Profile')
+                ->assertSee('Discover Opportunities')
+                ->assertSee('Apply & Track')
+                ->clickLink('Find Scholarships')
+                ->assertRouteIs('scholarships.index');
+        });
+    }
+
+    public function test_the_student_panel_cta_navigates_to_registration(): void
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/')
-                ->clickLink('For providers')
+                ->clickLink('Get Started')
+                ->assertRouteIs('register');
+        });
+    }
+
+    public function test_the_provider_panel_cta_navigates_to_provider_registration(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->visit('/')
+                ->clickLink('Learn More')
                 ->assertRouteIs('register.provider');
         });
     }
 
-    public function test_the_explore_scholarfit_and_learn_more_ctas_both_reach_the_scholarfit_page(): void
+    public function test_the_closing_cta_navigates_to_the_catalogue(): void
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/')
-                ->clickLink('Explore ScholarFit')
-                ->assertRouteIs('scholarfit');
-
-            $browser->visit('/')
-                ->clickLink('Learn how ScholarFit works')
-                ->assertRouteIs('scholarfit');
+                ->clickLink('Explore Scholarships')
+                ->assertRouteIs('scholarships.index');
         });
     }
 
     /**
-     * The simplified top nav: just the brand mark (which is the home link -
-     * no separate "Home" text item, since that was a second link to the
-     * exact same place) plus sign-in/create-account. Everything else stays
-     * reachable through the footer.
+     * The real routes this page's nav uses - Home, Find Scholarships, How
+     * It Works (the dedicated process page, not the ScholarFit explanation
+     * page), Sign In, Get Started. "About" is deliberately absent: no such
+     * page exists, and every nav item must be a route that actually
+     * exists, not one invented to match a reference.
      */
-    public function test_the_top_nav_is_simplified_but_the_footer_still_reaches_everything(): void
+    public function test_the_nav_links_to_real_routes_only(): void
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/')
                 ->within('header.sz-public-nav', function (Browser $nav) {
-                    $nav->assertSee('Sign in')
-                        ->assertSee('Create free account')
-                        ->assertDontSee('Browse scholarships')
-                        ->assertDontSee('For providers');
-                })
-                ->assertAttribute('header.sz-public-nav .navbar-brand', 'href', route('home'))
+                    $nav->assertSeeLink('Home')
+                        ->assertSeeLink('Find Scholarships')
+                        ->assertSeeLink('How It Works')
+                        ->assertSee('Sign in')
+                        ->assertSee('Get Started')
+                        ->assertDontSee('About');
+                });
+        });
+    }
+
+    /**
+     * One header system: the theme toggle and the install-app control
+     * (JS-revealed only when the browser actually offers it - see
+     * install-app.blade.php) are rendered unconditionally on every public
+     * page, landing included. Only their class changes between the
+     * overlay nav and the ordinary solid one, not their presence.
+     */
+    public function test_the_theme_toggle_and_install_control_render_on_every_public_page(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->visit('/')
+                ->within('header.sz-public-nav', function (Browser $nav) {
+                    $nav->assertPresent('#bd-theme')
+                        ->assertPresent('[data-pwa-install]');
+                });
+
+            $browser->visit(route('how-it-works'))
+                ->within('header.sz-public-nav', function (Browser $nav) {
+                    $nav->assertPresent('#bd-theme')
+                        ->assertPresent('[data-pwa-install]');
+                });
+        });
+    }
+
+    /** Switching theme from the landing page's overlay nav persists across navigation and a refresh. */
+    public function test_the_theme_toggle_persists_the_chosen_theme(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $readTheme = fn (Browser $b) => $b->script(
+                "return document.documentElement.getAttribute('data-bs-theme');"
+            )[0];
+
+            $browser->visit('/')
+                ->click('#bd-theme')
+                ->pause(150)
+                ->click('[data-bs-theme-value="dark"]')
+                ->pause(150);
+
+            $this->assertSame('dark', $readTheme($browser));
+
+            $browser->visit(route('how-it-works'));
+            $this->assertSame('dark', $readTheme($browser), 'theme should persist across navigation');
+
+            $browser->refresh();
+            $this->assertSame('dark', $readTheme($browser), 'theme should persist after a refresh');
+        });
+    }
+
+    /** Get Started uses the same primary-button colour as every other page - no landing-only gold variant. */
+    public function test_the_landing_get_started_button_matches_the_sitewide_primary_colour(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->visit('/')->pause(200);
+
+            $landing = $browser->script(
+                "return getComputedStyle(document.querySelector('header.sz-public-nav .btn-primary')).backgroundColor;"
+            )[0];
+
+            $browser->visit(route('how-it-works'))->pause(200);
+
+            $elsewhere = $browser->script(
+                "return getComputedStyle(document.querySelector('header.sz-public-nav .btn-primary')).backgroundColor;"
+            )[0];
+
+            $this->assertSame($elsewhere, $landing, 'Get Started should be the same colour on the landing page as everywhere else');
+        });
+    }
+
+    /** The footer still reaches provider sign-in/registration, which the top nav does not surface directly. */
+    public function test_the_footer_reaches_provider_routes(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->visit('/')
                 ->within('footer.sz-public-footer', function (Browser $footer) {
-                    $footer->assertSeeLink('Browse scholarships')
-                        ->assertSeeLink('How ScholarFit works')
-                        ->assertSeeLink('Register');
+                    $footer->assertSeeLink('Register')
+                        ->assertSeeLink('Provider sign in');
                 });
         });
     }
@@ -112,6 +214,19 @@ class HomepageRedesignTest extends DuskTestCase
             )[0];
 
             $this->assertLessThanOrEqual(1, $overflow, 'the homepage scrolls horizontally at a phone width');
+        });
+    }
+
+    /** The overlay nav's mobile menu gets its own solid background - see the CSS comment on .navbar-collapse.show. */
+    public function test_the_mobile_nav_menu_opens_and_is_readable(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $browser->resize(375, 812)
+                ->visit('/')
+                ->click('.navbar-toggler')
+                ->pause(300)
+                ->assertSee('Find Scholarships')
+                ->assertSee('How It Works');
         });
     }
 

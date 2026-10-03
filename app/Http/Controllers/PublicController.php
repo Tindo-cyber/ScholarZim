@@ -28,17 +28,31 @@ class PublicController extends Controller
      * with featured listings. See scholarships() for the actual browse
      * page, which still needs all of that.
      */
+    /**
+     * The landing page no longer displays platform statistics - the
+     * agreed visual reference has no stats card - so it needs nothing
+     * from PlatformStatsService. That service stays injected for
+     * scholarships() below, which still uses it.
+     */
     public function landing()
     {
-        return view('public.index', [
-            'stats' => $this->platformStatsService->publicStats(),
-        ]);
+        return view('public.index');
     }
 
-    /** The dedicated explanation page the homepage's "How ScholarFit works" / "Meet ScholarFit" CTAs link to. */
+    /** The dedicated explanation page the footer's "How ScholarFit works" link reaches. */
     public function scholarFit()
     {
         return view('public.scholarfit');
+    }
+
+    /**
+     * The detailed three-step process explanation, split out of the landing
+     * page so the homepage introduces the platform rather than reproducing
+     * it. The nav's and hero's "How It Works" links both land here.
+     */
+    public function howItWorks()
+    {
+        return view('public.how-it-works');
     }
 
     public function scholarships(Request $request)
