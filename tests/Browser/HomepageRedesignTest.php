@@ -75,18 +75,23 @@ class HomepageRedesignTest extends DuskTestCase
         });
     }
 
-    /** The simplified top nav: Home plus sign-in/create-account, nothing else. */
+    /**
+     * The simplified top nav: just the brand mark (which is the home link -
+     * no separate "Home" text item, since that was a second link to the
+     * exact same place) plus sign-in/create-account. Everything else stays
+     * reachable through the footer.
+     */
     public function test_the_top_nav_is_simplified_but_the_footer_still_reaches_everything(): void
     {
         $this->browse(function (Browser $browser) {
             $browser->visit('/')
                 ->within('header.sz-public-nav', function (Browser $nav) {
-                    $nav->assertSee('Home')
-                        ->assertSee('Sign in')
+                    $nav->assertSee('Sign in')
                         ->assertSee('Create free account')
                         ->assertDontSee('Browse scholarships')
                         ->assertDontSee('For providers');
                 })
+                ->assertAttribute('header.sz-public-nav .navbar-brand', 'href', route('home'))
                 ->within('footer.sz-public-footer', function (Browser $footer) {
                     $footer->assertSeeLink('Browse scholarships')
                         ->assertSeeLink('How ScholarFit works')

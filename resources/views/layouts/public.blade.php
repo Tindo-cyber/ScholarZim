@@ -29,17 +29,15 @@
 
         <div class="collapse navbar-collapse" id="szPublicNav">
             {{--
-                Just Home in the middle now - Browse/ScholarFit/providers are
-                the homepage's own hero CTAs and sections, and stay reachable
-                from every page through the footer below.
+                No nav-link items left here: the brand mark above already
+                links home (the near-universal convention), and
+                Browse/ScholarFit/providers are the homepage's own hero CTAs
+                and sections, reachable from every page through the footer
+                below. ms-auto on the actions replaces what mx-auto on a now-
+                empty <ul> used to do, so Sign in / Create account stay
+                pinned to the right rather than drifting to centre.
             --}}
-            <ul class="navbar-nav mx-auto gap-lg-2">
-                <li class="nav-item">
-                    <a class="nav-link @active(request()->routeIs('home'))" href="{{ route('home') }}">Home</a>
-                </li>
-            </ul>
-
-            <div class="sz-public-nav-actions d-flex flex-wrap align-items-center gap-2">
+            <div class="sz-public-nav-actions d-flex flex-wrap align-items-center gap-2 ms-auto">
                 <x-install-app />
                 <x-theme-toggle />
 
