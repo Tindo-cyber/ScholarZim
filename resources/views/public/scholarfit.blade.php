@@ -85,7 +85,7 @@
                             ],
                             [
                                 'How does ScholarFit matching work?',
-                                'Once your profile has your education level, field of study and results, ScholarFit compares it against what each scholarship states it requires. It first answers whether you meet the stated rules, then scores how closely you fit across six dimensions, and shows the reason behind each part of the score. It ranks listings for you; it does not decide who is awarded.',
+                                'Once your profile has your education level, field of study and results, ScholarFit compares it against what each scholarship states it requires. It tells you whether you are eligible and explains exactly which requirements you meet and which you do not, with the actual figures either way. It ranks listings for you; it does not decide who is awarded.',
                             ],
                             [
                                 'How do scholarships get onto ScholarZim?',

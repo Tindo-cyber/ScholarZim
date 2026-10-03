@@ -5,7 +5,7 @@
 @section('content')
 
     <x-page-header title="My profile"
-                   subtitle="Everything ScholarFit uses to score scholarships against you."
+                   subtitle="Everything ScholarFit checks against a scholarship's requirements."
                    eyebrow="Student" />
 
     <div class="row g-4">
@@ -62,7 +62,7 @@
                                     @enderror
                                     <div class="form-text">
                                         Optional. Shown to providers reviewing your application; it does not
-                                        affect your ScholarFit score or which awards you are eligible for.
+                                        affect which awards you are eligible for.
                                     </div>
                                 </fieldset>
                             </div>
@@ -458,7 +458,7 @@
                     </p>
 
                     @foreach([
-                        'results' => ['Worth 5 points of your ScholarFit score.'],
+                        'results' => ['The academic evidence providers and ScholarFit rely on up to O-Level/A-Level.'],
                         'transcript' => ['The academic evidence providers and ScholarFit rely on above O-Level/A-Level.'],
                         'cv' => ['Most providers expect one.'],
                         'passport' => ['Used to confirm your identity and nationality.'],

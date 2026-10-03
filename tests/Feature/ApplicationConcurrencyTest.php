@@ -13,6 +13,7 @@ use App\Support\AccountStatus;
 use App\Support\ApplicationStatus;
 use App\Support\AuditAction;
 use App\Support\NotificationType;
+use App\Support\OpportunityStatus;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -555,6 +556,269 @@ class ApplicationConcurrencyTest extends TestCase
         $this->assertDatabaseMissing('users', ['email' => 'chiedza-trust@example.test']);
     }
 
+    // -------------------------------------------------------- award capacity --
+
+    /** award_slots is a cap on ACCEPTED applications only - PENDING ones never count against it. */
+    public function test_award_slots_null_allows_unlimited_accepted_applications(): void
+    {
+        $opportunity = $this->opportunity(); // seeded with award_slots = null
+
+        $apps = [
+            $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('a')),
+            $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('b')),
+            $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('c')),
+        ];
+
+        foreach ($apps as $app) {
+            $this->service()->decide($app->application_id, ApplicationStatus::ACCEPTED, 'Well qualified.', $this->provider);
+        }
+
+        $this->assertSame(
+            3,
+            Application::where('opportunity_id', $opportunity->opportunity_id)
+                ->where('application_status', ApplicationStatus::ACCEPTED)
+                ->count()
+        );
+        $this->assertSame(OpportunityStatus::ACTIVE, $opportunity->fresh()->status);
+    }
+
+    public function test_award_slots_one_allows_exactly_one_acceptance(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $application = $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('a'));
+
+        $decided = $this->service()->decide($application->application_id, ApplicationStatus::ACCEPTED, 'Strong fit.', $this->provider);
+
+        $this->assertSame(ApplicationStatus::ACCEPTED, $decided->fresh()->application_status);
+    }
+
+    /** The exact scenario in the brief: award_slots = 2, a third acceptance attempt is refused. */
+    public function test_a_second_acceptance_beyond_capacity_is_refused_and_does_not_modify_state(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $first = $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('a'));
+        $second = $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('b'));
+
+        $this->service()->decide($first->application_id, ApplicationStatus::ACCEPTED, 'First pick.', $this->provider);
+
+        $auditBefore = AuditLog::where('action', AuditAction::STATUS_UPDATE)->count();
+        $notificationsBefore = Notification::count();
+
+        try {
+            $this->service()->decide($second->application_id, ApplicationStatus::ACCEPTED, 'Second pick.', $this->provider);
+            $this->fail('accepting beyond capacity should have been refused');
+        } catch (RuntimeException $e) {
+            $this->assertSame(
+                'This scholarship has already filled all of its available awards. You cannot accept another application.',
+                $e->getMessage()
+            );
+        }
+
+        $this->assertSame(
+            ApplicationStatus::PENDING,
+            $second->fresh()->application_status,
+            'a refused decision must not change the application at all'
+        );
+        $this->assertSame(1, Application::where('opportunity_id', $opportunity->opportunity_id)
+            ->where('application_status', ApplicationStatus::ACCEPTED)->count());
+        $this->assertSame($auditBefore, AuditLog::where('action', AuditAction::STATUS_UPDATE)->count(), 'a refused decision leaves no audit line');
+        $this->assertSame($notificationsBefore, Notification::count(), 'a refused decision notifies nobody');
+    }
+
+    /** Filling the last slot is also a publication-state change: the listing closes in the same transaction. */
+    public function test_accepting_the_final_slot_closes_the_opportunity_and_notifies_the_provider(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $application = $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('a'));
+
+        $this->service()->decide($application->application_id, ApplicationStatus::ACCEPTED, 'Great fit.', $this->provider);
+
+        $fresh = $opportunity->fresh();
+        $this->assertSame(OpportunityStatus::CLOSED, $fresh->status);
+        $this->assertStringContainsString('award slots filled', (string) $fresh->last_change_reason);
+
+        $this->assertDatabaseHas('notifications', [
+            'user_id' => $this->provider->user_id,
+            'type' => NotificationType::SCHOLARSHIP_CLOSED,
+        ]);
+    }
+
+    /** Rejecting never consumes a slot, whatever the capacity. */
+    public function test_rejecting_an_application_never_counts_against_capacity(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $application = $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('a'));
+
+        $this->service()->decide($application->application_id, ApplicationStatus::REJECTED, 'Not a fit.', $this->provider);
+
+        $this->assertSame(OpportunityStatus::ACTIVE, $opportunity->fresh()->status);
+        $this->assertSame(0, Application::where('opportunity_id', $opportunity->opportunity_id)
+            ->where('application_status', ApplicationStatus::ACCEPTED)->count());
+    }
+
+    // ----------------------------------------------------- closed by capacity --
+
+    public function test_a_capacity_closed_opportunity_refuses_a_new_submission(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $this->acceptOneApplication($opportunity);
+        $this->assertSame(OpportunityStatus::CLOSED, $opportunity->fresh()->status);
+
+        $thirdStudent = $this->otherStudent('third');
+
+        try {
+            // A bare student with no profile at all still reaches this refusal:
+            // capacity is checked before profile completeness, so a listing
+            // that has filled its awards never gets as far as asking whether
+            // the applicant is otherwise eligible.
+            $this->service()->quickApply($opportunity->opportunity_id, $thirdStudent);
+            $this->fail('a submission against a capacity-closed opportunity should have been refused');
+        } catch (RuntimeException $e) {
+            $this->assertSame(
+                'This scholarship is no longer accepting applications because its available awards have been filled.',
+                $e->getMessage()
+            );
+        }
+
+        $this->assertSame(0, Application::where('opportunity_id', $opportunity->opportunity_id)
+            ->where('user_id', $thirdStudent->user_id)->count());
+    }
+
+    public function test_a_capacity_closed_opportunity_does_not_appear_publicly(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $this->acceptOneApplication($opportunity);
+
+        $this->assertNull(Opportunity::publiclyVisible()->find($opportunity->opportunity_id));
+        $this->assertNull(app(\App\Services\OpportunityService::class)->findPubliclyVisible($opportunity->opportunity_id));
+    }
+
+    /** Closed, not deleted and not rejected: the provider still sees it, with its history intact. */
+    public function test_a_capacity_closed_opportunity_remains_in_the_providers_own_list(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $this->acceptOneApplication($opportunity);
+
+        $providerListing = app(\App\Services\OpportunityService::class)->forProvider($this->provider)
+            ->firstWhere('opportunity_id', $opportunity->opportunity_id);
+
+        $this->assertNotNull($providerListing, 'a capacity-closed listing must still appear in the providers own list');
+        $this->assertSame(OpportunityStatus::CLOSED, $providerListing->status);
+        $this->assertSame(
+            \App\Support\OpportunityModerationStatus::APPROVED,
+            $providerListing->moderation_status,
+            'closing for capacity must not touch the moderation verdict'
+        );
+    }
+
+    // ---------------------------------------------------- capacity concurrency --
+
+    /** The same proof the file already uses for applications, extended to the row this change starts locking. */
+    public function test_opportunity_locked_reads_emit_for_update_on_mysql(): void
+    {
+        $sql = DB::connection('mysql')
+            ->table('opportunities')
+            ->where('opportunity_id', 1)
+            ->lockForUpdate()
+            ->toSql();
+
+        $this->assertStringEndsWith('for update', $sql);
+    }
+
+    /**
+     * Two providers' reviewers racing for the same last seat. Played out
+     * sequentially rather than with real threads - same reasoning as every
+     * other race in this file - but the outcome is exactly what the lock is
+     * for: only one of the two acceptances may land.
+     */
+    public function test_two_acceptance_attempts_against_the_last_slot_only_one_succeeds(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $first = $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('a'));
+        $second = $this->application($opportunity, ApplicationStatus::PENDING, $this->otherStudent('b'));
+
+        $this->service()->decide($first->application_id, ApplicationStatus::ACCEPTED, 'First.', $this->provider);
+
+        try {
+            $this->service()->decide($second->application_id, ApplicationStatus::ACCEPTED, 'Second.', $this->provider);
+            $this->fail('only one acceptance may succeed against a single award slot');
+        } catch (RuntimeException $e) {
+            // Expected - see test_a_second_acceptance_beyond_capacity_is_refused_and_does_not_modify_state for the message assertion.
+        }
+
+        $this->assertSame(1, Application::where('opportunity_id', $opportunity->opportunity_id)
+            ->where('application_status', ApplicationStatus::ACCEPTED)->count());
+    }
+
+    /**
+     * Two submissions reaching an opportunity that is already at capacity.
+     * Both must be refused by the authoritative, locked check - neither may
+     * squeeze in on a stale read of "still open".
+     */
+    public function test_two_submissions_against_an_already_full_opportunity_are_both_refused(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $this->acceptOneApplication($opportunity);
+
+        foreach (['x', 'y'] as $suffix) {
+            $student = $this->otherStudent($suffix);
+
+            try {
+                $this->service()->quickApply($opportunity->opportunity_id, $student);
+                $this->fail("submission $suffix against a full opportunity should have been refused");
+            } catch (RuntimeException $e) {
+                $this->assertStringContainsString('available awards have been filled', $e->getMessage());
+            }
+        }
+
+        $this->assertSame(
+            1,
+            Application::where('opportunity_id', $opportunity->opportunity_id)->count(),
+            'no new application may be created once capacity is full, however many submissions race for it'
+        );
+    }
+
+    /**
+     * The authoritative check proven, not assumed. submit() reads the
+     * opportunity twice: once before the transaction, to fail fast and
+     * decide whether uploading a document is worth doing, and once locked,
+     * inside it. Opportunity::retrieved fires on every read of the model,
+     * including both of those - so firing a competing acceptance the first
+     * time only simulates it landing in the gap between them: the pre-check
+     * still sees the listing open, and the transaction's own read, moments
+     * later, finds its one slot already gone.
+     */
+    public function test_a_capacity_change_between_the_first_look_and_the_transaction_is_not_trusted(): void
+    {
+        $opportunity = $this->opportunityWithSlots(1);
+        $student = $this->otherStudent('late');
+        $fired = false;
+
+        Opportunity::retrieved(function (Opportunity $retrieved) use (&$fired, $opportunity) {
+            if ($fired || $retrieved->opportunity_id !== $opportunity->opportunity_id) {
+                return;
+            }
+
+            // Guarded before acting: decide() reads this same opportunity
+            // under its own lock, which would otherwise fire this listener
+            // again and recurse.
+            $fired = true;
+
+            $this->acceptOneApplication($opportunity);
+        });
+
+        try {
+            $this->service()->quickApply($opportunity->opportunity_id, $student);
+            $this->fail('the transaction should have re-checked capacity against committed truth, not the pre-check read');
+        } catch (RuntimeException $e) {
+            $this->assertStringContainsString('available awards have been filled', $e->getMessage());
+        }
+
+        $this->assertTrue($fired, 'the competing acceptance must actually have run for this test to mean anything');
+        $this->assertSame(0, Application::where('opportunity_id', $opportunity->opportunity_id)
+            ->where('user_id', $student->user_id)->count());
+    }
+
     // --------------------------------------------------------------- helpers --
 
     private function service(): ApplicationService
@@ -565,6 +829,47 @@ class ApplicationConcurrencyTest extends TestCase
     private function opportunity(string $title = 'Zimbabwe Tech Futures Bursary'): Opportunity
     {
         return Opportunity::where('title', $title)->firstOrFail();
+    }
+
+    /** The same seeded, fully-approved opportunity, with a specific capacity for these tests to fill. */
+    private function opportunityWithSlots(int $slots): Opportunity
+    {
+        $opportunity = $this->opportunity();
+        $opportunity->update(['award_slots' => $slots]);
+
+        return $opportunity->fresh();
+    }
+
+    /** A second (or third...) applicant, distinct from the seeded student, for multi-applicant capacity tests. */
+    private function otherStudent(string $suffix): User
+    {
+        return User::create([
+            'role_id' => $this->student->role_id,
+            'full_name' => 'Other Student ' . strtoupper($suffix),
+            'email' => 'other-student-' . $suffix . '@example.test',
+            'password_hash' => bcrypt('ChangeMe123'),
+            'account_status' => AccountStatus::ACTIVE,
+            'email_verified' => true,
+        ]);
+    }
+
+    /**
+     * Fills a single-slot opportunity's one award via a real decide() call,
+     * so the opportunity ends up CLOSED exactly the way production code
+     * closes it - not by setting the column directly - for tests that only
+     * care about what happens next. A fresh filler student every call, so
+     * this can run more than once per test (the race tests need to) without
+     * a duplicate-email collision.
+     */
+    private function acceptOneApplication(Opportunity $opportunity): Application
+    {
+        static $n = 0;
+        $filler = $this->otherStudent('filler' . ++$n);
+        $application = $this->application($opportunity, ApplicationStatus::PENDING, $filler);
+
+        $this->service()->decide($application->application_id, ApplicationStatus::ACCEPTED, 'Filling the slot.', $this->provider);
+
+        return $application->fresh();
     }
 
     /** The disk under test - resolves from config so these tests run unchanged against `local` or `s3`. */
@@ -581,10 +886,10 @@ class ApplicationConcurrencyTest extends TestCase
             ->count();
     }
 
-    private function application(Opportunity $opportunity, string $status): Application
+    private function application(Opportunity $opportunity, string $status, ?User $user = null): Application
     {
         return Application::create([
-            'user_id' => $this->student->user_id,
+            'user_id' => ($user ?? $this->student)->user_id,
             'opportunity_id' => $opportunity->opportunity_id,
             'application_status' => $status,
             'submitted_at' => Carbon::now()->subDay(),

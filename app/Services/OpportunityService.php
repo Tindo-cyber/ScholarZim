@@ -3,7 +3,10 @@
 namespace App\Services;
 
 use App\Exceptions\InvalidOpportunityTransition;
+use App\Models\AcademicQualification;
+use App\Models\AcademicSubject;
 use App\Models\Opportunity;
+use App\Models\OpportunitySubjectRequirement;
 use App\Models\OpportunityView;
 use App\Models\User;
 use App\Support\AuditAction;
@@ -15,8 +18,10 @@ use App\Support\OpportunityStatus;
 use App\Support\RoleNames;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\UnauthorizedException;
+use Illuminate\Validation\ValidationException;
 
 class OpportunityService
 {
@@ -68,6 +73,15 @@ class OpportunityService
     /**
      * Providers submit; admins publish. A new post starts PENDING and stays
      * invisible to the public until OpportunityModerationService approves it.
+     *
+     * The opportunity, its subject requirements and its audit entry all land
+     * or none do. saveSubjectRequirements() used to run in the controller,
+     * after this method had already returned a committed row - so an invalid
+     * subject/qualification pairing or an unsupported grade threw only after
+     * the opportunity itself was permanently saved. Both now happen inside
+     * the same transaction, and admins are told about the submission only
+     * once it has actually committed - telling them about one that then
+     * rolled back would be reporting a scholarship that never existed.
      */
     public function create(array $data, User $provider): Opportunity
     {
@@ -80,30 +94,36 @@ class OpportunityService
         $country = $this->normalizeCountry($data['country'] ?? null);
         $displayName = trim((string) ($data['provider_display_name'] ?? ''));
 
-        $opportunity = Opportunity::create([
-            'provider_user_id' => $provider->user_id,
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'education_level' => $data['education_level'] ?? null,
-            'funding_type' => $data['funding_type'] ?? null,
-            'country' => $country,
-            'target_country' => $country,
-            'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
-            'deadline' => $data['deadline'] ?? null,
-            'status' => OpportunityStatus::ACTIVE,
-            'moderation_status' => OpportunityModerationStatus::PENDING,
-            'submitted_at' => Carbon::now(),
-            'provider_name' => $displayName !== '' ? $displayName : $provider->full_name,
-            'created_at' => Carbon::now(),
-        ] + $this->awardAttributes($data));
+        $opportunity = DB::transaction(function () use ($data, $provider, $country, $displayName) {
+            $opportunity = Opportunity::create([
+                'provider_user_id' => $provider->user_id,
+                'title' => $data['title'],
+                'description' => $data['description'] ?? null,
+                'education_level' => $data['education_level'] ?? null,
+                'funding_type' => $data['funding_type'] ?? null,
+                'country' => $country,
+                'target_country' => $country,
+                'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
+                'deadline' => $data['deadline'] ?? null,
+                'status' => OpportunityStatus::ACTIVE,
+                'moderation_status' => OpportunityModerationStatus::PENDING,
+                'submitted_at' => Carbon::now(),
+                'provider_name' => $displayName !== '' ? $displayName : $provider->full_name,
+                'created_at' => Carbon::now(),
+            ] + $this->awardAttributes($data));
 
-        $this->auditService->log(
-            $provider->email,
-            AuditAction::CREATE_OPPORTUNITY,
-            'OPPORTUNITY',
-            $opportunity->opportunity_id,
-            'Submitted opportunity "' . $opportunity->title . '" for review'
-        );
+            $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
+
+            $this->auditService->logOrFail(
+                $provider->email,
+                AuditAction::CREATE_OPPORTUNITY,
+                'OPPORTUNITY',
+                $opportunity->opportunity_id,
+                'Submitted opportunity "' . $opportunity->title . '" for review'
+            );
+
+            return $opportunity;
+        });
 
         Log::info('Opportunity submitted for review', [
             'id' => $opportunity->opportunity_id,
@@ -134,6 +154,13 @@ class OpportunityService
      * teaches providers to leave mistakes alone, which is the opposite of what
      * moderation is for - and it was already inconsistent, since extendDeadline()
      * had carved out exactly this exception for itself.
+     *
+     * Same atomicity guarantee as create(): the opportunity's own attributes,
+     * its subject requirements, moderation state and audit entry all commit
+     * together or not at all. An invalid subject requirement used to be
+     * caught only after the opportunity row itself was already saved,
+     * leaving a provider's edit half-applied - the title and award changed,
+     * the subject rules not.
      */
     public function update(int $opportunityId, array $data, User $provider, string $reason): Opportunity
     {
@@ -202,17 +229,23 @@ class OpportunityService
             $attributes
         );
 
-        $opportunity->update($attributes);
+        $opportunity = DB::transaction(function () use ($opportunity, $attributes, $data, $provider, $reason, $material, $changes) {
+            $opportunity->update($attributes);
 
-        $this->auditService->log(
-            $provider->email,
-            AuditAction::UPDATE_OPPORTUNITY,
-            'OPPORTUNITY',
-            $opportunity->opportunity_id,
-            'Updated "' . $opportunity->title . '" (' . ($material ? 'material, back to review' : 'minor, stays live')
-                . '): ' . $reason,
-            $changes + ['reason' => $reason]
-        );
+            $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
+
+            $this->auditService->logOrFail(
+                $provider->email,
+                AuditAction::UPDATE_OPPORTUNITY,
+                'OPPORTUNITY',
+                $opportunity->opportunity_id,
+                'Updated "' . $opportunity->title . '" (' . ($material ? 'material, back to review' : 'minor, stays live')
+                    . '): ' . $reason,
+                $changes + ['reason' => $reason]
+            );
+
+            return $opportunity;
+        });
 
         $this->forgetFacetCaches();
 
@@ -587,5 +620,79 @@ class OpportunityService
         }
 
         return $current !== $incoming;
+    }
+
+    /**
+     * Brings the listing's subject requirements into line with the submitted
+     * set. Moved here from OpportunityController so create()/update() can
+     * run it inside the same transaction as the opportunity write it used
+     * to follow - see the class docblocks above both methods.
+     *
+     * Upserted on (opportunity_id, subject_id) - the key the table enforces -
+     * so an edit updates the rows that are still there and removes only the
+     * ones the provider actually deleted.
+     *
+     * The bug this replaces was in the form rather than here: existing rows
+     * rendered their minimum grade as a readonly input with no `name`, so it
+     * was never submitted, `minimum_grade` was nullable, and this method
+     * deleted and reinserted the lot. Editing a listing's title therefore
+     * reset every subject rule to "any grade". The form now posts the grade
+     * as an editable named field, and this method no longer destroys a row it
+     * is about to recreate.
+     *
+     * A grade the requirement's own qualification does not award is rejected:
+     * a bar nobody can be measured against is not a rule. Thrown inside the
+     * caller's transaction, so an invalid requirement rolls the opportunity
+     * write back too rather than leaving it saved without its rules.
+     */
+    private function saveSubjectRequirements(Opportunity $opportunity, array $requirements): void
+    {
+        $keptIds = [];
+
+        foreach ($requirements as $index => $req) {
+            $qualification = AcademicQualification::find($req['qualification_id'] ?? null);
+            $subject = AcademicSubject::find($req['subject_id'] ?? null);
+
+            if ($qualification === null || $subject === null
+                || (int) $subject->qualification_id !== (int) $qualification->id) {
+                throw ValidationException::withMessages([
+                    "subject_requirements.$index.subject_id" => 'Choose a subject offered under the selected qualification.',
+                ]);
+            }
+
+            $grade = null;
+
+            if (filled($req['minimum_grade'] ?? null)) {
+                // Checked against the subject's own scale where it has one. A
+                // requirement of "6 or better" is meaningful on a Cambridge
+                // IGCSE 9-1 syllabus and meaningless on an A*-G one, even
+                // though both sit under Cambridge IGCSE.
+                $grade = $subject->canonicalGrade($req['minimum_grade']);
+
+                if ($grade === null) {
+                    $awardedBy = $subject->hasOwnScheme() ? $subject->name : $qualification->name;
+
+                    throw ValidationException::withMessages([
+                        "subject_requirements.$index.minimum_grade" => 'Choose a grade that '.$awardedBy
+                            .' awards ('.implode(', ', $subject->grades()).').',
+                    ]);
+                }
+            }
+
+            $requirement = OpportunitySubjectRequirement::updateOrCreate(
+                [
+                    'opportunity_id' => $opportunity->opportunity_id,
+                    'subject_id' => $subject->id,
+                ],
+                [
+                    'qualification_id' => $qualification->id,
+                    'minimum_grade' => $grade,
+                ]
+            );
+
+            $keptIds[] = $requirement->id;
+        }
+
+        $opportunity->subjectRequirements()->whereNotIn('id', $keptIds)->delete();
     }
 }

@@ -422,7 +422,7 @@ class ApplicantProfile extends Model
         // was about removing.
         if (EducationLevel::usesFieldOfStudy($this->education_level)) {
             $items[] = ['label' => 'Field of study', 'value' => $this->field_of_study, 'anchor' => 'field_of_study',
-                'hint' => 'Worth up to a quarter of your ScholarFit score.'];
+                'hint' => 'Used to match you against scholarships in this field.'];
         }
 
         $items[] = ['label' => 'Province', 'value' => $this->province, 'anchor' => 'province',
@@ -478,7 +478,7 @@ class ApplicantProfile extends Model
     }
 
     /**
-     * Percentage of the profile fields that matter to ScholarFit scoring.
+     * Percentage of the profile fields ScholarFit reads.
      * Mirrors ProfileCompletionSupport in the Spring app.
      */
     public function completionPercentage(): int

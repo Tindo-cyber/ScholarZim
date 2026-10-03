@@ -253,8 +253,8 @@ class DatabaseSeeder extends Seeder
      * Phase 13 of a viva needs to show "what an unfinished profile looks like"
      * without narrating it from an empty database.
      *
-     * The certificate is advisory, not enforced by ScholarFit's score: nothing
-     * in ScholarFit blocks a *recommendation* on it. Actually applying is a
+     * The certificate is advisory, not an eligibility gate: nothing in
+     * ScholarFit blocks a *recommendation* on it. Actually applying is a
      * different matter - the "Harare Health Sciences Postgraduate Grant"
      * listing sets requires_results_certificate, which is a hard, applying-time
      * requirement, and this account cannot pass it, by design. See

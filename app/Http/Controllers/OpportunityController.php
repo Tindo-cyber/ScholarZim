@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\AcademicQualification;
 use App\Models\AcademicSubject;
-use App\Models\Opportunity;
-use App\Models\OpportunitySubjectRequirement;
 use App\Services\ApplicationService;
 use App\Services\OpportunityService;
 use App\Services\SavedScholarshipService;
@@ -99,7 +97,6 @@ class OpportunityController extends Controller
 
         try {
             $opportunity = $this->opportunityService->create($data, $request->user());
-            $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
         } catch (UnauthorizedException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
@@ -180,7 +177,6 @@ class OpportunityController extends Controller
 
         try {
             $opportunity = $this->opportunityService->update($id, $data, $request->user(), $data['reason']);
-            $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
         } catch (\RuntimeException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
@@ -282,75 +278,5 @@ class OpportunityController extends Controller
                 'grades' => $q->grades(),
             ],
         ])->all();
-    }
-
-    /**
-     * Brings the listing's subject requirements into line with the submitted
-     * set.
-     *
-     * Upserted on (opportunity_id, subject_id) - the key the table enforces -
-     * so an edit updates the rows that are still there and removes only the
-     * ones the provider actually deleted.
-     *
-     * The bug this replaces was in the form rather than here: existing rows
-     * rendered their minimum grade as a readonly input with no `name`, so it
-     * was never submitted, `minimum_grade` was nullable, and this method
-     * deleted and reinserted the lot. Editing a listing's title therefore
-     * reset every subject rule to "any grade". The form now posts the grade
-     * as an editable named field, and this method no longer destroys a row it
-     * is about to recreate.
-     *
-     * A grade the requirement's own qualification does not award is rejected:
-     * a bar nobody can be measured against is not a rule.
-     */
-    private function saveSubjectRequirements(Opportunity $opportunity, array $requirements): void
-    {
-        $keptIds = [];
-
-        foreach ($requirements as $index => $req) {
-            $qualification = AcademicQualification::find($req['qualification_id'] ?? null);
-            $subject = AcademicSubject::find($req['subject_id'] ?? null);
-
-            if ($qualification === null || $subject === null
-                || (int) $subject->qualification_id !== (int) $qualification->id) {
-                throw ValidationException::withMessages([
-                    "subject_requirements.$index.subject_id" => 'Choose a subject offered under the selected qualification.',
-                ]);
-            }
-
-            $grade = null;
-
-            if (filled($req['minimum_grade'] ?? null)) {
-                // Checked against the subject's own scale where it has one. A
-                // requirement of "6 or better" is meaningful on a Cambridge
-                // IGCSE 9-1 syllabus and meaningless on an A*-G one, even
-                // though both sit under Cambridge IGCSE.
-                $grade = $subject->canonicalGrade($req['minimum_grade']);
-
-                if ($grade === null) {
-                    $awardedBy = $subject->hasOwnScheme() ? $subject->name : $qualification->name;
-
-                    throw ValidationException::withMessages([
-                        "subject_requirements.$index.minimum_grade" => 'Choose a grade that '.$awardedBy
-                            .' awards ('.implode(', ', $subject->grades()).').',
-                    ]);
-                }
-            }
-
-            $requirement = OpportunitySubjectRequirement::updateOrCreate(
-                [
-                    'opportunity_id' => $opportunity->opportunity_id,
-                    'subject_id' => $subject->id,
-                ],
-                [
-                    'qualification_id' => $qualification->id,
-                    'minimum_grade' => $grade,
-                ]
-            );
-
-            $keptIds[] = $requirement->id;
-        }
-
-        $opportunity->subjectRequirements()->whereNotIn('id', $keptIds)->delete();
     }
 }

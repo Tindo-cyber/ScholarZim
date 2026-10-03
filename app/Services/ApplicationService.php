@@ -256,18 +256,16 @@ class ApplicationService
         $opportunity = Opportunity::find($opportunityId);
 
         // An unapproved post is treated as non-existent rather than forbidden, so
-        // the moderation queue is not observable from the outside.
+        // the moderation queue is not observable from the outside. This first
+        // pass exists only to fail fast with a useful message and to decide
+        // whether uploading a document is worth doing at all - it is not
+        // trusted as the final answer. The locked, re-read copy inside the
+        // transaction below is.
         if (! $opportunity || ! OpportunityModerationStatus::isApproved($opportunity->moderation_status)) {
             throw new RuntimeException('Opportunity not found.');
         }
 
-        if (strcasecmp((string) $opportunity->status, OpportunityStatus::ACTIVE) !== 0) {
-            throw new RuntimeException('This scholarship is no longer accepting applications.');
-        }
-
-        if ($opportunity->deadline !== null && $opportunity->deadline->lt(Carbon::today())) {
-            throw new RuntimeException('The deadline for this scholarship has passed.');
-        }
+        $this->assertAcceptingApplications($opportunity);
 
         $profile = $this->profileService->forUser($user);
 
@@ -308,6 +306,22 @@ class ApplicationService
         try {
             [$application, $supersededDocument] = DB::transaction(
                 function () use ($opportunityId, $user, $data, $document, $uploadedPath, $opportunity) {
+                    // The authoritative check. Locked first, opportunity before
+                    // application - the same order every writer of either row
+                    // uses (see decide()) - so two transactions contending for
+                    // both rows always queue behind each other rather than
+                    // deadlocking. Nothing read before this line is trusted:
+                    // between it and the caller's last look, another request may
+                    // have closed, withdrawn, or filled this listing, or pushed
+                    // its deadline into the past.
+                    $lockedOpportunity = Opportunity::whereKey($opportunityId)->lockForUpdate()->first();
+
+                    if (! $lockedOpportunity || ! OpportunityModerationStatus::isApproved($lockedOpportunity->moderation_status)) {
+                        throw new RuntimeException('Opportunity not found.');
+                    }
+
+                    $this->assertAcceptingApplications($lockedOpportunity);
+
                     // Locked, then re-read: between the caller's last look and this
                     // line another request may have created or reopened the very
                     // same application. On MySQL this blocks the second writer
@@ -433,6 +447,52 @@ class ApplicationService
     }
 
     /**
+     * Publication status, deadline, and award capacity - the three reasons a
+     * listing that still exists and cleared moderation might nonetheless
+     * refuse a new application. Capacity is checked first so a scholarship
+     * that is CLOSED specifically because its awards filled up says so,
+     * rather than the generic "no longer accepting applications" every other
+     * closure reason shares.
+     *
+     * @throws RuntimeException
+     */
+    private function assertAcceptingApplications(Opportunity $opportunity): void
+    {
+        $this->assertCapacityAvailable($opportunity);
+
+        if (strcasecmp((string) $opportunity->status, OpportunityStatus::ACTIVE) !== 0) {
+            throw new RuntimeException('This scholarship is no longer accepting applications.');
+        }
+
+        if ($opportunity->deadline !== null && $opportunity->deadline->lt(Carbon::today())) {
+            throw new RuntimeException('The deadline for this scholarship has passed.');
+        }
+    }
+
+    /**
+     * award_slots is a cap on ACCEPTED applications, not on applications
+     * generally - a listing with 2 slots and 10 PENDING applicants is still
+     * open, because none of them has actually been granted the scholarship
+     * yet. A null award_slots means no capacity restriction at all.
+     */
+    private function assertCapacityAvailable(Opportunity $opportunity): void
+    {
+        if ($opportunity->award_slots === null) {
+            return;
+        }
+
+        $accepted = Application::where('opportunity_id', $opportunity->opportunity_id)
+            ->where('application_status', ApplicationStatus::ACCEPTED)
+            ->count();
+
+        if ($accepted >= $opportunity->award_slots) {
+            throw new RuntimeException(
+                'This scholarship is no longer accepting applications because its available awards have been filled.'
+            );
+        }
+    }
+
+    /**
      * The provider's decision, and the only way an application is decided.
      *
      * Accepting means the provider has granted the scholarship to this
@@ -461,9 +521,19 @@ class ApplicationService
 
         // Ownership is settled outside the transaction: it cannot change under
         // us, and a stranger should be turned away without taking a row lock.
-        $this->findForProvider($applicationId, $provider);
+        // The opportunity id comes from this same read - a foreign key that
+        // cannot itself race - so the transaction below can lock the
+        // opportunity before it has any other reason to touch it.
+        $opportunityId = $this->findForProvider($applicationId, $provider)->opportunity_id;
 
-        $application = DB::transaction(function () use ($applicationId, $status, $reason, $provider) {
+        $justClosed = false;
+
+        $application = DB::transaction(function () use ($applicationId, $opportunityId, $status, $reason, $provider, &$justClosed) {
+            // Opportunity locked before application - the same order submit()
+            // uses - so a submission and a decision contending for the same
+            // listing always queue rather than deadlock.
+            $opportunity = Opportunity::whereKey($opportunityId)->lockForUpdate()->first();
+
             // Re-read under a lock rather than trusting the copy fetched above.
             // Two reviewers acting on the same application at the same moment
             // would otherwise both see it pending, and the second write would
@@ -482,6 +552,26 @@ class ApplicationService
                 $status,
                 ApplicationStateMachine::ACTOR_PROVIDER
             );
+
+            // Capacity is checked only on the way to ACCEPTED - rejecting
+            // never consumes a slot, so it can never be refused by this.
+            if ($status === ApplicationStatus::ACCEPTED && $opportunity !== null && $opportunity->award_slots !== null) {
+                $acceptedCount = Application::where('opportunity_id', $opportunity->opportunity_id)
+                    ->where('application_status', ApplicationStatus::ACCEPTED)
+                    ->count();
+
+                if ($acceptedCount >= $opportunity->award_slots) {
+                    throw new RuntimeException(
+                        'This scholarship has already filled all of its available awards. You cannot accept another application.'
+                    );
+                }
+
+                // True exactly when this acceptance is the one that uses the
+                // last slot - computed under the same lock that is about to
+                // write it, so two providers racing for the last seat cannot
+                // both compute "true".
+                $justClosed = ($acceptedCount + 1) >= $opportunity->award_slots;
+            }
 
             $application->update([
                 'application_status' => $status,
@@ -514,11 +604,47 @@ class ApplicationService
                 ]
             );
 
+            // Only ever closes a listing that is still ACTIVE: one already
+            // CLOSED or WITHDRAWN for some unrelated reason is left exactly as
+            // it was, since OpportunityLifecycle has no ACTIVE-only self
+            // transition and none is needed - it is already not accepting
+            // applications either way.
+            if ($justClosed && $opportunity !== null && OpportunityStatus::isActive($opportunity->status)) {
+                $opportunity->update([
+                    'status' => OpportunityStatus::CLOSED,
+                    'last_change_reason' => 'Closed automatically: all award slots filled.',
+                    'updated_at' => Carbon::now(),
+                ]);
+
+                $this->auditService->logOrFail(
+                    $provider->email,
+                    AuditAction::UPDATE_OPPORTUNITY,
+                    'OPPORTUNITY',
+                    $opportunity->opportunity_id,
+                    'Closed "' . $opportunity->title . '" automatically: all award slots filled.'
+                );
+            } else {
+                $justClosed = false;
+            }
+
             return $application;
         });
 
-        // Only now, with the decision committed, is the applicant told about it.
+        // Only now, with the decision committed, is the applicant told about
+        // it, and - if this was the acceptance that filled the last slot -
+        // the provider told their listing closed. A notification sent before
+        // this line could announce a decision that then rolled back.
         $this->notifyApplicantOfDecision($application, $status, $reason);
+
+        if ($justClosed && $application->opportunity?->provider) {
+            $this->notificationService->notifyUser(
+                $application->opportunity->provider,
+                NotificationType::SCHOLARSHIP_CLOSED,
+                'Your scholarship "' . $application->opportunity->title . '" was closed automatically because all its award slots have been filled.',
+                '/provider/dashboard',
+                $application->opportunity->opportunity_id
+            );
+        }
 
         return $application;
     }

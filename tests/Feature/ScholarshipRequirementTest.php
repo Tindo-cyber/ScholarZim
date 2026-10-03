@@ -238,14 +238,45 @@ class ScholarshipRequirementTest extends TestCase
         $this->assertSame('A', $requirement->minimum_grade, 'a deliberate change still applies');
     }
 
+    /**
+     * An invalid subject requirement must roll back the opportunity creation
+     * entirely, not just leave the listing itself saved with no rules
+     * attached. The two are different claims - OpportunityService::create()
+     * runs the opportunity write and saveSubjectRequirements() inside one
+     * transaction specifically so the bad grade here rolls back the row it
+     * would otherwise have been attached to, not just the attachment.
+     */
     public function test_a_grade_the_qualification_does_not_award_is_rejected(): void
     {
+        $opportunityCountBefore = Opportunity::count();
+        $requirementCountBefore = OpportunitySubjectRequirement::count();
+
         $this->actingAs($this->provider)
             ->post('/opportunities/create', $this->listingPayload(['title' => 'Bad Grade Award'])
                 + $this->subjectRequirementPayload(['Mathematics' => 'A*']))
             ->assertSessionHasErrors('subject_requirements.0.minimum_grade');
 
-        $this->assertNull(Opportunity::where('title', 'Bad Grade Award')->first()?->subjectRequirements()->first());
+        // Not "no subject requirements under this title" - no opportunity
+        // with this title exists at all. A query that found nothing because
+        // the opportunity itself was never created reads identically to one
+        // that found an opportunity with an empty requirements list, which
+        // is exactly the ambiguity that let the old bug through unnoticed.
+        $this->assertNull(
+            Opportunity::where('title', 'Bad Grade Award')->first(),
+            'the opportunity itself must not survive an invalid subject requirement'
+        );
+
+        $this->assertSame(
+            $opportunityCountBefore,
+            Opportunity::count(),
+            'the failed creation must not leave any opportunity row behind, under any title'
+        );
+
+        $this->assertSame(
+            $requirementCountBefore,
+            OpportunitySubjectRequirement::count(),
+            'no orphan subject requirement row may survive a rolled-back creation'
+        );
     }
 
     /**

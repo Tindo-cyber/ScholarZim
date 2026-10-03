@@ -161,7 +161,7 @@ class ProfileController extends Controller
 
         return redirect()
             ->route('applicant.profile')
-            ->with('successMessage', 'Profile saved. Your ScholarFit scores have been recalculated.');
+            ->with('successMessage', 'Profile saved. Your scholarship matches now reflect these changes.');
     }
 
     /**

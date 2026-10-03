@@ -66,8 +66,8 @@
                 @if($complete)
                     Every field ScholarFit reads is filled in. Your matches are as accurate as we can make them.
                 @else
-                    Each item below is a field ScholarFit scores you on. Filling them in raises your match on
-                    every listing at once.
+                    Each item below is a field ScholarFit reads. Filling them in makes your matches more accurate
+                    across every listing at once.
                 @endif
             </p>
 
