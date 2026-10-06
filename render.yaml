@@ -18,8 +18,10 @@ services:
         sync: false
       - key: APP_URL
         sync: false
-      - key: APP_TIMEZONE
-        value: Africa/Harare
+      # No APP_TIMEZONE: config/app.php fixes the application timezone at UTC and
+      # never reads it, so setting one here would only imply a behaviour the app
+      # does not have. Existing stored timestamps are UTC-based; changing that is
+      # a data decision, not a deploy setting (see config/app.php).
       - key: LOG_CHANNEL
         value: stderr
       - key: LOG_LEVEL

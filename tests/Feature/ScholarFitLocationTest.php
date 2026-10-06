@@ -112,6 +112,7 @@ class ScholarFitLocationTest extends TestCase
         return array_merge([
             'full_name' => $this->student->full_name,
             'education_level' => EducationLevel::UNDERGRADUATE,
+            'gender' => 'male',
             'field_of_study' => 'Computer Science & IT',
         ], $overrides);
     }

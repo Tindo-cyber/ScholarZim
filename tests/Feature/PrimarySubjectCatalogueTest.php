@@ -127,6 +127,7 @@ class PrimarySubjectCatalogueTest extends TestCase
             ->post('/applicant/profile', [
                 'full_name' => $pupil->full_name,
                 'education_level' => EducationLevel::PRIMARY,
+                'gender' => 'male',
                 'province' => $profile->province,
                 'guardian_name' => 'Grace Marufu',
                 'guardian_phone' => '0773111001',
@@ -152,6 +153,7 @@ class PrimarySubjectCatalogueTest extends TestCase
             ->post('/applicant/profile', [
                 'full_name' => $pupil->full_name,
                 'education_level' => EducationLevel::PRIMARY,
+                'gender' => 'male',
                 'province' => 'Mashonaland West',
                 'guardian_name' => 'Grace Marufu',
                 'guardian_phone' => '0773111001',

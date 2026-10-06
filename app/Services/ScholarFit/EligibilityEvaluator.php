@@ -616,8 +616,19 @@ final class EligibilityEvaluator
         $applicantTier = EducationLevel::tier($applicantLevel);
 
         $exactMatch = $applicantLevel !== null && in_array($applicantLevel, $levels, true);
+
+        // FORM_1 shares the SECONDARY tier with O-Level and A-Level, but it is
+        // only the entry year of it. A profile's current level is the level
+        // the applicant has completed, so an O-Level applicant has finished
+        // Form 4 and an A-Level applicant has finished Form 6 - both are past
+        // Form 1, and the tier alone must not let them in. Only a Primary
+        // pupil moving up reaches it, through progressesTowardAny().
+        $tierLevels = array_values(array_filter(
+            $levels,
+            static fn (string $l) => $l !== EducationLevel::FORM_1
+        ));
         $sameTierAsAny = ! $exactMatch && $applicantTier !== null
-            && in_array($applicantTier, array_map(static fn (string $l) => EducationLevel::tier($l), $levels), true);
+            && in_array($applicantTier, array_map(static fn (string $l) => EducationLevel::tier($l), $tierLevels), true);
         $progressesForward = ! $exactMatch && ! $sameTierAsAny
             && $applicantLevel !== null && $this->progressesTowardAny($applicantLevel, $levels);
 

@@ -26,7 +26,8 @@ class RecommendationController extends Controller
 
         return view('applicant.recommendations', [
             'profile' => $profile,
-            'matches' => $this->recommendationService->forUser($user, 24),
+            // 0 = no limit: My Matches lists every eligible listing, not a sample of them.
+            'matches' => $this->recommendationService->forUser($user, 0),
             'notEligible' => $this->recommendationService->notEligibleForUser($user, 6),
             'savedIds' => $this->savedScholarshipService->savedIds($user),
             'appliedIds' => $this->applicationService->appliedIds($user),

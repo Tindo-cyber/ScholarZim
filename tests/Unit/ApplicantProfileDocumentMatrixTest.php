@@ -8,9 +8,9 @@ use Tests\TestCase;
 
 /**
  * ApplicantProfile::requiredDocumentTypes() - the document checklist by
- * education level, per the refined matrix: Primary asks only for their
- * results (the guardian-assisted Form 1 pathway, no recommendation letter),
- * O/A-Level asks for a results certificate plus a recommendation letter, a
+ * education level, per the refined matrix: Primary asks for no documents at
+ * all (the guardian-assisted Form 1 pathway; their Grade 7 results are
+ * entered as structured data), O/A-Level asks for a results certificate plus a recommendation letter, a
  * continuing tertiary applicant asks for proof of study plus ID plus a
  * recommendation letter, and a postgraduate applicant - who already holds a
  * previous tertiary qualification rather than being mid-way through one -
@@ -24,12 +24,38 @@ class ApplicantProfileDocumentMatrixTest extends TestCase
         return new ApplicantProfile(['education_level' => $level]);
     }
 
-    public function test_primary_requires_results_but_no_recommendation_letter(): void
+    /** Primary uploads nothing: the Grade 7 results are structured data entered in the academic section. */
+    public function test_primary_requires_no_documents(): void
     {
-        $required = $this->profile(EducationLevel::PRIMARY)->requiredDocumentTypes();
+        $profile = $this->profile(EducationLevel::PRIMARY);
 
-        $this->assertSame(['results'], $required);
-        $this->assertNotContains('recommendation', $required, 'Primary does not ask for a recommendation letter');
+        $this->assertSame([], $profile->requiredDocumentTypes());
+        $this->assertSame([], $profile->missingRequiredDocumentTypes());
+    }
+
+    public function test_primary_has_no_document_checklist_item_whatever_is_uploaded(): void
+    {
+        $profile = $this->profile(EducationLevel::PRIMARY);
+        $profile->results_certificate_path = 'profiles/x/results.pdf';
+
+        $this->assertSame([], array_filter($profile->completionChecklist(), fn ($i) => $i['anchor'] === 'documents'));
+        $this->assertSame([], $profile->missingRequiredDocumentTypes());
+    }
+
+    public function test_cv_is_never_required_at_any_level(): void
+    {
+        foreach (EducationLevel::APPLICANT_LEVELS as $level) {
+            $this->assertNotContains('cv', $this->profile($level)->requiredDocumentTypes(), $level);
+        }
+    }
+
+    /** Honours holds a previous qualification, so it follows the postgraduate set. */
+    public function test_honours_requires_the_previous_qualification_and_a_recommendation_letter_only(): void
+    {
+        $this->assertSame(
+            ['transcript', 'recommendation'],
+            $this->profile(EducationLevel::HONOURS)->requiredDocumentTypes()
+        );
     }
 
     public function test_o_level_requires_results_and_a_recommendation_letter(): void

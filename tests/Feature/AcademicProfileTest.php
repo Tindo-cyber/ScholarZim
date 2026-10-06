@@ -72,6 +72,7 @@ class AcademicProfileTest extends TestCase
         return array_merge([
             'full_name' => $this->student->full_name,
             'education_level' => EducationLevel::A_LEVEL,
+            'gender' => 'male',
             'institution_name' => 'Mutare Girls High School',
             'province' => 'Manicaland',
             'biography' => 'Aspiring doctor.',
@@ -461,6 +462,7 @@ class AcademicProfileTest extends TestCase
             ->post('/applicant/profile', [
                 'full_name' => $pupil->full_name,
                 'education_level' => EducationLevel::PRIMARY,
+                'gender' => 'male',
                 'province' => 'Harare',
                 'guardian_name' => 'Rudo Marufu',
                 'guardian_phone' => '0772111222',
@@ -488,6 +490,7 @@ class AcademicProfileTest extends TestCase
             ->post('/applicant/profile', [
                 'full_name' => $pupil->full_name,
                 'education_level' => EducationLevel::PRIMARY,
+                'gender' => 'male',
                 'province' => 'Harare',
                 'guardian_name' => 'Rudo Marufu',
                 'guardian_phone' => '0772111222',
@@ -522,6 +525,7 @@ class AcademicProfileTest extends TestCase
             ->post('/applicant/profile', [
                 'full_name' => $pupil->full_name,
                 'education_level' => EducationLevel::PRIMARY,
+                'gender' => 'male',
                 'province' => 'Harare',
                 'guardian_name' => 'Rudo Marufu',
                 'guardian_phone' => '0772111222',
@@ -659,6 +663,7 @@ class AcademicProfileTest extends TestCase
         $fields = [
             'full_name' => $pupil->full_name,
             'education_level' => EducationLevel::PRIMARY,
+            'gender' => 'male',
             'institution_name' => 'Chitungwiza Primary',
             'province' => 'Harare',
             'guardian_name' => 'Rudo Marufu',
@@ -689,8 +694,8 @@ class AcademicProfileTest extends TestCase
     /**
      * A Primary applicant is complete with exactly what the Primary pathway
      * checklist asks for - see ApplicantProfile::completionChecklist(). No
-     * field of study, no document, no academic results and no gender are
-     * ever asked of this branch, so none of them can appear as missing.
+     * field of study and no document are ever asked of this branch, so
+     * neither can appear as missing. Gender is asked of every applicant.
      */
     public function test_a_primary_applicant_is_complete_without_higher_education_fields(): void
     {
@@ -704,6 +709,7 @@ class AcademicProfileTest extends TestCase
             ->post('/applicant/profile', [
                 'full_name' => $pupil->full_name,
                 'education_level' => EducationLevel::PRIMARY,
+                'gender' => 'male',
                 'institution_name' => 'Chinhoyi Primary School',
                 'province' => 'Mashonaland West',
                 'date_of_birth' => $profile->date_of_birth->toDateString(),
@@ -720,7 +726,7 @@ class AcademicProfileTest extends TestCase
 
         $this->assertTrue($fresh->isComplete(), 'missing: ' . implode(', ', $fresh->missingFields()));
         $this->assertSame([], $fresh->missingFields());
-        $this->assertNull($fresh->gender, 'gender was never asked for and must not have been required');
+        $this->assertSame('male', $fresh->gender);
         $this->assertSame(1, $fresh->academicResults()->count(), 'Grade 7 results are required for Primary completeness');
     }
 
@@ -737,17 +743,19 @@ class AcademicProfileTest extends TestCase
         $this->assertContains('Academic results', $fresh->missingFields());
     }
 
-    /** The same rule the A-Level version already proves, for the Primary branch of the checklist. */
-    public function test_gender_does_not_affect_primary_profile_completeness(): void
+    /** Gender is required on the Primary branch of the checklist too. */
+    public function test_a_primary_profile_without_gender_is_incomplete(): void
     {
         $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
         $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
+        $this->assertTrue($profile->isComplete(), 'the seeded fixture states a gender and is complete');
 
-        $this->assertNull($profile->gender, 'the seeded fixture never sets gender');
+        $profile->forceFill(['gender' => null])->save();
+        $fresh = $profile->fresh();
 
-        $labels = array_column($profile->completionChecklist(), 'label');
-        $this->assertNotContains('Gender', $labels);
-        $this->assertTrue($profile->isComplete(), 'missing: ' . implode(', ', $profile->missingFields()));
+        $this->assertContains('Gender', array_column($fresh->completionChecklist(), 'label'));
+        $this->assertFalse($fresh->isComplete());
+        $this->assertSame(['Gender'], $fresh->missingFields());
     }
 
     /**
@@ -760,7 +768,7 @@ class AcademicProfileTest extends TestCase
         $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
         $profile = ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail();
 
-        $this->assertNull($profile->gender);
+        $this->assertSame('male', $profile->gender);
         $this->assertTrue($profile->isComplete(), 'missing: ' . implode(', ', $profile->missingFields()));
 
         $opportunity = Opportunity::where('title', 'Chinhoyi Form 1 Transition Bursary')->firstOrFail();
@@ -789,19 +797,75 @@ class AcademicProfileTest extends TestCase
             ->post('/applicant/profile', $this->baseFields(['gender' => 'other']))
             ->assertSessionHasErrors('gender');
 
-        $this->assertNull($this->profile()->gender);
+        $this->assertSame('female', $this->profile()->gender, 'a rejected value must not overwrite the stored one');
     }
 
-    /** Gender is captured, and deliberately has no bearing on matching. */
-    public function test_gender_does_not_affect_profile_completeness(): void
+    /** The server refuses a profile with no gender - HTML required alone is not relied on. */
+    public function test_a_profile_update_without_gender_fails_validation(): void
     {
-        $this->actingAs($this->student)
-            ->post('/applicant/profile', $this->baseFields())
-            ->assertSessionHasNoErrors();
+        $fields = $this->baseFields();
+        unset($fields['gender']);
 
-        $labels = array_column($this->profile()->completionChecklist(), 'label');
+        $this->actingAs($this->student)->post('/applicant/profile', $fields)->assertSessionHasErrors('gender');
+        $this->actingAs($this->student)->post('/applicant/profile', $fields + ['gender' => ''])->assertSessionHasErrors('gender');
 
-        $this->assertNotContains('Gender', $labels);
+        $this->assertSame('female', $this->profile()->gender);
+    }
+
+    public function test_the_gender_field_is_marked_required_in_the_form(): void
+    {
+        $html = $this->actingAs($this->student)->get('/applicant/profile')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/<input[^>]*name="gender"[^>]*value="male"[^>]*required/', $html);
+        $this->assertMatchesRegularExpression('/<input[^>]*name="gender"[^>]*value="female"[^>]*required/', $html);
+        $this->assertStringContainsString('Required. Shown to providers reviewing your application', $html);
+        $this->assertStringNotContainsString('Optional. Shown to providers', $html);
+    }
+
+    /** A profile with no gender is incomplete, and stating one completes that requirement. */
+    public function test_a_profile_with_no_gender_is_incomplete_until_one_is_given(): void
+    {
+        // Judged on Gender alone: whatever else this fixture lacks is beside the point.
+        $with = $this->profile();
+        $this->assertNotContains('Gender', $with->missingFields());
+        $full = $with->completionPercentage();
+
+        $with->forceFill(['gender' => null])->save();
+        $bare = $this->profile();
+
+        $this->assertContains('Gender', $bare->missingFields());
+        $this->assertFalse($bare->isComplete());
+        $this->assertLessThan($full, $bare->completionPercentage());
+
+        foreach ([Gender::MALE, Gender::FEMALE] as $value) {
+            $this->profile()->forceFill(['gender' => null])->save();
+            $this->actingAs($this->student)
+                ->post('/applicant/profile', $this->baseFields(['gender' => $value]))
+                ->assertSessionHasNoErrors();
+
+            $this->assertNotContains('Gender', $this->profile()->missingFields());
+            $this->assertSame($full, $this->profile()->completionPercentage());
+        }
+    }
+
+    /** Missing gender stops an application at the existing profile-completeness gate, naming the field. */
+    public function test_missing_gender_stops_an_application_at_the_completeness_gate(): void
+    {
+        $this->profile()->forceFill(['gender' => null])->save();
+        $opportunity = Opportunity::where('title', 'Chinhoyi Form 1 Transition Bursary')->firstOrFail();
+
+        try {
+            app(ApplicationService::class)->quickApply($opportunity->opportunity_id, $this->student);
+            $this->fail('an application must not be accepted without a gender on the profile');
+        } catch (\App\Exceptions\ProfileIncompleteException $e) {
+            $this->assertContains('Gender', $e->missingFields);
+            $this->assertStringContainsString('Gender', $e->getMessage());
+        }
+
+        $this->assertDatabaseMissing('applications', [
+            'user_id' => $this->student->user_id,
+            'opportunity_id' => $opportunity->opportunity_id,
+        ]);
     }
 
     // -------------------------------------------------------------- security --
@@ -812,6 +876,7 @@ class AcademicProfileTest extends TestCase
         $other = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
         $otherProfile = ApplicantProfile::where('user_id', $other->user_id)->firstOrFail();
         $otherResultsBefore = $otherProfile->academicResults()->count();
+        $otherGenderBefore = $otherProfile->gender;
 
         // The route takes no profile id; posting one changes nothing, because
         // the service resolves the profile from the authenticated user.
@@ -825,7 +890,7 @@ class AcademicProfileTest extends TestCase
 
         $otherProfile->refresh();
 
-        $this->assertNull($otherProfile->gender);
+        $this->assertSame($otherGenderBefore, $otherProfile->gender);
         $this->assertSame($otherResultsBefore, $otherProfile->academicResults()->count());
         $this->assertSame(Gender::FEMALE, $this->profile()->gender);
         $this->assertSame(1, $this->profile()->academicResults()->count());

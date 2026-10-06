@@ -18,6 +18,7 @@ use App\Support\ApplicationStatus;
 use App\Support\AuditAction;
 use App\Support\EducationLevel;
 use App\Support\FormOptions;
+use App\Support\Gender;
 use App\Support\NotificationType;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
@@ -214,6 +215,7 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $applicant->user_id],
             [
                 'education_level' => EducationLevel::UNDERGRADUATE,
+                'gender' => Gender::MALE,
                 'institution_name' => 'University of Zimbabwe (UZ)',
                 'field_of_study' => 'Computer Science & IT',
                 'year_of_study' => 2,
@@ -278,6 +280,7 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $applicant->user_id],
             [
                 'education_level' => EducationLevel::A_LEVEL,
+                'gender' => Gender::FEMALE,
                 'institution_name' => 'Mutare Girls High School',
                 'country' => FormOptions::DEFAULT_COUNTRY,
                 'province' => 'Manicaland',
@@ -319,6 +322,7 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $applicant->user_id],
             [
                 'education_level' => EducationLevel::PRIMARY,
+                'gender' => Gender::MALE,
                 'institution_name' => 'Chinhoyi Primary School',
                 'country' => FormOptions::DEFAULT_COUNTRY,
                 'province' => 'Mashonaland West',
@@ -360,6 +364,7 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $applicant->user_id],
             [
                 'education_level' => EducationLevel::O_LEVEL,
+                'gender' => Gender::MALE,
                 'institution_name' => 'Mutare Boys High School',
                 'country' => FormOptions::DEFAULT_COUNTRY,
                 'province' => 'Manicaland',
@@ -400,6 +405,7 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $applicant->user_id],
             [
                 'education_level' => EducationLevel::A_LEVEL,
+                'gender' => Gender::MALE,
                 'institution_name' => 'Prince Edward School',
                 'country' => FormOptions::DEFAULT_COUNTRY,
                 'province' => 'Harare',
@@ -438,6 +444,7 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $applicant->user_id],
             [
                 'education_level' => EducationLevel::MASTERS,
+                'gender' => Gender::FEMALE,
                 'institution_name' => 'University of Zimbabwe (UZ)',
                 'field_of_study' => 'Medicine & Health Sciences',
                 'year_of_study' => 1,

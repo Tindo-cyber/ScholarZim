@@ -45,12 +45,12 @@
                             </div>
                             <div class="col-md-6">
                                 <fieldset class="mb-3">
-                                    <legend class="form-label mb-2">Gender</legend>
+                                    <legend class="form-label mb-2">Gender<span class="text-danger" aria-hidden="true">*</span></legend>
                                     @foreach($genders as $genderValue => $genderLabel)
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio"
                                                    id="field-gender-{{ $genderValue }}"
-                                                   name="gender" value="{{ $genderValue }}"
+                                                   name="gender" value="{{ $genderValue }}" required
                                                    @checked(old('gender', $profile->gender) === $genderValue)>
                                             <label class="form-check-label" for="field-gender-{{ $genderValue }}">
                                                 {{ $genderLabel }}
@@ -61,7 +61,7 @@
                                         <div class="text-danger small mt-1">{{ $message }}</div>
                                     @enderror
                                     <div class="form-text">
-                                        Optional. Shown to providers reviewing your application; it does not
+                                        Required. Shown to providers reviewing your application; it does not
                                         affect which awards you are eligible for.
                                     </div>
                                 </fieldset>
@@ -448,11 +448,25 @@
                 </div>
 
                 <div class="card-body d-grid gap-4">
-                    @php $required = $profile->requiredDocumentTypes(); @endphp
+                    @php
+                        // Counted from what is actually stored, not from whether the
+                        // last upload request succeeded.
+                        $required = $profile->requiredDocumentTypes();
+                        $requiredCount = count($required);
+                        $missingCount = count($profile->missingRequiredDocumentTypes());
+                        $uploadedCount = $requiredCount - $missingCount;
+                        $requiredSentence = $requiredCount . ' ' . \Illuminate\Support\Str::plural('document', $requiredCount)
+                            . ($requiredCount === 1 ? ' is' : ' are') . ' required for your education level.';
+                        $progressSentence = $missingCount === 0
+                            ? 'All required documents uploaded.'
+                            : $uploadedCount . ' of ' . $requiredCount . ' required documents uploaded - '
+                                . $missingCount . ' ' . \Illuminate\Support\Str::plural('document', $missingCount) . ' remaining.';
+                    @endphp
 
-                    @if(count($required) > 1)
-                        <div class="alert alert-warning small mb-0">
-                            All four documents below are required for your education level.
+                    @if($requiredCount > 0)
+                        <div class="alert alert-{{ $missingCount === 0 ? 'success' : 'warning' }} small mb-0">
+                            <div class="fw-semibold">{{ $requiredSentence }}</div>
+                            <div>{{ $progressSentence }}</div>
                         </div>
                     @endif
 

@@ -115,7 +115,14 @@
                             if (\App\Support\EducationLevel::usesFieldOfStudy($profile->education_level)) {
                                 $wizardFields['Field of study'] = $profile->field_of_study;
                             }
-                            $wizardFields['Academic results'] = $profile->academic_results;
+                            // The structured results the profile actually holds - the old
+                            // free-text academic_results column is legacy and is never
+                            // filled for a profile that entered its results subject by subject.
+                            $recorded = $profile->academicResults()->with('subject')->get()
+                                ->map(fn ($r) => $r->subjectName() . ' ' . $r->result)->all();
+                            $wizardFields['Academic results'] = $recorded !== []
+                                ? implode(', ', $recorded)
+                                : ($profile->degree_classification ?: null);
                         @endphp
                         <dl class="row mb-3">
                             @foreach($wizardFields as $label => $value)
@@ -146,7 +153,11 @@
                         <h2 class="h6 fw-semibold mb-0">Step 3 &mdash; Documents</h2>
                     </div>
                     <div class="card-body">
-                        @if(empty($missingDocumentTypes))
+                        @if(empty($profile->requiredDocumentTypes()))
+                            <div class="alert alert-secondary small">
+                                No documents are required for your education level.
+                            </div>
+                        @elseif(empty($missingDocumentTypes))
                             <div class="alert alert-success small">
                                 All your required documents are already on file and will be attached automatically.
                             </div>

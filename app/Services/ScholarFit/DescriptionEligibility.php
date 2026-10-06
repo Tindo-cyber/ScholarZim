@@ -131,6 +131,14 @@ final class DescriptionEligibility
         'primary education' => EducationLevel::PRIMARY,
         'primary' => EducationLevel::PRIMARY,
 
+        // Form 1 is the entry year of secondary school: "Form 1 Transition
+        // Bursary" states its audience by name the same way "Undergraduate
+        // Scholarship" does. Read as FORM_1, the scholarship-only entry level,
+        // which EligibilityEvaluator::descriptionEducationLevel() holds to
+        // Primary pupils moving up - every other level has finished Form 1.
+        'form 1' => EducationLevel::FORM_1,
+        'form one' => EducationLevel::FORM_1,
+
         'high school' => EducationLevel::O_LEVEL,
         'secondary school' => EducationLevel::O_LEVEL,
         'secondary education' => EducationLevel::O_LEVEL,
@@ -148,6 +156,17 @@ final class DescriptionEligibility
         'undergraduate degree' => EducationLevel::UNDERGRADUATE,
         'undergraduate student' => EducationLevel::UNDERGRADUATE,
         'undergraduate' => EducationLevel::UNDERGRADUATE,
+        // The same word as providers actually type it. Word-boundary
+        // matching means "undergraduate" alone never matches the plural
+        // ("Scholarship for Undergraduates"), and normalise() turns the
+        // hyphenated "Under-graduate" into two words - each of these used to
+        // read as no condition at all, so a Primary applicant was offered
+        // the award as though it were open to everyone.
+        'undergraduates' => EducationLevel::UNDERGRADUATE,
+        'under graduate' => EducationLevel::UNDERGRADUATE,
+        'under graduates' => EducationLevel::UNDERGRADUATE,
+        'undergrad' => EducationLevel::UNDERGRADUATE,
+        'undergrads' => EducationLevel::UNDERGRADUATE,
         "bachelor's degree" => EducationLevel::UNDERGRADUATE,
         "bachelor's" => EducationLevel::UNDERGRADUATE,
         // "bachelor" and "bachelors" are listed separately, not just the
@@ -176,6 +195,10 @@ final class DescriptionEligibility
         'msc' => EducationLevel::MASTERS,
         'postgraduate student' => EducationLevel::POSTGRADUATE,
         'postgraduate' => EducationLevel::POSTGRADUATE,
+        // Same plural/hyphenation gap as "undergraduates" above.
+        'postgraduates' => EducationLevel::POSTGRADUATE,
+        'post graduate' => EducationLevel::POSTGRADUATE,
+        'post graduates' => EducationLevel::POSTGRADUATE,
 
         'doctoral student' => EducationLevel::PHD,
         'doctorate' => EducationLevel::PHD,

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
+use App\Support\Gender;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -332,17 +333,14 @@ class ApplicantProfile extends Model
     public function hasRequiredAcademicEvidence(): bool
     {
         // A Primary applicant's academic evidence is their structured Grade 7
-        // results, not a stored document - unconditionally true here
-        // regardless of whether requiredDocumentTypes()'s own 'results'
-        // upload has actually been provided yet, since quick-apply does not
-        // enforce that wizard checklist and a Form 1 listing's "requires
-        // results certificate" is really asking about proof of results,
-        // which the structured data already is. Reading this as "needs a
-        // transcript" made a Form 1 listing that ticked
+        // results, not an uploaded document - Primary has no required
+        // documents at all (see requiredDocumentTypes()), so a Form 1
+        // listing's "requires results certificate" is really asking about
+        // proof of results, which the structured data already is. Reading
+        // this as "needs a transcript" made a Form 1 listing that ticked
         // requires_results_certificate refuse every Primary pupil over a
-        // document that question was never really about, and their Grade 7
-        // results could not rescue them. An unsatisfiable requirement is not
-        // a requirement.
+        // document that question was never really about. An unsatisfiable
+        // requirement is not a requirement.
         if (EducationLevel::isPrimary($this->education_level)) {
             return true;
         }
@@ -353,9 +351,10 @@ class ApplicantProfile extends Model
     }
 
     /**
-     * A Primary applicant is asked for their results alone - no
-     * recommendation letter, which stays specific to O-Level and above.
-     * O/A-Level applicants are asked for their results certificate plus a
+     * A Primary applicant is asked for no uploaded documents: their academic
+     * evidence is the Grade 7 results they enter in the academic-information
+     * section, and the recommendation letter stays specific to O-Level and
+     * above. O/A-Level applicants are asked for their results certificate plus a
      * recommendation letter; a postgraduate applicant's evidence is the
      * previous tertiary qualification certificate they already hold, not a
      * CV or ID - the document set below that is for someone still entering
@@ -366,11 +365,9 @@ class ApplicantProfile extends Model
     public function requiredDocumentTypes(): array
     {
         if (EducationLevel::isPrimary($this->education_level)) {
-            // The guardian-assisted Form 1 pathway still asks for proof of
-            // the Grade 7 results themselves - the same 'results' upload
-            // O/A-Level uses - just without the recommendation letter those
-            // levels also ask for.
-            return ['results'];
+            // The guardian-assisted Form 1 pathway uploads nothing; the Grade 7
+            // results are structured data (hasStructuredResults()).
+            return [];
         }
 
         if (EducationLevel::usesSchoolResults($this->education_level)) {
@@ -403,7 +400,10 @@ class ApplicantProfile extends Model
      * it. The ring, the checklist, and the reminder job all read this, so they
      * can never disagree about what is missing.
      *
-     * @return array<int, array{label: string, done: bool, anchor: string, hint: string}>
+     * 'gates' marks the items isComplete() requires; the rest count toward
+     * the percentage only.
+     *
+     * @return array<int, array{label: string, done: bool, anchor: string, hint: string, gates: bool}>
      */
     public function completionChecklist(): array
     {
@@ -429,6 +429,10 @@ class ApplicantProfile extends Model
             'hint' => 'Some awards are restricted to one province.'];
         $items[] = ['label' => 'Date of birth', 'value' => $this->date_of_birth, 'anchor' => 'date_of_birth',
             'hint' => 'Needed to check age limits on an award.'];
+        // Profile information for the provider reviewing an application -
+        // never read by ScholarFit and never an eligibility rule (see Gender).
+        $items[] = ['label' => 'Gender', 'value' => Gender::isValid($this->gender) ? $this->gender : null, 'anchor' => 'gender',
+            'hint' => 'Shown to providers reviewing your application. It does not affect which awards you are eligible for.'];
 
         if ($isPrimary) {
             // Whether a guardian is standing behind the application, and the
@@ -457,16 +461,22 @@ class ApplicantProfile extends Model
         $items[] = ['label' => 'Short biography', 'value' => $this->biography, 'anchor' => 'biography',
             'hint' => 'The first thing a provider reads about you.'];
 
+        // One item per required document, from requiredDocumentTypes() - not
+        // one "documents" item standing in for all of them, which let the
+        // ring read 100% with two of three uploads still missing. Primary
+        // requires none, so it gets none: its documents card is hidden on the
+        // profile page, and its academic evidence is the structured Grade 7
+        // results above (see hasRequiredAcademicEvidence()).
         if (! $isPrimary) {
-            $documentLabel = EducationLevel::usesSchoolResults($this->education_level)
-                ? 'Results certificate'
-                : 'Academic transcript';
-            $documentValue = EducationLevel::usesSchoolResults($this->education_level)
-                ? $this->results_certificate_path
-                : $this->transcript_path;
+            $academicEvidence = EducationLevel::usesSchoolResults($this->education_level) ? 'results' : 'transcript';
 
-            $items[] = ['label' => $documentLabel, 'value' => $documentValue, 'anchor' => 'documents',
-                'hint' => 'Required before most providers will consider you.'];
+            foreach ($this->requiredDocumentTypes() as $type) {
+                $items[] = ['label' => self::DOCUMENT_LABELS[$type], 'value' => $this->documentPath($type), 'anchor' => 'documents',
+                    'hint' => 'Required for your education level before you can apply.',
+                    // Only the academic evidence gates isComplete(), exactly as
+                    // before - see isComplete().
+                    'gates' => $type === $academicEvidence];
+            }
         }
 
         return array_map(static fn (array $item) => [
@@ -474,6 +484,7 @@ class ApplicantProfile extends Model
             'done' => filled($item['value']),
             'anchor' => $item['anchor'],
             'hint' => $item['hint'],
+            'gates' => $item['gates'] ?? true,
         ], $items);
     }
 
@@ -489,17 +500,29 @@ class ApplicantProfile extends Model
         return (int) round($done / count($checklist) * 100);
     }
 
+    /**
+     * Whether ScholarFit has enough to evaluate this profile, and whether
+     * it may apply at all - the gate ApplicationService and
+     * RecommendationService read.
+     *
+     * Every checklist item counts except the supporting documents (ID,
+     * recommendation letter): those are collected by the application
+     * wizard itself, which asks for whatever missingRequiredDocumentTypes()
+     * still lists, so gating on them here would hide the very form that
+     * collects them. completionPercentage() still counts them, so the ring
+     * does not read 100% until they are all uploaded.
+     */
     public function isComplete(): bool
     {
-        return $this->completionPercentage() >= 100;
+        return $this->missingFields() === [];
     }
 
-    /** Field-by-field checklist rendered on the profile and dashboard pages. */
+    /** The checklist items still blocking isComplete(), by label. */
     public function missingFields(): array
     {
         return array_values(array_map(
             static fn (array $item) => $item['label'],
-            array_filter($this->completionChecklist(), static fn (array $item) => ! $item['done'])
+            array_filter($this->completionChecklist(), static fn (array $item) => $item['gates'] && ! $item['done'])
         ));
     }
 }

@@ -420,7 +420,8 @@ APP_ENV=production
 APP_DEBUG=false
 APP_KEY=base64:...
 APP_URL=https://www.scholarzim.co.zw
-APP_TIMEZONE=Africa/Harare
+# (no APP_TIMEZONE - the application timezone is fixed at UTC in config/app.php
+#  and is not read from the environment; see "Timezone" below)
 SESSION_SECURE_COOKIE=true
 LOG_CHANNEL=stderr
 LOG_LEVEL=warning
@@ -462,6 +463,16 @@ MAIL_FROM_NAME=ScholarZim
 SCHOLARZIM_RUN_MIGRATIONS=true
 SCHOLARZIM_DEMO_SEED=false
 ```
+
+### Timezone
+
+The application timezone is **UTC**, set directly in `config/app.php`
+(`'timezone' => 'UTC'`). It is not read from the environment, so an
+`APP_TIMEZONE` variable has no effect and is deliberately not listed above.
+Timestamps in the database were written under that setting, so changing it would
+change how every existing value is read and displayed (Africa/Harare is UTC+2).
+That is a data decision to make deliberately, with a plan for existing rows - not
+something to switch on through a deploy variable.
 
 ---
 

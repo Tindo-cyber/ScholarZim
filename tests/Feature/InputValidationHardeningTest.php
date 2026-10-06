@@ -308,6 +308,7 @@ class InputValidationHardeningTest extends TestCase
         return array_merge([
             'full_name' => 'Validation Test Pupil',
             'education_level' => EducationLevel::PRIMARY,
+            'gender' => 'male',
             'province' => 'Harare',
             'guardian_name' => 'A Guardian',
             'guardian_phone' => '0771000000',

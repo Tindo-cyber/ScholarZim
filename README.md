@@ -570,9 +570,12 @@ database - never the database you use for manual testing, and never production. 
 terminals:
 
 ```bash
-# Terminal 1 - serve against a throwaway sqlite file, not your normal .env
+# Terminal 1 - serve against a throwaway sqlite file, not your normal .env.
+# Run PHP's server directly (from public/) rather than `php artisan serve`: see below.
+cd public
 APP_URL=http://127.0.0.1:8000 DB_CONNECTION=sqlite DB_DATABASE=database/testing.sqlite \
-  MAIL_MAILER=array QUEUE_CONNECTION=sync php artisan serve --port=8000
+  MAIL_MAILER=array QUEUE_CONNECTION=sync \
+  php -S 127.0.0.1:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php
 
 # Terminal 2
 php artisan migrate:fresh --seed --env=dusk.local   # first run / whenever fixtures change
@@ -581,6 +584,18 @@ php artisan dusk
 
 `.env.dusk.local` (gitignored, same as `.env`) holds those same overrides so you don't have
 to retype them - see it for the full list and why each one is set that way.
+
+Why not `php artisan serve`: `php artisan dusk` swaps `.env` for `.env.dusk.local` at the
+start and end of every run, and `artisan serve` restarts its server whenever `.env`
+changes - so the server went away under the first tests of each run and produced
+intermittent, unrelated-looking timeouts. A plain `php -S` has no such watcher.
+
+Dusk also starts a fresh ChromeDriver for every test class on one fixed port, and on a slow
+machine the previous one occasionally hasn't released it ("Failed to connect to
+localhost:9515"). If that bites, start one ChromeDriver yourself for the whole run
+(`vendor/laravel/dusk/bin/chromedriver-win.exe --port=9515`, or the binary for your OS in
+the same folder) and add `LARAVEL_SAIL=1` to your local `.env.dusk.local`, which tells
+`DuskTestCase::prepare()` not to start another.
 
 ```bash
 docker compose up --build

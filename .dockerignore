@@ -38,3 +38,14 @@ debug-*.log
 /storage/certs/*
 !/storage/certs/.gitignore
 !/storage/certs/README.md
+
+# Local-only credentials and tooling. `.env.*` above does not match a file such
+# as qa-credentials.env, and this build copies the whole context (`COPY . .`),
+# so any such file present on a developer machine would be baked into the image.
+*.env
+.claude/
+.kilo/
+.phpunit.cache/
+/database/*.sqlite
+/tests/Browser/screenshots/
+/tests/Browser/console/

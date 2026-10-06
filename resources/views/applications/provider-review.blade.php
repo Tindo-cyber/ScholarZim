@@ -54,6 +54,8 @@
                             $profileFields['Province'] = $applicantProfile->province;
                             $profileFields['Locality'] = $applicantProfile->locality;
                             $profileFields['Age'] = $applicantProfile->age();
+                            // Read from the stored value only - never inferred from the name.
+                            $profileFields['Gender'] = \App\Support\Gender::label($applicantProfile->gender);
                         @endphp
                         <dl class="row mb-3">
                             @foreach($profileFields as $label => $value)

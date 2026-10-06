@@ -80,7 +80,7 @@ class AuthenticationTest extends TestCase
         $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
         $this->assertAuthenticated();
 
-        $this->post('/logout')->assertRedirect('/');
+        $this->post('/logout')->assertRedirect(route('login'));
 
         $this->assertGuest();
     }
@@ -291,18 +291,170 @@ class AuthenticationTest extends TestCase
     }
 
     /**
-     * A signed-in user hitting /login must follow the existing guest-route
-     * behaviour (redirected to their dashboard) rather than being shown a
-     * login form at all - the two must never be visible together.
+     * A signed-in user reaching /login - typically with the back button -
+     * sees the sign-in form itself, not a redirect to the landing page and
+     * its "Go to dashboard" shortcut.
      */
-    public function test_an_authenticated_user_visiting_login_is_redirected_away(): void
+    public function test_an_authenticated_user_visiting_login_sees_the_sign_in_form(): void
     {
         $user = $this->userFor('student@scholarzim.co.zw');
 
-        // The existing guest-route behaviour (RouteServiceProvider::HOME):
-        // redirected to the public landing page, which itself offers "Go to
-        // dashboard" - never shown the login form together with it.
-        $this->actingAs($user)->get('/login')->assertRedirect('/');
+        $response = $this->actingAs($user)->get('/login')->assertOk();
+        $html = $response->getContent();
+
+        $this->assertStringContainsString('name="password"', $html);
+        $this->assertStringContainsString('action="' . url('/login') . '"', $html);
+        $this->assertStringNotContainsStringIgnoringCase('go to dashboard', $html);
+        $this->assertStringNotContainsString('szSidebar', $html, 'the authenticated shell must not render on the sign-in page');
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
+     * Back to /login ends the session; Forward then cannot resume it and
+     * the protected page asks for credentials again.
+     */
+    public function test_going_back_to_login_ends_the_session_and_forward_asks_for_credentials(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD])
+            ->assertRedirect('/applicant/dashboard');
+        $this->get('/applicant/dashboard')->assertOk();
+        $before = session()->getId();
+
+        // Back.
+        $this->get('/login')->assertOk()->assertSee('name="password"', false);
+
+        $this->assertGuest();
+        $this->assertNotSame($before, session()->getId());
+
+        // Forward: every protected page now demands a sign-in.
+        foreach (['/applicant/dashboard', '/applicant/profile', '/applicant/recommendations', '/dashboard'] as $path) {
+            $this->get($path)->assertRedirect(route('login'));
+        }
+
+        // And the signed-in pages the browser Forwards to were served no-store,
+        // so it refetches them (and meets the redirect above) rather than
+        // replaying a cached copy.
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
+        $this->assertStringContainsString(
+            'no-store',
+            (string) $this->get('/applicant/dashboard')->assertOk()->headers->get('Cache-Control')
+        );
+    }
+
+    public function test_a_guest_visiting_login_sees_the_sign_in_form_uncached(): void
+    {
+        $response = $this->get('/login')->assertOk();
+
+        $this->assertStringContainsString('name="password"', $response->getContent());
+        $this->assertStringContainsString('no-store', (string) $response->headers->get('Cache-Control'));
+    }
+
+    /**
+     * Signing in again from a live session starts a new session: the id
+     * changes, and nothing the previous one stored survives into it.
+     */
+    public function test_signing_in_from_a_live_session_starts_a_fresh_one(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD])
+            ->assertRedirect('/applicant/dashboard');
+        session()->put('left-over', 'from the first session');
+        $before = session()->getId();
+
+        $this->get('/login')->assertOk();
+
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD])
+            ->assertRedirect('/applicant/dashboard');
+
+        $this->assertAuthenticatedAs($this->userFor('student@scholarzim.co.zw'));
+        $this->assertNotSame($before, session()->getId());
+        $this->assertNull(session('left-over'));
+    }
+
+    /** The same, as a different account: the second sign-in replaces the first entirely. */
+    public function test_signing_in_as_another_account_from_a_live_session_switches_accounts(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
+        $this->assertAuthenticatedAs($this->userFor('student@scholarzim.co.zw'));
+
+        $this->post('/login', ['email' => 'provider@scholarzim.co.zw', 'password' => self::PASSWORD])
+            ->assertRedirect('/provider/dashboard');
+
+        $this->assertAuthenticatedAs($this->userFor('provider@scholarzim.co.zw'));
+    }
+
+    /**
+     * A failed attempt from a live session leaves a guest, with the usual
+     * generic refusal - never the previous account still signed in behind
+     * a form that just said the credentials were wrong.
+     */
+    public function test_a_failed_sign_in_from_a_live_session_leaves_a_guest(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
+        $this->assertAuthenticated();
+
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => 'wrong-password'])
+            ->assertSessionHasErrors(['email' => 'Incorrect email or password.']);
+
+        $this->assertGuest();
+        $this->get('/applicant/dashboard')->assertRedirect(route('login'));
+    }
+
+    /** Remember-me still issues its cookie on a sign-in that replaces a live session. */
+    public function test_remember_me_still_works_when_signing_in_from_a_live_session(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
+
+        $response = $this->post('/login', [
+            'email' => 'student@scholarzim.co.zw',
+            'password' => self::PASSWORD,
+            'remember' => '1',
+        ]);
+
+        $recaller = Auth::guard('web')->getRecallerName();
+        $cookie = collect($response->headers->getCookies())->first(fn ($c) => $c->getName() === $recaller);
+
+        $this->assertNotNull($cookie, 'a remember-me cookie must be issued');
+        $this->assertNotEmpty($cookie->getValue(), 'the issued remember-me cookie must not be the forget cookie');
+    }
+
+    public function test_sign_out_lands_on_the_sign_in_page_with_its_message(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
+
+        $this->post('/logout')
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('successMessage', 'You have been signed out.');
+
+        $this->assertGuest();
+
+        $html = $this->get(route('login'))->assertOk()->getContent();
+        $this->assertStringContainsString('You have been signed out.', $html);
+        $this->assertStringContainsString('name="password"', $html);
+    }
+
+    /** The old session cannot reach an authenticated page after sign-out, and those pages are never cacheable. */
+    public function test_authenticated_pages_stay_protected_and_uncached_after_sign_out(): void
+    {
+        $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
+
+        $dashboard = $this->get('/applicant/dashboard')->assertOk();
+        $this->assertStringContainsString('no-store', (string) $dashboard->headers->get('Cache-Control'));
+
+        $this->post('/logout');
+
+        foreach (['/dashboard', '/applicant/dashboard', '/applicant/profile', '/applicant/recommendations'] as $path) {
+            $this->get($path)->assertRedirect(route('login'));
+        }
+    }
+
+    /** Taking /login out of `guest` must not take the other guest-only pages with it. */
+    public function test_registration_and_password_reset_remain_guest_only(): void
+    {
+        $user = $this->userFor('student@scholarzim.co.zw');
+
+        foreach (['/register', '/register/provider', '/forgot-password'] as $path) {
+            $this->actingAs($user)->get($path)->assertRedirect();
+        }
     }
 
     /**
@@ -316,7 +468,7 @@ class AuthenticationTest extends TestCase
         $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
         $this->assertAuthenticated();
 
-        $this->post('/logout')->assertRedirect('/');
+        $this->post('/logout')->assertRedirect(route('login'));
         $this->assertGuest();
 
         $html = $this->get('/login')->assertOk()->getContent();

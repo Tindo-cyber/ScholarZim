@@ -99,6 +99,51 @@ class ProviderPhoneValidationTest extends TestCase
         $this->register('0771234567')->assertSessionHasNoErrors('phone');
     }
 
+    /**
+     * The form itself must not block what the server accepts. The strict
+     * applicant markup (10 digits, maxlength 10) used to sit on this field, so
+     * a landline, "+263" or an extension never reached the server at all.
+     */
+    public function test_the_provider_form_does_not_carry_the_applicants_ten_digit_markup(): void
+    {
+        $html = $this->get('/register/provider')->assertOk()->getContent();
+
+        preg_match('/<input[^>]*name="phone"[^>]*>/', $html, $m);
+        $this->assertNotEmpty($m, 'the phone input must render');
+        $this->assertStringNotContainsString('maxlength="10"', $m[0]);
+        $this->assertStringNotContainsString('minlength', $m[0]);
+        $this->assertStringNotContainsString('pattern=', $m[0]);
+        $this->assertStringNotContainsString('inputmode="numeric"', $m[0]);
+        $this->assertStringContainsString('landline', $html);
+    }
+
+    /** The applicant form keeps its strict markup. */
+    public function test_the_applicant_form_keeps_its_ten_digit_markup(): void
+    {
+        $html = $this->get('/register')->assertOk()->getContent();
+
+        preg_match('/<input[^>]*name="phone"[^>]*>/', $html, $m);
+        $this->assertStringContainsString('maxlength="10"', $m[0]);
+    }
+
+    /** Landline, country-coded and extension numbers all register, not just a mobile. */
+    #[DataProvider('landlineNumbers')]
+    public function test_a_provider_can_register_with_a_landline_style_number(string $phone): void
+    {
+        $this->register($phone)->assertSessionHasNoErrors('phone');
+    }
+
+    public static function landlineNumbers(): array
+    {
+        return [
+            'harare landline' => ['0242700000'],
+            'spaced landline' => ['024 2700000'],
+            'country code' => ['+263 242 700000'],
+            'bulawayo' => ['0292 880000'],
+            'extension' => ['0242700000 x123'],
+        ];
+    }
+
     public function test_phone_remains_optional_for_a_provider(): void
     {
         $this->register(null)->assertSessionHasNoErrors('phone');

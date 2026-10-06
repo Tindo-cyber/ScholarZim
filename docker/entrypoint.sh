@@ -170,9 +170,12 @@ fi
 mkdir -p /var/lib/nginx/tmp/client_body /var/lib/nginx/tmp/proxy \
          /var/lib/nginx/tmp/fastcgi /var/lib/nginx/tmp/uwsgi \
          /var/lib/nginx/tmp/scgi \
-         /tmp/nginx-client-body
-chown -R www-data:www-data /var/lib/nginx/tmp /tmp/nginx-client-body
-chmod 700 /tmp/nginx-client-body
+         /tmp/nginx-client-body /tmp/nginx-fastcgi /tmp/nginx-proxy \
+         /tmp/nginx-uwsgi /tmp/nginx-scgi
+chown -R www-data:www-data /var/lib/nginx/tmp /tmp/nginx-client-body \
+         /tmp/nginx-fastcgi /tmp/nginx-proxy /tmp/nginx-uwsgi /tmp/nginx-scgi
+chmod 700 /tmp/nginx-client-body /tmp/nginx-fastcgi /tmp/nginx-proxy \
+         /tmp/nginx-uwsgi /tmp/nginx-scgi
 
 chown -R www-data:www-data storage bootstrap/cache
 

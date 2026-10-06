@@ -1,5 +1,6 @@
 <!doctype html>
-<html lang="en">
+{{-- data-sz-sensitive: see resources/js/history-guard.js - never restored from the bfcache. --}}
+<html lang="en" data-sz-sensitive>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

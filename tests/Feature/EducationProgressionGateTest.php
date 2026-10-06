@@ -249,6 +249,7 @@ class EducationProgressionGateTest extends TestCase
     {
         return array_merge([
             'full_name' => $applicant->full_name,
+            'gender' => 'male',
             'province' => 'Harare',
         ], $overrides);
     }

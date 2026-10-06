@@ -37,7 +37,7 @@ services:
       APP_DEBUG: "false"
       APP_KEY: ${APP_KEY}
       APP_URL: ${APP_URL:-https://www.scholarzim.co.zw}
-      APP_TIMEZONE: Africa/Harare
+      # No APP_TIMEZONE: config/app.php fixes the timezone at UTC and never reads it.
       LOG_CHANNEL: stderr
       LOG_LEVEL: warning
       SESSION_SECURE_COOKIE: "true"

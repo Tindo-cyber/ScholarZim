@@ -48,6 +48,7 @@ class LocalityProvinceTest extends TestCase
         return array_merge([
             'full_name' => $this->applicant->full_name,
             'education_level' => EducationLevel::A_LEVEL,
+            'gender' => 'male',
             'institution_name' => 'Gweru High School',
         ], $overrides);
     }

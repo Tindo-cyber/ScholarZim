@@ -34,6 +34,7 @@
     $anchor = static fn (string $key) => match ($key) {
         'documents' => 'documents',
         'guardian' => 'sz-guardian-card',
+        'gender' => 'field-gender-male',
         default => 'field-' . $key,
     };
 

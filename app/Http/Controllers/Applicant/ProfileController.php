@@ -15,6 +15,7 @@ use App\Support\FormOptions;
 use App\Support\Gender;
 use App\Support\ZimbabweLocalities;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -100,7 +101,7 @@ class ProfileController extends Controller
             'guardian_relationship' => ['nullable', 'string', 'max:100'],
             'guardian_confirmed' => ['nullable', 'boolean'],
             'biography' => ['nullable', 'string', 'max:5000'],
-            'gender' => ['nullable', Rule::in(Gender::ALL)],
+            'gender' => ['required', Rule::in(Gender::ALL)],
             'degree_classification' => ['nullable', Rule::in(
                 AcademicCatalogue::scheme(AcademicCatalogue::TERTIARY)?->symbols() ?? []
             )],
@@ -306,6 +307,12 @@ class ProfileController extends Controller
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
 
-        return back()->with('successMessage', 'Document uploaded.');
+        // Re-read from storage rather than assumed from this upload succeeding:
+        // the remaining count is whatever is actually on the profile now.
+        $remaining = count($this->profileService->forUser($request->user())->missingRequiredDocumentTypes());
+
+        return back()->with('successMessage', 'Document uploaded. ' . ($remaining === 0
+            ? 'All required documents uploaded.'
+            : $remaining . ' required ' . Str::plural('document', $remaining) . ' remaining.'));
     }
 }

@@ -36,6 +36,7 @@ class SourceAssetController extends Controller
         'academic-results.js' => ['js/academic-results.js', 'text/javascript'],
         'subject-requirements.js' => ['js/subject-requirements.js', 'text/javascript'],
         'bulk-select.js' => ['js/bulk-select.js', 'text/javascript'],
+        'history-guard.js' => ['js/history-guard.js', 'text/javascript'],
         'pwa.js' => ['js/pwa.js', 'text/javascript'],
     ];
 
@@ -50,6 +51,7 @@ class SourceAssetController extends Controller
         'academic-results.js',
         'subject-requirements.js',
         'bulk-select.js',
+        'history-guard.js',
         'pwa.js',
     ];
 

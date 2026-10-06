@@ -13,7 +13,7 @@
 @if(session('successMessage') || session('errorMessage') || $errors->any())
     <div class="pt-3">
         @if(session('successMessage'))
-            <div class="alert alert-success alert-dismissible fade show d-flex gap-2" role="alert">
+            <div class="alert alert-success alert-dismissible fade show d-flex gap-2" role="alert" data-sz-autodismiss>
                 <x-icon name="check-circle" />
                 <div>{{ session('successMessage') }}</div>
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
@@ -21,7 +21,7 @@
         @endif
 
         @if(session('errorMessage'))
-            <div class="alert alert-danger alert-dismissible fade show d-flex gap-2" role="alert">
+            <div class="alert alert-danger alert-dismissible fade show d-flex gap-2" role="alert" data-sz-autodismiss>
                 <x-icon name="x-circle" />
                 <div class="flex-grow-1">
                     {{ session('errorMessage') }}
@@ -35,6 +35,8 @@
             </div>
         @endif
 
+        {{-- Deliberately not data-sz-autodismiss: these are fields the user
+             still has to fix, so the summary stays until they act. --}}
         @if($errors->any())
             <div class="alert alert-danger" role="alert">
                 <div class="fw-semibold mb-1">Please fix the following:</div>

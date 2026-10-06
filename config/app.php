@@ -68,6 +68,11 @@ return [
     | will be used by the PHP date and date-time functions. We have gone
     | ahead and set this to a sensible default for you out of the box.
     |
+    | This is deliberately a literal, not env('APP_TIMEZONE'): stored timestamps
+    | were written under UTC, and reading a different zone would change how every
+    | existing value is interpreted. No APP_TIMEZONE variable is honoured, and none
+    | should be set in a deploy file. See docs/DEPLOYMENT.md ("Timezone").
+    |
     */
 
     'timezone' => 'UTC',

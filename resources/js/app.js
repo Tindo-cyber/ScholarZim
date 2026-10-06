@@ -18,4 +18,5 @@ import './profile-form';
 import './academic-results';
 import './subject-requirements';
 import './bulk-select';
+import './history-guard';
 import './pwa';

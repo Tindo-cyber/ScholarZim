@@ -5,9 +5,10 @@ namespace App\Support;
 /**
  * The gender values an applicant profile may hold.
  *
- * Captured on the profile and nothing more. ScholarFit does not read it, no
- * eligibility rule tests it, and profile completeness does not require it:
- * this product has no scholarship that states a gender rule, and adding one
+ * Captured on the profile and nothing more. It is required for a profile to
+ * count as complete - a provider reviewing an application is shown it - but
+ * ScholarFit does not read it and no eligibility rule tests it: this product
+ * has no scholarship that states a gender rule, and adding one
  * here would be writing policy rather than implementing it. If a
  * gender-restricted award is ever supported, it needs a column on the
  * opportunity, a check in EligibilityEvaluator and an explanation sentence -

@@ -22,11 +22,9 @@ use Illuminate\Support\Facades\Route;
 | shareable and indexable; only approved posts are reachable.
 */
 
-// no_store: this is the usual redirect target after logout (and the only
-// public page that is), and without it a plain browser refresh could replay
-// a cached copy of the page with that flash message still baked into the
-// HTML, even though the server-side session already cleared it after one
-// request - see LoginController::logout().
+// no_store: this page renders differently for a guest and a signed-in user
+// ("Sign in" vs "Go to dashboard"), and a cached copy restored after the auth
+// state changed would show the wrong one.
 Route::get('/', [PublicController::class, 'landing'])->middleware('cache.headers:no_store')->name('home');
 Route::get('/how-scholarfit-works', [PublicController::class, 'scholarFit'])->name('scholarfit');
 Route::get('/how-it-works', [PublicController::class, 'howItWorks'])->name('how-it-works');
@@ -57,9 +55,31 @@ Route::get('/assets/source/{asset}', [\App\Http\Controllers\SourceAssetControlle
  * control the path it was served from and below; moved into a subdirectory it
  * would stop seeing the navigations it exists to answer.
  */
-Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class, 'manifest'])->name('pwa.manifest');
-Route::get('/service-worker.js', [\App\Http\Controllers\PwaController::class, 'serviceWorker'])->name('pwa.service-worker');
-Route::get('/offline', [\App\Http\Controllers\PwaController::class, 'offline'])->name('pwa.offline');
+// No session for any of the three. The browser fetches them in the background
+// (the service worker is re-checked on navigation) carrying the visitor's session
+// cookie, and a request that runs the session pipeline uses up the flash data
+// Laravel keeps for exactly one following request. When one of these landed
+// between a form's POST and its redirected GET it consumed the flashed
+// validation errors / "You have been signed out" / "Profile saved" message, and
+// the page rendered without it - intermittently, for every role. They read no
+// session and return no per-user content (see PwaController), so they skip it,
+// and with it the session cookie they would otherwise re-issue.
+//
+// The list is every session-dependent middleware in the `web` group: those that
+// need a session on the request (CSRF cookie, shared errors, session
+// authentication) would throw without one, and the suspended-account check has
+// no user to look at. Cookie encryption and the security headers still apply.
+Route::withoutMiddleware([
+    \Illuminate\Session\Middleware\StartSession::class,
+    \Illuminate\Session\Middleware\AuthenticateSession::class,
+    \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+    \App\Http\Middleware\BlockSuspendedAccounts::class,
+    \App\Http\Middleware\VerifyCsrfToken::class,
+])->group(function () {
+    Route::get('/manifest.webmanifest', [\App\Http\Controllers\PwaController::class, 'manifest'])->name('pwa.manifest');
+    Route::get('/service-worker.js', [\App\Http\Controllers\PwaController::class, 'serviceWorker'])->name('pwa.service-worker');
+    Route::get('/offline', [\App\Http\Controllers\PwaController::class, 'offline'])->name('pwa.offline');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -72,10 +92,19 @@ Route::get('/offline', [\App\Http\Controllers\PwaController::class, 'offline'])-
 // visibly, landing back on a rendered "/login" after having signed in and out
 // again, showing whatever it looked like at the moment it was cached rather
 // than what the server would render now.
-Route::middleware(['guest', 'cache.headers:no_store'])->group(function () {
+//
+// Sign-in is deliberately outside `guest`: it is where logout lands, and
+// where the back button lands after signing in, so it always renders the
+// form - a signed-in visitor is not bounced to the landing page. Reaching it
+// with a live session ends that session (so Back signs you out and Forward
+// asks for credentials again), and posting it starts a fresh one; see
+// LoginController::showLoginForm() and ::login().
+Route::middleware('cache.headers:no_store')->group(function () {
     Route::get('/login', [Auth\LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [Auth\LoginController::class, 'login'])->middleware('throttle:10,1');
+});
 
+Route::middleware(['guest', 'cache.headers:no_store'])->group(function () {
     Route::get('/register', [Auth\RegisterController::class, 'showApplicantForm'])->name('register');
     Route::post('/register', [Auth\RegisterController::class, 'registerApplicant'])
         ->middleware('throttle:10,1');

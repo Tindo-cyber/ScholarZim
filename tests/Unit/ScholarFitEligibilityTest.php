@@ -616,6 +616,71 @@ class ScholarFitEligibilityTest extends TestCase
     }
 
     /**
+     * "Form 1 Transition Bursary" states its audience in the title. Only
+     * Primary pupils moving up are in it. A profile's level is the level
+     * completed, so O-Level (Form 4 finished), A-Level and anyone above have
+     * all left Form 1.
+     */
+    public function test_a_form_1_title_is_closed_to_applicants_who_have_left_form_1(): void
+    {
+        $listing = fn () => $this->opportunity([
+            'title' => 'Chinhoyi Form 1 Transition Bursary',
+            'education_level' => EducationLevel::FORM_1,
+        ]);
+
+        foreach ([
+            EducationLevel::O_LEVEL,
+            EducationLevel::A_LEVEL,
+            EducationLevel::DIPLOMA,
+            EducationLevel::UNDERGRADUATE,
+            EducationLevel::MASTERS,
+        ] as $level) {
+            $fit = $this->evaluate($this->profile(['education_level' => $level]), $listing());
+
+            $this->assertFalse($fit->meetsRequirements(), $level . ' must not be eligible for a Form 1 listing');
+            $this->assertStringContainsString('intended for Form 1', implode(' ', $fit->failureMessages()), $level);
+        }
+
+        foreach ([EducationLevel::PRIMARY] as $level) {
+            $this->assertTrue(
+                $this->evaluate($this->profile(['education_level' => $level], grades: []), $listing())->meetsRequirements(),
+                $level . ' must stay eligible for a Form 1 listing'
+            );
+        }
+    }
+
+    /**
+     * Plural, hyphenated and abbreviated spellings name the same level.
+     * Each used to read as no condition at all - see
+     * DescriptionEligibility::EDUCATION_LEVEL_PHRASES.
+     */
+    public function test_common_spellings_of_a_title_level_are_read_the_same_way(): void
+    {
+        foreach ([
+            'Scholarship for Undergraduates' => 'Undergraduate',
+            'Under-graduate Bursary' => 'Undergraduate',
+            'Undergrad Award' => 'Undergraduate',
+            'Post-graduate Research Grant' => 'Postgraduate',
+            'Bursary for Postgraduates' => 'Postgraduate',
+        ] as $title => $label) {
+            $primary = $this->evaluate(
+                $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
+                $this->opportunity(['title' => $title, 'education_level' => null])
+            );
+
+            $this->assertFalse($primary->meetsRequirements(), $title . ' must not reach a Primary applicant');
+            $this->assertStringContainsString('intended for ' . $label . ' students', implode(' ', $primary->failureMessages()), $title);
+        }
+
+        $undergraduate = $this->evaluate(
+            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
+            $this->opportunity(['title' => 'Scholarship for Undergraduates', 'education_level' => null])
+        );
+
+        $this->assertTrue($undergraduate->meetsRequirements(), 'the audience the title names must still be eligible');
+    }
+
+    /**
      * "Master's Scholarship" names MASTERS specifically, not the more
      * general POSTGRADUATE - and Undergraduate is a recognised step toward
      * MASTERS (see EducationPathway::VALID_TARGETS), so an Undergraduate

@@ -602,6 +602,153 @@ class RecommendationTest extends TestCase
         $this->assertGreaterThan($eligibleHeading, $titlePosition, 'nothing stated, nothing refused - it belongs in the eligible list');
     }
 
+    // ------------------------------------- Primary vs "Undergraduate Scholarship" --
+
+    /**
+     * The reported record, end to end: no structured requirement of any
+     * kind, a blank description, and only the title saying who it is for.
+     * ScholarFit must refuse the Primary applicant, My Matches must not
+     * offer it, the not-eligible list must explain why, and neither apply
+     * path may let the applicant past the same rule.
+     */
+    #[DataProvider('undergraduateTitles')]
+    public function test_a_primary_applicant_cannot_match_or_apply_to_an_undergraduate_titled_listing(string $title): void
+    {
+        $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        $this->assertTrue(\App\Support\EducationLevel::isPrimary($kudzai->applicantProfile->education_level));
+        $this->assertTrue($kudzai->applicantProfile->isComplete(), 'the applicant must be complete enough to be matched at all');
+
+        $award = $this->gatedListing($title, [
+            'description' => '',
+            'education_level' => null,
+            'minimum_education_level' => null,
+            'min_academic_points' => null,
+            'deadline' => null,
+        ]);
+        $this->assertSame(0, $award->subjectRequirements()->count());
+
+        $service = app(RecommendationService::class);
+
+        $fit = $service->evaluateOne($kudzai, $award->fresh());
+        $this->assertFalse($fit->meetsRequirements());
+        $explanation = implode(' ', $fit->failureMessages());
+        $this->assertStringContainsString('intended for Undergraduate students', $explanation);
+        $this->assertStringContainsString('your profile states Primary', $explanation);
+
+        $matchIds = array_map(fn ($r) => (int) $r->opportunity->opportunity_id, $service->forUser($kudzai, 0));
+        $this->assertNotContains($award->opportunity_id, $matchIds);
+
+        $notEligibleIds = array_map(fn ($r) => (int) $r->opportunity->opportunity_id, $service->notEligibleForUser($kudzai, 0));
+        $this->assertContains($award->opportunity_id, $notEligibleIds);
+
+        // The wizard does not offer a form that can never succeed...
+        $this->actingAs($kudzai)
+            ->get('/apply/' . $award->opportunity_id)
+            ->assertOk()
+            ->assertSee('NOT ELIGIBLE')
+            ->assertDontSee('name="personal_statement"', false);
+
+        // ...and a direct submission is refused server-side, naming the rule.
+        $this->actingAs($kudzai)
+            ->from('/apply/' . $award->opportunity_id)
+            ->post('/apply/' . $award->opportunity_id . '/quick')
+            ->assertSessionHas('errorMessage', fn (string $m) => str_contains($m, 'intended for Undergraduate students')
+                && str_contains($m, 'your profile states Primary'));
+
+        try {
+            app(\App\Services\ApplicationService::class)->submit($award->opportunity_id, $kudzai, [
+                'personal_statement' => str_repeat('A genuine statement. ', 10),
+            ]);
+            $this->fail('the application service must refuse a Primary applicant here');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('intended for Undergraduate students', $e->getMessage());
+        }
+
+        $this->assertDatabaseMissing('applications', [
+            'user_id' => $kudzai->user_id,
+            'opportunity_id' => $award->opportunity_id,
+        ]);
+    }
+
+    /** The exact title that was reported, plus the spellings that used to read as "no condition at all". */
+    public static function undergraduateTitles(): array
+    {
+        return [
+            'exact' => ['Undergraduate Scholarship'],
+            'plural' => ['Scholarship for Undergraduates'],
+            'hyphenated' => ['Under-graduate Scholarship'],
+            'two words' => ['Under Graduate Scholarship'],
+            'abbreviated' => ['Undergrad Scholarship 2027'],
+        ];
+    }
+
+    /** The reported case: an A-Level applicant must not be matched with, or able to apply to, a Form 1 listing. */
+    public function test_an_a_level_applicant_cannot_match_or_apply_to_a_form_1_listing(): void
+    {
+        $chipo = User::where('email', 'chipo.ncube@scholarzim.co.zw')->firstOrFail();
+        // Complete enough to be evaluated at all: A-Level's evidence is a results certificate.
+        $chipo->applicantProfile->update(['results_certificate_path' => 'profiles/demo/a-level-results.pdf']);
+        $this->assertTrue($chipo->fresh()->applicantProfile->isComplete());
+
+        $award = $this->gatedListing('Chinhoyi Form 1 Transition Bursary', [
+            'description' => '',
+            'education_level' => \App\Support\EducationLevel::FORM_1,
+            'deadline' => null,
+        ]);
+
+        $service = app(RecommendationService::class);
+
+        $this->assertNotContains($award->opportunity_id, array_map(
+            fn ($r) => (int) $r->opportunity->opportunity_id,
+            $service->forUser($chipo->fresh(), 0)
+        ));
+        $this->assertContains($award->opportunity_id, array_map(
+            fn ($r) => (int) $r->opportunity->opportunity_id,
+            $service->notEligibleForUser($chipo->fresh(), 0)
+        ));
+
+        $this->actingAs($chipo)
+            ->post('/apply/' . $award->opportunity_id . '/quick')
+            ->assertSessionHas('errorMessage', fn (string $m) => str_contains($m, 'intended for Form 1')
+                && str_contains($m, 'A Level'));
+
+        $this->assertDatabaseMissing('applications', [
+            'user_id' => $chipo->user_id,
+            'opportunity_id' => $award->opportunity_id,
+        ]);
+    }
+
+    // ------------------------------------------------------------ My Matches --
+
+    /** My Matches is every eligible listing, not the first 24. */
+    public function test_my_matches_lists_every_eligible_listing_beyond_twenty_four(): void
+    {
+        $created = [];
+
+        for ($i = 1; $i <= 30; $i++) {
+            $created[] = $this->gatedListing(sprintf('Open Community Award %02d', $i), [
+                'description' => 'Support for promising students from underserved communities.',
+                'deadline' => Carbon::today()->addDays(10 + $i),
+            ])->opportunity_id;
+        }
+
+        $eligibleIds = $this->rankedIds();
+        $this->assertGreaterThan(24, count($eligibleIds));
+        foreach ($created as $id) {
+            $this->assertContains($id, $eligibleIds);
+        }
+
+        $html = $this->actingAs($this->student)
+            ->get('/applicant/recommendations')
+            ->assertOk()
+            ->getContent();
+
+        $this->assertStringContainsString(count($eligibleIds) . ' scholarships matched your profile', $html);
+        for ($i = 1; $i <= 30; $i++) {
+            $this->assertStringContainsString(sprintf('Open Community Award %02d', $i), $html);
+        }
+    }
+
     /** A listing built to fail one or more stated requirements for the seeded student. */
     private function gatedListing(string $title, array $overrides = []): Opportunity
     {

@@ -227,6 +227,7 @@ class ProfileCompletenessGateTest extends TestCase
             ['user_id' => $applicant->user_id],
             array_merge([
                 'education_level' => EducationLevel::O_LEVEL,
+                'gender' => 'male',
                 'institution_name' => 'Gate Test High School',
                 'country' => 'Zimbabwe',
                 'province' => 'Harare',
