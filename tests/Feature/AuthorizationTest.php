@@ -260,6 +260,11 @@ class AuthorizationTest extends TestCase
     /** Nor by any other route: posting leaves it pending, full stop. */
     public function test_a_newly_posted_listing_cannot_publish_itself(): void
     {
+        // The demo provider has enough approved listings to be trusted, and a trusted
+        // provider's listing goes live at once. This test is about the ordinary path,
+        // where a listing waits for review, so it withholds trust explicitly.
+        $this->providerA->providerProfile?->update(['trusted_override' => false]);
+
         $this->as($this->providerA)->post('/opportunities/create', [
             'title' => 'Self Published Award',
             'description' => 'A description long enough to pass validation checks.',

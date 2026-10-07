@@ -111,6 +111,11 @@ class OpportunityLifecycleTest extends TestCase
 
     public function test_a_new_listing_starts_pending_and_invisible(): void
     {
+        // The demo provider has enough approved listings to be trusted, and a trusted
+        // provider's listing goes live at once. This test is about the ordinary path,
+        // where a listing waits for review, so it withholds trust explicitly.
+        $this->provider->providerProfile?->update(['trusted_override' => false]);
+
         $this->actingAs($this->provider)->post('/opportunities/create', [
             'title' => 'Lifecycle Test Award',
             'description' => 'A description long enough to be accepted by validation.',

@@ -27,6 +27,11 @@ class WorkflowTest extends TestCase
     public function test_provider_submission_lands_in_moderation_queue(): void
     {
         $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
+        // The demo provider has enough approved listings to be trusted, and a trusted
+        // provider's listing goes live at once. This test is about the ordinary path,
+        // where a listing waits for review, so it withholds trust explicitly.
+        $provider->providerProfile?->update(['trusted_override' => false]);
+
 
         $this->actingAs($provider)->post('/opportunities/create', [
             'title' => 'Test Award',

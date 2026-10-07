@@ -185,6 +185,13 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT, 'cache.headers:no_sto
     Route::get('/applicant/recommendations', [Applicant\RecommendationController::class, 'index'])
         ->name('applicant.recommendations');
 
+    // Reporting a listing. Limited per account (see AppServiceProvider), because a
+    // report is a cost to the provider it names.
+    Route::post('/scholarships/{id}/report', [Applicant\ListingReportController::class, 'store'])
+        ->whereNumber('id')
+        ->middleware('throttle:listing-reports')
+        ->name('listing.report');
+
     Route::get('/applicant/saved', [Applicant\SavedScholarshipController::class, 'index'])->name('applicant.saved');
     Route::post('/applicant/saved/{id}', [Applicant\SavedScholarshipController::class, 'store'])
         ->whereNumber('id')
@@ -304,6 +311,9 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
     Route::post('/users/providers/{id}/approve', [Admin\UserController::class, 'approveProvider'])
         ->whereNumber('id')
         ->name('providers.approve');
+    Route::post('/users/providers/{id}/trust', [Admin\ProviderTrustController::class, 'update'])
+        ->whereNumber('id')
+        ->name('providers.trust');
     Route::post('/users/providers/{id}/reject', [Admin\UserController::class, 'rejectProvider'])
         ->whereNumber('id')
         ->name('providers.reject');
@@ -318,6 +328,24 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
 
     Route::post('/opportunities/bulk-review', [Admin\ModerationController::class, 'bulkReview'])
         ->name('moderation.bulk');
+
+    // Listings students have reported.
+    Route::get('/listing-reports', [Admin\ListingReportController::class, 'index'])->name('listing-reports');
+    Route::post('/listing-reports/{id}/dismiss', [Admin\ListingReportController::class, 'dismiss'])
+        ->whereNumber('id')
+        ->name('listing-reports.dismiss');
+    Route::post('/listing-reports/{id}/uphold', [Admin\ListingReportController::class, 'uphold'])
+        ->whereNumber('id')
+        ->name('listing-reports.uphold');
+
+    // Listings a trusted provider put live without review, for checking afterwards.
+    Route::get('/auto-published', [Admin\AutoPublishedController::class, 'index'])->name('auto-published');
+    Route::post('/auto-published/{id}/confirm', [Admin\AutoPublishedController::class, 'confirm'])
+        ->whereNumber('id')
+        ->name('auto-published.confirm');
+    Route::post('/auto-published/{id}/unpublish', [Admin\AutoPublishedController::class, 'unpublish'])
+        ->whereNumber('id')
+        ->name('auto-published.unpublish');
 
     Route::get('/opportunities/{id}', [Admin\ModerationController::class, 'show'])
         ->whereNumber('id')

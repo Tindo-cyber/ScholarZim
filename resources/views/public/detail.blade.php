@@ -285,7 +285,32 @@
                                 ({{ $opportunity->deadline->diffForHumans() }}).
                             </p>
                         @endif
-                    </div>
+
+                        {{--
+                            Reporting. Only for a signed-in student looking at the
+                            public page (the moderation preview does not pass
+                            $hasReported). A student who has already reported is told
+                            so rather than offered it again: the unique key would
+                            refuse a second report anyway, and a button that only ever
+                            fails is worse than no button.
+                        --}}
+                        @auth
+                            @if(auth()->user()->isApplicant() && isset($hasReported))
+                                <div class="text-center mt-3">
+                                    @if($hasReported)
+                                        <span class="small text-secondary">You reported this listing. An administrator will look at it.</span>
+                                    @else
+                                        {{-- The dialog itself is rendered at the end of the page: inside this sticky
+                                             card it sits in a stacking context below Bootstrap's backdrop, which
+                                             then covers it and swallows every click. --}}
+                                        <button type="button" class="btn btn-link btn-sm text-secondary text-decoration-none"
+                                                data-bs-toggle="modal" data-bs-target="#report-{{ $opportunity->opportunity_id }}">
+                                            Report this listing
+                                        </button>
+                                    @endif
+                                </div>
+                            @endif
+                        @endauth                    </div>
                 </div>
             </div>
         </div>
@@ -315,4 +340,23 @@
             </div>
         @endif
     </div>
+@auth
+    @if(auth()->user()->isApplicant() && isset($hasReported) && ! $hasReported)
+            <x-confirm-dialog :id="'report-' . $opportunity->opportunity_id"
+                              :action="route('listing.report', $opportunity->opportunity_id)"
+                              :title="'Report: ' . $opportunity->title"
+                              confirm-label="Send report"
+                              tone="danger"
+                              message="Tell us what is wrong. An administrator reads every report. Several reports from different students take a listing down until it has been checked.">
+                <x-form.select name="reason" label="What is wrong?" required
+                               :options="\App\Support\ReportReason::options()"
+                               placeholder="Choose a reason"
+                               :bag="'report-' . $opportunity->opportunity_id" />
+                <x-form.textarea name="details" :rows="3"
+                                 label="Anything else we should know? (optional)"
+                                 :bag="'report-' . $opportunity->opportunity_id" />
+            </x-confirm-dialog>
+    @endif
+@endauth
+
 @endsection

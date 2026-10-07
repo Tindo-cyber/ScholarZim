@@ -16,6 +16,7 @@ use App\Support\EditImpact;
 use App\Support\OpportunityLifecycle;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
+use App\Support\ProviderTrust;
 use App\Support\RoleNames;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -26,6 +27,9 @@ use Illuminate\Validation\ValidationException;
 
 class OpportunityService
 {
+    /** Recorded as the reviewer of a listing nobody reviewed, so it is plain in every audit trail. */
+    public const AUTO_APPROVER = 'system (trusted provider)';
+
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly AuditService $auditService,
@@ -120,7 +124,19 @@ class OpportunityService
         $identity = $this->identityAttributes($data, $provider);
         $award = $this->awardAttributes($data);
 
-        $opportunity = DB::transaction(function () use ($data, $provider, $country, $identity, $award) {
+        // The risk checker reads what the provider wrote (title, description, link),
+        // not just the award, and compares the link with who is posting.
+        $flags = $this->riskChecker->check(
+            $identity + $award + ['title' => $data['title'] ?? null, 'description' => $data['description'] ?? null],
+            $provider
+        );
+
+        // A trusted provider's new listing goes live at once - unless the checker
+        // raised anything, in which case it is reviewed first like everyone else's.
+        // Trust is the shortcut; a flag is the reason not to take it.
+        $autoApprove = $flags === [] && ProviderTrust::isTrusted($provider);
+
+        $opportunity = DB::transaction(function () use ($data, $provider, $country, $identity, $award, $flags, $autoApprove) {
             $opportunity = Opportunity::create([
                 'provider_user_id' => $provider->user_id,
                 'title' => $data['title'],
@@ -135,7 +151,7 @@ class OpportunityService
                 'moderation_status' => OpportunityModerationStatus::PENDING,
                 'submitted_at' => Carbon::now(),
                 'created_at' => Carbon::now(),
-            ] + $identity + $award + ['risk_flags' => $this->riskChecker->check($identity + $award) ?: null]);
+            ] + $identity + $award + ['risk_flags' => $flags ?: null]);
 
             $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
 
@@ -147,6 +163,10 @@ class OpportunityService
                 'Submitted opportunity "' . $opportunity->title . '" for review'
             );
 
+            if ($autoApprove) {
+                $this->publishWithoutReview($opportunity);
+            }
+
             return $opportunity;
         });
 
@@ -157,12 +177,59 @@ class OpportunityService
 
         $this->forgetFacetCaches();
 
+        if ($autoApprove) {
+            // Live already, so applicants are told now - and the administrators are told
+            // it needs looking at AFTER the fact, which is not the same message as
+            // "awaiting review".
+            $this->notifyAdminsOfAutoPublished($opportunity);
+            $this->notifyProviderPublished($opportunity, $provider);
+            $this->announcePublished($opportunity);
+
+            return $opportunity;
+        }
+
         // Applicants are NOT told about the post yet - that happens on approval, in
         // OpportunityModerationService. Announcing it here would push unreviewed
         // listings out by email while they are still invisible on the site.
         $this->notifyAdminsOfPendingReview($opportunity);
 
         return $opportunity;
+    }
+
+    /**
+     * The one place a listing goes live without an administrator.
+     *
+     * It still travels PENDING -> APPROVED through OpportunityLifecycle rather than
+     * being written straight in as approved: the transition table is what says
+     * which moves are legal, and a shortcut that skipped it would be a second,
+     * unwritten way for a listing to become public. auto_approved marks it, so it
+     * lands in the administrators' "published without review" queue until one of
+     * them has looked.
+     */
+    private function publishWithoutReview(Opportunity $opportunity): void
+    {
+        OpportunityLifecycle::assertModeration(
+            $opportunity->moderation_status,
+            OpportunityModerationStatus::APPROVED
+        );
+
+        $opportunity->update([
+            'moderation_status' => OpportunityModerationStatus::APPROVED,
+            'reviewed_at' => Carbon::now(),
+            'reviewed_by' => self::AUTO_APPROVER,
+            'rejection_reason' => null,
+            'auto_approved' => true,
+            'post_reviewed_at' => null,
+            'post_reviewed_by' => null,
+        ]);
+
+        $this->auditService->logOrFail(
+            self::AUTO_APPROVER,
+            AuditAction::PUBLISH_WITHOUT_REVIEW,
+            'OPPORTUNITY',
+            $opportunity->opportunity_id,
+            'Published "' . $opportunity->title . '" without review: provider is trusted and nothing was flagged'
+        );
     }
 
     /**
@@ -234,6 +301,11 @@ class OpportunityService
                 'reviewed_at' => null,
                 'reviewed_by' => null,
                 'rejection_reason' => null,
+                // Back in the ordinary queue: whoever approves it next is reviewing it
+                // beforehand, so it must not reappear as "published without review".
+                'auto_approved' => false,
+                'post_reviewed_at' => null,
+                'post_reviewed_by' => null,
             ];
         } elseif ($refreshesQueue) {
             $attributes += ['submitted_at' => Carbon::now()];
@@ -315,7 +387,13 @@ class OpportunityService
             'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
         ] + $this->identityAttributes($data, $provider) + $this->awardAttributes($data);
 
-        $attributes['risk_flags'] = $this->riskChecker->check($attributes) ?: null;
+        // Recomputed from what is being saved now - a provider who removes the wording
+        // that tripped a flag should lose the flag - but the flags that come from
+        // elsewhere (student reports) are kept.
+        $attributes['risk_flags'] = $this->riskChecker->withStickyFlags(
+            $opportunity->risk_flags,
+            $this->riskChecker->check($attributes, $provider)
+        ) ?: null;
 
         $material = OpportunityLifecycle::isMaterialChange($opportunity, $attributes)
             // Bringing a deadline forward cuts applicants off early, so it is
@@ -500,6 +578,49 @@ class OpportunityService
             NotificationType::SCHOLARSHIP_PENDING_REVIEW,
             'New scholarship awaiting review: "' . $opportunity->title . '".',
             '/admin/dashboard#scholarship-moderation',
+            $opportunity->opportunity_id
+        );
+    }
+
+    private function notifyAdminsOfAutoPublished(Opportunity $opportunity): void
+    {
+        $admins = User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::ADMIN))->get();
+
+        $this->notificationService->notifyMany(
+            $admins,
+            NotificationType::SCHOLARSHIP_PENDING_REVIEW,
+            'Published without review by a trusted provider: "' . $opportunity->title . '". Take a look when you can.',
+            '/admin/auto-published',
+            $opportunity->opportunity_id
+        );
+    }
+
+    private function notifyProviderPublished(Opportunity $opportunity, User $provider): void
+    {
+        $this->notificationService->notifyUser(
+            $provider,
+            NotificationType::SCHOLARSHIP_APPROVED,
+            'Your scholarship "' . $opportunity->title . '" is now live.',
+            '/scholarships/' . $opportunity->opportunity_id,
+            $opportunity->opportunity_id
+        );
+    }
+
+    /**
+     * Tell applicants a listing is public. Only ever called once it actually is:
+     * on approval by an administrator, or on publication by a trusted provider.
+     */
+    public function announcePublished(Opportunity $opportunity): void
+    {
+        $applicants = User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::APPLICANT))
+            ->where('email_notify_scholarships', true)
+            ->get();
+
+        $this->notificationService->notifyMany(
+            $applicants,
+            NotificationType::NEW_OPPORTUNITY,
+            'New scholarship published: "' . $opportunity->title . '".',
+            '/scholarships/' . $opportunity->opportunity_id,
             $opportunity->opportunity_id
         );
     }

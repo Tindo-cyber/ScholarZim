@@ -115,6 +115,10 @@
                                     :active="false">Approval &amp; verification</x-nav-item>
                         <x-nav-item :href="route('admin.dashboard') . '#scholarship-moderation'" icon="check-circle"
                                     :active="false">Moderation</x-nav-item>
+                        <x-nav-item :href="route('admin.auto-published')" icon="calendar"
+                                    :active="request()->routeIs('admin.auto-published*')">Published without review</x-nav-item>
+                        <x-nav-item :href="route('admin.listing-reports')" icon="shield"
+                                    :active="request()->routeIs('admin.listing-reports*')">Student reports</x-nav-item>
                     </x-nav-section>
 
                     <x-nav-section label="Insights">

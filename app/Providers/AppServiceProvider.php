@@ -3,7 +3,10 @@
 namespace App\Providers;
 
 use App\Services\NotificationService;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Pagination\Paginator;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
@@ -30,6 +33,12 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Paginator::useBootstrapFive();
+
+        // How many reports one account may file in an hour. Read from config on each
+        // request, so changing the setting takes effect without redeploying code.
+        RateLimiter::for('listing-reports', fn (Request $request) => Limit::perHour(
+            max(1, (int) config('scholarzim.reports.per_hour', 10))
+        )->by((string) ($request->user()?->user_id ?? $request->ip())));
 
         // The shell renders the bell on every authenticated page, so the counts
         // are composed in once rather than fetched by each controller.

@@ -8,7 +8,9 @@ use App\Support\AuditAction;
 use App\Support\NotificationType;
 use App\Support\OpportunityModerationStatus;
 use App\Support\RoleNames;
+use App\Support\OpportunityLifecycle;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 
@@ -125,6 +127,11 @@ class OpportunityModerationService
             'reviewed_at' => Carbon::now(),
             'reviewed_by' => $admin->email,
             'rejection_reason' => null,
+            // A person approved it, so whatever it was before, it is not one that went
+            // live unreviewed any more.
+            'auto_approved' => false,
+            'post_reviewed_at' => null,
+            'post_reviewed_by' => null,
         ]);
 
         $this->auditService->log(
@@ -147,7 +154,7 @@ class OpportunityModerationService
             );
         }
 
-        $this->announceToApplicants($opportunity);
+        $this->opportunityService->announcePublished($opportunity);
 
         return $opportunity;
     }
@@ -186,23 +193,136 @@ class OpportunityModerationService
         return $opportunity;
     }
 
-    /**
-     * Only applicants hear about a newly published listing, and only once it is
-     * actually visible on the public site.
-     */
-    private function announceToApplicants(Opportunity $opportunity): void
-    {
-        $applicants = User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::APPLICANT))
-            ->where('email_notify_scholarships', true)
-            ->get();
+    // -------------------------------------------- published without review --
 
-        $this->notificationService->notifyMany(
-            $applicants,
-            NotificationType::NEW_OPPORTUNITY,
-            'New scholarship published: "' . $opportunity->title . '".',
-            '/scholarships/' . $opportunity->opportunity_id,
-            $opportunity->opportunity_id
-        );
+    /**
+     * Listings a trusted provider put live that no administrator has looked at yet.
+     * Oldest first: the one that has been public longest unchecked is the one
+     * that matters most.
+     */
+    public function autoPublishedQueue()
+    {
+        return Opportunity::with('provider')
+            ->where('auto_approved', true)
+            ->whereNull('post_reviewed_at')
+            ->where('moderation_status', OpportunityModerationStatus::APPROVED)
+            ->orderBy('reviewed_at')
+            ->orderBy('opportunity_id')
+            ->get();
+    }
+
+    public function autoPublishedCount(): int
+    {
+        return Opportunity::where('auto_approved', true)
+            ->whereNull('post_reviewed_at')
+            ->where('moderation_status', OpportunityModerationStatus::APPROVED)
+            ->count();
+    }
+
+    /** "I have looked, it is fine": it leaves the queue and stays live. */
+    public function confirmAutoPublished(int $opportunityId, User $admin): Opportunity
+    {
+        $opportunity = $this->requireAutoPublished($opportunityId, $admin);
+
+        DB::transaction(function () use ($opportunity, $admin) {
+            $opportunity->update([
+                'post_reviewed_at' => Carbon::now(),
+                'post_reviewed_by' => $admin->email,
+            ]);
+
+            $this->auditService->logOrFail(
+                $admin->email,
+                AuditAction::CONFIRM_AUTO_PUBLISHED,
+                'OPPORTUNITY',
+                $opportunity->opportunity_id,
+                'Checked "' . $opportunity->title . '" after it was published without review'
+            );
+        });
+
+        return $opportunity;
+    }
+
+    /**
+     * Take a listing that went live unreviewed off the public site, with a reason
+     * the provider is shown.
+     *
+     * It ends REJECTED, the same place a listing declined before publication ends,
+     * so the provider's dashboard, their ability to resubmit, and their trust
+     * record all read it the way they read any other refusal. The lifecycle has no
+     * direct APPROVED -> REJECTED move (an approved listing goes back to review,
+     * and review decides), so this takes both legal steps in order inside one
+     * transaction rather than widening the table for one caller.
+     */
+    public function unpublish(int $opportunityId, User $admin, string $reason): Opportunity
+    {
+        $opportunity = $this->requireAutoPublished($opportunityId, $admin);
+
+        $this->takeDown($opportunity, $admin, $reason, 'Unpublished "' . $opportunity->title . '" after it was published without review: ' . $reason);
+
+        return $opportunity;
+    }
+
+    /**
+     * Move a live listing to REJECTED via PENDING, audit it, and tell its provider.
+     * Shared by unpublish() and by upholding a student report.
+     */
+    public function takeDown(Opportunity $opportunity, User $admin, string $reason, string $auditDetail): void
+    {
+        DB::transaction(function () use ($opportunity, $admin, $reason, $auditDetail) {
+            if (OpportunityModerationStatus::isApproved($opportunity->moderation_status)) {
+                OpportunityLifecycle::assertModeration($opportunity->moderation_status, OpportunityModerationStatus::PENDING);
+                $opportunity->moderation_status = OpportunityModerationStatus::PENDING;
+            }
+
+            OpportunityLifecycle::assertModeration($opportunity->moderation_status, OpportunityModerationStatus::REJECTED);
+
+            $opportunity->update([
+                'moderation_status' => OpportunityModerationStatus::REJECTED,
+                'reviewed_at' => Carbon::now(),
+                'reviewed_by' => $admin->email,
+                'rejection_reason' => $reason,
+                'post_reviewed_at' => Carbon::now(),
+                'post_reviewed_by' => $admin->email,
+            ]);
+
+            $this->auditService->logOrFail(
+                $admin->email,
+                AuditAction::UNPUBLISH_OPPORTUNITY,
+                'OPPORTUNITY',
+                $opportunity->opportunity_id,
+                $auditDetail,
+                ['reason' => $reason]
+            );
+        });
+
+        $this->opportunityService->forgetFacetCaches();
+
+        if ($opportunity->provider) {
+            $this->notificationService->notifyUser(
+                $opportunity->provider,
+                NotificationType::SCHOLARSHIP_REJECTED,
+                'Your scholarship "' . $opportunity->title . '" was taken down: ' . $reason,
+                '/provider/dashboard',
+                $opportunity->opportunity_id
+            );
+        }
+    }
+
+    private function requireAutoPublished(int $opportunityId, User $admin): Opportunity
+    {
+        $opportunity = Opportunity::with('provider')->findOrFail($opportunityId);
+
+        if ($opportunity->provider_user_id === $admin->user_id) {
+            throw new RuntimeException('You cannot moderate a scholarship you posted yourself.');
+        }
+
+        if (! $opportunity->auto_approved
+            || $opportunity->post_reviewed_at !== null
+            || ! OpportunityModerationStatus::isApproved($opportunity->moderation_status)) {
+            throw new RuntimeException('This scholarship is not waiting for a check after being published without review.');
+        }
+
+        return $opportunity;
     }
 
     private function requirePending(int $opportunityId, ?User $admin = null): Opportunity

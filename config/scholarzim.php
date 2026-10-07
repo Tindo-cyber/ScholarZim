@@ -63,4 +63,34 @@ return [
         'ZWG' => 2600000,
     ],
 
+    /*
+     * Trust tiers: who may publish without waiting for a review.
+     *
+     * A provider is TRUSTED once `approved_listings_required` of their listings
+     * have been approved, with no upheld student report against them and no
+     * listing declined within the last `rejection_window_days` days. An
+     * administrator can grant or revoke trust by hand, which wins over all of
+     * this. A trusted provider's NEW listing goes live at once and lands in the
+     * "published without review" queue; anything the risk checker flags still
+     * gets a normal review first, trusted or not.
+     */
+    'trust' => [
+        'approved_listings_required' => (int) env('SCHOLARZIM_TRUST_APPROVED_LISTINGS', 3),
+        'rejection_window_days' => (int) env('SCHOLARZIM_TRUST_REJECTION_WINDOW_DAYS', 90),
+    ],
+
+    /*
+     * Student reports of a listing.
+     *
+     * When `hide_after` DIFFERENT applicants have reported the same listing it is
+     * taken off the public site and put back in the review queue until an
+     * administrator decides; a report that is dismissed does not count towards
+     * it. `per_hour` limits how many reports one account can file, so the button
+     * cannot be used to harass a provider.
+     */
+    'reports' => [
+        'hide_after' => (int) env('SCHOLARZIM_REPORTS_HIDE_AFTER', 3),
+        'per_hour' => (int) env('SCHOLARZIM_REPORTS_PER_HOUR', 10),
+    ],
+
 ];

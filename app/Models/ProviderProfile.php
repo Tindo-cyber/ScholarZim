@@ -23,11 +23,13 @@ class ProviderProfile extends Model
         'reviewed_at',
         'reviewed_by',
         'rejection_reason',
+        'trusted_override',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
+        'trusted_override' => 'boolean',
     ];
 
     public function user(): BelongsTo

@@ -95,7 +95,36 @@
                         </div>
                     </x-data-table.cell>
 
-                    <x-data-table.cell label="Role">{{ \App\Support\RoleNames::displayLabel($user->roleName()) }}</x-data-table.cell>
+                    <x-data-table.cell label="Role">
+                        {{ \App\Support\RoleNames::displayLabel($user->roleName()) }}
+
+                        {{--
+                            A provider's trust: whether their new listings go live
+                            without waiting for review. Shown with the reasons so an
+                            administrator can see what the record says before
+                            overriding it, and the override is a deliberate, audited
+                            act - not a toggle that flips on a click.
+                        --}}
+                        @if($user->isProvider() && $user->providerProfile)
+                            @php($trust = \App\Support\ProviderTrust::assess($user))
+                            <div class="mt-2">
+                                <x-status-badge :label="$trust['trusted'] ? 'Trusted' : 'Standard'"
+                                                :tone="$trust['trusted'] ? 'success' : 'secondary'" />
+                                <span class="d-block small text-secondary mt-1">{{ implode(' ', $trust['reasons']) }}</span>
+                                <form method="POST" action="{{ route('admin.providers.trust', $user->user_id) }}"
+                                      class="d-flex gap-1 mt-1">
+                                    @csrf
+                                    <select name="decision" class="form-select form-select-sm w-auto"
+                                            aria-label="Trust decision for {{ $user->email }}">
+                                        <option value="grant">Always trust</option>
+                                        <option value="revoke">Never trust</option>
+                                        <option value="clear">Use their record</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-secondary" type="submit">Set</button>
+                                </form>
+                            </div>
+                        @endif
+                    </x-data-table.cell>
 
                     <x-data-table.cell label="Status">
                         <x-status-badge :label="\App\Support\AccountStatus::displayLabel($user->account_status)"

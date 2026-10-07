@@ -49,6 +49,13 @@ final class AuditAction
     public const API_TOKEN_CREATED = 'API_TOKEN_CREATED';
     public const API_TOKEN_REVOKED = 'API_TOKEN_REVOKED';
     public const SAVED_SEARCH_CREATED = 'SAVED_SEARCH_CREATED';
+    public const SET_PROVIDER_TRUST = 'SET_PROVIDER_TRUST';
+    public const PUBLISH_WITHOUT_REVIEW = 'PUBLISH_WITHOUT_REVIEW';
+    public const CONFIRM_AUTO_PUBLISHED = 'CONFIRM_AUTO_PUBLISHED';
+    public const UNPUBLISH_OPPORTUNITY = 'UNPUBLISH_OPPORTUNITY';
+    public const REPORT_OPPORTUNITY = 'REPORT_OPPORTUNITY';
+    public const HIDE_REPORTED_OPPORTUNITY = 'HIDE_REPORTED_OPPORTUNITY';
+    public const RESOLVE_REPORTS = 'RESOLVE_REPORTS';
 
     private function __construct()
     {
@@ -70,13 +77,16 @@ final class AuditAction
             self::REJECT_OPPORTUNITY, self::EMAIL_DELIVERY_FAILED, self::DELETE_OPPORTUNITY,
             self::NOTIFICATION_DELIVERY_FAILED, self::DOCUMENT_QUARANTINED,
             self::TWO_FACTOR_DISABLED, self::TWO_FACTOR_CHALLENGE_FAILED,
-            self::ACCOUNT_SELF_DELETED, self::API_TOKEN_REVOKED => 'danger',
+            self::ACCOUNT_SELF_DELETED, self::API_TOKEN_REVOKED,
+            self::UNPUBLISH_OPPORTUNITY, self::HIDE_REPORTED_OPPORTUNITY => 'danger',
             self::APPROVE_PROVIDER, self::APPROVE_OPPORTUNITY, self::AWARD_APPLICATION,
             self::LOGIN_SUCCESS, self::EMAIL_VERIFIED, self::TWO_FACTOR_ENABLED => 'success',
             self::STATUS_UPDATE, self::UPDATE_USER, self::PROFILE_UPDATE,
             self::UPDATE_OPPORTUNITY, self::EXTEND_OPPORTUNITY_DEADLINE,
             self::BULK_STATUS_UPDATE, self::BULK_MODERATION,
-            self::UPDATE_SCHOLARFIT_WEIGHTS, self::WITHDRAW_APPLICATION => 'warning',
+            self::UPDATE_SCHOLARFIT_WEIGHTS, self::WITHDRAW_APPLICATION,
+            self::SET_PROVIDER_TRUST, self::PUBLISH_WITHOUT_REVIEW, self::REPORT_OPPORTUNITY,
+            self::RESOLVE_REPORTS => 'warning',
             default => 'secondary',
         };
     }

@@ -28,6 +28,9 @@ class Opportunity extends Model
         'provider_name',
         'on_behalf_of',
         'risk_flags',
+        'auto_approved',
+        'post_reviewed_at',
+        'post_reviewed_by',
         'education_level',
         'minimum_education_level',
         'funding_type',
@@ -71,6 +74,8 @@ class Opportunity extends Model
         'max_age' => 'integer',
         'requires_results_certificate' => 'boolean',
         'risk_flags' => 'array',
+        'auto_approved' => 'boolean',
+        'post_reviewed_at' => 'datetime',
         'view_count' => 'integer',
     ];
 
@@ -212,6 +217,11 @@ class Opportunity extends Model
         }
 
         return $place ? $place . ', ' . $country : $country;
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(OpportunityReport::class, 'opportunity_id', 'opportunity_id');
     }
 
     public function statusLabel(): string

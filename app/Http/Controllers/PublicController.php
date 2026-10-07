@@ -91,6 +91,7 @@ class PublicController extends Controller
             'opportunity' => $opportunity,
             'isSaved' => $this->savedScholarshipService->isSaved($user, $id),
             'hasApplied' => $user && $user->isApplicant() && $this->applicationService->hasApplied($user, $id),
+            'hasReported' => app(\App\Services\OpportunityReportService::class)->hasReported($user, $id),
             // The fit panel only renders for signed-in students with a profile.
             'fit' => $user && $user->isApplicant()
                 ? $this->recommendationService->evaluateOne($user, $opportunity)
