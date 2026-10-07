@@ -17,6 +17,8 @@ import './name-input';
 import './profile-form';
 import './academic-results';
 import './subject-requirements';
+import './edit-impact';
+import './reopen-modal';
 import './bulk-select';
 import './history-guard';
 import './pwa';

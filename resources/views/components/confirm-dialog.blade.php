@@ -48,8 +48,17 @@
     </button>
 @endif
 
+{{--
+    A dialog whose own submit failed validation is opened again on the next
+    page, with its errors showing: it is the dialog's id that names the error
+    bag its controller action validates into. Without this the provider pressed
+    Extend, saw the dashboard reload with nothing visibly different, and had no
+    idea the request had been refused. resources/js/reopen-modal.js does the
+    opening.
+--}}
 <div class="modal fade text-start" id="{{ $id }}" tabindex="-1"
-     aria-labelledby="{{ $id }}-title" aria-hidden="true">
+     aria-labelledby="{{ $id }}-title" aria-hidden="true"
+     @if($errors->hasBag($id)) data-sz-open-on-load @endif>
     <div class="modal-dialog modal-dialog-centered">
         <form method="POST" action="{{ $action }}" class="modal-content">
             @csrf

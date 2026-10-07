@@ -258,10 +258,10 @@ class OpportunityLifecycleTest extends TestCase
         app(OpportunityService::class)->update(
             $opportunity->opportunity_id,
             // Every material field resubmitted unchanged, so the only difference
-            // is the display name.
-            $this->editPayloadFor($opportunity, ['provider_display_name' => 'The Same Trust, Rebranded']),
+            // is the application link.
+            $this->editPayloadFor($opportunity, ['external_url' => 'https://example.org/apply']),
             $this->provider,
-            'Updated our display name.'
+            'Updated the application link.'
         );
 
         $opportunity->refresh();

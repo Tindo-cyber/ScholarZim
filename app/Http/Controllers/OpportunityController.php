@@ -3,18 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicQualification;
+use App\Http\Requests\StoreOpportunityRequest;
+use App\Http\Requests\UpdateOpportunityRequest;
 use App\Models\AcademicSubject;
+use App\Models\Opportunity;
+use App\Support\EditImpact;
 use App\Services\ApplicationService;
 use App\Services\OpportunityService;
 use App\Services\SavedScholarshipService;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\FormOptions;
-use App\Support\OpportunityFormMessages;
-use App\Support\ZimbabweLocalities;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\UnauthorizedException;
-use Illuminate\Validation\ValidationException;
 
 class OpportunityController extends Controller
 {
@@ -49,8 +49,8 @@ class OpportunityController extends Controller
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'settlementTypes' => \App\Services\ScholarFit\Taxonomy\SettlementType::ALL,
             'fundingTypes' => FormOptions::FUNDING_TYPES,
+            'countries' => FormOptions::COUNTRIES,
             'targetFieldSuggestions' => $this->opportunityService->targetFields(),
-            'awardingBodySuggestions' => $this->opportunityService->providerNames(),
             'currencies' => FormOptions::CURRENCIES,
             'defaultCurrency' => FormOptions::DEFAULT_CURRENCY,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
@@ -59,47 +59,12 @@ class OpportunityController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(StoreOpportunityRequest $request)
     {
-        $this->renumberSubjectRows($request);
-
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:10000'],
-            'provider_display_name' => ['nullable', 'string', 'max:255'],
-            'education_level' => ['nullable', Rule::in(\App\Support\EducationLevel::TARGET_LEVELS)],
-            // The floor a specific listing actually requires, separate from
-            // the level it targets - see EligibilityEvaluator::minimumLevel().
-            // FORM_1 is deliberately not a valid value here: nothing "requires
-            // at least Form 1", since Form 1 only ever appears as a target.
-            'minimum_education_level' => ['nullable', Rule::in(\App\Support\EducationLevel::APPLICANT_LEVELS)],
-            'target_field' => ['nullable', 'string', 'max:255'],
-            'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
-            'deadline' => ['nullable', 'date', 'after_or_equal:today'],
-            'award_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-            'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
-            'award_slots' => ['nullable', 'integer', 'min:1', 'max:5000'],
-            'is_renewable' => ['nullable', 'boolean'],
-            'external_url' => ['nullable', 'url', 'max:500'],
-            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:'.AcademicCatalogue::maxZimsecALevelPoints()],
-            'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
-            'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
-            // A specific place (e.g. "Gweru"), free text for the same reason
-            // the applicant's own locality field is - no fixed list of every
-            // Zimbabwean town would be worth maintaining.
-            'target_locality' => ['nullable', 'string', 'max:100'],
-            'target_settlement_type' => ['nullable', Rule::in(\App\Services\ScholarFit\Taxonomy\SettlementType::ALL)],
-            'requires_results_certificate' => ['nullable', 'boolean'],
-            'subject_requirements' => ['nullable', 'array'],
-            'subject_requirements.*.qualification_id' => ['required', 'integer', 'exists:academic_qualifications,id'],
-            'subject_requirements.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
-            'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
-        ], OpportunityFormMessages::subjectRequirements());
-
-        $this->assertTargetLocalityMatchesProvince($data);
+        $this->authorize('create', Opportunity::class);
 
         try {
-            $opportunity = $this->opportunityService->create($data, $request->user());
+            $this->opportunityService->create($request->validated(), $request->user());
         } catch (UnauthorizedException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
@@ -111,11 +76,7 @@ class OpportunityController extends Controller
 
     public function edit(Request $request, int $id)
     {
-        try {
-            $opportunity = $this->opportunityService->findOwnedOrFail($id, $request->user());
-        } catch (\RuntimeException $e) {
-            abort(404);
-        }
+        $opportunity = $this->ownedListing($request, $id, 'update') ?? abort(404);
 
         if ($opportunity->isWithdrawn()) {
             return redirect()
@@ -130,8 +91,8 @@ class OpportunityController extends Controller
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'settlementTypes' => \App\Services\ScholarFit\Taxonomy\SettlementType::ALL,
             'fundingTypes' => FormOptions::FUNDING_TYPES,
+            'countries' => FormOptions::COUNTRIES,
             'targetFieldSuggestions' => $this->opportunityService->targetFields(),
-            'awardingBodySuggestions' => $this->opportunityService->providerNames(),
             'currencies' => FormOptions::CURRENCIES,
             'defaultCurrency' => FormOptions::DEFAULT_CURRENCY,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
@@ -140,45 +101,10 @@ class OpportunityController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $id)
+    public function update(UpdateOpportunityRequest $request, int $id)
     {
-        $this->renumberSubjectRows($request);
-
-        $data = $request->validate([
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:10000'],
-            'provider_display_name' => ['nullable', 'string', 'max:255'],
-            'education_level' => ['nullable', Rule::in(\App\Support\EducationLevel::TARGET_LEVELS)],
-            // The floor a specific listing actually requires, separate from
-            // the level it targets - see EligibilityEvaluator::minimumLevel().
-            // FORM_1 is deliberately not a valid value here: nothing "requires
-            // at least Form 1", since Form 1 only ever appears as a target.
-            'minimum_education_level' => ['nullable', Rule::in(\App\Support\EducationLevel::APPLICANT_LEVELS)],
-            'target_field' => ['nullable', 'string', 'max:255'],
-            'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
-            'deadline' => ['nullable', 'date', 'after_or_equal:today'],
-            'award_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
-            'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
-            'award_slots' => ['nullable', 'integer', 'min:1', 'max:5000'],
-            'is_renewable' => ['nullable', 'boolean'],
-            'external_url' => ['nullable', 'url', 'max:500'],
-            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:'.AcademicCatalogue::maxZimsecALevelPoints()],
-            'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
-            'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
-            // A specific place (e.g. "Gweru"), free text for the same reason
-            // the applicant's own locality field is - no fixed list of every
-            // Zimbabwean town would be worth maintaining.
-            'target_locality' => ['nullable', 'string', 'max:100'],
-            'target_settlement_type' => ['nullable', Rule::in(\App\Services\ScholarFit\Taxonomy\SettlementType::ALL)],
-            'requires_results_certificate' => ['nullable', 'boolean'],
-            'subject_requirements' => ['nullable', 'array'],
-            'subject_requirements.*.qualification_id' => ['required', 'integer', 'exists:academic_qualifications,id'],
-            'subject_requirements.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
-            'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
-            'reason' => ['required', 'string', 'max:500'],
-        ], OpportunityFormMessages::subjectRequirements());
-
-        $this->assertTargetLocalityMatchesProvince($data);
+        $this->ownedListing($request, $id, 'update');
+        $data = $request->validated();
 
         try {
             $opportunity = $this->opportunityService->update($id, $data, $request->user(), $data['reason']);
@@ -191,11 +117,63 @@ class OpportunityController extends Controller
             ->with('successMessage', '"' . $opportunity->title . '" was updated and re-submitted for review.');
     }
 
+    /**
+     * What saving the form as it stands would do to this listing's place in
+     * review - the answer behind the notice on the edit page. Writes nothing.
+     *
+     * The input is deliberately not validated: this describes a form still being
+     * filled in, and an incomplete one is the normal case. The server's rule for
+     * "is this a material change" is what runs, whatever the values; a value too
+     * malformed for it simply gets no answer and the page keeps what it shows.
+     */
+    public function editImpact(Request $request, int $id)
+    {
+        $listing = $this->ownedListing($request, $id, 'update') ?? abort(404);
+
+        $data = $request->except(['_token', '_method']);
+
+        if (isset($data['subject_requirements']) && is_array($data['subject_requirements'])) {
+            $data['subject_requirements'] = array_values($data['subject_requirements']);
+        } else {
+            unset($data['subject_requirements']);
+        }
+
+        try {
+            $outcome = $this->opportunityService->editImpact($listing->opportunity_id, $data, $request->user());
+        } catch (\Throwable) {
+            return response()->json(['message' => 'Could not work this out yet.'], 422);
+        }
+
+        return response()->json(EditImpact::describe($outcome));
+    }
+
+    /**
+     * Move a live listing's deadline later.
+     *
+     * Validated into a bag named for the dashboard dialog it came from. Every
+     * listing has its own Extend dialog on one page; errors in the default bag
+     * were shown in all of them, so a refusal for one listing appeared to be
+     * about every listing. The same name is what lets the page reopen the dialog
+     * that failed.
+     */
     public function extendDeadline(Request $request, int $id)
     {
-        $data = $request->validate([
-            'deadline' => ['required', 'date', 'after:today'],
+        $listing = $this->ownedListing($request, $id, 'extendDeadline');
+
+        $rules = ['required', 'date', 'after:today'];
+
+        // Not earlier than the date it already has: that would shorten it, which
+        // is an edit (and a material one), not an extension.
+        if ($listing?->deadline) {
+            $rules[] = 'after_or_equal:' . $listing->deadline->toDateString();
+        }
+
+        $data = $request->validateWithBag('extend-deadline-' . $id, [
+            'deadline' => $rules,
             'reason' => ['required', 'string', 'max:500'],
+        ], [
+            'deadline.after_or_equal' => 'The new deadline cannot be earlier than the current one'
+                . ($listing?->deadline ? ' (' . $listing->deadline->format('d M Y') . ').' : '.'),
         ]);
 
         try {
@@ -209,7 +187,9 @@ class OpportunityController extends Controller
 
     public function destroy(Request $request, int $id)
     {
-        $data = $request->validate([
+        $this->ownedListing($request, $id, 'withdraw');
+
+        $data = $request->validateWithBag('withdraw-' . $id, [
             'reason' => ['required', 'string', 'max:500'],
         ]);
 
@@ -225,43 +205,33 @@ class OpportunityController extends Controller
     }
 
     /**
-     * Number the submitted subject rows 0..n-1, in the order they were sent.
+     * The provider's own listing, checked against OpportunityPolicy as well as
+     * by ownership.
      *
-     * A provider who removes a row in the browser leaves a gap in the keys it
-     * posts (0, 2, 3). Validation messages say "Row N" from the key, so with the
-     * gap they would name a row that is not the one on screen, and the form
-     * re-rendered after a failed save would carry the gap forward. Renumbering
-     * first makes the key, the message and the row the provider sees all agree.
+     * findOwnedOrFail() is what actually scopes the query to the provider, and
+     * stays the first line of defence: another provider's listing is never handed
+     * to the policy at all. The policy is the second, stating the rule
+     * in one place a future route cannot forget. A withdrawn listing skips the
+     * policy check on purpose - the service refuses it with a message that says
+     * so, which is more use to the provider than a bare 403.
+     *
+     * Returns null for a listing that is not theirs, and leaves the response to
+     * the caller: the edit page answers 404, while the write actions pass on to
+     * the service, which refuses with a flash message as it always has.
      */
-    private function renumberSubjectRows(Request $request): void
+    private function ownedListing(Request $request, int $id, string $ability): ?Opportunity
     {
-        $rows = $request->input('subject_requirements');
-
-        if (is_array($rows)) {
-            $request->merge(['subject_requirements' => array_values($rows)]);
+        try {
+            $opportunity = $this->opportunityService->findOwnedOrFail($id, $request->user());
+        } catch (\RuntimeException) {
+            return null;
         }
-    }
 
-    /**
-     * A listing cannot target a town that is not in the province it restricts
-     * to. Gwanda is in Matabeleland South, so a Midlands-only award targeting
-     * Gwanda would exclude everyone it meant to reach.
-     *
-     * Only towns ZimbabweLocalities recognises are checked; an unfamiliar name
-     * is accepted, which is why the field is free text in the first place.
-     *
-     * @throws ValidationException
-     */
-    private function assertTargetLocalityMatchesProvince(array $data): void
-    {
-        $reason = ZimbabweLocalities::mismatchReason(
-            $data['target_locality'] ?? null,
-            $data['required_province'] ?? null
-        );
-
-        if ($reason !== null) {
-            throw ValidationException::withMessages(['target_locality' => $reason]);
+        if (! $opportunity->isWithdrawn()) {
+            $this->authorize($ability, $opportunity);
         }
+
+        return $opportunity;
     }
 
     /** The qualification catalogue as the subject picker renders it. */

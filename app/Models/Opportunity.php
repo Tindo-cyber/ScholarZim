@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\FormOptions;
 use App\Support\OpportunityLifecycle;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
@@ -25,6 +26,8 @@ class Opportunity extends Model
         'title',
         'description',
         'provider_name',
+        'on_behalf_of',
+        'risk_flags',
         'education_level',
         'minimum_education_level',
         'funding_type',
@@ -67,6 +70,7 @@ class Opportunity extends Model
         'min_academic_points' => 'integer',
         'max_age' => 'integer',
         'requires_results_certificate' => 'boolean',
+        'risk_flags' => 'array',
         'view_count' => 'integer',
     ];
 
@@ -130,6 +134,10 @@ class Opportunity extends Model
             $query->where('required_province', $province);
         }
 
+        if ($country = $value($filters['country'] ?? null)) {
+            $query->where('country', $country);
+        }
+
         if ($field = $value($filters['field_of_study'] ?? null)) {
             $query->where('target_field', $field);
         }
@@ -167,6 +175,27 @@ class Opportunity extends Model
         }
 
         return $query;
+    }
+
+    /**
+     * Where the award is held, as a short phrase for cards and the detail page.
+     *
+     * A Zimbabwean listing keeps the place it always showed - the town, else the
+     * province - and shows nothing when it names neither. A listing held abroad
+     * must say so, because "Zimbabwean student, award in Germany" is the first
+     * thing an applicant needs to know, and a card that read only "Harare" for a
+     * German listing would mislead.
+     */
+    public function locationLabel(): ?string
+    {
+        $place = $this->target_locality ?: $this->required_province;
+        $country = trim((string) $this->country);
+
+        if ($country === '' || strcasecmp($country, FormOptions::DEFAULT_COUNTRY) === 0) {
+            return $place ?: null;
+        }
+
+        return $place ? $place . ', ' . $country : $country;
     }
 
     public function statusLabel(): string
@@ -269,9 +298,22 @@ class Opportunity extends Model
         return $days !== null && $days < 0;
     }
 
+    /** The verified organisation that published the listing. */
     public function awardingBody(): string
     {
         return $this->provider_name ?: ($this->provider?->full_name ?? 'Unnamed provider');
+    }
+
+    /**
+     * The awarding body as an applicant should read it: the publisher, and - when
+     * they posted for someone else - who they posted for, so that nobody mistakes
+     * an agent's listing for the awarder's own.
+     */
+    public function awardingBodyLine(): string
+    {
+        return $this->on_behalf_of
+            ? 'Posted by ' . $this->awardingBody() . ' on behalf of ' . $this->on_behalf_of
+            : $this->awardingBody();
     }
 
     /**

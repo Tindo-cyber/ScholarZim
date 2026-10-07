@@ -216,13 +216,16 @@
                                                                 Edit
                                                             </a>
                                                         </li>
-                                                        <li>
-                                                            <button class="dropdown-item" type="button"
-                                                                    data-bs-toggle="modal"
-                                                                    data-bs-target="#extend-deadline-{{ $opportunity->opportunity_id }}">
-                                                                Extend deadline
-                                                            </button>
-                                                        </li>
+                                                        {{-- A rolling listing has no deadline to extend. --}}
+                                                        @if($opportunity->deadline)
+                                                            <li>
+                                                                <button class="dropdown-item" type="button"
+                                                                        data-bs-toggle="modal"
+                                                                        data-bs-target="#extend-deadline-{{ $opportunity->opportunity_id }}">
+                                                                    Extend deadline
+                                                                </button>
+                                                            </li>
+                                                        @endif
                                                         <li><hr class="dropdown-divider"></li>
                                                         <li>
                                                             <button class="dropdown-item text-danger" type="button"
@@ -237,20 +240,32 @@
                                                 {{-- Both dialogs are opened from the dropdown above rather
                                                      than by their own trigger, so they are rendered here on
                                                      their own and the menu items keep their data-bs-target. --}}
-                                                <x-confirm-dialog :id="'extend-deadline-' . $opportunity->opportunity_id"
-                                                                  :action="route('opportunities.extendDeadline', $opportunity->opportunity_id)"
-                                                                  :title="'Extend deadline for: ' . $opportunity->title"
-                                                                  confirm-label="Extend deadline"
-                                                                  tone="primary">
-                                                    <x-form.input name="deadline" type="date" required
-                                                                  :id="'deadline-' . $opportunity->opportunity_id"
-                                                                  label="New deadline"
-                                                                  :min="$opportunity->deadline?->format('Y-m-d')" />
+                                                @if($opportunity->deadline)
+                                                    @php
+                                                        // The earliest date an extension can take: tomorrow, or the
+                                                        // current deadline if that is still ahead. A deadline that has
+                                                        // already passed is no floor - the listing is closed, and any
+                                                        // future date reopens it.
+                                                        $extendFrom = collect([now()->addDay()->startOfDay(), $opportunity->deadline])->max();
+                                                    @endphp
+                                                    <x-confirm-dialog :id="'extend-deadline-' . $opportunity->opportunity_id"
+                                                                      :action="route('opportunities.extendDeadline', $opportunity->opportunity_id)"
+                                                                      :title="'Extend deadline for: ' . $opportunity->title"
+                                                                      confirm-label="Extend deadline"
+                                                                      tone="primary">
+                                                        <x-form.input name="deadline" type="date" required
+                                                                      :id="'deadline-' . $opportunity->opportunity_id"
+                                                                      :bag="'extend-deadline-' . $opportunity->opportunity_id"
+                                                                      label="New deadline"
+                                                                      hint="Currently {{ $opportunity->deadline->format('d M Y') }}."
+                                                                      :min="$extendFrom->format('Y-m-d')" />
 
-                                                    <x-form.textarea name="reason" :rows="3" required
-                                                                     :id="'extend-reason-' . $opportunity->opportunity_id"
-                                                                     label="Reason (for transparency, shown in the audit trail)" />
-                                                </x-confirm-dialog>
+                                                        <x-form.textarea name="reason" :rows="3" required
+                                                                         :id="'extend-reason-' . $opportunity->opportunity_id"
+                                                                         :bag="'extend-deadline-' . $opportunity->opportunity_id"
+                                                                         label="Reason (for transparency, shown in the audit trail)" />
+                                                    </x-confirm-dialog>
+                                                @endif
 
                                                 <x-confirm-dialog :id="'withdraw-' . $opportunity->opportunity_id"
                                                                   :action="route('opportunities.destroy', $opportunity->opportunity_id)"
@@ -260,6 +275,7 @@
                                                                   message="This removes the listing from the public site. It cannot be undone, and applicants who already applied will be notified.">
                                                     <x-form.textarea name="reason" :rows="3" required
                                                                      :id="'withdraw-reason-' . $opportunity->opportunity_id"
+                                                                     :bag="'withdraw-' . $opportunity->opportunity_id"
                                                                      label="Reason (for transparency, shown to applicants and in the audit trail)" />
                                                 </x-confirm-dialog>
                                             @endunless

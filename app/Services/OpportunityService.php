@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Support\AuditAction;
 use App\Support\FormOptions;
 use App\Support\NotificationType;
+use App\Support\EditImpact;
 use App\Support\OpportunityLifecycle;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
@@ -28,7 +29,31 @@ class OpportunityService
     public function __construct(
         private readonly NotificationService $notificationService,
         private readonly AuditService $auditService,
+        private readonly ListingRiskChecker $riskChecker,
     ) {
+    }
+
+    /**
+     * Who the listing is published as.
+     *
+     * provider_name is always the provider's own verified organisation name. It
+     * used to be whatever was typed in the "awarding body" box, with other
+     * providers' names offered as suggestions, so anyone could publish under
+     * another organisation's name. A different name is still allowed - agents
+     * and trusts do post for others - but it is kept apart in on_behalf_of and
+     * shown as such, never as the publisher.
+     *
+     * @return array{provider_name: string, on_behalf_of: ?string}
+     */
+    private function identityAttributes(array $data, User $provider): array
+    {
+        $typed = trim((string) ($data['provider_display_name'] ?? ''));
+        $own = trim((string) $provider->full_name);
+
+        return [
+            'provider_name' => $own,
+            'on_behalf_of' => ($typed !== '' && strcasecmp($typed, $own) !== 0) ? $typed : null,
+        ];
     }
 
     /**
@@ -92,9 +117,10 @@ class OpportunityService
         }
 
         $country = $this->normalizeCountry($data['country'] ?? null);
-        $displayName = trim((string) ($data['provider_display_name'] ?? ''));
+        $identity = $this->identityAttributes($data, $provider);
+        $award = $this->awardAttributes($data);
 
-        $opportunity = DB::transaction(function () use ($data, $provider, $country, $displayName) {
+        $opportunity = DB::transaction(function () use ($data, $provider, $country, $identity, $award) {
             $opportunity = Opportunity::create([
                 'provider_user_id' => $provider->user_id,
                 'title' => $data['title'],
@@ -108,9 +134,8 @@ class OpportunityService
                 'status' => OpportunityStatus::ACTIVE,
                 'moderation_status' => OpportunityModerationStatus::PENDING,
                 'submitted_at' => Carbon::now(),
-                'provider_name' => $displayName !== '' ? $displayName : $provider->full_name,
                 'created_at' => Carbon::now(),
-            ] + $this->awardAttributes($data));
+            ] + $identity + $award + ['risk_flags' => $this->riskChecker->check($identity + $award) ?: null]);
 
             $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
 
@@ -170,30 +195,13 @@ class OpportunityService
             throw InvalidOpportunityTransition::withdrawn();
         }
 
-        $country = $this->normalizeCountry($data['country'] ?? null);
-        $displayName = trim((string) ($data['provider_display_name'] ?? ''));
-
-        $attributes = [
-            'title' => $data['title'],
-            'description' => $data['description'] ?? null,
-            'education_level' => $data['education_level'] ?? null,
-            'funding_type' => $data['funding_type'] ?? null,
-            'country' => $country,
-            'target_country' => $country,
-            'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
-        ] + $this->awardAttributes($data);
+        [$attributes, $material] = $this->proposedChange($opportunity, $data, $provider);
 
         $wasPending = OpportunityModerationStatus::isPending($opportunity->moderation_status);
         $wasRejected = OpportunityModerationStatus::isRejected($opportunity->moderation_status);
-        $material = OpportunityLifecycle::isMaterialChange($opportunity, $attributes)
-            // Bringing a deadline forward cuts applicants off early, so it is
-            // material even though pushing one back is not.
-            || OpportunityLifecycle::shortensDeadline($opportunity, $data['deadline'] ?? null)
-            || $this->subjectRequirementsChanged($opportunity, $data['subject_requirements'] ?? []);
 
         $attributes += [
             'deadline' => $data['deadline'] ?? null,
-            'provider_name' => $displayName !== '' ? $displayName : $provider->full_name,
             'last_change_reason' => $reason,
             'updated_at' => Carbon::now(),
         ];
@@ -286,6 +294,61 @@ class OpportunityService
     }
 
     /**
+     * The attributes an edit would save, and whether it is a material change.
+     *
+     * Shared by update(), which applies it, and editImpact(), which only reports
+     * it, so the warning shown on the edit page can never disagree with what
+     * saving then does.
+     *
+     * @return array{0: array<string, mixed>, 1: bool} [attributes, material]
+     */
+    private function proposedChange(Opportunity $opportunity, array $data, User $provider): array
+    {
+        $country = $this->normalizeCountry($data['country'] ?? null);
+        $attributes = [
+            'title' => $data['title'] ?? $opportunity->title,
+            'description' => $data['description'] ?? null,
+            'education_level' => $data['education_level'] ?? null,
+            'funding_type' => $data['funding_type'] ?? null,
+            'country' => $country,
+            'target_country' => $country,
+            'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
+        ] + $this->identityAttributes($data, $provider) + $this->awardAttributes($data);
+
+        $attributes['risk_flags'] = $this->riskChecker->check($attributes) ?: null;
+
+        $material = OpportunityLifecycle::isMaterialChange($opportunity, $attributes)
+            // Bringing a deadline forward cuts applicants off early, so it is
+            // material even though pushing one back is not.
+            || OpportunityLifecycle::shortensDeadline($opportunity, $data['deadline'] ?? null)
+            || $this->subjectRequirementsChanged($opportunity, $data['subject_requirements'] ?? []);
+
+        return [$attributes, $material];
+    }
+
+    /**
+     * What saving these values would do to the listing's place in review, as an
+     * EditImpact outcome. Writes nothing.
+     */
+    public function editImpact(int $opportunityId, array $data, User $provider): string
+    {
+        $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
+
+        if ($opportunity->isWithdrawn()) {
+            throw InvalidOpportunityTransition::withdrawn();
+        }
+
+        [, $material] = $this->proposedChange($opportunity, $data, $provider);
+
+        return match (true) {
+            OpportunityModerationStatus::isRejected($opportunity->moderation_status) => EditImpact::RESUBMIT,
+            OpportunityModerationStatus::isPending($opportunity->moderation_status) => EditImpact::AWAITING_REVIEW,
+            $material => EditImpact::BACK_TO_REVIEW,
+            default => EditImpact::STAYS_LIVE,
+        };
+    }
+
+    /**
      * A narrower action than update(): only the deadline moves, so the listing
      * stays live and does not need to go back through moderation.
      */
@@ -297,7 +360,14 @@ class OpportunityService
             throw InvalidOpportunityTransition::withdrawn();
         }
 
-        if ($opportunity->deadline && Carbon::parse($newDeadline)->lt($opportunity->deadline)) {
+        // A rolling listing has no deadline to move. "Extending" it would add one,
+        // which narrows the listing rather than extending it, so it is refused
+        // here as well as hidden in the dashboard.
+        if ($opportunity->deadline === null) {
+            throw new \RuntimeException('This listing has a rolling intake, so there is no deadline to extend. Edit the listing if you want to set one.');
+        }
+
+        if (Carbon::parse($newDeadline)->lt($opportunity->deadline)) {
             throw new \RuntimeException('The new deadline must be on or after the current deadline.');
         }
 
@@ -316,15 +386,27 @@ class OpportunityService
             $attributes['status'] = OpportunityStatus::ACTIVE;
         }
 
-        $opportunity->update($attributes);
+        $previousDeadline = $opportunity->deadline;
 
-        $this->auditService->log(
-            $provider->email,
-            AuditAction::EXTEND_OPPORTUNITY_DEADLINE,
-            'OPPORTUNITY',
-            $opportunity->opportunity_id,
-            'Extended deadline for "' . $opportunity->title . '" to ' . $opportunity->deadline->format('d M Y') . ': ' . $reason
-        );
+        // The new date and its audit entry land together or not at all, as in
+        // create() and update(): a deadline moved with no record of who moved it,
+        // or a record of a move that never happened, are both worse than failing.
+        DB::transaction(function () use ($opportunity, $attributes, $provider, $reason, $previousDeadline) {
+            $opportunity->update($attributes);
+
+            $this->auditService->logOrFail(
+                $provider->email,
+                AuditAction::EXTEND_OPPORTUNITY_DEADLINE,
+                'OPPORTUNITY',
+                $opportunity->opportunity_id,
+                'Extended deadline for "' . $opportunity->title . '" to ' . $opportunity->deadline->format('d M Y') . ': ' . $reason,
+                [
+                    'old' => ['deadline' => $previousDeadline?->toDateString()],
+                    'new' => ['deadline' => $opportunity->deadline->toDateString()],
+                    'reason' => $reason,
+                ]
+            );
+        });
 
         $this->forgetFacetCaches();
 

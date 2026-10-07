@@ -90,6 +90,9 @@ final class OpportunityLifecycle
         'award_currency',
         'award_slots',
         'is_renewable',
+        // Who the listing is awarded in the name of: an applicant relies on it as
+        // much as on the title, so changing it is a new claim to review.
+        'on_behalf_of',
     ];
 
     private function __construct()

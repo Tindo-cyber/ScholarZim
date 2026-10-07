@@ -304,6 +304,18 @@ final class EducationLevel
         return $age >= $min && ($max === null || $age <= $max);
     }
 
+    /**
+     * The youngest age anyone plausibly holds this level at, or null when the
+     * level is not recognised. A listing's maximum age below this excludes
+     * everybody it targets.
+     */
+    public static function minimumAge(?string $level): ?int
+    {
+        $tier = self::tier($level);
+
+        return $tier === null ? null : self::AGE_RANGES[$tier][0];
+    }
+
     /** The sentence explaining an inconsistent age/level combination, or null when it is consistent. */
     public static function ageConsistencyReason(?string $level, ?int $age): ?string
     {

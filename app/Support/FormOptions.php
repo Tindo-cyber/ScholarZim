@@ -33,9 +33,29 @@ final class FormOptions
         'General Secondary',
     ];
 
-    /** ScholarZim only lists Zimbabwean scholarships, so this is deliberately single-valued. */
+    /**
+     * Where a scholarship is held. Zimbabwe first because it is the default and
+     * most listings; the rest are the usual destinations for Zimbabwean students
+     * abroad. A listing outside Zimbabwe still reaches applicants through
+     * ScholarFit's own rules - country is not an eligibility rule - and public
+     * search can filter on it.
+     */
     public const COUNTRIES = [
         'Zimbabwe',
+        'South Africa',
+        'Botswana',
+        'Zambia',
+        'Namibia',
+        'Mozambique',
+        'Kenya',
+        'Ghana',
+        'United Kingdom',
+        'United States',
+        'Canada',
+        'Australia',
+        'Germany',
+        'China',
+        'India',
     ];
 
     public const ZIMBABWE_PROVINCES = [

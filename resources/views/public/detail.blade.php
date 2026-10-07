@@ -79,13 +79,13 @@
                         </div>
 
                         <h1 class="h3 fw-bold mb-2">{{ $opportunity->title }}</h1>
-                        <p class="text-secondary mb-4">Awarded by {{ $opportunity->awardingBody() }}</p>
+                        <p class="text-secondary mb-4">Awarded by {{ $opportunity->awardingBodyLine() }}</p>
 
                         <div class="row g-3 mb-4">
                             @foreach([
                                 ['Education level', \App\Support\EducationLevel::label($opportunity->education_level), 'file-text'],
                                 ['Field of study', $opportunity->target_field, 'stars'],
-                                ['Location', $opportunity->target_locality ?: $opportunity->required_province, 'pin'],
+                                ['Location', $opportunity->locationLabel(), 'pin'],
                                 ['Deadline', $opportunity->deadline?->format('d M Y') ?? 'No deadline', 'calendar'],
                             ] as [$label, $value, $icon])
                                 <div class="col-6 col-md-3">

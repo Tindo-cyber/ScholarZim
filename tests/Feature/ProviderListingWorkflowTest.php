@@ -84,7 +84,7 @@ class ProviderListingWorkflowTest extends TestCase
         $this->as($this->provider)
             ->put('/opportunities/' . $opportunity->opportunity_id, $this->editPayloadFor($opportunity, [
                 // Presentational only: nothing the lifecycle calls material changes.
-                'provider_display_name' => 'The Same Trust, Rebranded',
+                'external_url' => 'https://example.org/apply',
                 'reason' => 'Addressed the moderator comment.',
             ]))
             ->assertSessionHasNoErrors();
@@ -137,8 +137,8 @@ class ProviderListingWorkflowTest extends TestCase
 
         $this->as($this->provider)
             ->put('/opportunities/' . $opportunity->opportunity_id, $this->editPayloadFor($opportunity, [
-                'provider_display_name' => 'The Same Trust, Rebranded',
-                'reason' => 'Display name only.',
+                'external_url' => 'https://example.org/apply',
+                'reason' => 'Application link only.',
             ]))
             ->assertSessionHasNoErrors();
 

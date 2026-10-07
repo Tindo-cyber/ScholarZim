@@ -4,8 +4,12 @@
 
 @section('content')
 
+    @php
+        $impact = \App\Support\EditImpact::untouched($opportunity->moderation_status);
+    @endphp
+
     <x-page-header title="Edit scholarship"
-                   subtitle="Changing the details sends this listing back for administrator review before it is public again."
+                   subtitle="Some changes take a live listing offline for review and some do not. The notice above the Save button tells you which, before you save."
                    eyebrow="Provider" />
 
     <div class="row g-4">
@@ -23,15 +27,9 @@
                                       :value="$opportunity->title"
                                       hint="For example: Zimplats Engineering Undergraduate Bursary 2026." />
 
-                        <x-form.input name="provider_display_name" label="Awarding body"
-                                      :value="$opportunity->provider_name"
-                                      list="awarding-body-list"
-                                      hint="Shown publicly. Defaults to your organisation name." />
-                        <datalist id="awarding-body-list">
-                            @foreach($awardingBodySuggestions as $suggestion)
-                                <option value="{{ $suggestion }}"></option>
-                            @endforeach
-                        </datalist>
+                        <x-form.input name="provider_display_name" label="Awarding on behalf of another organisation (optional)"
+                                      :value="$opportunity->on_behalf_of"
+                                      hint="Leave blank to publish as your own organisation. Fill it in only if you are awarding for another organisation: it is then shown publicly as &quot;Posted by [your organisation] on behalf of [this name]&quot; and an administrator checks it before it goes live." />
 
                         <x-form.textarea name="description" label="Full description" :rows="8" required
                                          :value="$opportunity->description"
@@ -60,6 +58,12 @@
                                                hint="Only set this if your listing is stricter than the general pathway - for example, an Undergraduate award that requires A-Level rather than accepting O-Level applicants directly." />
                             </div>
                             <div class="col-md-6">
+                                <x-form.select name="country" label="Country where it is held"
+                                               :options="$countries" :value="$opportunity->country ?: \App\Support\FormOptions::DEFAULT_COUNTRY"
+                                               :placeholder="null"
+                                               hint="Where the student will study. Defaults to Zimbabwe." />
+                            </div>
+                            <div class="col-md-6">
                                 <x-form.input name="target_field" label="Field of study"
                                               :value="$opportunity->target_field"
                                               list="field-list"
@@ -78,7 +82,7 @@
                             <div class="col-md-3">
                                 <x-form.input name="deadline" label="Application deadline" type="date"
                                               :value="$opportunity->deadline?->format('Y-m-d')"
-                                              min="{{ now()->toDateString() }}"
+                                              min="{{ ($opportunity->deadline && $opportunity->deadline->isPast() ? $opportunity->deadline : now())->toDateString() }}"
                                               hint="Leave blank for a rolling intake." />
                             </div>
                         </div>
@@ -97,8 +101,16 @@
                     </div>
                 </div>
 
+                <div id="edit-impact"
+                     data-url="{{ route('opportunities.editImpact', $opportunity->opportunity_id) }}"
+                     class="alert alert-{{ $impact['tone'] }} mb-4"
+                     role="status" aria-live="polite">
+                    <div class="fw-semibold" data-impact-headline>{{ $impact['headline'] }}</div>
+                    <div class="small" data-impact-detail>{{ $impact['detail'] }}</div>
+                </div>
+
                 <div class="d-flex flex-wrap gap-2">
-                    <x-submit-button label="Save and resubmit for review" size="lg" busy-label="Saving..." />
+                    <x-submit-button :label="$impact['button']" size="lg" busy-label="Saving..." />
                     <a class="btn btn-outline-secondary btn-lg" href="{{ route('provider.dashboard') }}">Cancel</a>
                 </div>
             </form>
@@ -111,10 +123,12 @@
                 </div>
                 <div class="card-body">
                     <p class="small text-secondary mb-0">
-                        Because the content changed, this listing is unpublished until an administrator reviews it
-                        again. It stays visible in your dashboard the whole time. If you only need to push the
-                        deadline back, use "Extend deadline" from the dashboard instead - it does not require
-                        re-review.
+                        Changes to what applicants rely on - the title, description, level, field, funding,
+                        country, location, award, eligibility rules or subject requirements - take a live listing
+                        offline until an administrator approves it again. Smaller edits, such as the application
+                        link, do not. It stays visible in your dashboard either way. If you
+                        only need to push the deadline back, use "Extend deadline" from the dashboard instead - it
+                        does not require re-review.
                     </p>
                 </div>
             </div>

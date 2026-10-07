@@ -41,6 +41,22 @@
             <dt class="col-sm-3 text-secondary fw-normal">Submitted by</dt>
             <dd class="col-sm-9 fw-semibold mb-0">{{ $opportunity->awardingBody() }}</dd>
 
+            @if($opportunity->on_behalf_of)
+                <dt class="col-sm-3 text-secondary fw-normal">On behalf of</dt>
+                <dd class="col-sm-9 mb-0">{{ $opportunity->on_behalf_of }}</dd>
+            @endif
+
+            @if(! empty($opportunity->risk_flags))
+                <dt class="col-sm-3 text-secondary fw-normal">Flagged for review</dt>
+                <dd class="col-sm-9 mb-0">
+                    <ul class="mb-0 ps-3" id="risk-flags">
+                        @foreach($opportunity->risk_flags as $flag)
+                            <li class="text-warning-emphasis">{{ $flag['message'] }}</li>
+                        @endforeach
+                    </ul>
+                </dd>
+            @endif
+
             <dt class="col-sm-3 text-secondary fw-normal">Submitted</dt>
             <dd class="col-sm-9 mb-0">
                 @if($opportunity->submitted_at)

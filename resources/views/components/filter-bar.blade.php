@@ -20,6 +20,7 @@
         'education_level' => 'Level',
         'field_of_study' => 'Field',
         'province' => 'Province',
+        'country' => 'Country',
         'provider' => 'Awarding body',
         'funding_type' => 'Funding',
         'deadline_before' => 'Closes before',
@@ -73,6 +74,15 @@
                     </select>
                 </div>
 
+                <div class="col-6 col-lg-2">
+                    <label class="form-label" for="filter-country">Country</label>
+                    <select class="form-select" id="filter-country" name="country">
+                        <option value="">Any</option>
+                        @foreach(FormOptions::COUNTRIES as $country)
+                            <option value="{{ $country }}" @selected(($filters['country'] ?? '') === $country)>{{ $country }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="col-6 col-lg-2">
                     <label class="form-label" for="filter-funding">Funding</label>
                     <select class="form-select" id="filter-funding" name="funding_type">

@@ -74,8 +74,8 @@
             @if($opportunity->target_field)
                 <li class="d-flex align-items-center gap-1"><x-icon name="stars" :size="14" />{{ $opportunity->target_field }}</li>
             @endif
-            @if($opportunity->target_locality || $opportunity->required_province)
-                <li class="d-flex align-items-center gap-1"><x-icon name="pin" :size="14" />{{ $opportunity->target_locality ?: $opportunity->required_province }}</li>
+            @if($opportunity->locationLabel())
+                <li class="d-flex align-items-center gap-1"><x-icon name="pin" :size="14" />{{ $opportunity->locationLabel() }}</li>
             @endif
             <li class="d-flex align-items-center gap-1">
                 <x-icon name="calendar" :size="14" />

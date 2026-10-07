@@ -25,6 +25,17 @@
     'readonly' => false,
     'valid' => false,
     'grouped' => false,
+    /*
+     * Which error bag this field reads, for a page that holds several forms.
+     *
+     * A provider's dashboard has an Extend and a Withdraw dialog for every
+     * listing, each with a field called `reason`. Errors and old input are keyed
+     * by field name, so a failed submit of one dialog marked the `reason` field
+     * red - and refilled it - in all of them. A dialog's controller action
+     * validates into a bag named for the dialog, and the field reads only that
+     * bag; with no bag, nothing changes from before.
+     */
+    'bag' => 'default',
 ])
 
 @php
@@ -37,8 +48,8 @@
      * differently from the browser.
      */
     $id = $attributes->get('id', 'field-' . $name);
-    $current = old($name, $value);
-    $invalid = $errors->has($name);
+    $current = ($bag === 'default' || $errors->hasBag($bag)) ? old($name, $value) : $value;
+    $invalid = $errors->getBag($bag)->has($name);
 
     // is-invalid wins over is-valid: a field cannot be both, and the error
     // bag is the only one of the two the server has an opinion about.
@@ -99,7 +110,7 @@
         <div class="form-text" id="{{ $id }}-hint">{{ $hint }}</div>
     @endif
 
-    @error($name)
+    @error($name, $bag)
         <div class="invalid-feedback d-block" id="{{ $id }}-error">{{ $message }}</div>
     @enderror
 </div>

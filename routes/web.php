@@ -250,6 +250,10 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
         Route::put('/opportunities/{id}', [OpportunityController::class, 'update'])
             ->whereNumber('id')
             ->name('opportunities.update');
+        Route::post('/opportunities/{id}/edit-impact', [OpportunityController::class, 'editImpact'])
+            ->whereNumber('id')
+            ->middleware('throttle:60,1')
+            ->name('opportunities.editImpact');
         Route::post('/opportunities/{id}/extend-deadline', [OpportunityController::class, 'extendDeadline'])
             ->whereNumber('id')
             ->name('opportunities.extendDeadline');

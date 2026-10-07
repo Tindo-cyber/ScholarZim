@@ -97,7 +97,11 @@ class AuditService
 
             // Loose comparison on purpose: form input arrives as strings, and
             // "12" replacing 12 is not a change anybody made.
-            if ((string) ($previous ?? '') !== (string) ($value ?? '')) {
+            // A structured value (a listing's risk flags) is compared as the JSON it
+            // would be stored as; casting an array to a string is an error.
+            $asText = static fn (mixed $v): string => is_array($v) ? (string) json_encode($v) : (string) ($v ?? '');
+
+            if ($asText($previous) !== $asText($value)) {
                 $old[$key] = $previous;
                 $new[$key] = $value;
             }

@@ -21,15 +21,8 @@
                         <x-form.input name="title" label="Scholarship title" required
                                       hint="For example: Zimplats Engineering Undergraduate Bursary 2026." />
 
-                        <x-form.input name="provider_display_name" label="Awarding body"
-                                      :value="auth()->user()->full_name"
-                                      list="awarding-body-list"
-                                      hint="Shown publicly. Defaults to your organisation name." />
-                        <datalist id="awarding-body-list">
-                            @foreach($awardingBodySuggestions as $suggestion)
-                                <option value="{{ $suggestion }}"></option>
-                            @endforeach
-                        </datalist>
+                        <x-form.input name="provider_display_name" label="Awarding on behalf of another organisation (optional)"
+                                      hint="Leave blank to publish as your own organisation. Fill it in only if you are awarding for another organisation: it is then shown publicly as &quot;Posted by [your organisation] on behalf of [this name]&quot; and an administrator checks it before it goes live." />
 
                         <x-form.textarea name="description" label="Full description" :rows="8" required
                                          hint="Cover what the award pays for, who it is aimed at, and what applicants must submit." />
@@ -53,6 +46,12 @@
                                                :options="$minimumLevels" :grouped="true"
                                                placeholder="Whatever the level above allows"
                                                hint="Only set this if your listing is stricter than the general pathway - for example, an Undergraduate award that requires A-Level rather than accepting O-Level applicants directly." />
+                            </div>
+                            <div class="col-md-6">
+                                <x-form.select name="country" label="Country where it is held"
+                                               :options="$countries" :value="\App\Support\FormOptions::DEFAULT_COUNTRY"
+                                               :placeholder="null"
+                                               hint="Where the student will study. Defaults to Zimbabwe." />
                             </div>
                             <div class="col-md-6">
                                 <x-form.input name="target_field" label="Field of study"

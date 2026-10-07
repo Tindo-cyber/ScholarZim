@@ -45,4 +45,22 @@ return [
         'password' => env('SCHOLARZIM_ADMIN_PASSWORD', 'ChangeMe123'),
     ],
 
+    /*
+     * The largest single award a listing may state before a moderator is asked
+     * to look twice, per currency.
+     *
+     * An award above its ceiling is NOT rejected - a fully funded programme
+     * abroad can legitimately cost more than any default would guess - it is
+     * flagged for moderation (see AwardSanity). The point is that a typo such as
+     * 50000000 for 5000 is read by a person before it is shown to applicants.
+     * Currencies with no entry have no ceiling.
+     */
+    'award_ceilings' => [
+        'USD' => 100000,
+        'EUR' => 90000,
+        'GBP' => 80000,
+        'ZAR' => 1800000,
+        'ZWG' => 2600000,
+    ],
+
 ];
