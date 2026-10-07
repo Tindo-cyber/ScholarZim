@@ -137,11 +137,11 @@ class ProviderDecisionEmailTest extends TestCase
         $provider = $this->register();
 
         $this->actingAs($this->admin)->post("/admin/users/providers/{$provider->user_id}/reject", [
-            'reason' => 'Registration number does not match the PVO register.',
+            'reason' => 'The certificate does not match the PVO register.',
         ]);
 
         $this->assertSame(
-            'Registration number does not match the PVO register.',
+            'The certificate does not match the PVO register.',
             $provider->fresh()->providerProfile->rejection_reason
         );
     }
@@ -255,11 +255,10 @@ class ProviderDecisionEmailTest extends TestCase
             'email' => 'decision.probe@example.test',
             'phone' => '0771234567',
             'organisation_type' => ProviderOrgType::ALL[0],
-            'registration_number' => 'PVO/2024/001',
             'certificate' => UploadedFile::fake()->create('registration.pdf', 40, 'application/pdf'),
             'password' => 'ChangeMe123',
             'password_confirmation' => 'ChangeMe123',
-            'terms' => '1',
+            'authorised' => '1',
         ])->assertRedirect();
 
         $this->flushSession();

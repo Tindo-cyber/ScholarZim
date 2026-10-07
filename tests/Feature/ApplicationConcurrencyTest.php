@@ -539,7 +539,6 @@ class ApplicationConcurrencyTest extends TestCase
                     'email' => 'chiedza-trust@example.test',
                     'password' => 'ChangeMe123',
                     'organisation_type' => 'Trust',
-                    'registration_number' => 'TR-2026-001',
                 ],
                 UploadedFile::fake()->create('certificate.pdf', 80, 'application/pdf')
             );

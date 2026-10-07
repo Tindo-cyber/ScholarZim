@@ -148,7 +148,6 @@
                 <tr>
                     <x-data-table.cell label="Organisation">
                         <span class="fw-semibold d-block">{{ $profile->user?->displayName() }}</span>
-                        <span class="small text-secondary d-block">Reg. {{ $profile->registration_number }}</span>
                         @if($profile->certificate_filename)
                             <a class="small text-decoration-none d-inline-flex align-items-center gap-1 mt-1"
                                href="{{ route('admin.providers.certificate', $profile->user_id) }}"

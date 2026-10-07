@@ -31,7 +31,6 @@ class RegisterController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
-            'terms' => ['accepted'],
         ]);
 
         $this->registrationService->registerApplicant($data);
@@ -62,10 +61,12 @@ class RegisterController extends Controller
             // carry an extension - see InternationalPhoneNumber's own docblock.
             'phone' => ['nullable', 'string', new InternationalPhoneNumber()],
             'organisation_type' => ['required', Rule::in(ProviderOrgType::ALL)],
-            'registration_number' => ['required', 'string', 'max:100'],
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
-            'terms' => ['accepted'],
+            // The organisation's confirmation that it is registered and that this
+            // person may act for it. Not terms of use: the admin still verifies
+            // the uploaded certificate, this is the applicant's own statement.
+            'authorised' => ['accepted'],
         ]);
 
         $this->registrationService->registerProvider($data, $request->file('certificate'));

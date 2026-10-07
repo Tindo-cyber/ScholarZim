@@ -140,7 +140,6 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $provider->user_id],
             [
                 'organisation_type' => ProviderOrgType::FOUNDATION,
-                'registration_number' => 'PVO 12/2011',
                 'certificate_path' => 'provider-certificates/demo-certificate.pdf',
                 'certificate_filename' => 'registration-certificate.pdf',
                 'submitted_at' => Carbon::now()->subMonths(6),
@@ -178,7 +177,6 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $provider->user_id],
             [
                 'organisation_type' => ProviderOrgType::NGO,
-                'registration_number' => 'PVO 44/2025',
                 'certificate_path' => 'provider-certificates/demo-pending-certificate.pdf',
                 'certificate_filename' => 'registration-certificate.pdf',
                 'submitted_at' => Carbon::now()->subDays(2),

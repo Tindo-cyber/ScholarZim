@@ -23,9 +23,6 @@
         <x-form.input name="password_confirmation" label="Confirm password" type="password" required
                       autocomplete="new-password" />
 
-        <x-form.checkbox name="terms" id="terms" required wrapper-class="mb-4"
-                         label="I agree to the ScholarZim terms of use and privacy policy." />
-
         <x-submit-button label="Create account" size="lg" class="w-100 mb-3" busy-label="Creating..." />
     </form>
 

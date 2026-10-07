@@ -17,7 +17,6 @@ class ProviderProfile extends Model
     protected $fillable = [
         'user_id',
         'organisation_type',
-        'registration_number',
         'certificate_path',
         'certificate_filename',
         'submitted_at',

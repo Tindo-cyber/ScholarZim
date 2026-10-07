@@ -79,7 +79,6 @@ class RegistrationService
                 ProviderProfile::create([
                     'user_id' => $user->user_id,
                     'organisation_type' => $data['organisation_type'],
-                    'registration_number' => $data['registration_number'],
                     'certificate_path' => $certificatePath,
                     'certificate_filename' => $certificate->getClientOriginalName(),
                     'submitted_at' => Carbon::now(),

@@ -107,7 +107,6 @@ class StorageDiagnosticsEndpointTest extends TestCase
         $profile = ProviderProfile::create([
             'user_id' => $this->providerUser()->user_id,
             'organisation_type' => ProviderOrgType::PRIVATE_COMPANY,
-            'registration_number' => 'REG-BLANK',
             'certificate_path' => '',
             'certificate_filename' => 'registration.pdf',
             'submitted_at' => now(),
@@ -233,7 +232,6 @@ class StorageDiagnosticsEndpointTest extends TestCase
         return ProviderProfile::create([
             'user_id' => $this->providerUser()->user_id,
             'organisation_type' => ProviderOrgType::PRIVATE_COMPANY,
-            'registration_number' => 'REG-' . uniqid(),
             'certificate_path' => 'provider-certificates/' . uniqid() . '.pdf',
             'certificate_filename' => 'registration.pdf',
             'submitted_at' => now(),

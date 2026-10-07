@@ -43,11 +43,10 @@ class ProviderPhoneValidationTest extends TestCase
             'email' => "trust{$this->sequence}@example.test",
             'phone' => $phone,
             'organisation_type' => ProviderOrgType::ALL[0],
-            'registration_number' => 'PVO/2024/' . $this->sequence,
             'certificate' => UploadedFile::fake()->create('registration.pdf', 40, 'application/pdf'),
             'password' => 'ChangeMe123',
             'password_confirmation' => 'ChangeMe123',
-            'terms' => '1',
+            'authorised' => '1',
         ]);
     }
 

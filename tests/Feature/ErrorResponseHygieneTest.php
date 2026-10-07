@@ -133,7 +133,6 @@ class ErrorResponseHygieneTest extends TestCase
             'email' => 'hygiene.probe@example.test',
             'password' => 'ProbePassword123',
             'password_confirmation' => 'ProbePassword123',
-            'terms' => '1',
         ]);
 
         $user = User::where('email', 'hygiene.probe@example.test')->first();

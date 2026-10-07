@@ -84,7 +84,7 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 ### Registration
 
 1. Register at `/register/provider`.
-2. Provide organisation type, registration number, and **registration certificate (PDF)**.
+2. Provide the organisation type and **registration certificate (PDF)**, and confirm you are authorised to act for the organisation.
 3. Wait for admin approval — you cannot publish active scholarships while `PENDING_APPROVAL`.
 
 ### After approval

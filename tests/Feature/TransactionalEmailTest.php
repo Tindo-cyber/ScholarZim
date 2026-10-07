@@ -108,11 +108,10 @@ class TransactionalEmailTest extends TestCase
             'email' => 'trust@example.test',
             'phone' => '0771234567',
             'organisation_type' => ProviderOrgType::ALL[0],
-            'registration_number' => 'PVO/2024/001',
             'certificate' => UploadedFile::fake()->create('registration.pdf', 40, 'application/pdf'),
             'password' => 'ChangeMe123',
             'password_confirmation' => 'ChangeMe123',
-            'terms' => '1',
+            'authorised' => '1',
         ])->assertRedirect();
 
         Mail::assertQueued(

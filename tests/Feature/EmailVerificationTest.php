@@ -46,7 +46,6 @@ class EmailVerificationTest extends TestCase
             'phone' => '0771234567',
             'password' => 'FreshPass123',
             'password_confirmation' => 'FreshPass123',
-            'terms' => '1',
         ])->assertRedirect();
 
         $user = User::where('email', 'new.student@example.com')->firstOrFail();

@@ -253,7 +253,6 @@ class InputValidationHardeningTest extends TestCase
             'phone' => '0712345678',
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
-            'terms' => '1',
         ], $overrides);
     }
 
@@ -264,11 +263,10 @@ class InputValidationHardeningTest extends TestCase
             'email' => 'a-new-trust@example.test',
             'phone' => '0712345678',
             'organisation_type' => 'Trust',
-            'registration_number' => 'TR-2027-001',
             'certificate' => \Illuminate\Http\UploadedFile::fake()->create('certificate.pdf', 80, 'application/pdf'),
             'password' => 'Password123',
             'password_confirmation' => 'Password123',
-            'terms' => '1',
+            'authorised' => '1',
         ], $overrides);
     }
 

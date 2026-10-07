@@ -24,7 +24,6 @@ class PasswordPolicyTest extends TestCase
             'email' => 'no-uppercase@example.test',
             'password' => 'lowercase123',
             'password_confirmation' => 'lowercase123',
-            'terms' => '1',
         ]);
 
         $response->assertRedirect('/register');
@@ -40,7 +39,6 @@ class PasswordPolicyTest extends TestCase
             'email' => 'has-uppercase@example.test',
             'password' => 'Uppercase123',
             'password_confirmation' => 'Uppercase123',
-            'terms' => '1',
         ])->assertSessionHasNoErrors();
 
         $this->assertNotNull(User::where('email', 'has-uppercase@example.test')->first());

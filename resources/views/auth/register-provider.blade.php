@@ -22,8 +22,8 @@
 @endsection
 
 @php
-    $step1Fields = ['full_name', 'email', 'phone', 'organisation_type', 'registration_number', 'certificate'];
-    $step2Fields = ['password', 'password_confirmation', 'terms'];
+    $step1Fields = ['full_name', 'email', 'phone', 'organisation_type', 'certificate'];
+    $step2Fields = ['password', 'password_confirmation', 'authorised'];
     $initialStep = collect($step1Fields)->contains(fn ($field) => $errors->has($field))
         ? 1
         : (collect($step2Fields)->contains(fn ($field) => $errors->has($field)) ? 2 : 1);
@@ -65,8 +65,6 @@
 
             <x-form.select name="organisation_type" label="Organisation type" :options="$orgTypes"
                            placeholder="Select a type" required />
-            <x-form.input name="registration_number" label="Registration number" required
-                          hint="As it appears on your certificate of incorporation or PVO registration." />
 
             <div class="mb-4">
                 <label class="form-label" for="certificate">
@@ -99,7 +97,7 @@
             <x-form.input name="password_confirmation" label="Confirm password" type="password" required
                           autocomplete="new-password" />
 
-            <x-form.checkbox name="terms" id="terms" required wrapper-class="mb-4"
+            <x-form.checkbox name="authorised" id="authorised" required wrapper-class="mb-4"
                              label="I confirm this organisation is registered and I am authorised to act for it." />
 
             <div class="d-flex gap-2 mb-3">
