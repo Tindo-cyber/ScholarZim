@@ -60,4 +60,9 @@ final class OpportunityModerationStatus
     {
         return strcasecmp((string) $status, self::APPROVED) === 0;
     }
+
+    public static function isRejected(?string $status): bool
+    {
+        return strcasecmp((string) $status, self::REJECTED) === 0;
+    }
 }

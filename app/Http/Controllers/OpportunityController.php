@@ -9,6 +9,7 @@ use App\Services\OpportunityService;
 use App\Services\SavedScholarshipService;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\FormOptions;
+use App\Support\OpportunityFormMessages;
 use App\Support\ZimbabweLocalities;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -60,6 +61,8 @@ class OpportunityController extends Controller
 
     public function store(Request $request)
     {
+        $this->renumberSubjectRows($request);
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:10000'],
@@ -91,7 +94,7 @@ class OpportunityController extends Controller
             'subject_requirements.*.qualification_id' => ['required', 'integer', 'exists:academic_qualifications,id'],
             'subject_requirements.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
             'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
-        ]);
+        ], OpportunityFormMessages::subjectRequirements());
 
         $this->assertTargetLocalityMatchesProvince($data);
 
@@ -139,6 +142,8 @@ class OpportunityController extends Controller
 
     public function update(Request $request, int $id)
     {
+        $this->renumberSubjectRows($request);
+
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:10000'],
@@ -171,7 +176,7 @@ class OpportunityController extends Controller
             'subject_requirements.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
             'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
             'reason' => ['required', 'string', 'max:500'],
-        ]);
+        ], OpportunityFormMessages::subjectRequirements());
 
         $this->assertTargetLocalityMatchesProvince($data);
 
@@ -217,6 +222,24 @@ class OpportunityController extends Controller
         return redirect()
             ->route('provider.dashboard')
             ->with('successMessage', '"' . $opportunity->title . '" was withdrawn.');
+    }
+
+    /**
+     * Number the submitted subject rows 0..n-1, in the order they were sent.
+     *
+     * A provider who removes a row in the browser leaves a gap in the keys it
+     * posts (0, 2, 3). Validation messages say "Row N" from the key, so with the
+     * gap they would name a row that is not the one on screen, and the form
+     * re-rendered after a failed save would carry the gap forward. Renumbering
+     * first makes the key, the message and the row the provider sees all agree.
+     */
+    private function renumberSubjectRows(Request $request): void
+    {
+        $rows = $request->input('subject_requirements');
+
+        if (is_array($rows)) {
+            $request->merge(['subject_requirements' => array_values($rows)]);
+        }
     }
 
     /**

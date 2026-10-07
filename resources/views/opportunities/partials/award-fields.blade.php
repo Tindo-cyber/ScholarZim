@@ -152,20 +152,79 @@
                     </tr>
                 </thead>
                 <tbody id="subject-requirements-list">
-                    @foreach(($opportunity?->subjectRequirements ?? []) as $idx => $existing)
+                    @php
+                        /*
+                         * Which rows to draw.
+                         *
+                         * After a failed save the form is rendered again with old(), and the
+                         * rows must come from what the provider just submitted - drawing them
+                         * only from the stored requirements dropped every row they had added
+                         * (a create form has none stored) and silently reverted every change
+                         * they had made on an edit. Stored rows are the fallback for a page
+                         * with no old input.
+                         *
+                         * The controller renumbers submitted rows 0..n-1, so $idx is both the
+                         * form key and the row's position on screen.
+                         */
+                        $submittedRows = old('subject_requirements');
+                        $requirementRows = [];
+
+                        if (is_array($submittedRows)) {
+                            foreach (array_values($submittedRows) as $submitted) {
+                                $submitted = is_array($submitted) ? $submitted : [];
+
+                                $requirementRows[] = [
+                                    'qualification_id' => $submitted['qualification_id'] ?? null,
+                                    'subject_id' => $submitted['subject_id'] ?? null,
+                                    'minimum_grade' => $submitted['minimum_grade'] ?? null,
+                                    'stored' => null,
+                                ];
+                            }
+                        } else {
+                            foreach (($opportunity?->subjectRequirements ?? []) as $stored) {
+                                $requirementRows[] = [
+                                    'qualification_id' => $stored->qualification_id,
+                                    'subject_id' => $stored->subject_id,
+                                    'minimum_grade' => $stored->minimum_grade,
+                                    'stored' => $stored,
+                                ];
+                            }
+                        }
+                    @endphp
+
+                    @foreach($requirementRows as $idx => $row)
+                        @php
+                            $rowQualification = $qualifications->firstWhere('id', (int) $row['qualification_id']);
+                            $rowSubjects = $rowQualification?->activeSubjects ?? collect();
+                            $rowSubject = $rowSubjects->firstWhere('id', (int) $row['subject_id']) ?? $row['stored']?->subject;
+                            $rowGrades = $rowSubject?->grades() ?? $rowQualification?->grades() ?? [];
+
+                            // Each message already says "Row N: ..." and sits with the field it is
+                            // about, so a provider is not matched up with a path like
+                            // subject_requirements.1.qualification_id.
+                            $qualificationError = $errors->first("subject_requirements.$idx.qualification_id");
+                            $subjectError = $errors->first("subject_requirements.$idx.subject_id");
+                            $gradeError = $errors->first("subject_requirements.$idx.minimum_grade");
+                        @endphp
                         <tr class="subject-requirement-row">
                             <td data-label="Qualification">
-                                <select class="form-select form-select-sm qualification-select"
+                                <select class="form-select form-select-sm qualification-select @if($qualificationError) is-invalid @endif"
                                         name="subject_requirements[{{ $idx }}][qualification_id]"
                                         aria-label="Qualification">
+                                    @unless($rowQualification)
+                                        <option value="" selected>Select qualification</option>
+                                    @endunless
                                     @foreach($qualifications as $qual)
                                         <option value="{{ $qual->id }}"
-                                            @selected($qual->id == $existing->qualification_id)>{{ $qual->name }}</option>
+                                            @selected($qual->id == $row['qualification_id'])>{{ $qual->name }}</option>
                                     @endforeach
                                 </select>
+                                @if($qualificationError)
+                                    <div class="invalid-feedback d-block">{{ $qualificationError }}</div>
+                                @endif
                             </td>
                             {{--
-                                Existing rows render their options server-side, already selected.
+                                Rows render their options server-side, already selected.
                                 The script below re-populates them when the qualification changes,
                                 but the form is correct and submittable before it runs - a row whose
                                 options only exist once JavaScript has populated them submits an
@@ -173,30 +232,36 @@
                                 section was fixed to prevent.
                             --}}
                             <td data-label="Subject">
-                                <select class="form-select form-select-sm subject-select"
+                                <select class="form-select form-select-sm subject-select @if($subjectError) is-invalid @endif"
                                         name="subject_requirements[{{ $idx }}][subject_id]"
-                                        data-selected="{{ $existing->subject_id }}"
+                                        data-selected="{{ $row['subject_id'] }}"
                                         aria-label="Subject">
                                     <option value="">Select subject</option>
-                                    @foreach(($existing->qualification?->activeSubjects ?? []) as $subject)
+                                    @foreach($rowSubjects as $subject)
                                         <option value="{{ $subject->id }}"
-                                            @selected($subject->id == $existing->subject_id)>{{ $subject->label() }}</option>
+                                            @selected($subject->id == $row['subject_id'])>{{ $subject->label() }}</option>
                                     @endforeach
                                 </select>
+                                @if($subjectError)
+                                    <div class="invalid-feedback d-block">{{ $subjectError }}</div>
+                                @endif
                             </td>
                             <td data-label="Minimum grade">
                                 {{-- This field previously rendered readonly and unnamed, so it was
                                      never submitted and every edit reset the rule to "any grade". --}}
-                                <select class="form-select form-select-sm grade-select"
+                                <select class="form-select form-select-sm grade-select @if($gradeError) is-invalid @endif"
                                         name="subject_requirements[{{ $idx }}][minimum_grade]"
-                                        data-selected="{{ $existing->minimum_grade }}"
+                                        data-selected="{{ $row['minimum_grade'] }}"
                                         aria-label="Minimum grade">
                                     <option value="">Any grade</option>
-                                    @foreach(($existing->subject?->grades() ?? $existing->qualification?->grades() ?? []) as $grade)
+                                    @foreach($rowGrades as $grade)
                                         <option value="{{ $grade }}"
-                                            @selected($grade === $existing->minimum_grade)>{{ $grade }}</option>
+                                            @selected((string) $grade === (string) $row['minimum_grade'])>{{ $grade }}</option>
                                     @endforeach
                                 </select>
+                                @if($gradeError)
+                                    <div class="invalid-feedback d-block">{{ $gradeError }}</div>
+                                @endif
                             </td>
                             <td class="text-end" data-label="">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>

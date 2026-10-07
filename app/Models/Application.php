@@ -82,6 +82,23 @@ class Application extends Model
         });
     }
 
+    /**
+     * Applications a provider still has to decide: not accepted, not rejected,
+     * not withdrawn.
+     *
+     * A NULL status counts, as do the legacy in-progress spellings - the state
+     * machine reads both as pending, and `NULL NOT IN (...)` is NULL rather than
+     * true, so the NULL case is stated explicitly. See
+     * ApplicationStatus::settledSpellings().
+     */
+    public function scopeAwaitingDecision(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q) {
+            $q->whereNull('application_status')
+                ->orWhereNotIn('application_status', ApplicationStatus::settledSpellings());
+        });
+    }
+
     /** The same rule for a row already in memory. */
     public function blocksReapplication(): bool
     {

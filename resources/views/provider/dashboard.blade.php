@@ -59,12 +59,13 @@
     </div>
 
     @php
-        // Drawn from the same recentApplications the activity list below reads,
-        // filtered to the ones still open. The count beside it is the real
-        // total from dashboardStats, so a provider with more pending than this
-        // page shows is told so rather than left to assume this is all of them.
-        $awaitingDecision = $recentApplications->filter(fn ($application) => ! $application->isDecided()
-            && ! $application->isWithdrawn());
+        // Queried directly, oldest first (ProviderService::pendingApplications),
+        // not filtered out of the recent activity list: when the newest eight were
+        // all decided that filter left this table empty while older applications
+        // were still waiting. The count beside it is the real total from
+        // dashboardStats, so a provider with more pending than this table shows is
+        // told so rather than left to assume this is all of them.
+        $awaitingDecision = $pendingApplications;
     @endphp
 
     {{--
@@ -313,7 +314,15 @@
                     <ul class="list-group list-group-flush">
                         @foreach($upcomingDeadlines as $opportunity)
                             <li class="list-group-item d-flex justify-content-between gap-2 align-items-center">
-                                <span class="text-truncate">{{ $opportunity->title }}</span>
+                                <span class="min-w-0">
+                                    <span class="text-truncate d-block">{{ $opportunity->title }}</span>
+                                    {{-- A date alone says applicants can see this listing. For one that
+                                         is awaiting review or declined they cannot yet, so say so. --}}
+                                    @unless($opportunity->isPubliclyVisible())
+                                        <x-status-badge :label="$opportunity->lifecycleLabel()"
+                                                        :tone="$opportunity->lifecycleTone()" />
+                                    @endunless
+                                </span>
                                 <x-status-badge :label="$opportunity->deadline->format('d M')"
                                                 :tone="$opportunity->isClosingSoon() ? 'danger' : 'secondary'" />
                             </li>

@@ -183,7 +183,8 @@ class OpportunityService
             'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
         ] + $this->awardAttributes($data);
 
-        $wasApproved = OpportunityModerationStatus::isApproved($opportunity->moderation_status);
+        $wasPending = OpportunityModerationStatus::isPending($opportunity->moderation_status);
+        $wasRejected = OpportunityModerationStatus::isRejected($opportunity->moderation_status);
         $material = OpportunityLifecycle::isMaterialChange($opportunity, $attributes)
             // Bringing a deadline forward cuts applicants off early, so it is
             // material even though pushing one back is not.
@@ -197,7 +198,23 @@ class OpportunityService
             'updated_at' => Carbon::now(),
         ];
 
-        if ($material) {
+        // What this save does to the listing's place in the review queue.
+        //
+        // Entering the queue: a material edit takes an APPROVED listing back to
+        // PENDING, and ANY save of a REJECTED one is a resubmission - the provider
+        // has answered the refusal, whether or not the answer touched a material
+        // field. A non-material edit used to leave a rejected listing rejected
+        // forever, with nothing telling the provider it still needed resubmitting.
+        //
+        // Already in the queue: a PENDING listing that is edited stays PENDING.
+        // That is not a transition (PENDING -> PENDING is the same state, which is
+        // why OpportunityLifecycle has no such entry); asserting one is what made
+        // editing a listing before its review throw. It only refreshes the time it
+        // joined the queue, so a moderator sees the version they are reviewing.
+        $entersQueue = ($material && ! $wasPending) || $wasRejected;
+        $refreshesQueue = $material && $wasPending;
+
+        if ($entersQueue) {
             OpportunityLifecycle::assertModeration(
                 $opportunity->moderation_status,
                 OpportunityModerationStatus::PENDING
@@ -210,7 +227,17 @@ class OpportunityService
                 'reviewed_by' => null,
                 'rejection_reason' => null,
             ];
+        } elseif ($refreshesQueue) {
+            $attributes += ['submitted_at' => Carbon::now()];
         }
+
+        $outcome = match (true) {
+            $wasRejected => 'resubmitted for review',
+            $entersQueue => 'material, back to review',
+            $refreshesQueue => 'edited while awaiting review',
+            $wasPending => 'minor, still awaiting review',
+            default => 'minor, stays live',
+        };
 
         // A closed listing reopens only if its deadline is genuinely in the
         // future again. Editing one used to set it ACTIVE unconditionally, which
@@ -229,7 +256,7 @@ class OpportunityService
             $attributes
         );
 
-        $opportunity = DB::transaction(function () use ($opportunity, $attributes, $data, $provider, $reason, $material, $changes) {
+        $opportunity = DB::transaction(function () use ($opportunity, $attributes, $data, $provider, $reason, $outcome, $changes) {
             $opportunity->update($attributes);
 
             $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
@@ -239,8 +266,7 @@ class OpportunityService
                 AuditAction::UPDATE_OPPORTUNITY,
                 'OPPORTUNITY',
                 $opportunity->opportunity_id,
-                'Updated "' . $opportunity->title . '" (' . ($material ? 'material, back to review' : 'minor, stays live')
-                    . '): ' . $reason,
+                'Updated "' . $opportunity->title . '" (' . $outcome . '): ' . $reason,
                 $changes + ['reason' => $reason]
             );
 
@@ -249,7 +275,10 @@ class OpportunityService
 
         $this->forgetFacetCaches();
 
-        if ($material && $wasApproved) {
+        // Told whenever a listing moves INTO the queue from any other state - an
+        // approved one taken back, or a rejected one resubmitted. Not when one that
+        // is already waiting is edited: it is already on their list.
+        if ($entersQueue) {
             $this->notifyAdminsOfPendingReview($opportunity);
         }
 
@@ -648,15 +677,20 @@ class OpportunityService
     private function saveSubjectRequirements(Opportunity $opportunity, array $requirements): void
     {
         $keptIds = [];
+        $position = 0;
 
         foreach ($requirements as $index => $req) {
+            // The row's place in the list, for the message: "Row 2" is the second row
+            // the provider sees, whatever key the form happened to post it under.
+            $position++;
+
             $qualification = AcademicQualification::find($req['qualification_id'] ?? null);
             $subject = AcademicSubject::find($req['subject_id'] ?? null);
 
             if ($qualification === null || $subject === null
                 || (int) $subject->qualification_id !== (int) $qualification->id) {
                 throw ValidationException::withMessages([
-                    "subject_requirements.$index.subject_id" => 'Choose a subject offered under the selected qualification.',
+                    "subject_requirements.$index.subject_id" => "Row {$position}: choose a subject offered under the selected qualification.",
                 ]);
             }
 
@@ -673,7 +707,7 @@ class OpportunityService
                     $awardedBy = $subject->hasOwnScheme() ? $subject->name : $qualification->name;
 
                     throw ValidationException::withMessages([
-                        "subject_requirements.$index.minimum_grade" => 'Choose a grade that '.$awardedBy
+                        "subject_requirements.$index.minimum_grade" => "Row {$position}: choose a grade that ".$awardedBy
                             .' awards ('.implode(', ', $subject->grades()).').',
                     ]);
                 }

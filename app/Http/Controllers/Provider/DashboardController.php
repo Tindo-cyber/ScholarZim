@@ -21,6 +21,7 @@ class DashboardController extends Controller
             'greeting' => Greeting::forUser($user->full_name),
             'stats' => $this->providerService->dashboardStats($user),
             'opportunities' => $this->providerService->myOpportunities($user),
+            'pendingApplications' => $this->providerService->pendingApplications($user, 8),
             'recentApplications' => $this->providerService->recentApplications($user, 8),
             'upcomingDeadlines' => $this->providerService->upcomingDeadlines($user, 5),
             'providerProfile' => $user->providerProfile,

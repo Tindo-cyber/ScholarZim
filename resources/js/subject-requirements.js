@@ -52,7 +52,23 @@
         if (!listEl || !addButton || !templateEl || !catalogueEl) return;
 
         var catalogue = JSON.parse(catalogueEl.textContent || '{}');
-        var nextIdx = listEl.querySelectorAll('.subject-requirement-row').length;
+        // The next free index is one past the highest already on the page, not the
+        // number of rows. A count is only right while the keys run 0..n-1 with no
+        // gaps; a gap (a row removed, rows restored after a failed save) would hand
+        // a new row an index another row already holds, and the two would overwrite
+        // each other on submit. The server renumbers what it receives, so this
+        // matters for what is on screen between submissions.
+        var nextIdx = (function () {
+            var highest = -1;
+
+            listEl.querySelectorAll('select[name^="subject_requirements["]').forEach(function (el) {
+                var match = el.name.match(/^subject_requirements\[(\d+)\]/);
+
+                if (match) highest = Math.max(highest, parseInt(match[1], 10));
+            });
+
+            return highest + 1;
+        })();
 
         function fill(select, options, selected, blankLabel) {
             select.innerHTML = '';

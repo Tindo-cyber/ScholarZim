@@ -123,6 +123,30 @@ final class ApplicationStatus
         return self::LEGACY_MAP[$status] ?? self::PENDING;
     }
 
+    /**
+     * Every stored spelling that is NOT pending: the three live end states and
+     * the legacy values that now mean ACCEPTED.
+     *
+     * For a query that must find "still waiting" rows. `= 'PENDING'` would miss
+     * the legacy SUBMITTED / UNDER_REVIEW rows and the NULL ones, all of which
+     * canonical() reads as pending, so the query asks what is settled and takes
+     * the rest - the same shape as Application::scopeBlockingReapplication().
+     *
+     * @return array<int, string>
+     */
+    public static function settledSpellings(): array
+    {
+        $legacyAccepted = array_keys(array_filter(
+            self::LEGACY_MAP,
+            static fn (string $live) => $live === self::ACCEPTED
+        ));
+
+        return array_values(array_unique(array_merge(
+            [self::ACCEPTED, self::REJECTED, self::WITHDRAWN],
+            $legacyAccepted
+        )));
+    }
+
     /** True once the provider has decided, or the applicant has pulled out. */
     public static function isTerminal(?string $status): bool
     {
