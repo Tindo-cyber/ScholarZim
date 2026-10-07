@@ -34,29 +34,50 @@ final class FormOptions
     ];
 
     /**
+     * A listing for study that is not tied to one country: "Any country" for an
+     * award the holder may take wherever they are admitted, "Online / distance"
+     * for study with no place to travel to. Neither is a place, so neither gets a
+     * town or a province in its label, and a search for a real country includes
+     * them (see Opportunity::scopeMatchingFilters) - an applicant looking for
+     * awards they can use in Germany should still see one usable anywhere.
+     */
+    public const COUNTRY_ANY = 'Any country';
+
+    public const COUNTRY_ONLINE = 'Online / distance';
+
+    /**
      * Where a scholarship is held. Zimbabwe first because it is the default and
-     * most listings; the rest are the usual destinations for Zimbabwean students
-     * abroad. A listing outside Zimbabwe still reaches applicants through
-     * ScholarFit's own rules - country is not an eligibility rule - and public
-     * search can filter on it.
+     * most listings; the two flexible entries come last. Country is not an
+     * eligibility rule - ScholarFit never reads it - it is what the listing says
+     * and what search can filter on.
      */
     public const COUNTRIES = [
         'Zimbabwe',
         'South Africa',
         'Botswana',
-        'Zambia',
         'Namibia',
-        'Mozambique',
+        'Zambia',
+        'Mauritius',
         'Kenya',
-        'Ghana',
         'United Kingdom',
         'United States',
         'Canada',
         'Australia',
-        'Germany',
         'China',
         'India',
+        'Russia',
+        'Hungary',
+        'Germany',
+        'Turkey',
+        'Malaysia',
+        'Egypt',
+        'Japan',
+        self::COUNTRY_ANY,
+        self::COUNTRY_ONLINE,
     ];
+
+    /** The entries that are not a place. */
+    public const FLEXIBLE_COUNTRIES = [self::COUNTRY_ANY, self::COUNTRY_ONLINE];
 
     public const ZIMBABWE_PROVINCES = [
         'Bulawayo',

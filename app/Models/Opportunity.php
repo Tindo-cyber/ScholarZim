@@ -135,7 +135,17 @@ class Opportunity extends Model
         }
 
         if ($country = $value($filters['country'] ?? null)) {
-            $query->where('country', $country);
+            // A real country also matches the listings that are not tied to one: an
+            // award usable anywhere, or online, is usable there. The two flexible
+            // entries themselves match only their own listings - choosing "Online"
+            // means online study, not everything.
+            $query->where(function (Builder $q) use ($country) {
+                $q->where('country', $country);
+
+                if (! in_array($country, FormOptions::FLEXIBLE_COUNTRIES, true)) {
+                    $q->orWhereIn('country', FormOptions::FLEXIBLE_COUNTRIES);
+                }
+            });
         }
 
         if ($field = $value($filters['field_of_study'] ?? null)) {
@@ -190,6 +200,12 @@ class Opportunity extends Model
     {
         $place = $this->target_locality ?: $this->required_province;
         $country = trim((string) $this->country);
+
+        // "Any country" and "Online / distance" are not places, so a town or
+        // province does not belong beside them ("Gweru, Online" reads as nonsense).
+        if (in_array($country, FormOptions::FLEXIBLE_COUNTRIES, true)) {
+            return $country;
+        }
 
         if ($country === '' || strcasecmp($country, FormOptions::DEFAULT_COUNTRY) === 0) {
             return $place ?: null;

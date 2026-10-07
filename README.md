@@ -361,6 +361,19 @@ invisible from the page that caused it — the error layout pointed at an
 ScholarZim's own styles, and the auth layout was the only one omitting `theme-toggle.js`, so
 signing in ignored a saved dark mode. `HeadAssetsTest` enforces both halves of the rule.
 
+**Adding a script.** ScholarZim's own JavaScript is a set of small files in `resources/js/`,
+imported from `resources/js/app.js` and bundled by Vite. A script must be registered in
+**three** places, and `SourceAssetTest` fails if any is missing:
+
+1. an `import './your-script';` line in `resources/js/app.js`;
+2. an entry in `SourceAssetController::ASSETS`;
+3. an entry in `SourceAssetController::FALLBACK_SCRIPTS`, in the same order as the imports.
+
+The second and third exist for anyone who has not run `npm run build` yet: until they do, the
+page serves the sources directly through `/assets/source/…`, and a script that is only in the
+bundle silently does not exist for them. The rule is enforced by a test rather than remembered
+because the failure is invisible — the page still works, one behaviour is just absent.
+
 Link order inside that partial is load-bearing. The vendor theme defines a bare `main` with
 its own dashboard grid (`grid-template-columns: 120px auto`) and `scholarzim.css` overrides
 it back to `display: block`. Equal specificity means document order is the only reason the

@@ -100,6 +100,39 @@ class SourceAssetTest extends TestCase
         );
     }
 
+    /**
+     * The rule from the README, stated as a test: every script app.js imports must
+     * be registered in BOTH places the source fallback reads, and must actually be
+     * served. The check above compares the fallback list with the imports; this
+     * one also covers ASSETS (the whitelist the route serves from) and names the
+     * script that is missing, so the failure says what to add and where.
+     */
+    public function test_every_bundled_script_is_registered_and_served_by_the_source_fallback(): void
+    {
+        preg_match_all("#^\s*import\s+'\./([A-Za-z0-9.\-]+)';#m", file_get_contents(resource_path('js/app.js')), $matches);
+
+        $this->assertNotEmpty($matches[1], 'no imports found in app.js - has the entry point moved?');
+
+        $assets = (new \ReflectionClass(SourceAssetController::class))->getReflectionConstant('ASSETS')->getValue();
+
+        foreach ($matches[1] as $module) {
+            $file = str_ends_with($module, '.js') ? $module : $module . '.js';
+
+            $this->assertArrayHasKey(
+                $file,
+                $assets,
+                "resources/js/app.js imports '$module' but SourceAssetController::ASSETS has no '$file'. Add it there (see README: Adding a script)."
+            );
+            $this->assertContains(
+                $file,
+                SourceAssetController::FALLBACK_SCRIPTS,
+                "resources/js/app.js imports '$module' but SourceAssetController::FALLBACK_SCRIPTS has no '$file'. Add it there, in import order."
+            );
+            $this->assertFileExists(resource_path('js/' . $file), "'$file' is registered but the file is missing");
+            $this->get('/assets/source/' . $file)->assertOk();
+        }
+    }
+
     /** A port nothing is listening on: bound to learn its number, then released. */
     private function closedPort(): int
     {

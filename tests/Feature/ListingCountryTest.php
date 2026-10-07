@@ -78,6 +78,104 @@ class ListingCountryTest extends TestCase
         $this->assertSame('Berlin, Germany', $this->make('Germany', 'Berlin', null)->locationLabel());
     }
 
+    public function test_the_country_list_is_exactly_the_agreed_one(): void
+    {
+        $this->assertSame([
+            'Zimbabwe', 'South Africa', 'Botswana', 'Namibia', 'Zambia', 'Mauritius', 'Kenya',
+            'United Kingdom', 'United States', 'Canada', 'Australia', 'China', 'India', 'Russia',
+            'Hungary', 'Germany', 'Turkey', 'Malaysia', 'Egypt', 'Japan',
+            'Any country', 'Online / distance',
+        ], \App\Support\FormOptions::COUNTRIES);
+    }
+
+    public function test_a_real_country_search_also_finds_listings_usable_anywhere_and_online(): void
+    {
+        $this->listing('Berlin Award', 'Germany');
+        $this->listing('Harare Award', 'Zimbabwe');
+        $this->listing('Anywhere Award', 'Any country');
+        $this->listing('Remote Award', 'Online / distance');
+
+        $this->get('/scholarships?country=Germany')
+            ->assertSee('Berlin Award')
+            ->assertSee('Anywhere Award')
+            ->assertSee('Remote Award')
+            ->assertDontSee('Harare Award');
+
+        $this->get('/scholarships?country=Zimbabwe')
+            ->assertSee('Harare Award')
+            ->assertSee('Anywhere Award')
+            ->assertSee('Remote Award')
+            ->assertDontSee('Berlin Award');
+    }
+
+    public function test_choosing_online_shows_only_online_listings(): void
+    {
+        $this->listing('Berlin Award', 'Germany');
+        $this->listing('Anywhere Award', 'Any country');
+        $this->listing('Remote Award', 'Online / distance');
+
+        $this->get('/scholarships?country=' . urlencode('Online / distance'))
+            ->assertSee('Remote Award')
+            ->assertDontSee('Anywhere Award')
+            ->assertDontSee('Berlin Award');
+    }
+
+    public function test_choosing_any_country_shows_only_those_listings(): void
+    {
+        $this->listing('Berlin Award', 'Germany');
+        $this->listing('Anywhere Award', 'Any country');
+        $this->listing('Remote Award', 'Online / distance');
+
+        $this->get('/scholarships?country=' . urlencode('Any country'))
+            ->assertSee('Anywhere Award')
+            ->assertDontSee('Remote Award')
+            ->assertDontSee('Berlin Award');
+    }
+
+    public function test_the_flexible_entries_are_selectable_in_the_filter_and_the_form(): void
+    {
+        $this->get('/scholarships')
+            ->assertSee('<option value="Any country"', false)
+            ->assertSee('<option value="Online / distance"', false);
+
+        $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
+
+        $this->actingAs($provider)->get('/opportunities/create')
+            ->assertSee('<option value="Any country"', false)
+            ->assertSee('<option value="Online / distance"', false);
+    }
+
+    public function test_a_flexible_listing_is_described_without_a_town_or_province(): void
+    {
+        $this->assertSame('Online / distance', $this->make('Online / distance', 'Gweru', 'Midlands')->locationLabel());
+        $this->assertSame('Any country', $this->make('Any country', null, 'Harare')->locationLabel());
+    }
+
+    public function test_the_card_and_page_say_online_or_any_country(): void
+    {
+        $online = $this->listing('Remote Award', 'Online / distance');
+
+        $this->get('/scholarships?country=' . urlencode('Online / distance'))->assertSee('Online / distance');
+        $this->get('/scholarships/' . $online->opportunity_id)->assertOk()->assertSee('Online / distance');
+    }
+
+    public function test_the_provider_can_publish_a_flexible_listing(): void
+    {
+        $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
+
+        foreach (['Any country', 'Online / distance'] as $country) {
+            $this->flushSession();
+            $this->actingAs($provider)->post('/opportunities/create', [
+                'title' => 'Flexible ' . $country,
+                'description' => 'A flexible-location listing.',
+                'education_level' => EducationLevel::MASTERS,
+                'country' => $country,
+            ])->assertSessionHasNoErrors();
+
+            $this->assertSame($country, Opportunity::where('title', 'Flexible ' . $country)->firstOrFail()->country);
+        }
+    }
+
     private function make(?string $country, ?string $locality, ?string $province): Opportunity
     {
         return new Opportunity([
