@@ -43,6 +43,50 @@
             </div>
         @endif
 
+        @if(! empty($reading ?? null))
+            {{-- Preview only: what the engine will do with this listing, and how many applicants fit. --}}
+            <div class="card mb-3" id="listing-reading">
+                <div class="card-header">
+                    <h2 class="h6 fw-semibold mb-0">How ScholarFit reads your listing</h2>
+                </div>
+                <div class="card-body">
+                    @if(empty($reading['rules']))
+                        <p class="small mb-3">
+                            Nothing in this listing is checked, so every student with a complete profile will be
+                            shown it. If that is not what you want, add the requirements you mean.
+                        </p>
+                    @else
+                        <p class="small text-secondary mb-2">Students are checked against these, and only these:</p>
+                        <ul class="small mb-3">
+                            @foreach($reading['rules'] as $rule)
+                                <li>
+                                    {{ $rule['text'] }}
+                                    @if($rule['source'] === 'text')
+                                        <span class="badge text-bg-warning ms-1">read from {{ $rule['where'] }}</span>
+                                    @endif
+                                </li>
+                            @endforeach
+                        </ul>
+                        @if(collect($reading['rules'])->contains('source', 'text'))
+                            <p class="small text-secondary">
+                                Rules marked <em>read from</em> were picked out of your wording, not set by you. If one is
+                                wrong, reword that sentence or fill in the matching setting, which always wins.
+                            </p>
+                        @endif
+                    @endif
+
+                    <p class="mb-1">
+                        Applicants who meet every one of these today:
+                        <strong id="listing-reading-count">{{ $reading['count'] }}</strong>
+                    </p>
+                    <p class="small text-secondary mb-0">
+                        Counts below {{ $reading['minimum'] }} are never shown as a number, so no individual student
+                        can be picked out. You only ever see a figure - never who is in it.
+                    </p>
+                </div>
+            </div>
+        @endif
+
         @if(($duplicates ?? collect())->isNotEmpty())
             {{--
                 Only ever rendered from the admin moderation preview, which is the

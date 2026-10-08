@@ -156,6 +156,13 @@ class OpportunityController extends Controller
             // Where the words disagree with the settings, shown on the preview so it can be
             // fixed before submitting rather than after.
             'conflicts' => \App\Services\ScholarFit\DescriptionConflicts::detect($listing),
+            // The rules the engine will apply (settings and the words alike) and how many
+            // applicants meet them today - a number only from the privacy threshold up.
+            'reading' => [
+                'rules' => \App\Services\ScholarFit\ListingReading::rules($listing),
+                'count' => \App\Services\ScholarFit\ListingReading::displayCount(\App\Services\ScholarFit\ListingReading::matchingCount($listing)),
+                'minimum' => \App\Services\ScholarFit\ListingReading::minimum(),
+            ],
         ]);
     }
 

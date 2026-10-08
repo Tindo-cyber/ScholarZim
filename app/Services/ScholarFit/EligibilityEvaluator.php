@@ -690,6 +690,36 @@ final class EligibilityEvaluator
     }
 
     /**
+     * The conditions read out of a listing's title and description that actually apply.
+     *
+     * The words only fill gaps. Where the provider filled in the structured field a
+     * condition would duplicate, the structured field is the rule and the matching
+     * reading of the text is not asked at all - the two are never allowed to
+     * disagree about who is eligible. (A disagreement is reported to the provider
+     * and the moderator by DescriptionConflicts, not resolved here.)
+     *
+     * Public so the provider's "how ScholarFit reads your listing" panel shows exactly
+     * the conditions the engine will apply, from the same code, not a second reading.
+     *
+     * @return array<int, DescriptionCondition>
+     */
+    public static function textConditionsFor(Opportunity $opportunity): array
+    {
+        $conditions = DescriptionEligibility::conditions($opportunity->title, $opportunity->description);
+
+        return array_values(array_filter($conditions, static function (DescriptionCondition $c) use ($opportunity) {
+            return match ($c->kind) {
+                // Who the award is FOR is the structured target level's to say. The minimum is a
+                // different statement (what must already be held) and no longer silences it.
+                DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->education_level),
+                DescriptionEligibility::ENTRY_QUALIFICATION => blank($opportunity->minimum_education_level),
+                DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field),
+                default => true,
+            };
+        }));
+    }
+
+    /**
      * Conditions read out of the listing's description rather than a
      * structured field - see DescriptionEligibility. This is what stops an
      * empty structured-requirements table from meaning "eligible for
@@ -701,24 +731,8 @@ final class EligibilityEvaluator
      */
     private function descriptionConditions(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
     {
-        $conditions = DescriptionEligibility::conditions($opportunity->title, $opportunity->description);
+        $conditions = self::textConditionsFor($opportunity);
         $outcomes = [];
-
-        // The words only fill gaps. Where the provider filled in the structured field a
-        // condition would duplicate, the structured field is the rule and the matching
-        // reading of the text is not asked at all - the two are never allowed to
-        // disagree about who is eligible. (A disagreement is reported to the provider
-        // and the moderator by DescriptionConflicts, not resolved here.)
-        $conditions = array_values(array_filter($conditions, static function (DescriptionCondition $c) use ($opportunity) {
-            return match ($c->kind) {
-                // Who the award is FOR is the structured target level's to say. The minimum is a
-                // different statement (what must already be held) and no longer silences it.
-                DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->education_level),
-                DescriptionEligibility::ENTRY_QUALIFICATION => blank($opportunity->minimum_education_level),
-                DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field),
-                default => true,
-            };
-        }));
 
         // Every EDUCATION_LEVEL condition - title and description alike -
         // is grouped into one combined outcome, because "for undergraduate

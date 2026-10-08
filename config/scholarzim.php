@@ -105,4 +105,15 @@ return [
         'max_per_provider' => (int) env('SCHOLARZIM_DRAFTS_MAX', 20),
     ],
 
+    /*
+     * Privacy of aggregate figures shown to providers.
+     *
+     * A count of matching applicants below `minimum_count` is never shown as a number
+     * (not even zero), only as "fewer than N", so a small figure cannot be used to pick
+     * out individual students.
+     */
+    'privacy' => [
+        'minimum_count' => (int) env('SCHOLARZIM_MIN_COUNT', 5),
+    ],
+
 ];
