@@ -29,11 +29,9 @@ use Tests\TestCase;
  * failure, P a recognised step, N an unusual one. Two things about it are specific
  * to Zimbabwe and worth knowing before changing anything:
  *
- *  - Honours is, for a Zimbabwean student, usually the ordinary four-year degree
- *    (BSc Honours at UZ or MSU). So for applicants below degree level it behaves
- *    like Undergraduate and never fails them; "Honours" as a one-year
- *    postgraduate year (the South African meaning) is a minority use, and the
- *    provider form says which is which.
+ *  - There is no Honours level. A Zimbabwean BSc / BCom Honours is Undergraduate and the
+ *    one-year South African honours is Postgraduate; "HONOURS" survives only as a legacy
+ *    alias that is read as Undergraduate (see the alias tests below).
  *  - A Form 1 award is a Grade 7 transition bursary: only a Primary pupil is in
  *    it. Secondary students are covered by the O-Level column.
  */
@@ -43,29 +41,28 @@ class LevelJumpTest extends TestCase
 
     private const TARGETS = [
         EducationLevel::FORM_1, EducationLevel::O_LEVEL, EducationLevel::A_LEVEL, EducationLevel::CERTIFICATE,
-        EducationLevel::DIPLOMA, EducationLevel::UNDERGRADUATE, EducationLevel::HONOURS, EducationLevel::POSTGRADUATE,
+        EducationLevel::DIPLOMA, EducationLevel::UNDERGRADUATE, EducationLevel::POSTGRADUATE,
         EducationLevel::MASTERS, EducationLevel::PHD,
     ];
 
     /**
      * applicant => one letter per target, in TARGETS order:
-     *               F1  O   A   Cert Dip UG  Hon PG  MSc PhD
+     *               F1  O   A   Cert Dip UG  PG  MSc PhD
      *
      * @return array<string, array{0: string, 1: string}>
      */
     private static function table(): array
     {
         return [
-            EducationLevel::PRIMARY => 'PPFFFFFFFF',
-            EducationLevel::O_LEVEL => 'FPPPPPPFFF',
-            EducationLevel::A_LEVEL => 'FNPPPPPFFF',
-            EducationLevel::CERTIFICATE => 'FFFPPPPNNN',
-            EducationLevel::DIPLOMA => 'FFFNPPPNNN',
-            EducationLevel::UNDERGRADUATE => 'FFFNNPPPPN',
-            EducationLevel::HONOURS => 'FFFNNNPPPN',
-            EducationLevel::POSTGRADUATE => 'FFFNNNNPPP',
-            EducationLevel::MASTERS => 'FFFNNNNNPP',
-            EducationLevel::PHD => 'FFFNNNNNNP',
+            EducationLevel::PRIMARY => 'PPFFFFFFF',
+            EducationLevel::O_LEVEL => 'FPPPPPFFF',
+            EducationLevel::A_LEVEL => 'FNPPPPFFF',
+            EducationLevel::CERTIFICATE => 'FFFPPPNNN',
+            EducationLevel::DIPLOMA => 'FFFNPPNNN',
+            EducationLevel::UNDERGRADUATE => 'FFFNNPPPN',
+            EducationLevel::POSTGRADUATE => 'FFFNNNPPP',
+            EducationLevel::MASTERS => 'FFFNNNNPP',
+            EducationLevel::PHD => 'FFFNNNNNP',
         ];
     }
 
@@ -107,25 +104,40 @@ class LevelJumpTest extends TestCase
 
     // ------------------------------------------------------ the Zimbabwean cases --
 
-    public function test_an_a_level_student_is_not_blocked_from_an_honours_degree_bursary(): void
+    public function test_honours_is_not_a_level_anyone_can_choose(): void
     {
-        $this->assertSame(LevelJump::RECOGNISED, LevelJump::verdict(EducationLevel::A_LEVEL, EducationLevel::HONOURS));
-        $this->assertSame(
-            LevelJump::verdict(EducationLevel::A_LEVEL, EducationLevel::UNDERGRADUATE),
-            LevelJump::verdict(EducationLevel::A_LEVEL, EducationLevel::HONOURS),
-            'for A-Level, Honours is the same as Undergraduate'
-        );
+        $this->assertNotContains('HONOURS', EducationLevel::APPLICANT_LEVELS);
+        $this->assertNotContains('HONOURS', EducationLevel::TARGET_LEVELS);
+        $this->assertCount(9, EducationLevel::APPLICANT_LEVELS);
+        $this->assertCount(9, EducationLevel::TARGET_LEVELS);
     }
 
-    public function test_certificate_diploma_and_o_level_applicants_treat_honours_like_undergraduate(): void
+    public function test_every_old_spelling_of_honours_is_read_as_undergraduate(): void
     {
-        foreach ([EducationLevel::O_LEVEL, EducationLevel::CERTIFICATE, EducationLevel::DIPLOMA] as $applicant) {
+        foreach (['HONOURS', 'Honours', 'Honours Degree', 'honors', 'Hons', 'Bachelor Honours'] as $spelling) {
+            $this->assertSame(EducationLevel::UNDERGRADUATE, EducationLevel::canonical($spelling), $spelling);
+        }
+    }
+
+    public function test_a_legacy_honours_row_is_judged_exactly_like_undergraduate(): void
+    {
+        foreach (EducationLevel::APPLICANT_LEVELS as $applicant) {
             $this->assertSame(
                 LevelJump::verdict($applicant, EducationLevel::UNDERGRADUATE),
-                LevelJump::verdict($applicant, EducationLevel::HONOURS),
-                $applicant
+                LevelJump::verdict($applicant, 'HONOURS'),
+                "$applicant against a legacy Honours award"
+            );
+            $this->assertSame(
+                LevelJump::verdict(EducationLevel::UNDERGRADUATE, $applicant),
+                LevelJump::verdict('HONOURS', $applicant),
+                "a legacy Honours applicant against $applicant"
             );
         }
+    }
+
+    public function test_an_a_level_student_is_not_blocked_from_a_bsc_honours_bursary(): void
+    {
+        $this->assertSame(LevelJump::RECOGNISED, LevelJump::verdict(EducationLevel::A_LEVEL, 'HONOURS'));
     }
 
     public function test_a_grade_7_leaver_starting_form_1_is_starting_o_level(): void
@@ -226,7 +238,7 @@ class LevelJumpTest extends TestCase
 
     public function test_a_recognised_step_stays_a_passing_note(): void
     {
-        $fit = $this->fit(EducationLevel::A_LEVEL, EducationLevel::HONOURS);
+        $fit = $this->fit(EducationLevel::A_LEVEL, EducationLevel::UNDERGRADUATE);
 
         $this->assertTrue($this->find($fit, RequirementOutcome::TYPE_PROGRESSION)->advisory);
         $this->assertTrue($fit->meetsRequirements());

@@ -55,7 +55,8 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
   reasons either way.
 - Two rules apply to every listing regardless of what the provider configured: whether your
   current education level can ever reach what the listing targets (a Primary pupil cannot
-  apply for a Masters award, no matter how the listing is set up), and whether this specific
+  apply for a Diploma or Masters award, and an O-Level student cannot apply for a PhD, no
+  matter how the listing is set up; a step that is merely unusual is only noted), and whether this specific
   listing has raised its own minimum qualifying level.
 - On top of those, providers can set their own hard rules — a minimum points figure, required
   subject grades, an age limit, a province requirement, proof of academic results on file.
@@ -100,6 +101,9 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
   here even though no applicant's own profile is ever set to it — it is the Primary-to-secondary
   transition award). A student whose current level can never reach the level you pick is
   refused before anything else is checked, regardless of how the rest of the listing is set up.
+  There is no "Honours" option: for a BSc or BCom Honours at a Zimbabwean university, choose
+  **Undergraduate**; for a one-year Honours after a degree (as in South Africa), choose
+  **Postgraduate**.
 - **Minimum qualifying level** — optional, and only needed when your listing is stricter than
   the general pathway: an Undergraduate award that should only take A-Level applicants
   directly, for example, rather than accepting O-Level applicants the way the general pathway

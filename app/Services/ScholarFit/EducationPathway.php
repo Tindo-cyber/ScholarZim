@@ -60,36 +60,24 @@ final class EducationPathway
             EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
-            // In Zimbabwe an Honours degree is usually the ordinary four-year degree, so it
-            // is entered from school like Undergraduate. See LevelJump.
-            EducationLevel::HONOURS,
         ],
         EducationLevel::A_LEVEL => [
             EducationLevel::A_LEVEL,
             EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
-            EducationLevel::HONOURS,
         ],
         EducationLevel::CERTIFICATE => [
             EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
-            EducationLevel::HONOURS,
         ],
         EducationLevel::DIPLOMA => [
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
-            EducationLevel::HONOURS,
         ],
         EducationLevel::UNDERGRADUATE => [
             EducationLevel::UNDERGRADUATE,
-            EducationLevel::HONOURS,
-            EducationLevel::POSTGRADUATE,
-            EducationLevel::MASTERS,
-        ],
-        EducationLevel::HONOURS => [
-            EducationLevel::HONOURS,
             EducationLevel::POSTGRADUATE,
             EducationLevel::MASTERS,
         ],

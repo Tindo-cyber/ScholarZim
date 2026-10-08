@@ -25,18 +25,14 @@ use App\Support\EducationLevel;
  *   - a Form 1 award is a Grade 7 transition bursary: only a Primary pupil is in it;
  *   - a Primary pupil can enter Form 1 and O-Level and nothing above;
  *   - a secondary student cannot hold a postgraduate award (Postgraduate, Masters,
- *     PhD) - but Honours is NOT among them, see below;
+ *     PhD);
  *   - anyone at tertiary level or above is not looking for an O-Level or A-Level
  *     award. Rare enough that the provider can handle it, and better than showing
  *     it as a match.
  *
- * HONOURS. In Zimbabwe an Honours degree (BSc Honours at UZ, BCom Honours at MSU)
- * is usually the ordinary four-year undergraduate degree, entered from A-Level.
- * Treating it as the South African one-year postgraduate year would refuse the
- * students Zimbabwean degree bursaries are for. So for applicants below degree
- * level an Honours award behaves like an Undergraduate one. Everything else about
- * Honours (its place on the ladder, what a Honours applicant may apply for) is
- * unchanged.
+ * HONOURS is not a level here. A Zimbabwean BSc / BCom Honours is a bachelor's degree
+ * (Undergraduate) and the one-year South African honours is Postgraduate; the word is
+ * only a legacy alias that EducationLevel::canonical() reads as Undergraduate.
  *
  * This only answers the level question. Whether the listing then accepts the person
  * is decided by the requirements it states.
@@ -83,7 +79,6 @@ final class LevelJump
         }
 
         if (EducationLevel::tier($applicant) === EducationLevel::TIER_SECONDARY) {
-            // Honours is left out on purpose: in Zimbabwe it is normally the ordinary degree.
             return in_array($target, [EducationLevel::POSTGRADUATE, EducationLevel::MASTERS, EducationLevel::PHD], true);
         }
 

@@ -34,7 +34,7 @@
                        :options="$educationLevels" :grouped="true"
                        :value="\App\Support\EducationLevel::canonical($opportunity?->education_level) ?? $opportunity?->education_level"
                        placeholder="Any level"
-                       hint="This decides which of the questions below apply. A Zimbabwean degree programme such as BSc Honours or BCom Honours belongs under Undergraduate; choose Honours only for a one-year postgraduate honours year, as in South Africa. Form 1 is a transition award for pupils finishing Primary school." />
+                       hint="This decides which of the questions below apply. A Zimbabwean degree programme such as BSc Honours or BCom Honours belongs under Undergraduate; a one-year Honours after a degree (as in South Africa) belongs under Postgraduate. Form 1 is a transition award for pupils finishing Primary school." />
     </div>
 </div>
 

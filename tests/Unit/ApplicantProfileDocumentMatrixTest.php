@@ -49,12 +49,12 @@ class ApplicantProfileDocumentMatrixTest extends TestCase
         }
     }
 
-    /** Honours holds a previous qualification, so it follows the postgraduate set. */
-    public function test_honours_requires_the_previous_qualification_and_a_recommendation_letter_only(): void
+    /** A profile still saved as Honours is an Undergraduate one: Honours is no longer a level. */
+    public function test_a_legacy_honours_profile_needs_what_an_undergraduate_needs(): void
     {
         $this->assertSame(
-            ['transcript', 'recommendation'],
-            $this->profile(EducationLevel::HONOURS)->requiredDocumentTypes()
+            $this->profile(EducationLevel::UNDERGRADUATE)->requiredDocumentTypes(),
+            $this->profile('HONOURS')->requiredDocumentTypes()
         );
     }
 

@@ -6,8 +6,8 @@ namespace App\Services\ScholarFit\Taxonomy;
  * Education levels as an ordered ladder rather than a set of strings.
  *
  * v1 kept a four-entry map of "related" levels, keyed on 'Undergraduate',
- * 'Honours', 'Masters' and 'PhD'. The profile dropdown offers 'Honours Degree',
- * so that key never matched anything a user could pick, and the map had no entry
+ * 'Honours', 'Masters' and 'PhD'. That key matched nothing a user could pick,
+ * and the map had no entry
  * at all for 'Certificate', 'Diploma', 'Postgraduate' or either High School
  * level - which between them cover most Zimbabwean applicants.
  *
@@ -28,8 +28,8 @@ final class EducationLadder
         ['high school a level', 'a level', 'alevel', 'advanced level', 'form 6'],
         ['certificate'],
         ['diploma', 'national diploma'],
-        ['undergraduate', 'bachelor', 'bachelors', 'bachelor degree', 'degree', 'bsc', 'ba'],
-        ['honours degree', 'honours', 'honors', 'hons', 'bachelor honours'],
+        // 'Honours' is a legacy spelling of the ordinary degree; it is no longer a rung of its own.
+        ['undergraduate', 'bachelor', 'bachelors', 'bachelor degree', 'degree', 'bsc', 'ba', 'honours degree', 'honours', 'honors', 'hons', 'bachelor honours'],
         ['postgraduate', 'postgraduate diploma', 'pgd'],
         ['masters', 'master', 'master degree', 'msc', 'ma', 'mba'],
         ['phd', 'doctorate', 'doctoral', 'dphil'],

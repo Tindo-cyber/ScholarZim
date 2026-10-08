@@ -202,6 +202,17 @@ final class DescriptionEligibility
         'bachelors' => EducationLevel::UNDERGRADUATE,
         'bachelor' => EducationLevel::UNDERGRADUATE,
         'first degree' => EducationLevel::UNDERGRADUATE,
+        // "Honours" is not a level of its own: a Zimbabwean BSc / BCom Honours is the ordinary
+        // degree. Only the qualified forms are read - a bare "honours" turns up in "graduated
+        // with honours", which says nothing about the level of the award.
+        'honours degree' => EducationLevel::UNDERGRADUATE,
+        'honors degree' => EducationLevel::UNDERGRADUATE,
+        'bachelor honours' => EducationLevel::UNDERGRADUATE,
+        'bsc honours' => EducationLevel::UNDERGRADUATE,
+        'bsc hons' => EducationLevel::UNDERGRADUATE,
+        'bcom honours' => EducationLevel::UNDERGRADUATE,
+        'bcom hons' => EducationLevel::UNDERGRADUATE,
+
 
         // Unlike "university"/"polytechnic" (DESCRIPTION_ONLY_EDUCATION_LEVEL_PHRASES
         // below), "diploma" does not plausibly name an institution rather

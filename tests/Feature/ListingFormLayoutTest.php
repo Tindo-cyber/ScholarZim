@@ -384,37 +384,36 @@ class ListingFormLayoutTest extends TestCase
             'reviewed_by' => 'admin@scholarzim.co.zw',
         ], $attributes));
     }
-    // ------------------------------------------------ Honours, as Zimbabwe means it --
+    // ------------------------------------------------ Honours is not a level --
 
-    public function test_honours_uses_everything_like_undergraduate(): void
-    {
-        $this->assertSame(
-            OpportunityLevelRules::capabilities(EducationLevel::UNDERGRADUATE),
-            OpportunityLevelRules::capabilities(EducationLevel::HONOURS),
-            'a BSc Honours bursary is decided on A-Level points and school subjects, like any degree bursary'
-        );
-    }
-
-    public function test_the_provider_form_explains_what_honours_means_and_where_a_zimbabwean_degree_belongs(): void
+    public function test_honours_is_not_offered_to_a_provider_as_a_level(): void
     {
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
-        $this->assertStringContainsString('Honours (a one-year postgraduate year, e.g. in South Africa)', $html);
+        $this->assertStringNotContainsString('value="HONOURS"', $html);
+        $this->assertStringNotContainsString('>Honours Degree<', $html);
+    }
+
+    public function test_the_provider_form_says_where_each_kind_of_honours_belongs(): void
+    {
+        $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
+
         // (The apostrophe in "bachelor's" is HTML-escaped in the page, so match around it.)
         $this->assertStringContainsString('including BSc / BCom Honours at Zimbabwean universities)', $html);
-        $this->assertStringContainsString('belongs under Undergraduate', $html);
-        $this->assertStringNotContainsString('>Honours Degree<', $html, 'the bare, ambiguous label is gone from the provider form');
+        $this->assertStringContainsString('Postgraduate (including a one-year Honours after a degree, e.g. in South Africa)', $html);
+        $this->assertStringContainsString('belongs under Postgraduate', $html);
     }
 
     public function test_the_minimum_level_options_carry_the_same_wording(): void
     {
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
-        $this->assertSame(2, substr_count($html, 'Honours (a one-year postgraduate year, e.g. in South Africa)'), 'in both the target and the minimum level lists');
+        $this->assertSame(2, substr_count($html, 'Postgraduate (including a one-year Honours after a degree, e.g. in South Africa)'), 'in both the target and the minimum level lists');
     }
 
-    public function test_an_honours_award_can_still_be_saved_with_a_level_it_is_chosen_for(): void
+    public function test_nothing_new_can_be_saved_as_honours(): void
     {
-        $this->submit(EducationLevel::HONOURS, ['min_academic_points' => 12])->assertSessionHasNoErrors();
+        $this->submit('HONOURS')->assertSessionHasErrors('education_level');
     }
+
 }

@@ -54,6 +54,9 @@ class ListingRiskChecker
     /** The title or description says something other than the listing's own settings. */
     public const DESCRIPTION_CONFLICT = 'description_conflict';
 
+    /** Added by the retire-Honours migration to a listing moved to Undergraduate; dropped when the provider next saves it (not sticky). */
+    public const LEVEL_TO_CONFIRM = 'level_to_confirm';
+
     /** Set by the report process, not by this checker; kept across edits (see stickyFlags). */
     public const REPORTED = 'reported';
 

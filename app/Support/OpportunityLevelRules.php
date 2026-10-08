@@ -30,17 +30,13 @@ final class OpportunityLevelRules
      * Targets an A-Level result leads into. The minimum-points rule is ZIMSEC
      * A-Level points only (EligibilityEvaluator::points), so it is only
      * meaningful where an applicant can already hold A-Level results: a
-     * Certificate, Diploma, Undergraduate or Honours award (Honours being the ordinary
-     * degree in Zimbabwe). Below that the applicant has
+     * Certificate, Diploma or Undergraduate award. Below that the applicant has
      * no A-Level yet; above it they are judged on a degree.
      */
     public const POINTS_TARGETS = [
         EducationLevel::CERTIFICATE,
         EducationLevel::DIPLOMA,
         EducationLevel::UNDERGRADUATE,
-        // In Zimbabwe a BSc or BCom Honours is the ordinary four-year degree, entered from
-        // A-Level, so its bursaries are decided on A-Level points like an Undergraduate one.
-        EducationLevel::HONOURS,
     ];
 
     private const FORM_1_POSITION = 1;
@@ -146,7 +142,7 @@ final class OpportunityLevelRules
      * into the level, so each target maps to the qualification level or levels
      * that lead into it - not merely "anything lower". "Below the target" alone
      * would let a PhD award require Grade 7 Primary results, which is the
-     * contradiction this exists to stop. Honours and above are entered from a
+     * contradiction this exists to stop. Postgraduate and above are entered from a
      * degree, so the degree classification is the only school-or-university
      * result that applies there.
      */
@@ -157,10 +153,6 @@ final class OpportunityLevelRules
         EducationLevel::CERTIFICATE => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL],
         EducationLevel::DIPLOMA => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL],
         EducationLevel::UNDERGRADUATE => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL],
-        // Honours is usually the ordinary degree in Zimbabwe, entered from school, so school
-        // results apply to it like they do to Undergraduate; the degree classification still
-        // applies to anyone coming up from one.
-        EducationLevel::HONOURS => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL, EducationLevel::UNDERGRADUATE],
         EducationLevel::POSTGRADUATE => [EducationLevel::UNDERGRADUATE],
         EducationLevel::MASTERS => [EducationLevel::UNDERGRADUATE],
         EducationLevel::PHD => [EducationLevel::UNDERGRADUATE],
@@ -185,7 +177,7 @@ final class OpportunityLevelRules
 
     /**
      * Whether a subject requirement can be set at all for this target: some
-     * qualification that holds subjects must lead into it. Honours and above are
+     * qualification that holds subjects must lead into it. Postgraduate and above are
      * entered from a degree, and the degree classification carries no subjects, so
      * there is nothing a subject row could name.
      */

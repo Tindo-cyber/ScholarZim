@@ -206,10 +206,13 @@ percentage anywhere in it.
 
 `app/Services/ScholarFit/EligibilityEvaluator.php` is the authoritative rule set, checking
 every requirement a listing actually states: whether the applicant's current education
-level can ever reach what the listing targets at all
-(`app/Services/ScholarFit/EducationPathway.php` — an explicit adjacency table, e.g. O-Level
-may reach Undergraduate but never Masters, checked independently of any single listing's
-configuration; this is advisory, not a gate), whether *this specific* listing has raised its
+level can reach what the listing targets at all
+(`app/Services/ScholarFit/LevelJump.php`: only jumps nobody makes are refused — a Primary
+pupil for a diploma, an O-Level student for a PhD, anyone but a Primary pupil for a Form 1
+award; an unusual step such as an Undergraduate for a Certificate is shown as a note, using
+the adjacency table in `EducationPathway.php`. There is no "Honours" level: a Zimbabwean
+BSc / BCom Honours is Undergraduate, a one-year honours after a degree is Postgraduate, and
+the old value is read as Undergraduate), whether *this specific* listing has raised its
 own minimum qualifying level narrower than the general pathway
 (`Opportunity::minimum_education_level`), required subjects at a stated grade under a stated
 qualification, minimum ZIMSEC A-Level points, an age ceiling, a required province, and proof

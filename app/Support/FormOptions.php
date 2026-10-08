@@ -252,7 +252,6 @@ final class FormOptions
                 EducationLevel::UNDERGRADUATE => EducationLevel::label(EducationLevel::UNDERGRADUATE),
             ],
             'Postgraduate' => [
-                EducationLevel::HONOURS => EducationLevel::label(EducationLevel::HONOURS),
                 EducationLevel::POSTGRADUATE => EducationLevel::label(EducationLevel::POSTGRADUATE),
                 EducationLevel::MASTERS => EducationLevel::label(EducationLevel::MASTERS),
                 EducationLevel::PHD => EducationLevel::label(EducationLevel::PHD),
@@ -263,11 +262,9 @@ final class FormOptions
     /**
      * The level options a PROVIDER chooses from, worded so each can be picked correctly.
      *
-     * "Honours" means two different things. In Zimbabwe a BSc Honours or BCom Honours is
-     * normally the ordinary four-year degree, entered from A-Level; in South Africa it is a
-     * one-year postgraduate year after a degree. A provider who reads "Honours Degree" and
-     * picks it for a Zimbabwean degree bursary has chosen the minority meaning, so the
-     * options say which is which and where a Zimbabwean degree belongs.
+     * There is no "Honours" option. A Zimbabwean BSc / BCom Honours is a bachelor's degree
+     * (Undergraduate); the one-year honours after a degree, as in South Africa, is
+     * Postgraduate. Saying so beside the two options is what stops a provider guessing.
      *
      * @return array<string, array<string, string>>
      */
@@ -276,7 +273,7 @@ final class FormOptions
         $groups = $forTarget ? self::targetEducationLevelGroups() : self::educationLevelGroups();
 
         $groups['Tertiary'][EducationLevel::UNDERGRADUATE] = 'Undergraduate (a bachelor\'s degree, including BSc / BCom Honours at Zimbabwean universities)';
-        $groups['Postgraduate'][EducationLevel::HONOURS] = 'Honours (a one-year postgraduate year, e.g. in South Africa)';
+        $groups['Postgraduate'][EducationLevel::POSTGRADUATE] = 'Postgraduate (including a one-year Honours after a degree, e.g. in South Africa)';
 
         return $groups;
     }

@@ -85,8 +85,8 @@ class ListingValidationTest extends TestCase
             'o level may require primary' => [EducationLevel::O_LEVEL, EducationLevel::PRIMARY, true],
             'o level cannot require a level' => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL, false],
             'a level may require o level' => [EducationLevel::A_LEVEL, EducationLevel::O_LEVEL, true],
-            'diploma cannot require honours' => [EducationLevel::DIPLOMA, EducationLevel::HONOURS, false],
-            'honours may require undergraduate' => [EducationLevel::HONOURS, EducationLevel::UNDERGRADUATE, true],
+            'diploma cannot require undergraduate' => [EducationLevel::DIPLOMA, EducationLevel::UNDERGRADUATE, false],
+            'postgraduate may require undergraduate' => [EducationLevel::POSTGRADUATE, EducationLevel::UNDERGRADUATE, true],
             'masters cannot require phd' => [EducationLevel::MASTERS, EducationLevel::PHD, false],
             'phd may require masters' => [EducationLevel::PHD, EducationLevel::MASTERS, true],
         ];
@@ -141,8 +141,6 @@ class ListingValidationTest extends TestCase
             'certificate' => [EducationLevel::CERTIFICATE, true],
             'diploma' => [EducationLevel::DIPLOMA, true],
             'undergraduate' => [EducationLevel::UNDERGRADUATE, true],
-            // In Zimbabwe a BSc / BCom Honours is the ordinary degree, entered from A-Level.
-            'honours' => [EducationLevel::HONOURS, true],
             'postgraduate' => [EducationLevel::POSTGRADUATE, false],
             'masters' => [EducationLevel::MASTERS, false],
             'phd' => [EducationLevel::PHD, false],
@@ -150,10 +148,10 @@ class ListingValidationTest extends TestCase
         ];
     }
 
-    public function test_the_points_set_is_exactly_certificate_diploma_undergraduate_and_honours(): void
+    public function test_the_points_set_is_exactly_certificate_diploma_and_undergraduate(): void
     {
         $this->assertSame(
-            [EducationLevel::CERTIFICATE, EducationLevel::DIPLOMA, EducationLevel::UNDERGRADUATE, EducationLevel::HONOURS],
+            [EducationLevel::CERTIFICATE, EducationLevel::DIPLOMA, EducationLevel::UNDERGRADUATE],
             OpportunityLevelRules::POINTS_TARGETS
         );
     }
@@ -229,9 +227,6 @@ class ListingValidationTest extends TestCase
             'o level for diploma' => [$o, EducationLevel::DIPLOMA, true],
             'a level for undergraduate' => [$a, EducationLevel::UNDERGRADUATE, true],
             'cambridge a level for certificate' => [$cambridgeA, EducationLevel::CERTIFICATE, true],
-            // Honours is the ordinary degree in Zimbabwe, so school results lead into it.
-            'a level for honours' => [$a, EducationLevel::HONOURS, true],
-            'o level for honours' => [$o, EducationLevel::HONOURS, true],
             'primary for undergraduate' => [$p, EducationLevel::UNDERGRADUATE, false],
             'a level for masters' => [$a, EducationLevel::MASTERS, false],
             'o level for phd' => [$o, EducationLevel::PHD, false],
@@ -248,7 +243,7 @@ class ListingValidationTest extends TestCase
         $this->assertFalse(OpportunityLevelRules::qualificationFits(EducationLevel::UNDERGRADUATE, EducationLevel::UNDERGRADUATE));
         $this->assertFalse(OpportunityLevelRules::qualificationFits(EducationLevel::UNDERGRADUATE, EducationLevel::DIPLOMA));
 
-        foreach ([EducationLevel::HONOURS, EducationLevel::POSTGRADUATE, EducationLevel::MASTERS, EducationLevel::PHD] as $target) {
+        foreach ([EducationLevel::POSTGRADUATE, EducationLevel::MASTERS, EducationLevel::PHD] as $target) {
             $this->assertTrue(OpportunityLevelRules::qualificationFits(EducationLevel::UNDERGRADUATE, $target), $target);
         }
     }

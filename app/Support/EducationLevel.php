@@ -44,8 +44,6 @@ final class EducationLevel
 
     public const UNDERGRADUATE = 'UNDERGRADUATE';
 
-    public const HONOURS = 'HONOURS';
-
     public const POSTGRADUATE = 'POSTGRADUATE';
 
     public const MASTERS = 'MASTERS';
@@ -60,7 +58,6 @@ final class EducationLevel
         self::CERTIFICATE,
         self::DIPLOMA,
         self::UNDERGRADUATE,
-        self::HONOURS,
         self::POSTGRADUATE,
         self::MASTERS,
         self::PHD,
@@ -74,7 +71,6 @@ final class EducationLevel
         self::CERTIFICATE,
         self::DIPLOMA,
         self::UNDERGRADUATE,
-        self::HONOURS,
         self::POSTGRADUATE,
         self::MASTERS,
         self::PHD,
@@ -96,7 +92,6 @@ final class EducationLevel
         self::CERTIFICATE => self::TIER_TERTIARY,
         self::DIPLOMA => self::TIER_TERTIARY,
         self::UNDERGRADUATE => self::TIER_TERTIARY,
-        self::HONOURS => self::TIER_POSTGRADUATE,
         self::POSTGRADUATE => self::TIER_POSTGRADUATE,
         self::MASTERS => self::TIER_POSTGRADUATE,
         self::PHD => self::TIER_POSTGRADUATE,
@@ -110,7 +105,6 @@ final class EducationLevel
         self::CERTIFICATE => 'Certificate',
         self::DIPLOMA => 'Diploma',
         self::UNDERGRADUATE => 'Undergraduate',
-        self::HONOURS => 'Honours Degree',
         self::POSTGRADUATE => 'Postgraduate',
         self::MASTERS => 'Masters',
         self::PHD => 'PhD',
@@ -172,11 +166,15 @@ final class EducationLevel
         'bsc' => self::UNDERGRADUATE,
         'ba' => self::UNDERGRADUATE,
 
-        'honours degree' => self::HONOURS,
-        'honours' => self::HONOURS,
-        'honors' => self::HONOURS,
-        'hons' => self::HONOURS,
-        'bachelor honours' => self::HONOURS,
+        // "Honours" is not a level anyone can choose any more: a Zimbabwean BSc / BCom Honours
+        // is a bachelor's degree, and the one-year South African honours is entered as
+        // Postgraduate. The word is still read - in old rows, titles and descriptions - as
+        // the ordinary degree. Nothing new is saved as HONOURS.
+        'honours degree' => self::UNDERGRADUATE,
+        'honours' => self::UNDERGRADUATE,
+        'honors' => self::UNDERGRADUATE,
+        'hons' => self::UNDERGRADUATE,
+        'bachelor honours' => self::UNDERGRADUATE,
 
         'postgraduate' => self::POSTGRADUATE,
         'postgraduate diploma' => self::POSTGRADUATE,
