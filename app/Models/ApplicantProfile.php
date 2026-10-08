@@ -64,6 +64,12 @@ class ApplicantProfile extends Model
         'transcript_uploaded_at' => 'datetime',
     ];
 
+    /** The programme(s) this applicant is on or hopes to be on. See ApplicantProgrammes. */
+    public function programmeChoices(): HasMany
+    {
+        return $this->hasMany(ApplicantProgramme::class, 'profile_id', 'profile_id');
+    }
+
     /** documentType => column prefix, as used by the upload routes. */
     public const DOCUMENT_TYPES = [
         'results' => 'results_certificate',

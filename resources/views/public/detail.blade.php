@@ -67,6 +67,11 @@
                                 </li>
                             @endforeach
                         </ul>
+                        @if(collect($reading['rules'])->contains(fn ($rule) => str_starts_with($rule['text'], 'Open to:')))
+                            <p class="small text-secondary" id="listing-reading-scope-note">
+                                "Open to" is recorded with the listing, but it does not yet change which students are matched or counted below.
+                            </p>
+                        @endif
                         @if(collect($reading['rules'])->contains('source', 'text'))
                             <p class="small text-secondary">
                                 Rules marked <em>read from</em> were picked out of your wording, not set by you. If one is

@@ -38,6 +38,8 @@
     </div>
 </div>
 
+@include('opportunities.partials.scope-fields', ['opportunity' => $opportunity])
+
 <div class="card mb-4">
     <div class="card-header">
         <h2 class="h6 fw-semibold mb-0">The offer</h2>

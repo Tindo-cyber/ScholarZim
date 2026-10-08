@@ -435,6 +435,8 @@
                     </div>
                 </div>
             </form>
+
+            @include('applicant.partials.programme-card', ['profile' => $profile, 'catalogue' => $catalogue, 'programmeChoices' => $programmeChoices])
         </div>
 
         <div class="col-xl-4">

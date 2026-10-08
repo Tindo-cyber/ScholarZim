@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\AcademicQualification;
+use App\Services\Catalogue\ListingScopes;
 use App\Services\ScholarFit\Taxonomy\SettlementType;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
@@ -101,6 +102,12 @@ class StoreOpportunityRequest extends FormRequest
             'subject_requirements.*.qualification_id' => ['required', 'integer', 'exists:academic_qualifications,id'],
             'subject_requirements.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
             'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
+            // What the listing is open to. Checked as a whole in checkScope().
+            'scope_programmes' => ['nullable', 'array'],
+            'scope_fields' => ['nullable', 'array'],
+            'scope_institutions' => ['nullable', 'array'],
+            'programme_suggestion' => ['nullable', 'string', 'max:200'],
+            'programme_suggestion_field' => ['nullable', 'integer'],
         ];
     }
 
@@ -130,6 +137,7 @@ class StoreOpportunityRequest extends FormRequest
                 $this->checkLevelCombinations($validator);
                 $this->checkLocality($validator);
                 $this->checkSubjectRows($validator);
+                $this->checkScope($validator);
             },
         ];
     }
@@ -245,6 +253,22 @@ class StoreOpportunityRequest extends FormRequest
     }
 
     /** The target level as submitted, or null when it is blank or failed its own rule. */
+    /** Programmes, fields and institutions: real, at the listing's level, and only where a level uses them. */
+    private function checkScope(Validator $validator): void
+    {
+        $errors = $validator->errors();
+
+        foreach (['scope_programmes', 'scope_fields', 'scope_institutions', 'programme_suggestion', 'programme_suggestion_field'] as $key) {
+            if ($errors->has($key)) {
+                return;
+            }
+        }
+
+        foreach (app(ListingScopes::class)->problems($this->all(), $this->targetLevel($errors), $this->user()) as $key => $message) {
+            $errors->add($key, $message);
+        }
+    }
+
     private function targetLevel($errors): ?string
     {
         return $errors->has('education_level') ? null : (filled($this->input('education_level')) ? $this->input('education_level') : null);

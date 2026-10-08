@@ -100,7 +100,7 @@ class ListingFormLayoutTest extends TestCase
     public function test_form_1_uses_no_field_of_study_points_certificate_or_subjects(): void
     {
         $this->assertSame(
-            ['field' => false, 'points' => false, 'certificate' => false, 'subjects' => true],
+            ['field' => false, 'points' => false, 'certificate' => false, 'subjects' => true, 'programmes' => false],
             OpportunityLevelRules::capabilities(EducationLevel::FORM_1),
             'Form 1 hides field of study, points and the certificate toggle; Grade 7 subjects remain valid'
         );
@@ -109,7 +109,7 @@ class ListingFormLayoutTest extends TestCase
     public function test_a_phd_uses_a_field_but_no_points_and_no_school_subjects(): void
     {
         $this->assertSame(
-            ['field' => true, 'points' => false, 'certificate' => true, 'subjects' => false],
+            ['field' => true, 'points' => false, 'certificate' => true, 'subjects' => false, 'programmes' => true],
             OpportunityLevelRules::capabilities(EducationLevel::PHD)
         );
     }
@@ -117,7 +117,7 @@ class ListingFormLayoutTest extends TestCase
     public function test_an_undergraduate_award_uses_everything(): void
     {
         $this->assertSame(
-            ['field' => true, 'points' => true, 'certificate' => true, 'subjects' => true],
+            ['field' => true, 'points' => true, 'certificate' => true, 'subjects' => true, 'programmes' => true],
             OpportunityLevelRules::capabilities(EducationLevel::UNDERGRADUATE)
         );
     }
@@ -125,7 +125,7 @@ class ListingFormLayoutTest extends TestCase
     public function test_no_level_hides_nothing(): void
     {
         $this->assertSame(
-            ['field' => true, 'points' => true, 'certificate' => true, 'subjects' => true],
+            ['field' => true, 'points' => true, 'certificate' => true, 'subjects' => true, 'programmes' => true],
             OpportunityLevelRules::capabilities(null)
         );
     }

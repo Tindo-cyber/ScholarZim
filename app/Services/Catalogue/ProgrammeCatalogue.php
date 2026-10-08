@@ -108,6 +108,31 @@ class ProgrammeCatalogue
         return Programme::normalise((string) preg_replace('/\([^)]*\)/', '', $name));
     }
 
+    /**
+     * Everything a picker needs, in one go: the programmes this person may choose (the
+     * catalogue, plus their own pending suggestions), the broad fields with their narrow ones,
+     * and the institutions that are switched on.
+     *
+     * @return array{programmes: Collection<int, Programme>, fields: Collection<int, Field>, institutions: Collection<int, \App\Models\Institution>}
+     */
+    public function formOptions(?User $for = null): array
+    {
+        return [
+            'programmes' => Programme::query()
+                ->with('synonyms')
+                ->where(fn (Builder $visible) => $visible
+                    ->where(fn (Builder $catalogue) => $catalogue->where('status', Programme::APPROVED)->where('is_active', true))
+                    ->when($for !== null, fn (Builder $q) => $q->orWhere(fn (Builder $own) => $own
+                        ->where('status', Programme::PENDING)->where('suggested_by', $for->user_id))))
+                ->orderBy('name')
+                ->get()
+                ->sortBy(fn (Programme $p) => array_search($p->education_level, Programme::LEVELS, true))
+                ->values(),
+            'fields' => Field::whereNull('parent_id')->with(['children' => fn ($q) => $q->orderBy('code')])->orderBy('code')->get(),
+            'institutions' => \App\Models\Institution::active()->orderBy('type')->orderBy('name')->get(),
+        ];
+    }
+
     // ----------------------------------------------------------- suggestions --
 
     /**

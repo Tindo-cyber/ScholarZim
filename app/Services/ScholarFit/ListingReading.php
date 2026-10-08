@@ -3,6 +3,8 @@
 namespace App\Services\ScholarFit;
 
 use App\Models\ApplicantProfile;
+use App\Services\Catalogue\CatalogueMentions;
+use App\Services\Catalogue\ListingScopes;
 use App\Models\Opportunity;
 use App\Support\AccountStatus;
 use App\Support\EducationLevel;
@@ -86,6 +88,27 @@ final class ListingReading
 
         if ($listing->requires_results_certificate) {
             $add('A results certificate uploaded');
+        }
+
+        // What the provider chose in "Open to", in plain words.
+        $scopes = $listing->relationLoaded('scopes') ? $listing->scopes : ($listing->exists ? $listing->scopes()->with(['programme', 'field.parent', 'institution'])->get() : collect());
+
+        if ($scopes->isNotEmpty()) {
+            $add('Open to: ' . app(ListingScopes::class)->describe($scopes));
+        }
+
+        // Programmes the wording names, when nothing was chosen above. (Fields named in the wording are
+        // already listed below as "Studying ...", by the older reader.)
+        foreach (app(CatalogueMentions::class)->read($listing) as $mention) {
+            if ($mention['type'] !== 'programme') {
+                continue;
+            }
+
+            $rules[] = [
+                'text' => 'Open to: ' . $mention['label'] . ' (from "' . $mention['phrase'] . '")',
+                'source' => self::FROM_TEXT,
+                'where' => 'your ' . $mention['source'],
+            ];
         }
 
         foreach (EligibilityEvaluator::textConditionsFor($listing) as $condition) {

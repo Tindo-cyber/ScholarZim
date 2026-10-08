@@ -39,6 +39,8 @@ class ProfileController extends Controller
 
         return view('applicant.profile', [
             'profile' => $profile,
+            'catalogue' => app(\App\Services\Catalogue\ProgrammeCatalogue::class)->formOptions($user),
+            'programmeChoices' => $profile->programmeChoices()->get(),
             'educationLevels' => FormOptions::educationLevelGroups(),
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
@@ -74,6 +76,28 @@ class ProfileController extends Controller
                 ],
             ])->all(),
         ]);
+    }
+
+    /** The programme an enrolled student is on, or the (up to three) a school-leaver hopes to study. */
+    public function programmes(Request $request, \App\Services\Catalogue\ApplicantProgrammes $programmes)
+    {
+        $request->validate([
+            'current_programme_id' => ['nullable', 'integer'],
+            'current_institution_id' => ['nullable', 'integer'],
+            'intended_programme_ids' => ['nullable', 'array', 'max:20'],
+            'intended_programme_ids.*' => ['integer'],
+            'programme_suggestion' => ['nullable', 'string', 'max:200'],
+            'programme_suggestion_field' => ['nullable', 'integer'],
+            'programme_suggestion_level' => ['nullable', 'string', 'max:30'],
+        ]);
+
+        $profile = $this->profileService->forUser($request->user());
+
+        $programmes->save($profile, $request->user(), $request->all());
+
+        return redirect()
+            ->to(route('applicant.profile') . '#programme-card')
+            ->with('successMessage', 'Your programme is saved.');
     }
 
     /** "Yes, this is still my current level" - the yearly check, answered in one click. */

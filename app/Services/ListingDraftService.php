@@ -7,6 +7,7 @@ use App\Models\AcademicSubject;
 use App\Models\Opportunity;
 use App\Models\OpportunitySubjectRequirement;
 use App\Models\User;
+use App\Services\Catalogue\ListingScopes;
 use App\Services\ScholarFit\Taxonomy\SettlementType;
 use App\Support\AuditAction;
 use App\Support\EducationLevel;
@@ -38,8 +39,10 @@ use RuntimeException;
  */
 class ListingDraftService
 {
-    public function __construct(private readonly AuditService $auditService)
-    {
+    public function __construct(
+        private readonly AuditService $auditService,
+        private readonly ListingScopes $scopes,
+    ) {
     }
 
     /**
@@ -80,6 +83,7 @@ class ListingDraftService
             }
 
             $this->syncSubjects($draft, $input['subject_requirements'] ?? [], $notKept);
+            $this->syncScope($draft, $input, $provider, $notKept);
 
             return $draft;
         });
@@ -97,6 +101,7 @@ class ListingDraftService
             $id = $draft->opportunity_id;
 
             $draft->subjectRequirements()->delete();
+            $draft->scopes()->delete();
             $draft->delete();
 
             $this->auditService->logOrFail(
@@ -319,6 +324,85 @@ class ListingDraftService
         }
 
         $draft->subjectRequirements()->whereNotIn('id', $keptIds)->delete();
+    }
+
+    /**
+     * What the draft is open to, kept as far as it can be. A choice that cannot be stored (a
+     * programme at another level, one that does not exist) is left out and said so, never
+     * dropped silently; the rules that would refuse it run when the draft is submitted.
+     *
+     * @param  array<string, mixed>  $input
+     * @param  array<int, array{field: string, reason: string}>  $notKept
+     */
+    private function syncScope(Opportunity $draft, array $input, User $provider, array &$notKept): void
+    {
+        $level = EducationLevel::canonical($draft->education_level);
+        $choices = $this->scopes->choices($input);
+        $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || filled($input['programme_suggestion'] ?? null);
+
+        if ($any && ! ListingScopes::appliesTo($level)) {
+            $notKept[] = ['field' => 'Open to', 'reason' => 'Programmes, fields and institutions do not apply to ' . EducationLevel::label($level) . ' awards, so none were kept.'];
+            $draft->scopes()->delete();
+
+            return;
+        }
+
+        $keep = ['programmes' => [], 'fields' => [], 'institutions' => []];
+        $programmes = \App\Models\Programme::whereIn('id', $choices['programmes'])->get()->keyBy('id');
+
+        foreach ($choices['programmes'] as $id) {
+            $programme = $programmes->get($id);
+
+            if ($programme === null || ! ($programme->status === \App\Models\Programme::APPROVED && $programme->is_active
+                || $programme->isPending() && $programme->suggested_by === $provider->user_id)) {
+                $notKept[] = ['field' => 'Open to', 'reason' => 'A programme that is not in the catalogue was not kept.'];
+            } elseif ($level !== null && $programme->education_level !== $level) {
+                $notKept[] = ['field' => 'Open to', 'reason' => $programme->name . ' is at ' . $programme->levelLabel() . ' level, not ' . EducationLevel::label($level) . ', so it was not kept.'];
+            } else {
+                $keep['programmes'][] = $id;
+            }
+        }
+
+        $knownFields = \App\Models\Field::whereIn('id', $choices['fields'])->pluck('id')->all();
+        $keep['fields'] = $knownFields;
+
+        if (count($knownFields) !== count($choices['fields'])) {
+            $notKept[] = ['field' => 'Open to', 'reason' => 'A field that does not exist was not kept.'];
+        }
+
+        $knownInstitutions = \App\Models\Institution::active()->whereIn('id', $choices['institutions'])->pluck('id')->all();
+        $keep['institutions'] = $knownInstitutions;
+
+        if (count($knownInstitutions) !== count($choices['institutions'])) {
+            $notKept[] = ['field' => 'Open to', 'reason' => 'An institution that is not available was not kept.'];
+        }
+
+        if (filled($input['programme_suggestion'] ?? null)) {
+            try {
+                if ($level === null) {
+                    throw new \InvalidArgumentException('Choose the level of study first - a programme you add belongs to a level.');
+                }
+
+                $keep['programmes'][] = app(\App\Services\Catalogue\ProgrammeCatalogue::class)
+                    ->suggest($provider, (string) $input['programme_suggestion'], $level, (int) ($input['programme_suggestion_field'] ?? 0))->id;
+            } catch (\InvalidArgumentException|\DomainException $e) {
+                $notKept[] = ['field' => 'A programme that is not listed', 'reason' => $e->getMessage()];
+            }
+        }
+
+        $draft->scopes()->delete();
+
+        foreach (array_unique($keep['programmes']) as $id) {
+            \App\Models\OpportunityScope::create(['opportunity_id' => $draft->opportunity_id, 'programme_id' => $id]);
+        }
+
+        foreach ($keep['fields'] as $id) {
+            \App\Models\OpportunityScope::create(['opportunity_id' => $draft->opportunity_id, 'field_id' => $id]);
+        }
+
+        foreach ($keep['institutions'] as $id) {
+            \App\Models\OpportunityScope::create(['opportunity_id' => $draft->opportunity_id, 'institution_id' => $id]);
+        }
     }
 
     /** A value as it can safely be shown back in a message. */

@@ -296,6 +296,12 @@ final class DescriptionEligibility
         'mining' => 'Mining & Metallurgy',
     ];
 
+    /** The subject words the field reader recognises, so other readers can leave them to it. @return array<int, string> */
+    public static function fieldPhrases(): array
+    {
+        return array_keys(self::FIELD_OF_STUDY_PHRASES);
+    }
+
     /**
      * Skill/technology phrases with no authoritative applicant-profile field
      * behind them. Detected so the condition can be reported, never

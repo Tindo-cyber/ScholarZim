@@ -94,6 +94,12 @@ class Opportunity extends Model
         return $this->hasMany(SavedScholarship::class, 'opportunity_id', 'opportunity_id');
     }
 
+    /** What this listing is open to (programmes, fields, institutions). None = anyone. */
+    public function scopes(): HasMany
+    {
+        return $this->hasMany(OpportunityScope::class, 'opportunity_id', 'opportunity_id');
+    }
+
     public function subjectRequirements(): HasMany
     {
         return $this->hasMany(OpportunitySubjectRequirement::class, 'opportunity_id', 'opportunity_id');

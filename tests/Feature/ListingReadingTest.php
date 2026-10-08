@@ -186,6 +186,57 @@ class ListingReadingTest extends TestCase
         $this->assertStringContainsString('read from your title', $html);
     }
 
+    // ------------------------------------------------------------- open to --
+
+    public function test_what_the_listing_is_open_to_is_shown_in_plain_words(): void
+    {
+        $rules = $this->rules([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'scope_fields' => [\App\Models\Field::where('code', '071')->value('id')],
+            'scope_institutions' => [
+                \App\Models\Institution::where('code', 'MSU')->value('id'),
+                \App\Models\Institution::where('code', 'NUST')->value('id'),
+            ],
+        ]);
+
+        $this->assertContains('Open to: any Engineering and engineering trades programme at MSU or NUST', $this->texts($rules));
+        $this->assertSame(ListingReading::FROM_SETTING, collect($rules)->firstWhere(fn ($r) => str_starts_with($r['text'], 'Open to:'))['source']);
+    }
+
+    public function test_a_programme_named_only_in_the_wording_is_labelled_as_read_from_the_text(): void
+    {
+        $rules = $this->rules(['title' => 'BSc Computer Science Bursary', 'education_level' => EducationLevel::UNDERGRADUATE]);
+
+        $fromText = collect($rules)->first(fn ($r) => str_starts_with($r['text'], 'Open to:'));
+
+        $this->assertNotNull($fromText);
+        $this->assertSame(ListingReading::FROM_TEXT, $fromText['source']);
+        $this->assertSame('your title', $fromText['where']);
+        $this->assertStringContainsString('BSc Computer Science', $fromText['text']);
+    }
+
+    public function test_a_chosen_scope_silences_the_same_names_in_the_wording(): void
+    {
+        $rules = $this->rules([
+            'title' => 'BSc Computer Science Bursary',
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'scope_fields' => [\App\Models\Field::where('code', '07')->value('id')],
+        ]);
+
+        $this->assertSame([], array_values(array_filter($rules, fn ($r) => $r['source'] === ListingReading::FROM_TEXT && str_starts_with($r['text'], 'Open to:'))));
+    }
+
+    public function test_the_preview_says_the_scope_does_not_yet_change_matching(): void
+    {
+        $html = $this->actingAs($this->provider)->post('/opportunities/preview', [
+            'title' => 'Scoped', 'education_level' => EducationLevel::UNDERGRADUATE,
+            'scope_fields' => [\App\Models\Field::where('code', '07')->value('id')],
+        ])->assertOk()->getContent();
+
+        $this->assertStringContainsString('listing-reading-scope-note', $html);
+        $this->assertStringContainsString('Open to: any programme in Engineering, manufacturing and construction', $html);
+    }
+
     public function test_a_student_cannot_use_the_preview(): void
     {
         $student = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();

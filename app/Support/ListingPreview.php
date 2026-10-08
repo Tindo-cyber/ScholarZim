@@ -4,8 +4,12 @@ namespace App\Support;
 
 use App\Models\AcademicQualification;
 use App\Models\AcademicSubject;
+use App\Models\Field;
+use App\Models\Institution;
 use App\Models\Opportunity;
+use App\Models\OpportunityScope;
 use App\Models\OpportunitySubjectRequirement;
+use App\Models\Programme;
 use App\Models\User;
 use Illuminate\Support\Carbon;
 
@@ -78,6 +82,7 @@ final class ListingPreview
 
         $opportunity->setRelation('provider', $provider);
         $opportunity->setRelation('subjectRequirements', self::requirements($input['subject_requirements'] ?? []));
+        $opportunity->setRelation('scopes', self::scopes($input, $level));
 
         return $opportunity;
     }
@@ -93,6 +98,42 @@ final class ListingPreview
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    /**
+     * What the listing is open to, from the ids the form posted. Forgiving like the rest of the
+     * preview: an id that is not a real programme, field or institution is simply left out.
+     *
+     * @return \Illuminate\Support\Collection<int, OpportunityScope>
+     */
+    private static function scopes(array $input, ?string $level): \Illuminate\Support\Collection
+    {
+        if (! \App\Services\Catalogue\ListingScopes::appliesTo($level)) {
+            return collect();
+        }
+
+        $choices = app(\App\Services\Catalogue\ListingScopes::class)->choices($input);
+        $rows = collect();
+
+        foreach (Programme::with('field')->whereIn('id', $choices['programmes'])->get() as $programme) {
+            $row = new OpportunityScope(['programme_id' => $programme->id]);
+            $row->setRelation('programme', $programme);
+            $rows->push($row);
+        }
+
+        foreach (Field::with('parent')->whereIn('id', $choices['fields'])->get() as $field) {
+            $row = new OpportunityScope(['field_id' => $field->id]);
+            $row->setRelation('field', $field);
+            $rows->push($row);
+        }
+
+        foreach (Institution::active()->whereIn('id', $choices['institutions'])->get() as $institution) {
+            $row = new OpportunityScope(['institution_id' => $institution->id]);
+            $row->setRelation('institution', $institution);
+            $rows->push($row);
+        }
+
+        return $rows;
     }
 
     /** @return \Illuminate\Support\Collection<int, OpportunitySubjectRequirement> */

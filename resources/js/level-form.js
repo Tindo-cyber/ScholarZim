@@ -57,6 +57,11 @@
             section.querySelectorAll('input, select, textarea').forEach(function (el) {
                 if (el.type === 'checkbox' || el.type === 'radio') {
                     el.checked = false;
+                } else if (el.tagName === 'SELECT' && el.multiple) {
+                    // A multiple select has no "first option" to fall back to: clearing it means choosing nothing.
+                    Array.prototype.forEach.call(el.options, function (option) {
+                        option.selected = false;
+                    });
                 } else if (el.tagName === 'SELECT') {
                     el.selectedIndex = 0;
                 } else {

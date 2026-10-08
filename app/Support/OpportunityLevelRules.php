@@ -204,10 +204,11 @@ final class OpportunityLevelRules
      *   points      minimum ZIMSEC A-Level points can apply
      *   certificate "proof of results on file" can be asked of an applicant here
      *   subjects    a required subject can be named
+     *   programmes  the award can be narrowed to programmes, fields or institutions
      *
      * No target ("Any level") uses everything: nothing is known to be irrelevant.
      *
-     * @return array{field: bool, points: bool, certificate: bool, subjects: bool}
+     * @return array{field: bool, points: bool, certificate: bool, subjects: bool, programmes: bool}
      */
     public static function capabilities(?string $target): array
     {
@@ -218,6 +219,7 @@ final class OpportunityLevelRules
             'points' => self::allowsPoints($target),
             'certificate' => self::allowsResultsCertificate($target),
             'subjects' => self::allowsSubjectRequirements($target),
+            'programmes' => \App\Services\Catalogue\ListingScopes::appliesTo($target),
         ];
     }
 
@@ -252,6 +254,13 @@ final class OpportunityLevelRules
 
         if (! $uses['subjects']) {
             $clear['subject_requirements'] = [];
+        }
+
+        if (! $uses['programmes']) {
+            $clear['scope_programmes'] = [];
+            $clear['scope_fields'] = [];
+            $clear['scope_institutions'] = [];
+            $clear['programme_suggestion'] = null;
         }
 
         return $clear;

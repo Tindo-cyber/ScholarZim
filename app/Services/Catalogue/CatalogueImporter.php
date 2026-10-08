@@ -62,10 +62,9 @@ class CatalogueImporter
         }
 
         try {
-            $reader = IOFactory::createReader($extension === 'csv' ? 'Csv' : 'Xlsx');
-            $reader->setReadDataOnly(true);
-            $sheet = $reader->load($path)->getActiveSheet();
-            $table = $sheet->toArray(null, false, false, false);
+            // A CSV is read directly. The spreadsheet library is only for .xlsx: it is heavy, and
+            // the starter files are loaded on every demo seed.
+            $table = $extension === 'csv' ? $this->readCsv($path) : $this->readXlsx($path);
         } catch (\Throwable) {
             return ImportReport::failed('the file could not be read. Save it as .csv (UTF-8) or .xlsx and try again.');
         }
@@ -87,6 +86,38 @@ class CatalogueImporter
         }
 
         return $this->import($kind, $rows);
+    }
+
+    /** @return array<int, array<int, string|null>> */
+    private function readCsv(string $path): array
+    {
+        $handle = fopen($path, 'r');
+
+        if ($handle === false) {
+            throw new \RuntimeException('unreadable');
+        }
+
+        $table = [];
+
+        while (($cells = fgetcsv($handle, 0, ',', '"', '')) !== false) {
+            $table[] = $cells;
+        }
+
+        fclose($handle);
+
+        return $table;
+    }
+
+    /** @return array<int, array<int, mixed>> */
+    private function readXlsx(string $path): array
+    {
+        $reader = IOFactory::createReader('Xlsx');
+        $reader->setReadDataOnly(true);
+        $spreadsheet = $reader->load($path);
+        $table = $spreadsheet->getActiveSheet()->toArray(null, false, false, false);
+        $spreadsheet->disconnectWorksheets();
+
+        return $table;
     }
 
     /**

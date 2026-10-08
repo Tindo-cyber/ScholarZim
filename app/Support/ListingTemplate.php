@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\Opportunity;
+use App\Models\OpportunityScope;
 use App\Models\OpportunitySubjectRequirement;
 
 /**
@@ -83,6 +84,20 @@ final class ListingTemplate
         });
 
         $copy->setRelation('subjectRequirements', $requirements);
+
+        // Who it is open to carries over; the form shows each choice by name, from the relations.
+        $copy->setRelation('scopes', $source->scopes->map(function (OpportunityScope $scope) {
+            $row = new OpportunityScope([
+                'programme_id' => $scope->programme_id,
+                'field_id' => $scope->field_id,
+                'institution_id' => $scope->institution_id,
+            ]);
+            $row->setRelation('programme', $scope->programme);
+            $row->setRelation('field', $scope->field);
+            $row->setRelation('institution', $scope->institution);
+
+            return $row;
+        }));
 
         return $copy;
     }

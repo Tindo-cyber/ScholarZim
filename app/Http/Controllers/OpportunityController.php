@@ -182,6 +182,7 @@ class OpportunityController extends Controller
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
             'qualifications' => $qualifications = $this->qualificationCatalogue(),
             'qualificationCatalogue' => $this->qualificationCataloguePayload($qualifications),
+            'catalogue' => app(\App\Services\Catalogue\ProgrammeCatalogue::class)->formOptions(request()->user()),
         ];
     }
     public function store(StoreOpportunityRequest $request)
@@ -251,6 +252,7 @@ class OpportunityController extends Controller
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
             'qualifications' => $qualifications = $this->qualificationCatalogue(),
             'qualificationCatalogue' => $this->qualificationCataloguePayload($qualifications),
+            'catalogue' => app(\App\Services\Catalogue\ProgrammeCatalogue::class)->formOptions($request->user()),
         ]);
     }
 

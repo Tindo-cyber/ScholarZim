@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Services\Catalogue\ListingScopes;
 use Illuminate\Validation\UnauthorizedException;
 use Illuminate\Validation\ValidationException;
 
@@ -34,6 +35,7 @@ class OpportunityService
         private readonly NotificationService $notificationService,
         private readonly AuditService $auditService,
         private readonly ListingRiskChecker $riskChecker,
+        private readonly ListingScopes $scopes,
     ) {
     }
 
@@ -184,6 +186,7 @@ class OpportunityService
             }
 
             $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
+            $this->scopes->save($opportunity, $data, $provider);
 
             $this->auditService->logOrFail(
                 $provider->email,
@@ -374,6 +377,7 @@ class OpportunityService
             $opportunity->update($attributes);
 
             $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
+            $this->scopes->save($opportunity, $data, $provider);
 
             $this->auditService->logOrFail(
                 $provider->email,
@@ -433,7 +437,9 @@ class OpportunityService
             // Bringing a deadline forward cuts applicants off early, so it is
             // material even though pushing one back is not.
             || OpportunityLifecycle::shortensDeadline($opportunity, $data['deadline'] ?? null)
-            || $this->subjectRequirementsChanged($opportunity, $data['subject_requirements'] ?? []);
+            || $this->subjectRequirementsChanged($opportunity, $data['subject_requirements'] ?? [])
+            // Who the listing is open to decides who is eligible, so it is material too.
+            || $this->scopes->changed($opportunity, $data);
 
         return [$attributes, $material];
     }

@@ -25,6 +25,8 @@ final class ProfileDataQuality
 
     public const RESULTS = 'results_above_level';
 
+    public const PROGRAMME = 'programme_level';
+
     private function __construct()
     {
     }
@@ -51,6 +53,17 @@ final class ProfileDataQuality
                 'field' => 'education_level',
                 'message' => 'You have ' . EducationLevel::label($above) . ' results recorded, but your current level says '
                     . EducationLevel::label($level) . '. If you have moved on, update your level; if the results were added by mistake, remove them.',
+            ];
+        }
+
+        $current = ! $profile->exists ? null : $profile->programmeChoices()->where('kind', 'current')->with('programme')->first();
+
+        if ($current?->programme !== null && $current->programme->education_level !== EducationLevel::canonical($level)) {
+            $warnings[] = [
+                'code' => self::PROGRAMME,
+                'field' => 'programme-card',
+                'message' => 'Your programme, ' . $current->programme->name . ', is at ' . $current->programme->levelLabel()
+                    . ' level, but your current level says ' . EducationLevel::label($level) . '. Update whichever has changed.',
             ];
         }
 
