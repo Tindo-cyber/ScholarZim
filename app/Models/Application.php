@@ -49,6 +49,43 @@ class Application extends Model
         'viewed_by_provider_at' => 'datetime',
     ];
 
+    public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(ApplicationDocument::class, 'application_id', 'application_id');
+    }
+
+    /**
+     * A document this application was sent with - results certificate, transcript or Grade 7 slip - as it was when
+     * it was submitted: its stored path and the name it was given, or null if there was none.
+     *
+     * An application made before submissions were recorded has no record, and falls back to what the applicant's
+     * profile holds now: the best that can be said for it.
+     *
+     * @return array{path: string, filename: ?string}|null
+     */
+    public function documentFor(string $type): ?array
+    {
+        $recorded = $this->relationLoaded('documents')
+            ? $this->documents->firstWhere('type', $type)
+            : $this->documents()->where('type', $type)->first();
+
+        if ($recorded !== null) {
+            return ['path' => $recorded->path, 'filename' => $recorded->filename];
+        }
+
+        // Any record at all means it was taken, and this type simply was not there.
+        if ($this->documents()->exists() || ! isset(ApplicationDocument::TYPES[$type])) {
+            return null;
+        }
+
+        $profile = $this->user?->applicantProfile;
+        [$path, $filename] = ApplicationDocument::TYPES[$type];
+
+        return $profile !== null && filled($profile->{$path})
+            ? ['path' => $profile->{$path}, 'filename' => $profile->{$filename}]
+            : null;
+    }
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');

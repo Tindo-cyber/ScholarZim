@@ -361,7 +361,7 @@ class ApplicationService
         }
 
         try {
-            [$application, $supersededDocument] = DB::transaction(
+            [$application, $supersededDocument, $releasedDocuments] = DB::transaction(
                 function () use ($opportunityId, $user, $data, $document, $uploadedPath, $opportunity) {
                     // The authoritative check. Locked first, opportunity before
                     // application - the same order every writer of either row
@@ -433,6 +433,13 @@ class ApplicationService
                         ]);
                     }
 
+                    // What this application goes in with, as it is now. A provider is shown THIS, not whatever the
+                    // applicant's profile holds later. Files an earlier submission recorded and this one does not
+                    // use any more are released after the commit.
+                    $before = \App\Models\ApplicationDocument::where('application_id', $application->application_id)->pluck('path')->all();
+                    \App\Models\ApplicationDocument::record($application, $this->profileService->forUser($user));
+                    $released = array_values(array_diff($before, \App\Models\ApplicationDocument::where('application_id', $application->application_id)->pluck('path')->all()));
+
                     // Inside the transaction on purpose: an audit line that
                     // survived a rolled-back submission would be a record of
                     // something that never happened.
@@ -444,7 +451,7 @@ class ApplicationService
                         ($existing ? 'Re-applied' : 'Applied') . ' to "' . $opportunity->title . '"'
                     );
 
-                    return [$application, $superseded];
+                    return [$application, $superseded, $released];
                 }
             );
         } catch (UniqueConstraintViolationException $e) {
@@ -464,6 +471,17 @@ class ApplicationService
         // longer points at is safe to remove and the notifications below can
         // never announce a submission that was rolled back.
         $this->fileStorage->delete($supersededDocument);
+
+        // A file only an earlier version of this application referred to is let go - unless the applicant's profile
+        // still holds it or another application refers to it.
+        $profileNow = $this->profileService->forUser($user);
+        $held = collect(\App\Models\ApplicationDocument::TYPES)->map(fn ($columns) => $profileNow->{$columns[0]})->filter()->all();
+
+        foreach ($releasedDocuments as $path) {
+            if (! in_array($path, $held, true) && ! \App\Models\ApplicationDocument::isReferenced($path)) {
+                $this->fileStorage->delete($path);
+            }
+        }
 
         $this->notificationService->notifyUser(
             $user,

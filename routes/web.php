@@ -248,6 +248,9 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
     Route::get('/provider/applications/{applicationId}/results-certificate', [FileDownloadController::class, 'applicantResults'])
         ->whereNumber('applicationId')
         ->name('files.applicantResults');
+    Route::get('/provider/applications/{applicationId}/grade-7-results-slip', [FileDownloadController::class, 'applicantGrade7Slip'])
+        ->whereNumber('applicationId')
+        ->name('files.applicantGrade7Slip');
     Route::get('/provider/applications/{applicationId}/transcript', [FileDownloadController::class, 'applicantTranscript'])
         ->whereNumber('applicationId')
         ->name('files.applicantTranscript');

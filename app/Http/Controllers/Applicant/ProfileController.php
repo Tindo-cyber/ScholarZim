@@ -344,8 +344,12 @@ class ProfileController extends Controller
         // ask for proof of results.
         $isPupil = EducationLevel::isPrimary($this->profileService->forUser($request->user())->education_level);
 
-        if ($isPupil && $documentType !== 'results') {
+        if ($isPupil && $documentType !== 'grade7_slip') {
             return back()->withErrors(['document' => 'At Grade 7 you only upload your results slip. Other documents are for older students.']);
+        }
+
+        if (! $isPupil && $documentType === 'grade7_slip') {
+            return back()->withErrors(['document' => 'The Grade 7 results slip is only for Grade 7 pupils.']);
         }
 
         try {

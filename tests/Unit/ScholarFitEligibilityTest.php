@@ -357,7 +357,7 @@ class ScholarFitEligibilityTest extends TestCase
         $this->assertFalse($without->meetsRequirements());
         $this->assertStringContainsString('Grade 7 results slip', implode(' ', $without->failureMessages()));
 
-        $profile->forceFill(['results_certificate_path' => 'profiles/demo/slip.pdf']);
+        $profile->forceFill(['grade7_slip_path' => 'profiles/demo/slip.pdf']);
 
         $this->assertTrue($this->evaluate($profile, $listing)->meetsRequirements());
     }

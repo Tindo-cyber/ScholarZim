@@ -95,6 +95,9 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 - View the applicant's profile and download their results certificate or transcript — whichever
   their education level actually uses (a Grade 7 results slip for a Primary pupil) — for your
   opportunities only.
+- What a provider opens is what the applicant submitted: results, transcript and Grade 7 slip are
+  recorded with the application when it is sent, so replacing a document afterwards does not change
+  (or remove) what the provider was shown.
 - A Form 1 award can require proof of results. A Grade 7 pupil is asked for no documents in
   general, but can upload their Grade 7 results slip on their profile, and an award that requires
   proof will not accept an application without it.

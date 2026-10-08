@@ -55,18 +55,8 @@ class ApplicantProfileService
         $usesFieldOfStudy = \App\Support\EducationLevel::usesFieldOfStudy($newLevel);
         $usesTranscript = \App\Support\EducationLevel::usesTranscript($newLevel);
 
-        // The one results slot holds a Grade 7 slip for a Primary pupil and a results certificate for everyone
-        // else. Crossing the Primary line in either direction would leave one passing for the other, so it is
-        // cleared and has to be uploaded again.
-        $crossesPrimary = filled($profile->results_certificate_path)
-            && \App\Support\EducationLevel::isPrimary($profile->education_level) !== $isPrimary;
-        $staleResultsPath = $crossesPrimary ? $profile->results_certificate_path : null;
-
         $profile->update([
             'education_level' => $newLevel,
-            'results_certificate_path' => $crossesPrimary ? null : $profile->results_certificate_path,
-            'results_certificate_filename' => $crossesPrimary ? null : $profile->results_certificate_filename,
-            'results_uploaded_at' => $crossesPrimary ? null : $profile->results_uploaded_at,
             // Posting the form states the level afresh, so it counts as confirming it.
             'education_level_confirmed_at' => array_key_exists('education_level', $data) ? now() : $profile->education_level_confirmed_at,
             'institution_name' => $preserve('institution_name'),
@@ -114,10 +104,6 @@ class ApplicantProfileService
                 'full_name' => $data['full_name'] ?? null,
                 'phone' => $data['phone'] ?? null,
             ], static fn ($v) => $v !== null));
-        }
-
-        if ($staleResultsPath !== null) {
-            $this->fileStorage->delete($staleResultsPath);
         }
 
         $this->auditService->log($user->email, AuditAction::PROFILE_UPDATE, 'APPLICANT_PROFILE', $profile->profile_id);
@@ -356,7 +342,9 @@ class ApplicantProfileService
         }
 
         // Committed: the old file is genuinely unreferenced and safe to remove.
-        if ($supersededPath !== $storedPath) {
+        // ...unless an application was submitted with it: that file is what its provider was sent, and stays until
+        // no application refers to it (ApplicationDocument).
+        if ($supersededPath !== $storedPath && ! \App\Models\ApplicationDocument::isReferenced($supersededPath)) {
             $this->fileStorage->delete($supersededPath);
         }
 

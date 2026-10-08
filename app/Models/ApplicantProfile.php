@@ -51,6 +51,9 @@ class ApplicantProfile extends Model
         'transcript_path',
         'transcript_filename',
         'transcript_uploaded_at',
+        'grade7_slip_path',
+        'grade7_slip_filename',
+        'grade7_slip_uploaded_at',
     ];
 
     protected $casts = [
@@ -58,6 +61,7 @@ class ApplicantProfile extends Model
         'guardian_confirmed_at' => 'datetime',
         'education_level_confirmed_at' => 'datetime',
         'results_uploaded_at' => 'datetime',
+        'grade7_slip_uploaded_at' => 'datetime',
         'cv_uploaded_at' => 'datetime',
         'passport_uploaded_at' => 'datetime',
         'recommendation_letter_uploaded_at' => 'datetime',
@@ -83,6 +87,8 @@ class ApplicantProfile extends Model
         'passport' => 'passport',
         'recommendation' => 'recommendation_letter',
         'transcript' => 'transcript',
+        // A Primary pupil's results slip: a slot of its own, so it can never pass for an O/A-Level certificate.
+        'grade7_slip' => 'grade7_slip',
     ];
 
     /**
@@ -103,6 +109,7 @@ class ApplicantProfile extends Model
         'passport' => 'ID or passport',
         'recommendation' => 'Recommendation letter',
         'transcript' => 'Academic Certificate / Proof of Study',
+        'grade7_slip' => 'Grade 7 results slip',
     ];
 
     /** documentType => name used when renaming an uploaded file. */
@@ -112,6 +119,7 @@ class ApplicantProfile extends Model
         'passport' => 'ID or Passport',
         'recommendation' => 'Recommendation Letter',
         'transcript' => 'Academic Certificate or Proof of Study',
+        'grade7_slip' => 'Grade 7 Results Slip',
     ];
 
     public function user(): BelongsTo
@@ -300,26 +308,15 @@ class ApplicantProfile extends Model
         return filled($this->degree_classification);
     }
 
-    /**
-     * What a document is called to this applicant. The one results slot holds a Grade 7 slip for a Primary pupil
-     * and a results certificate for everyone else, and each should read as the thing they actually hold.
-     */
+    /** What a document is called to the person who holds it. */
     public function documentLabel(string $type): string
     {
-        if ($type === 'results' && EducationLevel::isPrimary($this->education_level)) {
-            return 'Grade 7 results slip';
-        }
-
         return self::DOCUMENT_LABELS[$type] ?? $type;
     }
 
     /** The name a stored upload is given (not whatever the phone called it). */
     public function documentFileLabel(string $type): string
     {
-        if ($type === 'results' && EducationLevel::isPrimary($this->education_level)) {
-            return 'Grade 7 Results Slip';
-        }
-
         return self::DOCUMENT_FILE_LABELS[$type] ?? $type;
     }
 
@@ -355,6 +352,11 @@ class ApplicantProfile extends Model
         return filled($this->results_certificate_path);
     }
 
+    public function hasGrade7Slip(): bool
+    {
+        return filled($this->grade7_slip_path);
+    }
+
     public function hasTranscript(): bool
     {
         return filled($this->transcript_path);
@@ -369,10 +371,14 @@ class ApplicantProfile extends Model
      */
     public function hasRequiredAcademicEvidence(): bool
     {
-        // A Primary pupil's evidence is their Grade 7 results slip, held in the same place as an O/A-Level
-        // results certificate. Primary is asked for no document in general (see requiredDocumentTypes()); this
-        // only matters when a listing asks for proof of results, which a Form 1 award now can.
-        return EducationLevel::isPrimary($this->education_level) || EducationLevel::usesSchoolResults($this->education_level)
+        // A Primary pupil's evidence is their Grade 7 results slip - a slot of its own, so it is never taken for
+        // an O/A-Level certificate. Primary is asked for no document in general (see requiredDocumentTypes());
+        // this only matters when a listing asks for proof of results, which a Form 1 award can.
+        if (EducationLevel::isPrimary($this->education_level)) {
+            return $this->hasGrade7Slip();
+        }
+
+        return EducationLevel::usesSchoolResults($this->education_level)
             ? $this->hasResultsCertificate()
             : $this->hasTranscript();
     }
@@ -395,7 +401,7 @@ class ApplicantProfile extends Model
             // Nothing is required of a Grade 7 pupil in general - their results are structured data
             // (hasStructuredResults()). The one exception is an award that asks for proof of results:
             // then the results slip is required, for that award.
-            return $for?->requires_results_certificate ? ['results'] : [];
+            return $for?->requires_results_certificate ? ['grade7_slip'] : [];
         }
 
         if (EducationLevel::usesSchoolResults($this->education_level)) {

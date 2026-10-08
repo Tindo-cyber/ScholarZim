@@ -179,6 +179,11 @@ class AccountDeletionService
             $paths[] = $path;
         }
 
+        // Files an application was sent with that the profile no longer holds (the applicant replaced them).
+        foreach (\App\Models\ApplicationDocument::whereIn('application_id', Application::where('user_id', $user->user_id)->select('application_id'))->pluck('path') as $path) {
+            $paths[] = $path;
+        }
+
         return array_values(array_filter(array_unique($paths), static fn ($p) => filled($p)));
     }
 }

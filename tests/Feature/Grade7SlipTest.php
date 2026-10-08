@@ -6,6 +6,7 @@ use App\Models\ApplicantProfile;
 use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Services\ApplicantProfileService;
 use App\Services\RecommendationService;
 use App\Services\ScholarFit\AcademicRecord;
 use App\Services\ScholarFit\EligibilityEvaluator;
@@ -23,13 +24,12 @@ use Tests\TestCase;
 /**
  * The Grade 7 results slip.
  *
- * A Primary pupil's academic evidence used to be their typed-in results alone, and a Form 1 award could
- * not ask for proof. Now a pupil can upload their slip, and a Form 1 award can require it - and it is
- * only ever required when a listing asks: a pupil with no slip can still apply to every award that does not.
+ * A Primary pupil can upload their slip, and a Form 1 award can require it - and it is only ever
+ * required when a listing asks: a pupil with no slip can still apply to every award that does not.
  *
- * It lives in the same place as an O/A-Level results certificate (so the same private storage, scanning and
- * provider access apply), is named for what it is, and is cleared if the applicant's level crosses the
- * Primary line, so a Grade 7 slip can never pass for an O-Level certificate.
+ * It has a slot of its own (grade7_slip_*), separate from the O/A-Level results certificate. That is
+ * what stops a slip from ever passing for a certificate, or the reverse, when someone's level changes -
+ * and it means nothing has to be deleted when it does.
  */
 class Grade7SlipTest extends TestCase
 {
@@ -46,12 +46,17 @@ class Grade7SlipTest extends TestCase
         $this->pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
     }
 
+    private function disk()
+    {
+        return Storage::disk((string) config('filesystems.default', 'local'));
+    }
+
     private function profile(): ApplicantProfile
     {
         return ApplicantProfile::where('user_id', $this->pupil->user_id)->firstOrFail();
     }
 
-    private function slip(): UploadedFile
+    private function pdf(): UploadedFile
     {
         return UploadedFile::fake()->createWithContent('IMG_2041.pdf', "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n");
     }
@@ -74,19 +79,19 @@ class Grade7SlipTest extends TestCase
         ]);
     }
 
-    private function upload(?User $as = null, string $type = 'results')
+    private function upload(?User $as = null, string $type = 'grade7_slip')
     {
-        return $this->actingAs($as ?? $this->pupil)->post(route('applicant.profile.documents', $type), ['document' => $this->slip()]);
+        return $this->actingAs($as ?? $this->pupil)->post(route('applicant.profile.documents', $type), ['document' => $this->pdf()]);
     }
 
     private function withSlip(): void
     {
-        $this->profile()->update(['results_certificate_path' => 'profiles/demo/results.pdf', 'results_certificate_filename' => 'Grade 7 Results Slip.pdf']);
+        $this->profile()->update(['grade7_slip_path' => 'profiles/demo/slip.pdf', 'grade7_slip_filename' => 'Grade 7 Results Slip.pdf']);
     }
 
-    private function certificate(Opportunity $listing): ?RequirementOutcome
+    private function certificate(Opportunity $listing, ?ApplicantProfile $profile = null): ?RequirementOutcome
     {
-        $profile = $this->profile()->fresh();
+        $profile = ($profile ?? $this->profile())->fresh();
 
         foreach (app(EligibilityEvaluator::class)->evaluate($profile, $listing, AcademicRecord::fromProfile($profile)) as $outcome) {
             if ($outcome->type === RequirementOutcome::TYPE_CERTIFICATE) {
@@ -104,38 +109,60 @@ class Grade7SlipTest extends TestCase
         $this->upload()->assertSessionHasNoErrors()->assertSessionHas('successMessage');
 
         $profile = $this->profile();
-        $this->assertNotNull($profile->results_certificate_path);
-        $this->assertTrue($profile->hasResultsCertificate());
-        $this->assertSame('Grade 7 Results Slip.pdf', $profile->results_certificate_filename, 'named for what it is, not the phone camera\'s name');
-        $this->assertTrue(Storage::disk((string) config('filesystems.default', 'local'))->exists($profile->results_certificate_path));
+        $this->assertNotNull($profile->grade7_slip_path);
+        $this->assertTrue($profile->hasGrade7Slip());
+        $this->assertSame('Grade 7 Results Slip.pdf', $profile->grade7_slip_filename, 'named for what it is, not the phone camera\'s name');
+        $this->assertNotNull($profile->grade7_slip_uploaded_at);
+        $this->assertTrue($this->disk()->exists($profile->grade7_slip_path));
+    }
+
+    public function test_it_goes_in_its_own_slot_and_leaves_the_certificate_slot_alone(): void
+    {
+        $this->profile()->update(['results_certificate_path' => 'profiles/demo/certificate.pdf']);
+
+        $this->upload();
+
+        $profile = $this->profile();
+        $this->assertSame('profiles/demo/certificate.pdf', $profile->results_certificate_path);
+        $this->assertNotSame($profile->results_certificate_path, $profile->grade7_slip_path);
     }
 
     public function test_uploading_again_replaces_the_slip_and_removes_the_old_file(): void
     {
         $this->upload();
-        $first = $this->profile()->results_certificate_path;
+        $first = $this->profile()->grade7_slip_path;
 
         $this->upload();
 
-        $this->assertNotSame($first, $this->profile()->results_certificate_path);
-        $this->assertFalse(Storage::disk((string) config('filesystems.default', 'local'))->exists($first));
+        $this->assertNotSame($first, $this->profile()->grade7_slip_path);
+        $this->assertFalse($this->disk()->exists($first));
     }
 
     public function test_a_pupil_uploads_the_slip_and_nothing_else(): void
     {
-        foreach (['cv', 'passport', 'recommendation', 'transcript'] as $type) {
+        foreach (['results', 'cv', 'passport', 'recommendation', 'transcript'] as $type) {
             $this->upload(null, $type)->assertSessionHasErrors('document');
         }
 
         $profile = $this->profile();
+        $this->assertNull($profile->results_certificate_path);
         $this->assertNull($profile->cv_path);
         $this->assertNull($profile->passport_path);
         $this->assertNull($profile->transcript_path);
     }
 
+    public function test_only_a_primary_pupil_can_upload_it(): void
+    {
+        $student = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
+
+        $this->upload($student)->assertSessionHasErrors('document');
+
+        $this->assertNull(ApplicantProfile::where('user_id', $student->user_id)->value('grade7_slip_path'));
+    }
+
     public function test_the_upload_still_checks_the_file_itself(): void
     {
-        $this->actingAs($this->pupil)->post(route('applicant.profile.documents', 'results'), [
+        $this->actingAs($this->pupil)->post(route('applicant.profile.documents', 'grade7_slip'), [
             'document' => UploadedFile::fake()->create('slip.exe', 10, 'application/x-msdownload'),
         ])->assertSessionHasErrors('document');
     }
@@ -147,14 +174,12 @@ class Grade7SlipTest extends TestCase
 
     // ------------------------------------------------------------------ labels --
 
-    public function test_the_same_document_is_named_for_the_level_that_holds_it(): void
+    public function test_each_document_is_named_for_what_it_is(): void
     {
         $profile = new ApplicantProfile(['education_level' => EducationLevel::PRIMARY]);
-        $this->assertSame('Grade 7 results slip', $profile->documentLabel('results'));
 
-        $profile->education_level = EducationLevel::A_LEVEL;
+        $this->assertSame('Grade 7 results slip', $profile->documentLabel('grade7_slip'));
         $this->assertSame('Results certificate', $profile->documentLabel('results'));
-
         $this->assertSame('CV / resume', $profile->documentLabel('cv'));
     }
 
@@ -167,7 +192,7 @@ class Grade7SlipTest extends TestCase
         $this->assertStringContainsString('id="grade7-slip-card"', $html);
         $this->assertStringContainsString('Grade 7 results slip', $html);
         $this->assertStringContainsString('Optional', $html);
-        $this->assertStringContainsString(route('applicant.profile.documents', 'results'), $html);
+        $this->assertStringContainsString(route('applicant.profile.documents', 'grade7_slip'), $html);
         $this->assertStringNotContainsString('required for your education level', $html, 'still no general document requirement');
     }
 
@@ -177,7 +202,14 @@ class Grade7SlipTest extends TestCase
 
         $this->actingAs($this->pupil)->get('/applicant/profile')->assertOk()
             ->assertSee('Grade 7 Results Slip.pdf')
-            ->assertSee(route('files.myDocument', 'results'), false);
+            ->assertSee(route('files.myDocument', 'grade7_slip'), false);
+    }
+
+    public function test_the_pupil_can_open_their_own_slip(): void
+    {
+        $this->upload();
+
+        $this->actingAs($this->pupil)->get(route('files.myDocument', 'grade7_slip'))->assertOk();
     }
 
     public function test_nobody_else_is_offered_the_pupils_card(): void
@@ -187,41 +219,65 @@ class Grade7SlipTest extends TestCase
         $this->actingAs($student)->get('/applicant/profile')->assertOk()->assertDontSee('id="grade7-slip-card"', false);
     }
 
-    // ------------------------------------------------- crossing the Primary line --
+    // ------------------------------------------- changing level: nothing is deleted --
 
-    public function test_moving_up_from_primary_clears_the_slip_so_it_cannot_pass_for_an_o_level_certificate(): void
+    public function test_moving_up_from_primary_keeps_the_stored_slip_untouched(): void
     {
         $this->upload();
-        $path = $this->profile()->results_certificate_path;
+        $before = $this->profile();
 
-        app(\App\Services\ApplicantProfileService::class)->update($this->pupil, ['education_level' => EducationLevel::O_LEVEL]);
+        app(ApplicantProfileService::class)->update($this->pupil, ['education_level' => EducationLevel::O_LEVEL]);
 
-        $profile = $this->profile();
-        $this->assertNull($profile->results_certificate_path);
-        $this->assertNull($profile->results_certificate_filename);
-        $this->assertFalse(Storage::disk((string) config('filesystems.default', 'local'))->exists($path), 'the file goes too');
+        $after = $this->profile();
+        $this->assertSame($before->grade7_slip_path, $after->grade7_slip_path);
+        $this->assertSame($before->grade7_slip_filename, $after->grade7_slip_filename);
+        $this->assertTrue($this->disk()->exists($after->grade7_slip_path), 'the file is still there');
     }
 
-    public function test_an_o_level_certificate_is_not_carried_back_into_primary(): void
+    public function test_a_slip_can_never_pass_for_an_o_level_certificate(): void
+    {
+        $this->upload();
+        app(ApplicantProfileService::class)->update($this->pupil, ['education_level' => EducationLevel::O_LEVEL]);
+        $listing = $this->formOne(false, ['education_level' => EducationLevel::A_LEVEL, 'requires_results_certificate' => true]);
+
+        $outcome = $this->certificate($listing);
+
+        $this->assertFalse($outcome->passed, 'an O-Level student holding only a Grade 7 slip has no results certificate');
+        $this->assertStringContainsString('a results certificate', $outcome->message);
+    }
+
+    public function test_and_a_certificate_can_never_pass_for_a_slip(): void
+    {
+        $this->profile()->update(['results_certificate_path' => 'profiles/demo/certificate.pdf']);
+
+        $this->assertFalse($this->certificate($this->formOne(true))->passed, 'a Form 1 award asking for the slip is not met by a certificate');
+    }
+
+    public function test_the_slip_is_still_there_if_the_pupil_goes_back_to_primary(): void
+    {
+        $this->upload();
+        $path = $this->profile()->grade7_slip_path;
+        app(ApplicantProfileService::class)->update($this->pupil, ['education_level' => EducationLevel::O_LEVEL]);
+
+        app(ApplicantProfileService::class)->update($this->pupil, [
+            'education_level' => EducationLevel::PRIMARY, 'guardian_name' => 'G', 'guardian_phone' => '0771234567', 'guardian_relationship' => 'Mother',
+        ]);
+
+        $this->assertSame($path, $this->profile()->grade7_slip_path);
+        $this->assertTrue($this->certificate($this->formOne(true))->passed);
+    }
+
+    public function test_changing_level_never_touches_an_existing_results_certificate_either(): void
     {
         $student = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
         $profile = ApplicantProfile::where('user_id', $student->user_id)->firstOrFail();
         $profile->update(['results_certificate_path' => 'profiles/demo/o-level.pdf', 'results_certificate_filename' => 'Results Certificate.pdf']);
 
-        app(\App\Services\ApplicantProfileService::class)->update($student, [
-            'education_level' => EducationLevel::PRIMARY, 'guardian_name' => 'G', 'guardian_phone' => '+263771234567', 'guardian_relationship' => 'Mother',
+        app(ApplicantProfileService::class)->update($student, [
+            'education_level' => EducationLevel::PRIMARY, 'guardian_name' => 'G', 'guardian_phone' => '0771234567', 'guardian_relationship' => 'Mother',
         ]);
 
-        $this->assertNull($profile->fresh()->results_certificate_path);
-    }
-
-    public function test_saving_the_profile_without_changing_level_keeps_the_slip(): void
-    {
-        $this->withSlip();
-
-        app(\App\Services\ApplicantProfileService::class)->update($this->pupil, ['education_level' => EducationLevel::PRIMARY, 'biography' => 'Hello']);
-
-        $this->assertNotNull($this->profile()->results_certificate_path);
+        $this->assertSame('profiles/demo/o-level.pdf', $profile->fresh()->results_certificate_path);
     }
 
     // ------------------------------------------------- a Form 1 award can require it --
@@ -283,9 +339,7 @@ class Grade7SlipTest extends TestCase
         $profile->update(['education_level' => EducationLevel::A_LEVEL, 'results_certificate_path' => null]);
         $listing = $this->formOne(false, ['education_level' => EducationLevel::UNDERGRADUATE, 'requires_results_certificate' => true]);
 
-        $fresh = $profile->fresh();
-        $outcome = collect(app(EligibilityEvaluator::class)->evaluate($fresh, $listing, AcademicRecord::fromProfile($fresh)))
-            ->firstWhere('type', RequirementOutcome::TYPE_CERTIFICATE);
+        $outcome = $this->certificate($listing, $profile);
 
         $this->assertFalse($outcome->passed);
         $this->assertStringContainsString('a results certificate', $outcome->message);
@@ -304,8 +358,8 @@ class Grade7SlipTest extends TestCase
     {
         $listing = $this->formOne(true);
 
-        $this->assertSame(['results'], $this->profile()->requiredDocumentTypes($listing));
-        $this->assertSame(['results'], $this->profile()->missingRequiredDocumentTypes($listing));
+        $this->assertSame(['grade7_slip'], $this->profile()->requiredDocumentTypes($listing));
+        $this->assertSame(['grade7_slip'], $this->profile()->missingRequiredDocumentTypes($listing));
 
         $this->withSlip();
 
@@ -327,7 +381,7 @@ class Grade7SlipTest extends TestCase
     {
         $this->actingAs($this->pupil)->get('/apply/' . $this->formOne(false)->opportunity_id)->assertOk()
             ->assertSee('No documents are required for your education level.')
-            ->assertDontSee('name="documents[results]"', false)
+            ->assertDontSee('name="documents[grade7_slip]"', false)
             ->assertDontSee('Upload my Grade 7 results slip');
     }
 
@@ -339,7 +393,7 @@ class Grade7SlipTest extends TestCase
         $this->assertStringContainsString('Grade 7 results slip', $html);
         $this->assertStringContainsString('Upload my Grade 7 results slip', $html);
         $this->assertStringContainsString('#grade7-slip-card', $html);
-        $this->assertStringNotContainsString('name="documents[results]"', $html, 'a submit button that cannot succeed is not shown');
+        $this->assertStringNotContainsString('name="documents[grade7_slip]"', $html, 'a submit button that cannot succeed is not shown');
     }
 
     public function test_with_the_slip_on_file_the_wizard_opens_and_says_it_will_be_attached(): void
@@ -350,13 +404,14 @@ class Grade7SlipTest extends TestCase
             ->assertDontSee('NOT ELIGIBLE')
             ->assertSee('All your required documents are already on file');
     }
+
     public function test_applying_without_the_slip_is_refused_with_a_reason(): void
     {
         $listing = $this->formOne(true);
 
         $this->actingAs($this->pupil)->post('/apply/' . $listing->opportunity_id, [
             'personal_statement' => str_repeat('I want to continue to secondary school. ', 5), 'confirm' => '1',
-        ])->assertSessionHasErrors('documents.results');
+        ])->assertSessionHasErrors('documents.grade7_slip');
 
         $this->assertSame(0, Application::where('opportunity_id', $listing->opportunity_id)->count());
     }
@@ -367,11 +422,12 @@ class Grade7SlipTest extends TestCase
 
         $this->actingAs($this->pupil)->post('/apply/' . $listing->opportunity_id, [
             'personal_statement' => str_repeat('I want to continue to secondary school. ', 5), 'confirm' => '1',
-            'documents' => ['results' => $this->slip()],
+            'documents' => ['grade7_slip' => $this->pdf()],
         ])->assertSessionHasNoErrors()->assertRedirect();
 
         $this->assertSame(1, Application::where('opportunity_id', $listing->opportunity_id)->count());
-        $this->assertTrue($this->profile()->hasResultsCertificate());
+        $this->assertTrue($this->profile()->hasGrade7Slip());
+        $this->assertFalse($this->profile()->hasResultsCertificate());
     }
 
     public function test_one_click_apply_is_refused_and_points_at_the_slip(): void
@@ -396,9 +452,7 @@ class Grade7SlipTest extends TestCase
 
     public function test_the_listing_page_tells_a_pupil_without_a_slip_what_is_missing(): void
     {
-        $listing = $this->formOne(true);
-
-        $fit = app(RecommendationService::class)->evaluateOne($this->pupil, $listing);
+        $fit = app(RecommendationService::class)->evaluateOne($this->pupil, $this->formOne(true));
 
         $this->assertTrue($fit->isIneligible());
         $this->assertStringContainsString('Grade 7 results slip', implode(' ', $fit->failureMessages()));
@@ -406,19 +460,38 @@ class Grade7SlipTest extends TestCase
 
     // ----------------------------------------------------------------- providers --
 
-    public function test_the_reviewing_provider_sees_the_slip_by_its_proper_name(): void
+    public function test_the_reviewing_provider_sees_and_can_open_the_slip(): void
     {
-        $this->withSlip();
+        $this->upload();
         $listing = $this->formOne(true);
-        $application = Application::create([
-            'user_id' => $this->pupil->user_id, 'opportunity_id' => $listing->opportunity_id,
-            'status' => 'SUBMITTED', 'personal_statement' => str_repeat('x', 120), 'submitted_at' => now(),
-        ]);
+        $this->actingAs($this->pupil)->post('/apply/' . $listing->opportunity_id . '/quick')->assertSessionHasNoErrors();
+        $application = Application::where('opportunity_id', $listing->opportunity_id)->firstOrFail();
         $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
+
+        // One browser, one role at a time.
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
 
         $html = $this->actingAs($provider)->get('/provider/applications/' . $application->application_id)->assertOk()->getContent();
 
         $this->assertStringContainsString('Grade 7 results slip', $html);
-        $this->assertStringContainsString(route('files.applicantResults', $application->application_id), $html);
+        $this->assertStringContainsString(route('files.applicantGrade7Slip', $application->application_id), $html);
+
+        $this->actingAs($provider)->get(route('files.applicantGrade7Slip', $application->application_id))->assertOk();
+        $this->assertDatabaseHas('audit_log', ['action' => 'VIEW_APPLICANT_RESULTS', 'actor_email' => $provider->email]);
+    }
+
+    public function test_a_provider_of_another_award_cannot_open_it(): void
+    {
+        $this->upload();
+        $listing = $this->formOne(true);
+        $this->actingAs($this->pupil)->post('/apply/' . $listing->opportunity_id . '/quick');
+        $application = Application::where('opportunity_id', $listing->opportunity_id)->firstOrFail();
+
+        $this->flushSession();
+        $this->app['auth']->forgetGuards();
+        $other = User::where('email', 'newprovider@scholarzim.co.zw')->firstOrFail();
+
+        $this->actingAs($other)->get(route('files.applicantGrade7Slip', $application->application_id))->assertForbidden();
     }
 }

@@ -122,11 +122,14 @@
                                 ['label' => $application->document_filename ?: 'Application attachment',
                                  'present' => (bool) $application->document_filename,
                                  'route' => 'files.applicationDocument'],
-                                ['label' => $applicantProfile->documentLabel('results'),
-                                 'present' => $applicantProfile->hasResultsCertificate(),
+                                ['label' => 'Results certificate',
+                                 'present' => $application->documentFor('results') !== null,
                                  'route' => 'files.applicantResults'],
+                                ['label' => 'Grade 7 results slip',
+                                 'present' => $application->documentFor('grade7_slip') !== null,
+                                 'route' => 'files.applicantGrade7Slip'],
                                 ['label' => 'Academic transcript',
-                                 'present' => $applicantProfile->hasTranscript(),
+                                 'present' => $application->documentFor('transcript') !== null,
                                  'route' => 'files.applicantTranscript'],
                             ] as $document)
                                 <li class="d-flex flex-wrap align-items-center gap-2">

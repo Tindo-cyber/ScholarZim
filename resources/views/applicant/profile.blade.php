@@ -453,8 +453,8 @@
                     asks for it when they apply.
                 --}}
                 @php
-                    $slipName = $profile->documentFilename('results');
-                    $slipAt = $profile->documentUploadedAt('results');
+                    $slipName = $profile->documentFilename('grade7_slip');
+                    $slipAt = $profile->documentUploadedAt('grade7_slip');
                 @endphp
                 <div class="card mb-4" id="grade7-slip-card" data-sz-tier="PRIMARY">
                     <div class="card-header">
@@ -479,14 +479,14 @@
                         @if($slipName)
                             <p class="small mb-2">
                                 <a class="text-decoration-none d-inline-flex align-items-center gap-1"
-                                   href="{{ route('files.myDocument', 'results') }}" target="_blank" rel="noopener">
+                                   href="{{ route('files.myDocument', 'grade7_slip') }}" target="_blank" rel="noopener">
                                     <x-icon name="eye" :size="14" />{{ $slipName }}
                                 </a>
                                 <span class="text-secondary d-block">Uploaded {{ $slipAt?->diffForHumans() }}</span>
                             </p>
                         @endif
 
-                        <form method="POST" action="{{ route('applicant.profile.documents', 'results') }}"
+                        <form method="POST" action="{{ route('applicant.profile.documents', 'grade7_slip') }}"
                               enctype="multipart/form-data" class="d-flex gap-2">
                             @csrf
                             <input class="form-control form-control-sm @error('document') is-invalid @enderror" type="file" name="document"

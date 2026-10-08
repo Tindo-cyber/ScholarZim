@@ -38,44 +38,45 @@ class FileDownloadController extends Controller
         return $this->fileStorage->respond($application->document_path, $application->document_filename ?: 'application-document');
     }
 
-    /** Results certificate attached to an application, for the reviewing provider. */
+    /** Results certificate the application was submitted with, for the reviewing provider. */
     public function applicantResults(Request $request, int $applicationId)
     {
-        $user = $request->user();
-        $application = $this->applicationService->findForProvider($applicationId, $user);
-
-        $profile = $application->user?->applicantProfile;
-        abort_unless($profile && $this->fileStorage->exists($profile->results_certificate_path), 404);
-
-        $this->auditService->log(
-            $user->email,
-            AuditAction::VIEW_APPLICANT_RESULTS,
-            'APPLICANT_PROFILE',
-            $profile->profile_id
-        );
-
-        return $this->fileStorage->respond($profile->results_certificate_path, $profile->results_certificate_filename ?: 'results-certificate');
+        return $this->submittedDocument($request, $applicationId, 'results', AuditAction::VIEW_APPLICANT_RESULTS, 'results-certificate');
     }
 
-    /** Academic transcript attached to an application, for the reviewing provider. */
+    /** Academic transcript the application was submitted with, for the reviewing provider. */
     public function applicantTranscript(Request $request, int $applicationId)
+    {
+        return $this->submittedDocument($request, $applicationId, 'transcript', AuditAction::VIEW_APPLICANT_TRANSCRIPT, 'transcript');
+    }
+
+    /** Grade 7 results slip the application was submitted with, for the reviewing provider. */
+    public function applicantGrade7Slip(Request $request, int $applicationId)
+    {
+        return $this->submittedDocument($request, $applicationId, 'grade7_slip', AuditAction::VIEW_APPLICANT_RESULTS, 'grade-7-results-slip');
+    }
+
+    /**
+     * One of the documents an application was sent with: the one recorded at submission, not whatever the applicant's
+     * profile holds now. Only the provider of that award can open it, and each opening is audited.
+     */
+    private function submittedDocument(Request $request, int $applicationId, string $type, string $auditAction, string $fallbackName)
     {
         $user = $request->user();
         $application = $this->applicationService->findForProvider($applicationId, $user);
 
-        $profile = $application->user?->applicantProfile;
-        abort_unless($profile && $this->fileStorage->exists($profile->transcript_path), 404);
+        $document = $application->documentFor($type);
+        abort_unless($document !== null && $this->fileStorage->exists($document['path']), 404);
 
         $this->auditService->log(
             $user->email,
-            AuditAction::VIEW_APPLICANT_TRANSCRIPT,
+            $auditAction,
             'APPLICANT_PROFILE',
-            $profile->profile_id
+            $application->user?->applicantProfile?->profile_id
         );
 
-        return $this->fileStorage->respond($profile->transcript_path, $profile->transcript_filename ?: 'transcript');
+        return $this->fileStorage->respond($document['path'], $document['filename'] ?: $fallbackName);
     }
-
     /** Admin-only: the registration certificate a provider uploaded at signup. */
     public function providerCertificate(Request $request, int $userId)
     {
