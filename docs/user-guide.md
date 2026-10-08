@@ -93,7 +93,11 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 - Create opportunities at `/opportunities/create`.
 - Review applications at `/provider/applications`.
 - View the applicant's profile and download their results certificate or transcript — whichever
-  their education level actually uses — for your opportunities only.
+  their education level actually uses (a Grade 7 results slip for a Primary pupil) — for your
+  opportunities only.
+- A Form 1 award can require proof of results. A Grade 7 pupil is asked for no documents in
+  general, but can upload their Grade 7 results slip on their profile, and an award that requires
+  proof will not accept an application without it.
 
 ### Describing an award
 

@@ -59,6 +59,10 @@
                             @endforeach
                         </ul>
                         <div class="d-flex flex-wrap gap-2">
+                            @if(\App\Support\EducationLevel::isPrimary($profile->education_level)
+                                && collect($fit->failedRequirements())->contains(fn ($o) => $o->type === \App\Services\ScholarFit\RequirementOutcome::TYPE_CERTIFICATE))
+                                <a class="btn btn-primary" href="{{ route('applicant.profile') }}#grade7-slip-card">Upload my Grade 7 results slip</a>
+                            @endif
                             <a class="btn btn-primary" href="{{ route('applicant.profile') }}">Update my profile</a>
                             <a class="btn btn-outline-secondary"
                                href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
@@ -106,6 +110,10 @@
                             </p>
                         @endforeach
                         <div class="d-flex flex-wrap gap-2">
+                            @if(\App\Support\EducationLevel::isPrimary($profile->education_level)
+                                && collect($fit->failedRequirements())->contains(fn ($o) => $o->type === \App\Services\ScholarFit\RequirementOutcome::TYPE_CERTIFICATE))
+                                <a class="btn btn-primary" href="{{ route('applicant.profile') }}#grade7-slip-card">Upload my Grade 7 results slip</a>
+                            @endif
                             <a class="btn btn-primary" href="{{ route('applicant.profile') }}">Update my profile</a>
                             <a class="btn btn-outline-secondary"
                                href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
@@ -181,7 +189,7 @@
                         <h2 class="h6 fw-semibold mb-0">Step 3 &mdash; Documents</h2>
                     </div>
                     <div class="card-body">
-                        @if(empty($profile->requiredDocumentTypes()))
+                        @if(empty($profile->requiredDocumentTypes($opportunity)))
                             <div class="alert alert-secondary small">
                                 No documents are required for your education level.
                             </div>
@@ -196,7 +204,7 @@
                             </div>
 
                             @foreach($missingDocumentTypes as $type)
-                                @php $label = \App\Models\ApplicantProfile::DOCUMENT_LABELS[$type]; @endphp
+                                @php $label = $profile->documentLabel($type); @endphp
                                 <div class="mb-3">
                                     <label class="form-label" for="documents-{{ $type }}">
                                         {{ $label }}<span class="text-danger" aria-hidden="true">*</span>

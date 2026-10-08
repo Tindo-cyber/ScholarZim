@@ -446,6 +446,61 @@
                  missing, and one set of links at the fields that close the gaps. --}}
             <x-profile-progress :profile="$profile" variant="checklist" class="mb-4" />
 
+            @if(\App\Support\EducationLevel::isPrimary($profile->education_level))
+                {{--
+                    A Grade 7 pupil is asked for no documents in general. The one thing they may offer is their
+                    results slip, because a Form 1 award can ask to see it. Optional here; an award that requires it
+                    asks for it when they apply.
+                --}}
+                @php
+                    $slipName = $profile->documentFilename('results');
+                    $slipAt = $profile->documentUploadedAt('results');
+                @endphp
+                <div class="card mb-4" id="grade7-slip-card" data-sz-tier="PRIMARY">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Grade 7 results slip</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                            <span class="small text-secondary">Optional</span>
+                            @if($slipName)
+                                <x-status-badge label="Uploaded" tone="success" icon="check" />
+                            @else
+                                <x-status-badge label="Not uploaded" tone="secondary" />
+                            @endif
+                        </div>
+
+                        <p class="small text-secondary">
+                            Some Form 1 awards ask to see your Grade 7 results slip. Upload a photo or scan of it here and it
+                            will be used for any award that asks. Uploading again replaces it. It is private: only you, and
+                            a provider you have applied to, can open it.
+                        </p>
+
+                        @if($slipName)
+                            <p class="small mb-2">
+                                <a class="text-decoration-none d-inline-flex align-items-center gap-1"
+                                   href="{{ route('files.myDocument', 'results') }}" target="_blank" rel="noopener">
+                                    <x-icon name="eye" :size="14" />{{ $slipName }}
+                                </a>
+                                <span class="text-secondary d-block">Uploaded {{ $slipAt?->diffForHumans() }}</span>
+                            </p>
+                        @endif
+
+                        <form method="POST" action="{{ route('applicant.profile.documents', 'results') }}"
+                              enctype="multipart/form-data" class="d-flex gap-2">
+                            @csrf
+                            <input class="form-control form-control-sm @error('document') is-invalid @enderror" type="file" name="document"
+                                   accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required aria-label="Upload your Grade 7 results slip">
+                            <x-submit-button :label="$slipName ? 'Replace' : 'Upload'" busy-label="Uploading..."
+                                             tone="outline-primary" size="sm" class="flex-shrink-0" />
+                        </form>
+                        @error('document')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+
+                        <p class="form-text mt-1 mb-0">PDF, Word, JPG or PNG.</p>
+                    </div>
+                </div>
+            @endif
+
             <div class="card" id="documents" data-sz-tier-hide="PRIMARY">
                 <div class="card-header">
                     <h2 class="h6 fw-semibold mb-0">Documents</h2>

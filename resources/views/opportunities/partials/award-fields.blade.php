@@ -132,7 +132,7 @@
             <div class="col-12" data-level-needs="certificate">
                 <x-form.checkbox name="requires_results_certificate" wrapper-class="mb-0"
                                  label="Proof of academic results must be on file before applying"
-                                 hint="A results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants."
+                                 hint="A Grade 7 results slip for Form 1 awards, a results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants."
                                  :checked="(bool) $value('requires_results_certificate', false)" />
             </div>
         </div>

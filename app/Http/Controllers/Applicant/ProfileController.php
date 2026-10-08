@@ -340,10 +340,22 @@ class ProfileController extends Controller
             'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
         ]);
 
+        // A Grade 7 pupil is asked for no documents; the one they may offer is their results slip, for awards that
+        // ask for proof of results.
+        $isPupil = EducationLevel::isPrimary($this->profileService->forUser($request->user())->education_level);
+
+        if ($isPupil && $documentType !== 'results') {
+            return back()->withErrors(['document' => 'At Grade 7 you only upload your results slip. Other documents are for older students.']);
+        }
+
         try {
             $this->profileService->storeDocument($request->user(), $documentType, $request->file('document'));
         } catch (\RuntimeException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
+        }
+
+        if ($isPupil) {
+            return back()->with('successMessage', 'Grade 7 results slip uploaded. Awards that ask for proof of your results will now use it.');
         }
 
         // Re-read from storage rather than assumed from this upload succeeding:

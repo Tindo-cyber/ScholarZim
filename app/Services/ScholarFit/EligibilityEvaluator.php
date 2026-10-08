@@ -745,16 +745,13 @@ final class EligibilityEvaluator
             );
         }
 
-        // Nothing is asked of a Primary applicant on this pathway, so there is
-        // no requirement to report either way - see
-        // ApplicantProfile::hasRequiredAcademicEvidence().
-        if (EducationLevel::isPrimary($profile->education_level)) {
-            return null;
-        }
-
-        $document = EducationLevel::usesSchoolResults($profile->education_level)
-            ? 'a results certificate'
-            : 'a transcript';
+        // Which document: a Grade 7 slip for a Primary pupil (a Form 1 award can ask for it), a results certificate
+        // for O/A-Level, a transcript above that.
+        $document = match (true) {
+            EducationLevel::isPrimary($profile->education_level) => 'a Grade 7 results slip',
+            EducationLevel::usesSchoolResults($profile->education_level) => 'a results certificate',
+            default => 'a transcript',
+        };
 
         if (! $profile->hasRequiredAcademicEvidence()) {
             return RequirementOutcome::fail(

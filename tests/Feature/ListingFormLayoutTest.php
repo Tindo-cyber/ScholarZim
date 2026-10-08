@@ -97,12 +97,12 @@ class ListingFormLayoutTest extends TestCase
 
     // ------------------------------------------------- what each level uses --
 
-    public function test_form_1_uses_no_field_of_study_points_certificate_or_subjects(): void
+    public function test_form_1_uses_no_field_of_study_or_points_but_can_ask_for_proof_of_results(): void
     {
         $this->assertSame(
-            ['field' => false, 'points' => false, 'certificate' => false, 'subjects' => true, 'programmes' => false],
+            ['field' => false, 'points' => false, 'certificate' => true, 'subjects' => true, 'programmes' => false],
             OpportunityLevelRules::capabilities(EducationLevel::FORM_1),
-            'Form 1 hides field of study, points and the certificate toggle; Grade 7 subjects remain valid'
+            'Form 1 hides field of study and points; Grade 7 subjects and the Grade 7 results slip remain valid'
         );
     }
 
@@ -155,7 +155,7 @@ class ListingFormLayoutTest extends TestCase
 
         $this->assertNull($listing->target_field, 'a Form 1 award has no field of study');
         $this->assertNull($listing->min_academic_points);
-        $this->assertFalse($listing->requires_results_certificate);
+        $this->assertTrue($listing->requires_results_certificate, 'a Form 1 award can ask for the Grade 7 results slip, so it is kept');
         $this->assertSame(1, $listing->subjectRequirements()->count(), 'Grade 7 subjects are valid for Form 1 and kept');
     }
 
@@ -207,8 +207,9 @@ class ListingFormLayoutTest extends TestCase
         $this->submit(EducationLevel::FORM_1, ['min_academic_points' => 12])
             ->assertSessionHasErrors('min_academic_points');
 
+        // A Form 1 award may ask for the Grade 7 results slip, so ticking it is not an error.
         $this->submit(EducationLevel::FORM_1, ['requires_results_certificate' => '1'])
-            ->assertSessionHasErrors('requires_results_certificate');
+            ->assertSessionHasNoErrors();
     }
 
     public function test_the_edit_form_clears_in_the_same_way(): void

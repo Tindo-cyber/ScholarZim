@@ -55,8 +55,18 @@ class ApplicantProfileService
         $usesFieldOfStudy = \App\Support\EducationLevel::usesFieldOfStudy($newLevel);
         $usesTranscript = \App\Support\EducationLevel::usesTranscript($newLevel);
 
+        // The one results slot holds a Grade 7 slip for a Primary pupil and a results certificate for everyone
+        // else. Crossing the Primary line in either direction would leave one passing for the other, so it is
+        // cleared and has to be uploaded again.
+        $crossesPrimary = filled($profile->results_certificate_path)
+            && \App\Support\EducationLevel::isPrimary($profile->education_level) !== $isPrimary;
+        $staleResultsPath = $crossesPrimary ? $profile->results_certificate_path : null;
+
         $profile->update([
             'education_level' => $newLevel,
+            'results_certificate_path' => $crossesPrimary ? null : $profile->results_certificate_path,
+            'results_certificate_filename' => $crossesPrimary ? null : $profile->results_certificate_filename,
+            'results_uploaded_at' => $crossesPrimary ? null : $profile->results_uploaded_at,
             // Posting the form states the level afresh, so it counts as confirming it.
             'education_level_confirmed_at' => array_key_exists('education_level', $data) ? now() : $profile->education_level_confirmed_at,
             'institution_name' => $preserve('institution_name'),
@@ -104,6 +114,10 @@ class ApplicantProfileService
                 'full_name' => $data['full_name'] ?? null,
                 'phone' => $data['phone'] ?? null,
             ], static fn ($v) => $v !== null));
+        }
+
+        if ($staleResultsPath !== null) {
+            $this->fileStorage->delete($staleResultsPath);
         }
 
         $this->auditService->log($user->email, AuditAction::PROFILE_UPDATE, 'APPLICANT_PROFILE', $profile->profile_id);
@@ -309,7 +323,7 @@ class ApplicantProfileService
         // Renamed to the document type rather than kept as whatever the
         // student's device called it (e.g. "IMG_20240512.jpg").
         $extension = $file->getClientOriginalExtension() ?: $file->extension();
-        $renamedTo = ApplicantProfile::DOCUMENT_FILE_LABELS[$documentType] . ($extension ? '.' . $extension : '');
+        $renamedTo = $profile->documentFileLabel($documentType) . ($extension ? '.' . $extension : '');
 
         // The replacement is written before anything is taken away. Deleting the
         // old file first - as this used to - meant a failed upload or a failed

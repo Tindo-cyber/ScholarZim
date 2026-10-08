@@ -57,7 +57,8 @@ class ApplicationController extends Controller
             'opportunity' => $opportunity,
             'profile' => $profile,
             'fit' => $this->recommendationService->evaluateOne($user, $opportunity),
-            'missingDocumentTypes' => $profile->missingRequiredDocumentTypes(),
+            // For THIS award: a Grade 7 pupil is asked for the slip only if the award requires proof of results.
+            'missingDocumentTypes' => $profile->missingRequiredDocumentTypes($opportunity),
         ]);
     }
 
@@ -65,7 +66,8 @@ class ApplicationController extends Controller
     {
         // Recomputed server-side rather than trusted from the form, so a
         // profile document uploaded in another tab can't be bypassed.
-        $missingDocumentTypes = $this->profileService->forUser($request->user())->missingRequiredDocumentTypes();
+        $missingDocumentTypes = $this->profileService->forUser($request->user())
+            ->missingRequiredDocumentTypes(\App\Models\Opportunity::find($opportunityId));
 
         $rules = [
             'personal_statement' => ['required', 'string', 'min:100', 'max:5000'],

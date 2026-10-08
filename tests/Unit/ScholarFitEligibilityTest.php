@@ -339,27 +339,28 @@ class ScholarFitEligibilityTest extends TestCase
     }
 
     /**
-     * A Form 1 listing that asks for proof of results cannot refuse a Primary
-     * pupil for it: the Form 1 pathway invites no document, so the requirement
-     * would be unsatisfiable. Their Grade 7 results are what such a listing
-     * actually judges them on.
+     * A Form 1 listing that asks for proof of results asks a Primary pupil for their Grade 7 results slip. This
+     * used to say the opposite - the pathway invited no document, so the rule could not be met and was waived -
+     * until a pupil could upload one. Now the rule is real: no slip, no match; slip on file, matched.
      */
-    public function test_a_proof_of_results_rule_cannot_refuse_a_primary_applicant(): void
+    public function test_a_proof_of_results_rule_asks_a_primary_applicant_for_the_grade_7_slip(): void
     {
         $profile = $this->profileWithAcademicResults(
             [AcademicCatalogue::ZIMBABWE_PRIMARY => ['Mathematics' => '2', 'English' => '1']],
             ['education_level' => EducationLevel::PRIMARY, 'province' => 'Harare']
         );
 
-        $fit = $this->evaluate($profile, $this->opportunity([
-            'education_level' => EducationLevel::FORM_1,
-            'requires_results_certificate' => true,
-        ]));
+        $listing = $this->opportunity(['education_level' => EducationLevel::FORM_1, 'requires_results_certificate' => true]);
 
-        $this->assertTrue($fit->meetsRequirements());
-        $this->assertSame([], $fit->failureMessages());
+        $without = $this->evaluate($profile, $listing);
+
+        $this->assertFalse($without->meetsRequirements());
+        $this->assertStringContainsString('Grade 7 results slip', implode(' ', $without->failureMessages()));
+
+        $profile->forceFill(['results_certificate_path' => 'profiles/demo/slip.pdf']);
+
+        $this->assertTrue($this->evaluate($profile, $listing)->meetsRequirements());
     }
-
     public function test_a_rule_the_provider_did_not_set_is_never_a_disqualification(): void
     {
         $fit = $this->evaluate(

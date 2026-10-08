@@ -216,8 +216,9 @@ the old value is read as Undergraduate), whether *this specific* listing has rai
 own minimum qualifying level narrower than the general pathway
 (`Opportunity::minimum_education_level`), required subjects at a stated grade under a stated
 qualification, minimum ZIMSEC A-Level points, an age ceiling, a required province, and proof
-of academic results on file (a results certificate for O/A-Level applicants, a transcript for
-everyone from Certificate level upward — there is no GPA field anywhere on the platform).
+of academic results on file (a Grade 7 results slip for a Primary pupil applying to a Form 1 award,
+a results certificate for O/A-Level applicants, a transcript for everyone from Certificate level
+upward — there is no GPA field anywhere on the platform).
 Each is one plain check producing one plain sentence naming the required and actual value.
 
 Any unmet requirement keeps the listing out of that student's recommendations — it is shown

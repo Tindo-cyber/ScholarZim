@@ -122,7 +122,7 @@
                                 ['label' => $application->document_filename ?: 'Application attachment',
                                  'present' => (bool) $application->document_filename,
                                  'route' => 'files.applicationDocument'],
-                                ['label' => 'Results certificate',
+                                ['label' => $applicantProfile->documentLabel('results'),
                                  'present' => $applicantProfile->hasResultsCertificate(),
                                  'route' => 'files.applicantResults'],
                                 ['label' => 'Academic transcript',

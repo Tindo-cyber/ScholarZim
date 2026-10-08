@@ -172,7 +172,7 @@ class ListingValidationTest extends TestCase
     public static function certificateCases(): array
     {
         return [
-            'form 1 has nothing to upload' => [EducationLevel::FORM_1, false],
+            'form 1 asks for the Grade 7 results slip' => [EducationLevel::FORM_1, true],
             'o level' => [EducationLevel::O_LEVEL, true],
             'a level' => [EducationLevel::A_LEVEL, true],
             'diploma uses a transcript' => [EducationLevel::DIPLOMA, true],

@@ -113,16 +113,18 @@ final class OpportunityLevelRules
     }
 
     /**
-     * Whether a results certificate can be asked for at this level: only where
-     * the applicant has school results or a transcript to upload.
+     * Whether proof of results can be asked for at this level. Every level can: an O/A-Level results certificate,
+     * a tertiary or postgraduate transcript, and - for a Form 1 award - a Grade 7 results slip, which a Primary
+     * pupil can upload. Only the one with no level chosen is open to anything, so it too is allowed.
      */
     public static function allowsResultsCertificate(?string $target): bool
     {
-        if (EducationLevel::canonical($target) === null) {
-            return true;
-        }
+        $canonical = EducationLevel::canonical($target);
 
-        return EducationLevel::usesSchoolResults($target) || EducationLevel::usesTranscript($target);
+        return $canonical === null
+            || $canonical === EducationLevel::FORM_1
+            || EducationLevel::usesSchoolResults($target)
+            || EducationLevel::usesTranscript($target);
     }
 
     public static function resultsCertificateProblem(bool $required, ?string $target): ?string
@@ -131,8 +133,8 @@ final class OpportunityLevelRules
             return null;
         }
 
-        return 'A results certificate cannot be required for ' . EducationLevel::label($target)
-            . ' awards. Applicants at this level have no school results or transcript to upload.';
+        return 'Proof of results cannot be required for ' . EducationLevel::label($target)
+            . ' awards. Applicants at this level have nothing to upload.';
     }
 
     /**

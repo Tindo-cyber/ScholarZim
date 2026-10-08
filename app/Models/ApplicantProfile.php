@@ -300,6 +300,29 @@ class ApplicantProfile extends Model
         return filled($this->degree_classification);
     }
 
+    /**
+     * What a document is called to this applicant. The one results slot holds a Grade 7 slip for a Primary pupil
+     * and a results certificate for everyone else, and each should read as the thing they actually hold.
+     */
+    public function documentLabel(string $type): string
+    {
+        if ($type === 'results' && EducationLevel::isPrimary($this->education_level)) {
+            return 'Grade 7 results slip';
+        }
+
+        return self::DOCUMENT_LABELS[$type] ?? $type;
+    }
+
+    /** The name a stored upload is given (not whatever the phone called it). */
+    public function documentFileLabel(string $type): string
+    {
+        if ($type === 'results' && EducationLevel::isPrimary($this->education_level)) {
+            return 'Grade 7 Results Slip';
+        }
+
+        return self::DOCUMENT_FILE_LABELS[$type] ?? $type;
+    }
+
     public function documentPath(string $type): ?string
     {
         $prefix = self::DOCUMENT_TYPES[$type] ?? null;
@@ -346,20 +369,10 @@ class ApplicantProfile extends Model
      */
     public function hasRequiredAcademicEvidence(): bool
     {
-        // A Primary applicant's academic evidence is their structured Grade 7
-        // results, not an uploaded document - Primary has no required
-        // documents at all (see requiredDocumentTypes()), so a Form 1
-        // listing's "requires results certificate" is really asking about
-        // proof of results, which the structured data already is. Reading
-        // this as "needs a transcript" made a Form 1 listing that ticked
-        // requires_results_certificate refuse every Primary pupil over a
-        // document that question was never really about. An unsatisfiable
-        // requirement is not a requirement.
-        if (EducationLevel::isPrimary($this->education_level)) {
-            return true;
-        }
-
-        return EducationLevel::usesSchoolResults($this->education_level)
+        // A Primary pupil's evidence is their Grade 7 results slip, held in the same place as an O/A-Level
+        // results certificate. Primary is asked for no document in general (see requiredDocumentTypes()); this
+        // only matters when a listing asks for proof of results, which a Form 1 award now can.
+        return EducationLevel::isPrimary($this->education_level) || EducationLevel::usesSchoolResults($this->education_level)
             ? $this->hasResultsCertificate()
             : $this->hasTranscript();
     }
@@ -376,12 +389,13 @@ class ApplicantProfile extends Model
      * completed one to show, and an identity document a continuing
      * postgraduate relationship with a provider does not re-ask for.
      */
-    public function requiredDocumentTypes(): array
+    public function requiredDocumentTypes(?Opportunity $for = null): array
     {
         if (EducationLevel::isPrimary($this->education_level)) {
-            // The guardian-assisted Form 1 pathway uploads nothing; the Grade 7
-            // results are structured data (hasStructuredResults()).
-            return [];
+            // Nothing is required of a Grade 7 pupil in general - their results are structured data
+            // (hasStructuredResults()). The one exception is an award that asks for proof of results:
+            // then the results slip is required, for that award.
+            return $for?->requires_results_certificate ? ['results'] : [];
         }
 
         if (EducationLevel::usesSchoolResults($this->education_level)) {
@@ -395,10 +409,10 @@ class ApplicantProfile extends Model
         return ['transcript', 'passport', 'recommendation'];
     }
 
-    public function missingRequiredDocumentTypes(): array
+    public function missingRequiredDocumentTypes(?Opportunity $for = null): array
     {
         return array_values(array_filter(
-            $this->requiredDocumentTypes(),
+            $this->requiredDocumentTypes($for),
             fn (string $type) => blank($this->documentPath($type))
         ));
     }
