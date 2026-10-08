@@ -20,9 +20,10 @@ something that was deliberately removed, not a regression.
 - [ ] Choosing a different education level changes which fields the profile form shows
       (field of study, year of study, and document type all follow the level) without a page
       reload
-- [ ] Setting education level to Primary shows a Guardian details card and hides the
-      document-upload card entirely; saving without guardian name, phone and relationship is
-      refused
+- [ ] A Primary profile hides the transcript card; the Guardian details card shows for anyone under 18
+      (or at school with no date of birth). Saving without guardian details works; SUBMITTING an
+      application as a minor without all four (name, phone, relationship, tick) is refused with a
+      message listing what is missing, and the provider's review page shows the guardian
 - [ ] A date of birth that is impossible for the selected education level (e.g. Primary plus an
       adult's date of birth) is refused with a clear reason; a mature Undergraduate or
       postgraduate applicant is never refused purely for age

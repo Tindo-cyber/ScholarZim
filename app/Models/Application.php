@@ -40,6 +40,7 @@ class Application extends Model
         // status, just "has a provider opened this yet". See the migration
         // that added it for why this does not touch application_status.
         'viewed_by_provider_at',
+        'submitted_snapshot',
     ];
 
     protected $casts = [
@@ -47,6 +48,7 @@ class Application extends Model
         'decided_at' => 'datetime',
         'withdrawn_at' => 'datetime',
         'viewed_by_provider_at' => 'datetime',
+        'submitted_snapshot' => 'array',
     ];
 
     public function documents(): \Illuminate\Database\Eloquent\Relations\HasMany
@@ -63,6 +65,25 @@ class Application extends Model
      *
      * @return array{path: string, filename: ?string}|null
      */
+    /**
+     * The applicant as the provider is shown them: the snapshot taken when the application was sent, or - for an
+     * application made before snapshots existed - the same shape built from the live profile.
+     *
+     * @return array{profile: array<string, mixed>, minor: bool, guardian: ?array<string, mixed>, results: array<int, array<string, mixed>>}
+     */
+    public function submittedProfile(): array
+    {
+        if (is_array($this->submitted_snapshot)) {
+            return $this->submitted_snapshot;
+        }
+
+        $profile = $this->user?->applicantProfile;
+
+        return $profile
+            ? \App\Services\ApplicationSnapshot::build($profile)
+            : ['profile' => [], 'minor' => false, 'guardian' => null, 'results' => []];
+    }
+
     public function documentFor(string $type): ?array
     {
         $recorded = $this->relationLoaded('documents')

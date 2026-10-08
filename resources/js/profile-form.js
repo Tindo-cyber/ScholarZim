@@ -42,6 +42,21 @@
         // comment in profile.blade.php for why that is a save-and-reopen
         // gap rather than something fixed here with a second, JS-side copy
         // of that selection rule.
+        // Under 18 shows the guardian card; with no date of birth, a pupil at school is treated as under 18.
+        const minorFor = document.querySelectorAll('[data-sz-minor]');
+        const dob = document.querySelector('input[name="date_of_birth"]');
+        const SCHOOL_LEVELS = ['PRIMARY', 'O_LEVEL', 'A_LEVEL'];
+        const isMinor = () => {
+            if (dob && dob.value) {
+                const born = new Date(dob.value);
+                if (!Number.isNaN(born.getTime())) {
+                    const cutoff = new Date();
+                    cutoff.setFullYear(cutoff.getFullYear() - 18);
+                    return born > cutoff;
+                }
+            }
+            return SCHOOL_LEVELS.includes(select.value);
+        };
         const staleNotice = document.getElementById('academic-level-stale-notice');
         const initialLevel = select.value;
 
@@ -58,12 +73,20 @@
                 el.hidden = tier !== null && tiers.includes(tier);
             });
 
+            minorFor.forEach((el) => {
+                el.hidden = !isMinor();
+            });
+
             if (staleNotice) {
                 staleNotice.classList.toggle('d-none', select.value === initialLevel);
             }
         };
 
         select.addEventListener('change', sync);
+        if (dob) {
+            dob.addEventListener('input', sync);
+            dob.addEventListener('change', sync);
+        }
         sync();
     });
 })();

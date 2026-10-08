@@ -51,6 +51,9 @@ class ApplicantProfileService
         $preserve = static fn (string $key) => array_key_exists($key, $data) ? $data[$key] : $profile->{$key};
 
         $newLevel = $preserve('education_level');
+        // Guardian details belong to a minor, whatever their level; an adult's are cleared. Judged on the
+        // profile as it will be after this save.
+        $isMinor = (new ApplicantProfile(['date_of_birth' => $preserve('date_of_birth'), 'education_level' => $newLevel]))->isMinor();
         $isPrimary = \App\Support\EducationLevel::isPrimary($newLevel);
         $usesFieldOfStudy = \App\Support\EducationLevel::usesFieldOfStudy($newLevel);
         $usesTranscript = \App\Support\EducationLevel::usesTranscript($newLevel);
@@ -85,12 +88,14 @@ class ApplicantProfileService
             // cleared outright otherwise, for the same reason field of study
             // is above - so a profile that moves off Primary does not carry
             // on displaying a guardian section it no longer needs.
-            'guardian_name' => $isPrimary ? $preserve('guardian_name') : null,
-            'guardian_phone' => $isPrimary ? $preserve('guardian_phone') : null,
-            'guardian_relationship' => $isPrimary ? $preserve('guardian_relationship') : null,
-            'guardian_confirmed_at' => $isPrimary && filled($data['guardian_confirmed'] ?? null)
-                ? Carbon::now()
-                : ($isPrimary ? $profile->guardian_confirmed_at : null),
+            'guardian_name' => $isMinor ? $preserve('guardian_name') : null,
+            'guardian_phone' => $isMinor ? $preserve('guardian_phone') : null,
+            'guardian_relationship' => $isMinor ? $preserve('guardian_relationship') : null,
+            // Ticked sets it (keeping the first time if it was already set); an explicit 0 clears it; a
+            // caller that does not mention the key leaves it alone.
+            'guardian_confirmed_at' => ! $isMinor ? null : (array_key_exists('guardian_confirmed', $data)
+                ? (filter_var($data['guardian_confirmed'], FILTER_VALIDATE_BOOLEAN) ? ($profile->guardian_confirmed_at ?? Carbon::now()) : null)
+                : $profile->guardian_confirmed_at),
             // `academic_results`, the legacy free-text column, is deliberately
             // absent. It is no longer written, no longer read by ScholarFit and
             // no longer part of profile completeness; writing it here would

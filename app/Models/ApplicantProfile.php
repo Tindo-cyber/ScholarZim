@@ -428,6 +428,55 @@ class ApplicantProfile extends Model
         return $this->date_of_birth?->age;
     }
 
+    public const AGE_OF_MAJORITY = 18;
+
+    /**
+     * Whether this applicant is a minor.
+     *
+     * Decided from the date of birth: under 18 is a minor whatever level they study at. With no date of
+     * birth the level is the best guess - a pupil at school (Primary, O-Level, A-Level) is treated as a
+     * minor until they say otherwise.
+     */
+    public function isMinor(): bool
+    {
+        if ($this->date_of_birth !== null) {
+            return $this->age() < self::AGE_OF_MAJORITY;
+        }
+
+        return in_array(EducationLevel::canonical($this->education_level), [
+            EducationLevel::PRIMARY, EducationLevel::O_LEVEL, EducationLevel::A_LEVEL,
+        ], true);
+    }
+
+    /**
+     * What a minor still has to give before submitting an application, in words for the applicant.
+     * Empty for an adult, and for a minor who has given everything.
+     *
+     * @return array<int, string>
+     */
+    public function missingGuardianDetails(): array
+    {
+        if (! $this->isMinor()) {
+            return [];
+        }
+
+        $missing = [];
+        if (blank(trim((string) $this->guardian_name))) {
+            $missing[] = 'your guardian\'s full name';
+        }
+        if (blank(trim((string) $this->guardian_phone))) {
+            $missing[] = 'your guardian\'s phone number';
+        }
+        if (blank(trim((string) $this->guardian_relationship))) {
+            $missing[] = 'your relationship to your guardian';
+        }
+        if ($this->guardian_confirmed_at === null) {
+            $missing[] = 'the tick confirming a parent or guardian is aware of and involved in your applications';
+        }
+
+        return $missing;
+    }
+
     /**
      * How old the applicant is - or will be - on a given day.
      *

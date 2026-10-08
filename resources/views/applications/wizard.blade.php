@@ -11,7 +11,27 @@
     <div class="row g-4">
         <div class="col-xl-8">
 
-            @if(! $profile->isComplete())
+            @if(! empty($missingGuardian))
+                {{-- Under 18: a parent or guardian has to be involved before an application is sent. Checked first, as the server does. --}}
+                <div class="card border-danger">
+                    <div class="card-header bg-danger-subtle">
+                        <h2 class="h6 fw-semibold mb-0">A PARENT OR GUARDIAN IS NEEDED</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>You are under 18, so a parent or guardian has to be involved before you can apply. Please add:</p>
+                        <ul class="mb-3">
+                            @foreach($missingGuardian as $item)
+                                <li>{{ $item }}</li>
+                            @endforeach
+                        </ul>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-primary" href="{{ route('applicant.profile') }}#guardian">Add guardian details</a>
+                            <a class="btn btn-outline-secondary"
+                               href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
+                        </div>
+                    </div>
+                </div>
+            @elseif(! $profile->isComplete())
                 {{--
                     Gate one, before gate two is even worth showing: ScholarFit
                     cannot check a listing's requirements against information

@@ -174,16 +174,18 @@
                     </div>
                 </div>
 
-                {{-- Primary only: the guardian-assisted Form 1 pathway. --}}
-                <div class="card mb-4" data-sz-tier="PRIMARY" id="sz-guardian-card">
+                {{-- Under 18 (or at school with no date of birth): shown and hidden live from the date of birth. --}}
+                <div class="card mb-4" data-sz-minor id="sz-guardian-card" @if(! $profile->isMinor()) hidden @endif>
+                    <span id="guardian"></span>
                     <div class="card-header">
                         <h2 class="h6 fw-semibold mb-0">Guardian details</h2>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info small">
-                            ScholarZim is for students transitioning into Form 1. A Primary applicant
-                            applies with a parent or guardian's involvement - add their details below.
-                            You will only be able to apply to scholarships for Form 1 entry.
+                            You are under 18, so a parent or guardian has to be involved in your applications.
+                            You can browse, see your matches and build your profile without these details, but they
+                            are needed when you submit an application. A provider reviewing your application sees
+                            your guardian's name, phone number and relationship to you.
                         </div>
                         <div class="row">
                             <div class="col-md-4">
@@ -203,8 +205,9 @@
                                               hint="For example: Mother, Father, Aunt, Guardian." />
                             </div>
                         </div>
+                        <input type="hidden" name="guardian_confirmed" value="0">
                         <x-form.checkbox name="guardian_confirmed" wrapper-class=""
-                                         label="I confirm a parent or guardian is aware of and involved in this application."
+                                         label="I confirm a parent or guardian is aware of and involved in my applications."
                                          :checked="$profile->guardian_confirmed_at !== null" />
                     </div>
                 </div>

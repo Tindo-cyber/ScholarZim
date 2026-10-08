@@ -333,6 +333,12 @@ class ApplicationService
         // definition ApplicantProfile::isComplete() already uses for the
         // profile checklist and completion ring - not a second, narrower
         // notion of "complete enough to apply" invented here.
+        // A minor needs a parent or guardian behind the application. Asked for here, at submission - not
+        // before browsing or building a profile - and before the profile gate so it is the first thing said.
+        if ($profile->missingGuardianDetails() !== []) {
+            throw new \App\Exceptions\GuardianRequiredException($profile->missingGuardianDetails());
+        }
+
         if (! $profile->isComplete()) {
             throw new ProfileIncompleteException($profile->missingFields());
         }
@@ -439,6 +445,7 @@ class ApplicationService
                     $before = \App\Models\ApplicationDocument::where('application_id', $application->application_id)->pluck('path')->all();
                     \App\Models\ApplicationDocument::record($application, $this->profileService->forUser($user));
                     $released = array_values(array_diff($before, \App\Models\ApplicationDocument::where('application_id', $application->application_id)->pluck('path')->all()));
+                    $application->update(['submitted_snapshot' => ApplicationSnapshot::build($this->profileService->forUser($user))]);
 
                     // Inside the transaction on purpose: an audit line that
                     // survived a rolled-back submission would be a record of

@@ -175,7 +175,6 @@ class ProfileController extends Controller
         // over the data that already passed the first.
         \Illuminate\Support\Facades\Validator::make($data, [])
             ->after(function (Validator $validator) use ($data, $currentProfile) {
-                $this->assertGuardianRequirementsMet($validator, $data);
                 $this->assertAgeIsConsistent($validator, $data);
                 $this->assertLocalityMatchesProvince($validator, $data);
                 $this->assertProgressionIsSequential($validator, $data, $currentProfile);
@@ -201,33 +200,6 @@ class ProfileController extends Controller
         return redirect()
             ->route('applicant.profile')
             ->with('successMessage', 'Profile saved. Your scholarship matches now reflect these changes.');
-    }
-
-    /**
-     * A Primary applicant applies through the guardian-assisted Form 1
-     * pathway, not alone (see docs/user-guide.md). Guardian name and contact
-     * are required at the point a Primary-level profile is saved, rather than
-     * left until the moment of applying, so the requirement is visible on the
-     * profile - the place explaining why it exists - instead of surfacing as a
-     * surprise on the apply button.
-     */
-    private function assertGuardianRequirementsMet(Validator $validator, array $data): void
-    {
-        if (! EducationLevel::isPrimary($data['education_level'] ?? null)) {
-            return;
-        }
-
-        if (blank($data['guardian_name'] ?? null)) {
-            $validator->errors()->add('guardian_name', 'A guardian name is required for a Primary applicant.');
-        }
-
-        if (blank($data['guardian_phone'] ?? null)) {
-            $validator->errors()->add('guardian_phone', 'A guardian contact number is required for a Primary applicant.');
-        }
-
-        if (blank($data['guardian_relationship'] ?? null)) {
-            $validator->errors()->add('guardian_relationship', 'State the guardian\'s relationship to the applicant.');
-        }
     }
 
     /**

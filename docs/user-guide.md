@@ -8,9 +8,11 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 1. Register at `/register` with your email and password.
 2. Complete your **profile** at `/applicant/profile`. The form only asks for what your
-   education level actually needs: a Primary pupil sees a guardian-details section instead of
-   a document upload; an O/A-Level student sees a results-certificate upload; anyone from
-   Certificate level upward sees a transcript upload, field of study and year of study. There
+   education level actually needs: a Primary pupil sees a Grade 7 results-slip upload; an O/A-Level student sees a results-certificate upload; anyone from
+   Certificate level upward sees a transcript upload, field of study and year of study. If you are under 18 (or at school with no date of birth given) a **Guardian details**
+   section appears: your guardian's name, phone and relationship, and a tick that a parent or
+   guardian is aware of and involved. You can browse and build your profile without them, but
+   they are needed to submit an application, and providers see them on your application. There
    is no GPA field anywhere — providers see your actual results or transcript, not a number.
 3. Upload the document your level asks for. It is not required to apply everywhere, but a
    provider can mark an individual scholarship as requiring it — an applicant without it

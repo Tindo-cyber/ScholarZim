@@ -407,6 +407,11 @@ class DatabaseSeeder extends Seeder
                 'locality' => 'Mutare',
                 'settlement_type' => \App\Services\ScholarFit\Taxonomy\SettlementType::URBAN,
                 'date_of_birth' => Carbon::today()->subYears(17)->toDateString(),
+                // Under 18, so a parent or guardian is needed before he can apply.
+                'guardian_name' => 'Tendai Sibanda',
+                'guardian_phone' => '0773111002',
+                'guardian_relationship' => 'Father',
+                'guardian_confirmed_at' => Carbon::now()->subWeek(),
                 'citizenship' => 'Zimbabwean',
                 'biography' => 'Finished O-Level and weighing A-Level against a direct move to a diploma programme.',
                 'results_certificate_path' => 'profiles/demo/o-level-results.pdf',

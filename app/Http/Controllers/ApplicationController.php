@@ -56,6 +56,7 @@ class ApplicationController extends Controller
         return view('applications.wizard', [
             'opportunity' => $opportunity,
             'profile' => $profile,
+            'missingGuardian' => $profile->missingGuardianDetails(),
             'fit' => $this->recommendationService->evaluateOne($user, $opportunity),
             // For THIS award: a Grade 7 pupil is asked for the slip only if the award requires proof of results.
             'missingDocumentTypes' => $profile->missingRequiredDocumentTypes($opportunity),

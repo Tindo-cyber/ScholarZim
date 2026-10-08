@@ -232,6 +232,11 @@ class ProfileCompletenessGateTest extends TestCase
                 'country' => 'Zimbabwe',
                 'province' => 'Harare',
                 'date_of_birth' => Carbon::today()->subYears(17)->toDateString(),
+                // Under 18, so a parent or guardian is part of a profile that can apply.
+                'guardian_name' => 'Gate Guardian',
+                'guardian_phone' => '0771234567',
+                'guardian_relationship' => 'Mother',
+                'guardian_confirmed_at' => Carbon::now(),
                 'citizenship' => 'Zimbabwean',
                 'biography' => 'A test applicant with a complete profile.',
                 // Satisfies the checklist's "academic results" item without

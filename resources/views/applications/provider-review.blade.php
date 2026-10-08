@@ -43,19 +43,26 @@
                 </div>
                 <div class="card-body">
                     @if($applicantProfile)
+                        {{--
+                            The applicant as they were when this application was sent: the profile fields,
+                            the recorded results and, for a minor, the guardian. Edits made afterwards do
+                            not change it (see Application::submittedProfile()).
+                        --}}
                         @php
+                            $sent = $application->submittedProfile();
+                            $sentProfile = $sent['profile'];
                             $profileFields = [
-                                'Education level' => \App\Support\EducationLevel::label($applicantProfile->education_level),
-                                'Institution' => $applicantProfile->institution_name,
+                                'Education level' => \App\Support\EducationLevel::label($sentProfile['education_level'] ?? null),
+                                'Institution' => $sentProfile['institution_name'] ?? null,
                             ];
-                            if (\App\Support\EducationLevel::usesFieldOfStudy($applicantProfile->education_level)) {
-                                $profileFields['Field of study'] = $applicantProfile->field_of_study;
+                            if ($sentProfile['uses_field_of_study'] ?? false) {
+                                $profileFields['Field of study'] = $sentProfile['field_of_study'] ?? null;
                             }
-                            $profileFields['Province'] = $applicantProfile->province;
-                            $profileFields['Locality'] = $applicantProfile->locality;
-                            $profileFields['Age'] = $applicantProfile->age();
+                            $profileFields['Province'] = $sentProfile['province'] ?? null;
+                            $profileFields['Locality'] = $sentProfile['locality'] ?? null;
+                            $profileFields['Age'] = $sentProfile['age'] ?? null;
                             // Read from the stored value only - never inferred from the name.
-                            $profileFields['Gender'] = \App\Support\Gender::label($applicantProfile->gender);
+                            $profileFields['Gender'] = \App\Support\Gender::label($sentProfile['gender'] ?? null);
                         @endphp
                         <dl class="row mb-3">
                             @foreach($profileFields as $label => $value)
@@ -64,34 +71,38 @@
                             @endforeach
                         </dl>
 
+                        @if($sent['minor'] && $sent['guardian'])
+                            <h3 class="sz-eyebrow">Guardian</h3>
+                            <p class="small text-secondary">This applicant was under 18 when they applied.</p>
+                            <dl class="row mb-3">
+                                <dt class="col-sm-4 text-secondary fw-normal small">Name</dt>
+                                <dd class="col-sm-8 fw-semibold">{{ $sent['guardian']['name'] ?: 'Not provided' }}</dd>
+                                <dt class="col-sm-4 text-secondary fw-normal small">Phone</dt>
+                                <dd class="col-sm-8 fw-semibold">{{ $sent['guardian']['phone'] ?: 'Not provided' }}</dd>
+                                <dt class="col-sm-4 text-secondary fw-normal small">Relationship</dt>
+                                <dd class="col-sm-8 fw-semibold">{{ $sent['guardian']['relationship'] ?: 'Not provided' }}</dd>
+                            </dl>
+                        @endif
+
                         {{--
-                            The results as recorded, subject by subject.
-
-                            This row used to print applicant_profiles.academic_results - the
-                            free-text column the structured model replaced - so a provider
-                            reviewing an application saw either a stale sentence or nothing
-                            at all, while the actual grades the eligibility check ran against
-                            sat one relation away. Points come from the result's own
-                            points(), which is null for a qualification that does not award
-                            them rather than a zero that reads like a bad mark.
+                            The results as recorded, subject by subject. Points are null for a qualification
+                            that does not award them, shown as a dash rather than a zero that reads like a bad mark.
                         --}}
-                        @php $results = $applicantProfile->academicResults; @endphp
-
                         <h3 class="sz-eyebrow">Academic results</h3>
 
-                        @if($results->isEmpty())
+                        @if(empty($sent['results']))
                             <p class="small text-secondary">This applicant has not recorded any results.</p>
                         @else
-                            @foreach($results->groupBy(fn ($result) => $result->qualificationName()) as $qualification => $group)
+                            @foreach(collect($sent['results'])->groupBy('qualification') as $qualification => $group)
                                 <p class="small fw-semibold mb-1">{{ $qualification }}</p>
                                 <x-data-table :columns="['Subject', 'Result', ['label' => 'Points', 'align' => 'end']]"
                                               size="sm" :hover="false" class="mb-3">
                                     @foreach($group as $result)
                                         <tr>
-                                            <x-data-table.cell label="Subject">{{ $result->subjectName() }}</x-data-table.cell>
-                                            <x-data-table.cell label="Result" class="fw-semibold">{{ $result->result }}</x-data-table.cell>
+                                            <x-data-table.cell label="Subject">{{ $result['subject'] }}</x-data-table.cell>
+                                            <x-data-table.cell label="Result" class="fw-semibold">{{ $result['result'] }}</x-data-table.cell>
                                             <x-data-table.cell label="Points" align="end" class="sz-tabular">
-                                                {{ $result->points() ?? '-' }}
+                                                {{ $result['points'] ?? '-' }}
                                             </x-data-table.cell>
                                         </tr>
                                     @endforeach
@@ -99,9 +110,9 @@
                             @endforeach
                         @endif
 
-                        @if($applicantProfile->biography)
+                        @if(! empty($sentProfile['biography']))
                             <h3 class="h6 fw-semibold text-uppercase text-secondary small mb-2">Biography</h3>
-                            <p>{{ $applicantProfile->biography }}</p>
+                            <p>{{ $sentProfile['biography'] }}</p>
                         @endif
 
                         {{--
@@ -172,6 +183,7 @@
 
                         <p class="small text-secondary mt-3 mb-0">
                             A guide to whether the profile meets this listing's stated requirements. The decision is yours.
+                            Worked out from the applicant's profile as it is today; the details on the left are as submitted.
                         </p>
                     </div>
                 </div>
