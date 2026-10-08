@@ -11,6 +11,9 @@
         </x-slot:actions>
     </x-page-header>
 
+    {{-- The yearly level check and any place the profile contradicts itself. --}}
+    <x-profile-quality :profile="$profile" class="mb-4" />
+
     {{-- Only while it is actionable, and in the same shape the profile and the
          matches page use it. --}}
     @if($stats['profileCompletion'] < 100)

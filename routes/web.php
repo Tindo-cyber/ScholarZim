@@ -179,6 +179,7 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT, 'cache.headers:no_sto
 
     Route::get('/applicant/profile', [Applicant\ProfileController::class, 'edit'])->name('applicant.profile');
     Route::post('/applicant/profile', [Applicant\ProfileController::class, 'update'])->name('applicant.profile.update');
+    Route::post('/applicant/profile/confirm-level', [Applicant\ProfileController::class, 'confirmLevel'])->name('applicant.profile.confirmLevel');
     Route::post('/applicant/profile/documents/{documentType}', [Applicant\ProfileController::class, 'uploadDocument'])
         ->name('applicant.profile.documents');
 

@@ -116,4 +116,12 @@ return [
         'minimum_count' => (int) env('SCHOLARZIM_MIN_COUNT', 5),
     ],
 
+    /*
+     * How long before an applicant is asked to confirm their current education level
+     * still holds. A level is a claim about a moment; a year later it is often wrong.
+     */
+    'profile' => [
+        'confirm_level_after_days' => (int) env('SCHOLARZIM_CONFIRM_LEVEL_DAYS', 365),
+    ],
+
 ];

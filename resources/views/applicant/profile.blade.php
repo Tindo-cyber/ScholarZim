@@ -8,6 +8,8 @@
                    subtitle="Everything ScholarFit checks against a scholarship's requirements."
                    eyebrow="Student" />
 
+    <x-profile-quality :profile="$profile" class="mb-4" />
+
     <div class="row g-4">
         <div class="col-xl-8">
 

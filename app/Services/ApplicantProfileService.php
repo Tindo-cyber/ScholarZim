@@ -57,6 +57,8 @@ class ApplicantProfileService
 
         $profile->update([
             'education_level' => $newLevel,
+            // Posting the form states the level afresh, so it counts as confirming it.
+            'education_level_confirmed_at' => array_key_exists('education_level', $data) ? now() : $profile->education_level_confirmed_at,
             'institution_name' => $preserve('institution_name'),
             // Field of study and degree classification are tier-specific
             // concepts, cleared outright - never merely preserved - the

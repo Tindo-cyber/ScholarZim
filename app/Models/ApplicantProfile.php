@@ -34,6 +34,7 @@ class ApplicantProfile extends Model
         'guardian_phone',
         'guardian_relationship',
         'guardian_confirmed_at',
+        'education_level_confirmed_at',
         'biography',
         'results_certificate_path',
         'results_certificate_filename',
@@ -55,6 +56,7 @@ class ApplicantProfile extends Model
     protected $casts = [
         'date_of_birth' => 'date',
         'guardian_confirmed_at' => 'datetime',
+        'education_level_confirmed_at' => 'datetime',
         'results_uploaded_at' => 'datetime',
         'cv_uploaded_at' => 'datetime',
         'passport_uploaded_at' => 'datetime',

@@ -76,6 +76,18 @@ class ProfileController extends Controller
         ]);
     }
 
+    /** "Yes, this is still my current level" - the yearly check, answered in one click. */
+    public function confirmLevel(Request $request)
+    {
+        $profile = $this->profileService->forUser($request->user());
+
+        if (filled($profile->education_level)) {
+            $profile->update(['education_level_confirmed_at' => now()]);
+        }
+
+        return redirect()->back()->with('successMessage', 'Thanks - your level is confirmed.');
+    }
+
     public function update(Request $request)
     {
         $data = $request->validate([
