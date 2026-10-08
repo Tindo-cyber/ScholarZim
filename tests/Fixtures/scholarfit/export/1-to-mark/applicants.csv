@@ -1,0 +1,12 @@
+﻿Applicant,Who,"Education level","Date of birth",Province,Town,"Rural or urban","Old field of study (typed before the catalogue)","Programme now","Studying at","Programmes hoped for","Applied to","A-Level results","Proof of results on file"
+A1,"Tanashe - Form 6 leaver, wants Computer Science","A Level",2009-06-15,Harare,Harare,Urban,,,,"BSc Computer Science",UZ,"Mathematics A, Physics B, Chemistry B","results certificate"
+A2,"Rudo - Form 6 leaver, wants Medicine or Nursing, no institution yet","A Level",2008-02-10,Manicaland,Mutare,Rural,,,,"Bachelor of Medicine and Bachelor of Surgery; BSc Nursing Science",,"Biology A, Chemistry A, Geography C","results certificate"
+A3,"Farai - Form 4, has not chosen programmes, no results certificate","O Level",2011-05-01,Midlands,Gweru,Urban,,,,,,,none
+A4,"Kuda - Grade 7 pupil",Primary,2014-03-02,"Mashonaland East",Marondera,Rural,,,,,,,none
+A5,"Chipo - BSc Information Systems at NUST, Harare resident",Undergraduate,2006-08-20,Harare,Harare,Urban,,"BSc Information Systems",NUST,,,"Mathematics B, Physics B, Chemistry C",transcript
+A6,"Tendai - BEng Civil Engineering at NUST",Undergraduate,2002-11-03,Bulawayo,Bulawayo,Urban,,"BEng Civil Engineering",NUST,,,"Mathematics A, Physics A, Chemistry B",transcript
+A7,"Nyasha - Diploma in Accountancy at Masvingo Polytechnic",Diploma,2004-04-04,Masvingo,Masvingo,Rural,,"Diploma in Accountancy",MASVINGO-POLY,,,,transcript
+A8,"Mai Grace - MBA at UZ, mature student",Masters,1985-01-20,Harare,Harare,Urban,,"Master of Business Administration",UZ,,,,transcript
+A9,"Blessing - undergraduate from before the catalogue: old field of study only",Undergraduate,2007-07-07,"Matabeleland South",Gwanda,Rural,"Computer Science & IT",,,,,"Mathematics C, Physics C, Chemistry C",none
+A10,"Lerato - undergraduate with an almost empty profile",Undergraduate,"(not recorded)","(not recorded)","(not recorded)","(not recorded)",,,,,,,none
+A11,"Anon - a profile with no education level at all","(not recorded)","(not recorded)","(not recorded)","(not recorded)","(not recorded)",,,,,,,none

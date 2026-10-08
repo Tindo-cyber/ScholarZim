@@ -11,6 +11,7 @@ use App\Services\Catalogue\ApplicantProgrammes;
 use App\Services\Catalogue\CatalogueMentions;
 use App\Services\Catalogue\LegacyFieldMap;
 use App\Services\Catalogue\ListingScopes;
+use App\Support\EducationLevel;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 
@@ -86,6 +87,21 @@ class ProgrammeScope
         return $outcomes;
     }
 
+    /**
+     * Whether a field named in a listing's wording is read against the catalogue for this applicant: they have
+     * chosen a programme, or they are a school-leaver who is asked to say which they plan to study.
+     */
+    public function readsFieldMentions(ApplicantProfile $profile): bool
+    {
+        try {
+            $applicant = $this->applicant($profile);
+
+            return $applicant['programmes']->isNotEmpty() || $applicant['mode'] === ApplicantProgrammes::INTENDED;
+        } catch (QueryException) {
+            return false;
+        }
+    }
+
     /** Whether this applicant has chosen at least one catalogue programme. */
     public function hasProgrammes(ApplicantProfile $profile): bool
     {
@@ -129,7 +145,7 @@ class ProgrammeScope
         // an applicant who has chosen a programme - for anyone else the older field rule reads them.
         $rows = collect();
         $origin = null;
-        $withFields = $this->applicant($profile)['programmes']->isNotEmpty();
+        $withFields = $this->readsFieldMentions($profile);
 
         foreach ($this->mentions->read($listing) as $mention) {
             if ($mention['type'] === 'field' && ! $withFields) {
@@ -161,7 +177,7 @@ class ProgrammeScope
         return $this->applicants[$profile] ??= $this->readApplicant($profile);
     }
 
-    /** @return array{mode: string, programmes: Collection<int, Programme>, legacy: Collection<int, Field>, institutions: array<int, int>, institutionNames: array<int, string>} */
+    /** @return array{mode: string, programmes: Collection<int, Programme>, legacy: Collection<int, Field>, institutions: array<int, int>, institutionNames: array<int, string>, levelKnown: bool} */
     private function readApplicant(ApplicantProfile $profile): array
     {
         $mode = ApplicantProgrammes::modeFor($profile);
@@ -198,7 +214,10 @@ class ProgrammeScope
             $legacy = $codes === [] ? collect() : $this->mentions->fieldsByCode($codes);
         }
 
-        return ['mode' => $mode, 'programmes' => $programmes, 'legacy' => $legacy, 'institutions' => $institutions, 'institutionNames' => $names];
+        return [
+            'mode' => $mode, 'programmes' => $programmes, 'legacy' => $legacy, 'institutions' => $institutions, 'institutionNames' => $names,
+            'levelKnown' => EducationLevel::canonical($profile->education_level) !== null,
+        ];
     }
 
     // ------------------------------------------------------ programmes and fields --
@@ -285,6 +304,15 @@ class ProgrammeScope
             );
         }
 
+        if (! $applicant['levelKnown']) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_PROGRAMME_SCOPE,
+                $prefix . 'Programme: open to ' . $open . ' - add your education level to your profile so we can check it.',
+                ScholarFitFieldNames::EDUCATION_LEVEL,
+                required: $open,
+            );
+        }
+
         if ($applicant['mode'] === ApplicantProgrammes::NONE) {
             return RequirementOutcome::fail(
                 RequirementOutcome::TYPE_PROGRAMME_SCOPE,
@@ -295,7 +323,9 @@ class ProgrammeScope
 
         return RequirementOutcome::needsInfo(
             RequirementOutcome::TYPE_PROGRAMME_SCOPE,
-            $prefix . 'Programme: open to ' . $open . ' - add your programme to your profile so we can check it.',
+            $prefix . 'Programme: open to ' . $open . ' - '
+                . ($applicant['mode'] === ApplicantProgrammes::INTENDED ? 'add the programme you plan to study' : 'add your programme')
+                . ' to your profile so we can check it.',
             ScholarFitFieldNames::PROGRAMME,
             required: $open,
         );
@@ -341,6 +371,15 @@ class ProgrammeScope
         $have = $applicant['institutions'];
 
         if ($have === []) {
+            if (! $applicant['levelKnown']) {
+                return RequirementOutcome::needsInfo(
+                    RequirementOutcome::TYPE_INSTITUTION_SCOPE,
+                    $prefix . 'Institution: for students at ' . $open . ' - add your education level to your profile so we can check it.',
+                    ScholarFitFieldNames::EDUCATION_LEVEL,
+                    required: $open,
+                );
+            }
+
             if ($applicant['mode'] === ApplicantProgrammes::NONE) {
                 return RequirementOutcome::fail(
                     RequirementOutcome::TYPE_INSTITUTION_SCOPE,

@@ -60,5 +60,10 @@
     "name": "Lerato - undergraduate with an almost empty profile",
     "level": "UNDERGRADUATE", "dob": null, "province": null, "locality": null, "settlement": null,
     "results": {}, "documents": []
+  },
+  "A11": {
+    "name": "Anon - a profile with no education level at all",
+    "level": null, "dob": null, "province": null, "locality": null, "settlement": null,
+    "results": {}, "documents": []
   }
 }

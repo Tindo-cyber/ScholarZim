@@ -136,17 +136,43 @@ class ScholarFitAccuracyTest extends TestCase
         $this->assertFalse(method_exists(EligibilityResult::class, 'score'));
         $this->assertFalse(method_exists(MatchOrder::class, 'score'));
     }
-    public function test_the_review_sheet_is_the_answer_key_as_a_spreadsheet(): void
+    public function test_the_spreadsheets_are_the_fixtures_and_the_key_exactly(): void
     {
-        $sheet = \Tests\Support\ScholarFitReviewSheet::render($this->fixture('applicants'), $this->fixture('listings'), $this->key);
-        $path = __DIR__ . '/../Fixtures/scholarfit/review-sheet.csv';
+        $files = \Tests\Support\ScholarFitExport::files($this->fixture('applicants'), $this->fixture('listings'), $this->key);
+        $folder = __DIR__ . '/../Fixtures/scholarfit/export/';
 
-        // Regenerate with: SCHOLARFIT_WRITE_SHEET=1 php artisan test --filter=review_sheet
+        // Regenerate with: SCHOLARFIT_WRITE_SHEET=1 php artisan test --filter=spreadsheets_are
         if (getenv('SCHOLARFIT_WRITE_SHEET') === '1') {
-            file_put_contents($path, "\xEF\xBB\xBF" . $sheet);
+            foreach ($files as $path => $contents) {
+                @mkdir(dirname($folder . $path), 0777, true);
+                file_put_contents($folder . $path, $contents);
+            }
         }
 
-        $this->assertSame("\xEF\xBB\xBF" . $sheet, file_get_contents($path), 'review-sheet.csv is out of date with expected.json');
+        foreach ($files as $path => $contents) {
+            $this->assertFileExists($folder . $path);
+            $this->assertSame($contents, file_get_contents($folder . $path), "$path is out of date with the fixtures");
+        }
     }
 
+    public function test_the_worksheet_to_mark_contains_no_answers(): void
+    {
+        $files = \Tests\Support\ScholarFitExport::files($this->fixture('applicants'), $this->fixture('listings'), $this->key);
+
+        foreach (['1-to-mark/worksheet.csv', '1-to-mark/applicants.csv', '1-to-mark/listings.csv'] as $path) {
+            $rows = array_map('str_getcsv', explode("\n", trim(ltrim($files[$path], "\xEF\xBB\xBF"))));
+
+            foreach ($rows as $row) {
+                if (preg_match('/^L\d+$/', $row[0] ?? '')) {
+                    foreach (array_slice($row, 2) as $cell) {
+                        $this->assertNotContains($cell, ['E', 'I', 'N'], "$path must not carry a verdict");
+                    }
+                }
+            }
+        }
+
+        foreach (['verdict', 'answer key', 'the engine'] as $word) {
+            $this->assertStringNotContainsString($word, strtolower($files['1-to-mark/listings.csv'] . $files['1-to-mark/applicants.csv']));
+        }
+    }
 }

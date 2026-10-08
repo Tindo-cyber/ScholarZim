@@ -160,6 +160,7 @@ class OpportunityController extends Controller
             // applicants meet them today - a number only from the privacy threshold up.
             'reading' => [
                 'rules' => \App\Services\ScholarFit\ListingReading::rules($listing),
+                'notes' => \App\Services\ScholarFit\ListingReading::notes($listing),
                 'count' => \App\Services\ScholarFit\ListingReading::displayCount(\App\Services\ScholarFit\ListingReading::matchingCount($listing)),
                 'minimum' => \App\Services\ScholarFit\ListingReading::minimum(),
             ],

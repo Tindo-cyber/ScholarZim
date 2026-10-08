@@ -62,6 +62,28 @@
                 });
             }
 
+            // A hint that depends on what is chosen: shown while an option marked data-hint="x" is selected and
+            // none marked data-covers="x" is.
+            Array.prototype.forEach.call(block.querySelectorAll('[data-hint-for]'), function (hint) {
+                var name = hint.getAttribute('data-hint-for');
+
+                function sync() {
+                    var triggered = false;
+                    var covered = false;
+
+                    Array.prototype.forEach.call(select.options, function (option) {
+                        if (!option.selected) return;
+                        if (option.getAttribute('data-hint') === name) triggered = true;
+                        if (option.getAttribute('data-covers') === name) covered = true;
+                    });
+
+                    hint.hidden = !(triggered && !covered);
+                }
+
+                select.addEventListener('change', sync);
+                sync();
+            });
+
             search.addEventListener('input', apply);
             if (levelSelect) levelSelect.addEventListener('change', apply);
             apply();

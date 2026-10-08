@@ -177,7 +177,8 @@ class EligibilityExplanationTest extends TestCase
      */
     public function test_a_bare_listing_tells_an_incomplete_profile_to_finish_it_first(): void
     {
-        $bare = $this->listing('Open Community Bursary');
+        // Genuinely bare: no level and no field either, or a profile with no level would be asked about those.
+        $bare = $this->listing('Open Community Bursary', ['education_level' => null, 'target_field' => null]);
 
         $stranger = User::create([
             'role_id' => $this->applicant->role_id,

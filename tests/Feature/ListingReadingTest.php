@@ -199,7 +199,7 @@ class ListingReadingTest extends TestCase
             ],
         ]);
 
-        $this->assertContains('Open to: any Engineering programme at MSU or NUST', $this->texts($rules));
+        $this->assertContains('Open to: any Electrical, mechanical and other engineering programme at MSU or NUST', $this->texts($rules));
         $this->assertSame(ListingReading::FROM_SETTING, collect($rules)->firstWhere(fn ($r) => str_starts_with($r['text'], 'Open to:'))['source']);
     }
 
@@ -224,6 +224,28 @@ class ListingReadingTest extends TestCase
         ]);
 
         $this->assertSame([], array_values(array_filter($rules, fn ($r) => $r['source'] === ListingReading::FROM_TEXT && str_starts_with($r['text'], 'Open to:'))));
+    }
+
+    public function test_the_read_out_says_when_only_the_narrow_engineering_field_leaves_out_civil_and_mining(): void
+    {
+        $narrow = $this->listing(['education_level' => EducationLevel::UNDERGRADUATE, 'scope_fields' => [\App\Models\Field::where('code', '071')->value('id')]]);
+        $both = $this->listing(['education_level' => EducationLevel::UNDERGRADUATE, 'scope_fields' => [
+            \App\Models\Field::where('code', '071')->value('id'), \App\Models\Field::where('code', '07')->value('id'),
+        ]]);
+
+        $this->assertStringContainsString('civil and mining engineering are not included', implode(' ', ListingReading::notes($narrow)));
+        $this->assertSame([], ListingReading::notes($both));
+        $this->assertSame([], ListingReading::notes($this->listing(['education_level' => EducationLevel::UNDERGRADUATE])));
+    }
+
+    public function test_the_preview_shows_that_note(): void
+    {
+        $html = $this->actingAs($this->provider)->post('/opportunities/preview', [
+            'title' => 'Narrow', 'education_level' => EducationLevel::UNDERGRADUATE,
+            'scope_fields' => [\App\Models\Field::where('code', '071')->value('id')],
+        ])->assertOk()->getContent();
+
+        $this->assertStringContainsString('civil and mining engineering are not included', $html);
     }
 
     public function test_the_count_follows_what_the_listing_is_open_to(): void

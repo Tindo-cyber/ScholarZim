@@ -423,10 +423,12 @@ class ScholarshipRequirementTest extends TestCase
 
         $fit = app(RecommendationService::class)->evaluateOne($this->student->refresh(), $opportunity);
 
+        // O-Level results do not count towards an A-Level bar: the floor is not met. Whoever has reached
+        // A-Level is asked to add the A-Level results rather than refused.
         $this->assertFalse($fit->meetsRequirements());
         $this->assertStringContainsString(
             'ZIMSEC Advanced Level points: 12 required',
-            implode(' ', $fit->failureMessages())
+            implode(' ', \App\Services\ScholarFit\RequirementOutcome::messages($fit->pendingInformation()))
         );
     }
 

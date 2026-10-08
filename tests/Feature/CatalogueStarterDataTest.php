@@ -88,13 +88,13 @@ class CatalogueStarterDataTest extends TestCase
         foreach (Field::all() as $field) {
             $this->assertNotEmpty($field->display_name, $field->code);
             $this->assertNotEmpty($field->name, $field->code);
-            $this->assertLessThanOrEqual(40, mb_strlen($field->display_name), $field->code . ' is not short');
+            $this->assertLessThanOrEqual(50, mb_strlen($field->display_name), $field->code . ' is not short');
         }
 
         $engineering = Field::where('code', '071')->firstOrFail();
-        $this->assertSame('Engineering', $engineering->label());
+        $this->assertSame('Electrical, mechanical and other engineering', $engineering->label());
         $this->assertSame('Engineering and engineering trades', $engineering->name);
-        $this->assertSame('Engineering and construction > Engineering', $engineering->trail());
+        $this->assertSame('Engineering and construction > Electrical, mechanical and other engineering', $engineering->trail());
     }
 
     public function test_civil_engineering_is_filed_under_architecture_and_construction(): void

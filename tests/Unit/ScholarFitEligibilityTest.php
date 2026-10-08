@@ -397,7 +397,11 @@ class ScholarFitEligibilityTest extends TestCase
             $fit->meetsRequirements(),
             'the legacy text claims a strong record, but no structured result exists to back it'
         );
-        $this->assertStringContainsString('no ZIMSEC Advanced Level results', implode(' ', $fit->failureMessages()));
+        // Not a refusal - an undergraduate may well have A-Level results, they are just not recorded - but
+        // the person is told exactly what to add.
+        $this->assertFalse($fit->isIneligible());
+        $this->assertTrue($fit->needsInformation());
+        $this->assertStringContainsString('add your ZIMSEC Advanced Level results', implode(' ', \App\Services\ScholarFit\RequirementOutcome::messages($fit->pendingInformation())));
     }
 
     // ------------------------------------ description-stated conditions --

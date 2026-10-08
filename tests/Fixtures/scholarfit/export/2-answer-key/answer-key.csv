@@ -1,0 +1,27 @@
+﻿"E = eligible, I = ineligible, N = needs information. Open reasons.csv only after you have marked the worksheet."
+Listing,Title,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11
+L01,"Form 1 Transition Bursary",I,I,I,E,I,I,I,I,I,I,N
+L02,"O-Level Fees Support",E,E,E,E,I,I,I,I,I,I,N
+L03,"A-Level Continuation Bursary",E,E,E,I,I,I,I,I,I,I,N
+L04,"National Merit Undergraduate Bursary",E,E,E,I,E,E,E,E,E,E,N
+L05,"Undergraduate Bursary with 12 A-Level points",E,E,I,I,I,E,N,N,I,N,N
+L06,"Mathematics Bursary",E,I,I,I,E,E,N,N,I,N,N
+L07,"Under-20s Award",E,E,E,I,E,I,I,I,E,N,N
+L08,"Harare Residents Bursary",E,I,I,I,E,I,I,E,I,N,N
+L09,"Rural Students Bursary",I,E,I,I,I,I,E,I,E,N,N
+L10,"Gweru Youth Award",I,I,E,I,I,I,I,I,I,N,N
+L11,"Computer Science Programme Award",E,I,N,I,I,I,I,I,N,N,N
+L12,"ICT Field Award",E,I,N,I,E,I,I,I,E,N,N
+L13,"Engineering and Construction Award",I,I,N,I,I,E,I,I,I,N,N
+L14,"Engineering Trades Award",I,I,N,I,I,I,I,I,I,N,N
+L15,"MSU and NUST Students Award",I,N,N,I,E,E,I,I,N,N,N
+L16,"Engineering at MSU or NUST Award",I,I,N,I,I,E,I,I,I,N,N
+L17,"MBA Fellowship",I,I,I,I,I,I,I,E,N,N,N
+L18,"BSc Computer Science Bursary",E,I,N,I,I,I,I,I,N,N,N
+L19,"General Degree Support",I,I,N,I,I,I,I,I,I,N,N
+L20,"Bursary requiring proof of results",E,E,I,I,E,E,E,E,I,I,N
+L21,"Doctoral Research Award",I,I,I,I,E,E,I,E,E,E,N
+
+"Order, best first (no score)"
+A1,"L18 > L11 > L12 > L08 > L05 > L06 > L07 > L20 > L03 > L04 > L02"
+A5,"L12 > L08 > L06 > L07 > L20 > L15 > L04 > L21"

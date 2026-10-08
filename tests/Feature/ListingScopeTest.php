@@ -293,6 +293,36 @@ class ListingScopeTest extends TestCase
         $this->assertMatchesRegularExpression('#<option value="' . $this->programme('BSc Information Systems') . '"[^>]*data-level="UNDERGRADUATE"[^>]*data-search="[^"]*info systems#i', $html);
     }
 
+    public function test_a_new_listing_form_has_the_engineering_hint_hidden_until_it_is_needed(): void
+    {
+        $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('#id="scope-engineering-hint"[^>]*hidden#', $html);
+        $this->assertStringContainsString('data-hint="engineering"', $html, 'the narrow option is what triggers it');
+        $this->assertStringContainsString('data-covers="engineering"', $html, 'the broad option is what cancels it');
+    }
+
+    public function test_the_hint_is_shown_on_a_saved_listing_that_chose_only_the_narrow_field(): void
+    {
+        $listing = $this->live(['field_id' => $this->field('071')]);
+
+        $html = $this->actingAs($this->provider)->get('/opportunities/' . $listing->opportunity_id . '/edit')->assertOk()->getContent();
+
+        $this->assertDoesNotMatchRegularExpression('#id="scope-engineering-hint"[^>]*hidden#', $html);
+        $this->assertStringContainsString('civil and mining engineering are not included', $html);
+        $this->assertStringContainsString('All of Engineering and construction', $html);
+    }
+
+    public function test_the_hint_stays_hidden_when_the_broad_field_is_chosen_too(): void
+    {
+        $listing = $this->live(['field_id' => $this->field('071')]);
+        OpportunityScope::create(['opportunity_id' => $listing->opportunity_id, 'field_id' => $this->field('07')]);
+
+        $html = $this->actingAs($this->provider)->get('/opportunities/' . $listing->opportunity_id . '/edit')->getContent();
+
+        $this->assertMatchesRegularExpression('#id="scope-engineering-hint"[^>]*hidden#', $html);
+    }
+
     public function test_the_page_does_not_offer_other_peoples_pending_programmes(): void
     {
         $other = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
@@ -347,7 +377,7 @@ class ListingScopeTest extends TestCase
     {
         $this->assertSame('any programme', $this->described([]));
         $this->assertSame(
-            'any Engineering programme at MSU or NUST',
+            'any Electrical, mechanical and other engineering programme at MSU or NUST',
             $this->described(['scope_fields' => [$this->field('071')], 'scope_institutions' => [$this->institution('MSU'), $this->institution('NUST')]])
         );
         $this->assertSame(

@@ -14,6 +14,14 @@ final class FormOptions
      */
     public const DEFAULT_COUNTRY = 'Zimbabwe';
 
+    /**
+     * The catalogue fields a provider can mistake for "all engineering". 071 is electrical, mechanical and other
+     * engineering; civil engineering is filed under 073 and mining under 072, both of which 07 (the broad field) covers.
+     */
+    public const ENGINEERING_NARROW = '071';
+
+    public const ENGINEERING_BROAD = '07';
+
     public const FIELDS_OF_STUDY = [
         'Computer Science & IT',
         'Engineering',

@@ -26,6 +26,10 @@ final class ScholarFitFieldNames
 
     public const PROGRAMME = 'programme';
 
+    public const EDUCATION_LEVEL = 'education level';
+
+    public const ACADEMIC_RESULTS = 'academic results';
+
     public const INSTITUTION = 'institution';
 
     private const ANCHORS = [
@@ -35,6 +39,8 @@ final class ScholarFitFieldNames
         self::SETTLEMENT_TYPE => 'settlement_type',
         self::FIELD_OF_STUDY => 'field_of_study',
         self::PROGRAMME => 'programme-card',
+        self::EDUCATION_LEVEL => 'education_level',
+        self::ACADEMIC_RESULTS => 'academic-results',
         self::INSTITUTION => 'programme-card',
     ];
 

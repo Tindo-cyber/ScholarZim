@@ -90,9 +90,9 @@ final class EligibilityEvaluator
             [
                 $this->progression($profile, $opportunity),
                 $this->minimumLevel($profile, $opportunity, $record),
-                $this->points($opportunity, $record),
+                $this->points($profile, $opportunity, $record),
             ],
-            $this->subjectRequirements($opportunity, $record),
+            $this->subjectRequirements($profile, $opportunity, $record),
             [
                 $this->age($profile, $opportunity),
                 $this->province($profile, $opportunity),
@@ -148,6 +148,16 @@ final class EligibilityEvaluator
             return null;
         }
 
+        // A profile that has not said what level it is at cannot be checked against a level: ask, do not guess.
+        if (EducationLevel::canonical($profile->education_level) === null) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_PROGRESSION,
+                'Level: this scholarship is for '.EducationLevel::label($opportunity->education_level).' students - add your education level to your profile so we can check it.',
+                ScholarFitFieldNames::EDUCATION_LEVEL,
+                required: EducationLevel::label($opportunity->education_level),
+            );
+        }
+
         // An impossible jump is the one thing about the level that refuses someone - a Grade 7
         // pupil for a diploma, an O-Level student for a PhD. Everything merely unusual stays a
         // note below. See LevelJump for exactly where the line is.
@@ -196,6 +206,15 @@ final class EligibilityEvaluator
         $minimumLevel = EducationLevel::canonical($opportunity->minimum_education_level);
         $requiredLabel = EducationLevel::label($opportunity->minimum_education_level);
         $heldLabel = EducationLevel::label($profile->education_level);
+
+        if ($applicantLevel === null && $record->qualificationAtOrAbove($opportunity->minimum_education_level) === null) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_EDUCATION_LEVEL,
+                'Qualification: '.$requiredLabel.' required - add your education level to your profile so we can check it.',
+                ScholarFitFieldNames::EDUCATION_LEVEL,
+                required: $requiredLabel,
+            );
+        }
 
         $statedLevelMeets = true;
 
@@ -248,7 +267,27 @@ final class EligibilityEvaluator
      * profile, so nine O-Level symbols or a Cambridge certificate could clear
      * a bar labelled "A-Level points" with no A-Level held at all.
      */
-    private function points(Opportunity $opportunity, AcademicRecord $record): ?RequirementOutcome
+    /**
+     * Whether this applicant could, by now, hold A-Level results: they are at A-Level or beyond, or have not
+     * said what level they are at. A school student below A-Level cannot, so a rule about A-Level results is
+     * simply not one they can meet yet.
+     */
+    private function mightHoldALevel(ApplicantProfile $profile): bool
+    {
+        $level = EducationLevel::canonical($profile->education_level);
+
+        return $level === null || EducationLadder::rung($level) >= EducationLadder::rung(EducationLevel::A_LEVEL);
+    }
+
+    /** What to ask for when results are missing: the level first if that is unknown, otherwise the results. */
+    private function missingResults(ApplicantProfile $profile): string
+    {
+        return EducationLevel::canonical($profile->education_level) === null
+            ? ScholarFitFieldNames::EDUCATION_LEVEL
+            : ScholarFitFieldNames::ACADEMIC_RESULTS;
+    }
+
+    private function points(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): ?RequirementOutcome
     {
         $floor = $opportunity->min_academic_points;
 
@@ -259,6 +298,16 @@ final class EligibilityEvaluator
         $key = AcademicCatalogue::ZIMSEC_A_LEVEL;
         $name = AcademicCatalogue::qualification($key)['name'] ?? 'ZIMSEC A-Level';
         $held = $record->pointsFor($key);
+
+        if ($held === null && $this->mightHoldALevel($profile)) {
+            // At A-Level or beyond, results are simply not recorded yet: ask. (Below A-Level they cannot exist.)
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_POINTS,
+                $name.' points: '.$floor.' required - add your '.$name.' results to your profile so we can check.',
+                $this->missingResults($profile),
+                required: $floor,
+            );
+        }
 
         if ($held === null) {
             return RequirementOutcome::fail(
@@ -301,9 +350,10 @@ final class EligibilityEvaluator
      *
      * @return array<int, RequirementOutcome>
      */
-    private function subjectRequirements(Opportunity $opportunity, AcademicRecord $record): array
+    private function subjectRequirements(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
     {
-        if (! $opportunity->exists) {
+        // An unsaved listing (the provider's preview) carries its rows as a relation.
+        if (! $opportunity->exists && ! $opportunity->relationLoaded('subjectRequirements')) {
             return [];
         }
 
@@ -314,13 +364,13 @@ final class EligibilityEvaluator
         $outcomes = [];
 
         foreach ($requirements as $requirement) {
-            $outcomes[] = $this->subjectRequirement($requirement, $record);
+            $outcomes[] = $this->subjectRequirement($profile, $requirement, $record);
         }
 
         return $outcomes;
     }
 
-    private function subjectRequirement(OpportunitySubjectRequirement $requirement, AcademicRecord $record): RequirementOutcome
+    private function subjectRequirement(ApplicantProfile $profile, OpportunitySubjectRequirement $requirement, AcademicRecord $record): RequirementOutcome
     {
         $qualification = $requirement->qualification;
         $qualificationName = $requirement->qualificationName();
@@ -329,6 +379,18 @@ final class EligibilityEvaluator
         $required = $requirement->minimum_grade;
 
         $result = $record->resultForSubject((int) $requirement->qualification_id, (int) $requirement->subject_id);
+
+        // No results in this qualification at all, from someone who has reached the level they come from (or
+        // has not said what level they are at): they have not recorded them yet - ask. Someone who HAS recorded
+        // the qualification but not this subject did not sit it, and is refused.
+        if ($result === null && $qualificationKey !== null && ! $record->hasQualification($qualificationKey) && $this->mightHoldALevel($profile)) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_SUBJECT,
+                $subjectName.': '.($required ? $required.' required' : 'required').' - add your '.$qualificationName.' results to your profile so we can check.',
+                $this->missingResults($profile),
+                required: $required,
+            );
+        }
 
         if ($result === null) {
             return RequirementOutcome::fail(
@@ -673,6 +735,16 @@ final class EligibilityEvaluator
             return null;
         }
 
+        // Which document depends on the level, so a profile with no level cannot be checked yet.
+        if (EducationLevel::canonical($profile->education_level) === null) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_CERTIFICATE,
+                'Proof of results: this provider requires proof of results on file - add your education level to your profile so we can check it.',
+                ScholarFitFieldNames::EDUCATION_LEVEL,
+                required: 'proof of results',
+            );
+        }
+
         // Nothing is asked of a Primary applicant on this pathway, so there is
         // no requirement to report either way - see
         // ApplicantProfile::hasRequiredAcademicEvidence().
@@ -783,7 +855,7 @@ final class EligibilityEvaluator
 
         foreach ($conditions as $condition) {
             $outcome = match ($condition->kind) {
-                DescriptionEligibility::FIELD_OF_STUDY => $this->programmeScope->hasProgrammes($profile) && LegacyFieldMap::codesFor($condition->value) !== []
+                DescriptionEligibility::FIELD_OF_STUDY => $this->programmeScope->readsFieldMentions($profile) && LegacyFieldMap::codesFor($condition->value) !== []
                     ? null   // read against the catalogue by ProgrammeScope, from the programme they chose
                     : $this->descriptionFieldOfStudy($profile, $condition),
                 DescriptionEligibility::UNSUPPORTED => $this->descriptionUnsupported($condition),
@@ -999,6 +1071,15 @@ final class EligibilityEvaluator
 
         $applicantLevel = EducationLevel::canonical($profile->education_level);
         $heldLabel = EducationLevel::label($profile->education_level);
+
+        if ($applicantLevel === null && $record->qualificationAtOrAbove($opportunity->minimum_education_level) === null) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_EDUCATION_LEVEL,
+                'Qualification: '.$requiredLabel.' required - add your education level to your profile so we can check it.',
+                ScholarFitFieldNames::EDUCATION_LEVEL,
+                required: $requiredLabel,
+            );
+        }
 
         $statedLevelMeets = true;
 

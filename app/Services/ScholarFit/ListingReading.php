@@ -133,6 +133,25 @@ final class ListingReading
     }
 
     /**
+     * Things worth knowing about how the listing will read that are not rules in themselves.
+     *
+     * @return array<int, string>
+     */
+    public static function notes(Opportunity $listing): array
+    {
+        $scopes = $listing->relationLoaded('scopes') ? $listing->scopes : ($listing->exists ? $listing->scopes()->with('field')->get() : collect());
+        $codes = $scopes->pluck('field')->filter()->pluck('code');
+
+        if ($codes->contains(\App\Support\FormOptions::ENGINEERING_NARROW) && ! $codes->contains(\App\Support\FormOptions::ENGINEERING_BROAD)) {
+            $narrow = $scopes->pluck('field')->filter()->firstWhere('code', \App\Support\FormOptions::ENGINEERING_NARROW);
+
+            return ['"' . $narrow->label() . '" does not include civil or mining engineering - civil and mining engineering are not included. Choose the broad "Engineering and construction" to include them.'];
+        }
+
+        return [];
+    }
+
+    /**
      * How many active applicants currently meet every rule, as the real engine judges it.
      * "Meet" means exactly what makes a listing a match for someone: no failed rule, nothing
      * left unchecked, and a profile complete enough to compare. Someone who could meet it by

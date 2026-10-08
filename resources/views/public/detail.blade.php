@@ -75,6 +75,10 @@
                         @endif
                     @endif
 
+                    @foreach($reading['notes'] ?? [] as $note)
+                        <p class="small text-warning-emphasis" role="note">{{ $note }}</p>
+                    @endforeach
+
                     <p class="mb-1">
                         Applicants who meet every one of these today:
                         <strong id="listing-reading-count">{{ $reading['count'] }}</strong>

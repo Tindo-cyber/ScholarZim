@@ -235,9 +235,12 @@ class EducationPathwayTest extends TestCase
 
         $outcomes = app(EligibilityEvaluator::class)->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile));
 
-        // A points floor the profile cannot answer is a prompt to add it, not
-        // a hard block and not a free pass either.
-        $this->assertNotEmpty(RequirementOutcome::failures($outcomes));
+        // A points floor the profile cannot answer yet - an undergraduate has reached A-Level, so
+        // their results are simply not recorded - is a prompt to add them: not a hard block (nothing
+        // is refused) and not a free pass either (the floor is not met).
+        $this->assertSame([], RequirementOutcome::failures($outcomes));
+        $this->assertNotEmpty(RequirementOutcome::pending($outcomes));
+        $this->assertFalse(RequirementOutcome::allMet($outcomes));
     }
 
     // -------------------------------------------------------------- location --

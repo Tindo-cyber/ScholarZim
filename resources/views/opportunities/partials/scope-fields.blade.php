@@ -56,9 +56,11 @@
                 @foreach($catalogue['fields'] as $broad)
                     <optgroup label="{{ $broad->label() }}">
                         <option value="{{ $broad->id }}" data-search="{{ strtolower($broad->label() . ' ' . $broad->name) }}"
+                                @if($broad->code === \App\Support\FormOptions::ENGINEERING_BROAD) data-covers="engineering" @endif
                                 @selected(in_array($broad->id, $chosen['fields'], true))>All of {{ $broad->label() }}</option>
                         @foreach($broad->children as $narrow)
                             <option value="{{ $narrow->id }}" data-search="{{ strtolower($narrow->label() . ' ' . $narrow->name . ' ' . $broad->label()) }}"
+                                    @if($narrow->code === \App\Support\FormOptions::ENGINEERING_NARROW) data-hint="engineering" @endif
                                     @selected(in_array($narrow->id, $chosen['fields'], true))>{{ $narrow->label() }}</option>
                         @endforeach
                     </optgroup>
@@ -68,6 +70,24 @@
                 Choose a field to open the award to every programme in it, so you do not have to tick them one by one.
                 Leave empty for any field.
             </div>
+            {{--
+                Civil engineering is filed under Architecture and construction and mining under Manufacturing, so the
+                narrow Engineering field leaves both out. Shown whenever it is chosen without the broad field above it;
+                catalogue-filter.js keeps it in step as the choice changes, and with JavaScript off it is right on load.
+            --}}
+            @php
+                $engineeringNarrow = $catalogue['fields']->flatMap->children->firstWhere('code', \App\Support\FormOptions::ENGINEERING_NARROW);
+                $engineeringBroad = $catalogue['fields']->firstWhere('code', \App\Support\FormOptions::ENGINEERING_BROAD);
+                $showEngineeringHint = $engineeringNarrow && $engineeringBroad
+                    && in_array($engineeringNarrow->id, $chosen['fields'], true)
+                    && ! in_array($engineeringBroad->id, $chosen['fields'], true);
+            @endphp
+            @if($engineeringNarrow && $engineeringBroad)
+                <div class="form-text text-warning-emphasis" id="scope-engineering-hint" data-hint-for="engineering" role="note" @unless($showEngineeringHint) hidden @endunless>
+                    "{{ $engineeringNarrow->label() }}" on its own does not include civil engineering or mining engineering - civil and mining engineering are not included.
+                    To include them, choose "All of {{ $engineeringBroad->label() }}" as well.
+                </div>
+            @endif
             @error('scope_fields')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
             @foreach($errors->get('scope_fields.*') as $messages)<div class="invalid-feedback d-block">{{ $messages[0] }}</div>@endforeach
         </div>

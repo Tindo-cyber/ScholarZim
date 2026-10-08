@@ -26,9 +26,14 @@ use App\Support\EducationLevel;
  *   - a Primary pupil can enter Form 1 and O-Level and nothing above;
  *   - a secondary student cannot hold a postgraduate award (Postgraduate, Masters,
  *     PhD);
+ *   - a Certificate or Diploma student cannot hold a postgraduate award either: those
+ *     are entered from a degree, so it is no more reachable than for a school student;
  *   - anyone at tertiary level or above is not looking for an O-Level or A-Level
  *     award. Rare enough that the provider can handle it, and better than showing
  *     it as a match.
+ *
+ * What stays a note: an Undergraduate for a PhD (a degree holder going straight to doctoral
+ * study happens), and a Masters student for an undergraduate award.
  *
  * HONOURS is not a level here. A Zimbabwean BSc / BCom Honours is a bachelor's degree
  * (Undergraduate) and the one-year South African honours is Postgraduate; the word is
@@ -76,6 +81,12 @@ final class LevelJump
         // A Grade 7 pupil can start Form 1 (which is the first year of O-Level) and nothing above it.
         if ($applicant === EducationLevel::PRIMARY) {
             return $target !== EducationLevel::O_LEVEL;
+        }
+
+        // Certificate and Diploma holders have not got the degree a postgraduate award is entered from.
+        if (in_array($applicant, [EducationLevel::CERTIFICATE, EducationLevel::DIPLOMA], true)
+            && in_array($target, [EducationLevel::POSTGRADUATE, EducationLevel::MASTERS, EducationLevel::PHD], true)) {
+            return true;
         }
 
         if (EducationLevel::tier($applicant) === EducationLevel::TIER_SECONDARY) {

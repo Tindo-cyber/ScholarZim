@@ -17,3 +17,9 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+// A development tool that lives with the tests: registered only where the test code is installed (it is not on
+// a production install, which has no dev dependencies), so a missing class is never a fatal error.
+if (class_exists(\Tests\Support\Console\ScholarFitCompareCommand::class)) {
+    \Illuminate\Console\Application::starting(fn ($artisan) => $artisan->resolve(\Tests\Support\Console\ScholarFitCompareCommand::class));
+}
