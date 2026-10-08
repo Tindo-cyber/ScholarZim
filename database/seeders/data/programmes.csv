@@ -28,7 +28,7 @@ BSc Geography and Environmental Studies,Undergraduate,052,UZ;MSU;GZU,Geography
 Master of Science in Economics,Masters,031,UZ,MSc Economics
 MA Development Studies,Masters,031,MSU;ZOU,MA Development
 PhD in Economics,PhD,031,UZ,Doctor of Philosophy in Economics
-BA Media and Society Studies,Undergraduate,032,MSU,Media Studies;Journalism
+BA Media and Society Studies,Undergraduate,032,MSU,Media Studies
 BA Journalism and Media Studies,Undergraduate,032,NUST,Journalism;Mass Communication
 BSc Library and Information Science,Undergraduate,032,NUST,Library Science;Information Science
 Diploma in Journalism and Media Studies,Diploma,032,,Journalism Diploma
@@ -36,7 +36,7 @@ BCom Accounting,Undergraduate,041,UZ;MSU;NUST;GZU;AU,Accounting;BAcc;Bachelor of
 BCom Banking and Finance,Undergraduate,041,MSU;NUST;UZ,Banking;Finance;BCom Finance
 BCom Marketing,Undergraduate,041,MSU;NUST;UZ,Marketing
 BCom Human Resource Management,Undergraduate,041,MSU;NUST;UZ,HRM;HR Management;Human Resources
-BCom Business Management,Undergraduate,041,MSU;NUST;UZ;GZU,Business Management;BBA
+BCom Business Management,Undergraduate,041,MSU;NUST;UZ;GZU,Business Management
 BCom Entrepreneurship,Undergraduate,041,MSU;NUST;GZU,Entrepreneurship
 BCom Supply Chain Management,Undergraduate,041,MSU;NUST;CUT,Purchasing and Supply;Procurement;Supply Chain
 BCom Insurance and Risk Management,Undergraduate,041,NUST,Insurance;Risk Management
@@ -76,10 +76,10 @@ BSc Applied Mathematics,Undergraduate,054,NUST,Applied Maths
 BSc Statistics,Undergraduate,054,UZ;NUST;MSU,Statistics;BSc Statistics and Operations Research
 MSc Mathematics,Masters,054,UZ;NUST,Master of Science in Mathematics
 PhD in Mathematics,PhD,054,UZ;NUST,Doctor of Philosophy in Mathematics
-BSc Computer Science,Undergraduate,061,UZ;NUST;MSU;CUT;GZU;BUSE;HIT,Computer Science;Comp Sci;BSc CS;CS
-BSc Information Systems,Undergraduate,061,NUST;MSU;CUT;GZU,BIS;Info Systems;Information Systems;IS
+BSc Computer Science,Undergraduate,061,UZ;NUST;MSU;CUT;GZU;BUSE;HIT,Computer Science;Comp Sci;BSc CS
+BSc Information Systems,Undergraduate,061,NUST;MSU;CUT;GZU,BIS;Info Systems;Information Systems
 BSc Information Technology,Undergraduate,061,HIT;CUT;GZU;ZOU,IT;Information Technology
-BSc Software Engineering,Undergraduate,061,HIT;NUST;CUT,Software Engineering;SE
+BSc Software Engineering,Undergraduate,061,HIT;NUST;CUT,Software Engineering
 BSc Computer Engineering,Undergraduate,061,HIT;NUST,Computer Engineering
 BSc Cyber Security,Undergraduate,061,HIT;NUST,Cybersecurity;Cyber Security and Digital Forensics
 BSc Data Science,Undergraduate,061,HIT;NUST;UZ,Data Science;Data Science and Informatics
@@ -100,14 +100,14 @@ BEng Mechanical Engineering,Undergraduate,071,UZ;NUST,Mechanical Engineering
 BEng Industrial Engineering,Undergraduate,071,NUST,Industrial Engineering
 BEng Chemical Engineering,Undergraduate,071,NUST;HIT,Chemical Engineering
 BEng Telecommunications Engineering,Undergraduate,071,NUST;UZ,Telecommunications Engineering;Telecoms Engineering
-BEng Mining Engineering,Undergraduate,072,NUST;UZ;ZEGU,Mining Engineering
+BEng Mining Engineering,Undergraduate,072,NUST;UZ;ZEGU;MSU,Mining Engineering;Mining and Mineral Processing Engineering
 BEng Metallurgical Engineering,Undergraduate,072,NUST;HIT,Metallurgy;Metallurgical Engineering
 BSc Food Science and Technology,Undergraduate,072,CUT;MSU,Food Science;Food Technology
 Diploma in Civil Engineering,Diploma,073,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY;MASVINGO-POLY;KWEKWE-POLY,Civil Engineering Diploma
 Diploma in Electrical Engineering,Diploma,071,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY;KWEKWE-POLY,Electrical Engineering Diploma
 Diploma in Mechanical Engineering,Diploma,071,HARARE-POLY;BYO-POLY;GWERU-POLY;KWEKWE-POLY,Mechanical Engineering Diploma
-Diploma in Automotive Engineering,Diploma,071,HARARE-POLY;BYO-POLY;KWEKWE-POLY,Motor Mechanics;Automotive
-Diploma in Mining Engineering,Diploma,072,BYO-POLY;KWEKWE-POLY,Mining Diploma
+Diploma in Automotive Engineering,Diploma,071,HARARE-POLY;BYO-POLY;KWEKWE-POLY,Automotive
+Diploma in Mining Engineering,Diploma,072,BYO-POLY;KWEKWE-POLY;ZSM,Mining Diploma
 Certificate in Welding and Fabrication,Certificate,071,,Welding;Welding and Fabrication
 Certificate in Electrical Installation,Certificate,071,,Electrical Installation;Electrician
 Certificate in Motor Vehicle Mechanics,Certificate,071,,Motor Mechanics;Motor Vehicle Mechanic
@@ -117,7 +117,7 @@ PhD in Engineering,PhD,071,UZ;NUST,Doctor of Philosophy in Engineering
 Bachelor of Architecture,Undergraduate,073,NUST,Architecture;BArch
 BSc Quantity Surveying,Undergraduate,073,NUST;UZ,Quantity Surveying;QS
 BSc Construction Management,Undergraduate,073,NUST;HIT,Construction Management
-BSc Surveying and Geomatics,Undergraduate,073,UZ;NUST,Land Surveying;Geomatics
+BSc Surveying and Geomatics,Undergraduate,073,UZ;NUST;MSU,Land Surveying;Geomatics
 BSc Real Estate Management,Undergraduate,073,UZ;MSU,Real Estate;Property Management
 BSc Urban and Regional Planning,Undergraduate,073,NUST;UZ,Town Planning;Urban Planning
 Diploma in Building,Diploma,073,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY,Building Technology;Building Diploma
@@ -136,7 +136,7 @@ PhD in Agriculture,PhD,081,UZ;MUAST,Doctor of Philosophy in Agriculture
 BSc Forest Resources and Wildlife Management,Undergraduate,082,NUST,Forestry;Forest Resources
 Bachelor of Veterinary Science,Undergraduate,084,UZ,BVSc;Veterinary Medicine
 Diploma in Animal Health,Diploma,084,GWEBI;CHIBERO,Animal Health;Veterinary Technician
-Bachelor of Medicine and Bachelor of Surgery,Undergraduate,091,UZ;NUST;MSU,MBChB;Medicine;Doctor of Medicine
+Bachelor of Medicine and Bachelor of Surgery,Undergraduate,091,UZ;NUST;MSU,MBChB;Medicine
 Bachelor of Dental Surgery,Undergraduate,091,UZ,BDS;Dentistry
 Bachelor of Pharmacy,Undergraduate,091,UZ;NUST,BPharm;Pharmacy
 BSc Nursing Science,Undergraduate,091,UZ;MSU;NUST,Nursing;BSc Nursing
@@ -165,3 +165,8 @@ Diploma in Occupational Health and Safety,Diploma,102,,OHS;Health and Safety
 Diploma in Security Management,Diploma,103,,Security Studies
 Diploma in Logistics and Transport Management,Diploma,104,HARARE-POLY;BYO-POLY,Logistics;Transport Management
 Diploma in Aviation Management,Diploma,104,,Aviation
+BSc Local Governance Studies,Undergraduate,031,MSU,Local Governance;Local Government Studies
+"BA Archaeology, Cultural Heritage and Museum Studies",Undergraduate,022,MSU,Archaeology;Heritage Studies;Museum Studies
+BA Philosophy,Undergraduate,022,UZ,Philosophy
+BA Music and Musicology,Undergraduate,021,MSU,Music;Musicology
+BA Film and Theatre Arts,Undergraduate,021,MSU,Film Studies;Theatre Arts;Film and Theatre
