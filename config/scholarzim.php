@@ -124,4 +124,12 @@ return [
         'confirm_level_after_days' => (int) env('SCHOLARZIM_CONFIRM_LEVEL_DAYS', 365),
     ],
 
+    /*
+     * The programme catalogue. `max_pending_per_user` is how many "my programme isn't listed"
+     * suggestions one person can have waiting for an administrator at once.
+     */
+    'catalogue' => [
+        'max_pending_per_user' => (int) env('SCHOLARZIM_CATALOGUE_MAX_PENDING', 10),
+    ],
+
 ];

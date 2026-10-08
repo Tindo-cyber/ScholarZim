@@ -106,6 +106,8 @@
                                     :active="request()->routeIs('admin.users.*')">Users</x-nav-item>
                         <x-nav-item :href="route('admin.search')" icon="search"
                                     :active="request()->routeIs('admin.search')">Search</x-nav-item>
+                        <x-nav-item :href="route('admin.catalogue')" icon="book"
+                                    :active="request()->routeIs('admin.catalogue*')">Programme catalogue</x-nav-item>
                     </x-nav-section>
 
                     {{-- Both are sections of the admin dashboard rather than pages of their

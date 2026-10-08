@@ -353,6 +353,28 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
     Route::post('/opportunities/bulk-review', [Admin\ModerationController::class, 'bulkReview'])
         ->name('moderation.bulk');
 
+    // The programme catalogue: what students study and what scholarships are open to.
+    Route::prefix('catalogue')->group(function () {
+        Route::get('/', [Admin\CatalogueController::class, 'index'])->name('catalogue');
+        Route::get('/programmes', [Admin\CatalogueController::class, 'programmes'])->name('catalogue.programmes');
+        Route::get('/programmes/create', [Admin\CatalogueController::class, 'createProgramme'])->name('catalogue.programmes.create');
+        Route::post('/programmes', [Admin\CatalogueController::class, 'storeProgramme'])->name('catalogue.programmes.store');
+        Route::get('/programmes/{id}/edit', [Admin\CatalogueController::class, 'editProgramme'])->whereNumber('id')->name('catalogue.programmes.edit');
+        Route::post('/programmes/{id}', [Admin\CatalogueController::class, 'updateProgramme'])->whereNumber('id')->name('catalogue.programmes.update');
+        Route::get('/fields', [Admin\CatalogueController::class, 'fields'])->name('catalogue.fields');
+        Route::post('/fields', [Admin\CatalogueController::class, 'storeField'])->name('catalogue.fields.store');
+        Route::post('/fields/{id}', [Admin\CatalogueController::class, 'updateField'])->whereNumber('id')->name('catalogue.fields.update');
+        Route::get('/institutions', [Admin\CatalogueController::class, 'institutions'])->name('catalogue.institutions');
+        Route::post('/institutions', [Admin\CatalogueController::class, 'storeInstitution'])->name('catalogue.institutions.store');
+        Route::post('/institutions/{id}', [Admin\CatalogueController::class, 'updateInstitution'])->whereNumber('id')->name('catalogue.institutions.update');
+        Route::get('/pending', [Admin\CatalogueController::class, 'pending'])->name('catalogue.pending');
+        Route::post('/pending/{id}/approve', [Admin\CatalogueController::class, 'approve'])->whereNumber('id')->name('catalogue.pending.approve');
+        Route::post('/pending/{id}/merge', [Admin\CatalogueController::class, 'merge'])->whereNumber('id')->name('catalogue.pending.merge');
+        Route::post('/pending/{id}/reject', [Admin\CatalogueController::class, 'reject'])->whereNumber('id')->name('catalogue.pending.reject');
+        Route::post('/import', [Admin\CatalogueController::class, 'import'])->middleware('throttle:20,1')->name('catalogue.import');
+        Route::get('/export/{kind}.{format}', [Admin\CatalogueController::class, 'export'])->name('catalogue.export');
+    });
+
     // Listings students have reported.
     Route::get('/listing-reports', [Admin\ListingReportController::class, 'index'])->name('listing-reports');
     Route::post('/listing-reports/{id}/dismiss', [Admin\ListingReportController::class, 'dismiss'])
