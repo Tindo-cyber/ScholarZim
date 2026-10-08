@@ -29,10 +29,43 @@ final class EligibilityResult
     ) {
     }
 
-    /** True when the applicant meets every requirement the listing states. */
+    /**
+     * True when the applicant meets every requirement the listing states, and
+     * every one of them could be checked. A listing with a rule the profile cannot
+     * answer is not met - nobody compared anything - but is not a refusal either:
+     * see isIneligible() and needsInformation().
+     */
     public function meetsRequirements(): bool
     {
         return RequirementOutcome::allMet($this->outcomes);
+    }
+
+    /** At least one requirement is certainly not met. */
+    public function isIneligible(): bool
+    {
+        return RequirementOutcome::failures($this->outcomes) !== [];
+    }
+
+    /**
+     * Nothing is certainly failed, but something could not be checked because the
+     * profile lacks the answer. A certain failure outweighs it: there is no point
+     * asking for a missing detail when the answer is already no.
+     */
+    public function needsInformation(): bool
+    {
+        return ! $this->isIneligible() && RequirementOutcome::pending($this->outcomes) !== [];
+    }
+
+    /** @return array<int, RequirementOutcome> */
+    public function pendingInformation(): array
+    {
+        return RequirementOutcome::pending($this->outcomes);
+    }
+
+    /** The profile fields that would let this be checked, each named once. @return array<int, string> */
+    public function missingFields(): array
+    {
+        return RequirementOutcome::missingFields($this->outcomes);
     }
 
     /**
@@ -101,6 +134,7 @@ final class EligibilityResult
         $lines = [match (true) {
             $insufficient => 'INSUFFICIENT INFORMATION',
             $eligible => 'ELIGIBLE',
+            $this->needsInformation() => 'NEEDS INFORMATION',
             default => 'NOT ELIGIBLE',
         }];
 
@@ -110,7 +144,7 @@ final class EligibilityResult
             $lines[] = '';
 
             foreach ($rules as $outcome) {
-                $lines[] = ($outcome->passed ? '✓' : '✗') . ' ' . $outcome->message;
+                $lines[] = ($outcome->needsInformation ? '?' : ($outcome->passed ? '✓' : '✗')) . ' ' . $outcome->message;
             }
         }
 

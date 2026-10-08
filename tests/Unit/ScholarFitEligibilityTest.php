@@ -143,9 +143,10 @@ class ScholarFitEligibilityTest extends TestCase
             $this->opportunity(['max_age' => 25])
         );
 
-        $missing = implode(' ', $fit->failureMessages());
-
-        $this->assertStringContainsString('add your date of birth', $missing);
+        // Not a failure any more: it is the one thing that cannot be checked, so it is asked for.
+        $this->assertSame([], $fit->failureMessages());
+        $this->assertTrue($fit->needsInformation());
+        $this->assertStringContainsString('add your date of birth', implode(' ', RequirementOutcome::messages($fit->pendingInformation())));
     }
 
     /** Multiple hard failures must all be listed, not just the first. */
@@ -457,7 +458,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
-            $this->opportunity(['description' => 'This scholarship is for undergraduate Computer Science students.'])
+            $this->opportunity(['target_field' => null, 'description' => 'This scholarship is for undergraduate Computer Science students.'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -471,8 +472,9 @@ class ScholarFitEligibilityTest extends TestCase
     public function test_multiple_failed_description_conditions_are_all_reported(): void
     {
         $fit = $this->evaluate(
-            $this->profile(['education_level' => EducationLevel::PRIMARY, 'field_of_study' => null], grades: []),
-            $this->opportunity(['description' => 'This scholarship is for undergraduate Computer Science students.'])
+            // A Masters student has moved past an undergraduate audience, and studies something else.
+            $this->profile(['education_level' => EducationLevel::MASTERS, 'field_of_study' => 'Law'], grades: []),
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'This scholarship is for undergraduate Computer Science students.'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -493,7 +495,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
-            $this->opportunity(['description' => 'This scholarship is intended for students with PHP programming skills.'])
+            $this->opportunity(['target_field' => null, 'description' => 'This scholarship is intended for students with PHP programming skills.'])
         );
 
         $this->assertTrue($fit->meetsRequirements(), 'an unsupported condition must never fail the applicant');
@@ -534,7 +536,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
-            $this->opportunity([
+            $this->opportunity(['target_field' => null, 
                 'title' => "Master's Scholarship",
                 'minimum_education_level' => EducationLevel::UNDERGRADUATE,
             ])
@@ -898,7 +900,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
-            $this->opportunity(['title' => "Undergraduate and Master's Scholarship"])
+            $this->opportunity(['target_field' => null, 'title' => "Undergraduate and Master's Scholarship"])
         );
 
         $this->assertTrue($fit->meetsRequirements());

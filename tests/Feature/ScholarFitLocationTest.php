@@ -75,8 +75,12 @@ class ScholarFitLocationTest extends TestCase
         $this->assertNotContains('Rural', FormOptions::ZIMBABWE_PROVINCES);
     }
 
-    /** Settlement type is not a hard eligibility gate: it never disqualifies an applicant. */
-    public function test_a_rural_targeted_award_does_not_disqualify_an_urban_applicant(): void
+    /**
+     * Settlement type is a rule the provider can set, and the listing form says it
+     * disqualifies. It used to be saved and read by nothing, which is what this
+     * test once recorded as "never disqualifies". It now does.
+     */
+    public function test_a_rural_targeted_award_does_not_suit_an_urban_applicant(): void
     {
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
         $opportunity->update([
@@ -84,28 +88,44 @@ class ScholarFitLocationTest extends TestCase
             'deadline' => Carbon::today()->addDays(20),
         ]);
 
-        $profile = $this->student->applicantProfile;
-        $profile->update(['settlement_type' => SettlementType::URBAN]);
+        $this->student->applicantProfile->update(['settlement_type' => SettlementType::URBAN]);
 
         $fit = app(\App\Services\RecommendationService::class)->evaluateOne($this->student->fresh(), $opportunity);
 
-        $this->assertTrue($fit->meetsRequirements(), 'settlement type is not a stated requirement anyone can fail');
+        $this->assertTrue($fit->isIneligible());
+        $this->assertStringContainsString('Rural', implode(' ', $fit->failureMessages()));
     }
 
-    /** An unstated settlement type never disqualifies either. */
-    public function test_not_stating_a_settlement_type_is_not_treated_as_a_failure(): void
+    public function test_a_matching_settlement_type_is_met(): void
     {
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
         $opportunity->update(['target_settlement_type' => SettlementType::RURAL]);
 
-        $profile = $this->student->applicantProfile;
-        $profile->update(['settlement_type' => null]);
+        $this->student->applicantProfile->update(['settlement_type' => SettlementType::RURAL]);
 
         $fit = app(\App\Services\RecommendationService::class)->evaluateOne($this->student->fresh(), $opportunity);
 
-        $this->assertTrue($fit->meetsRequirements(), 'a blank settlement type must never disqualify');
+        $this->assertTrue($fit->meetsRequirements());
     }
 
+    /**
+     * An unstated settlement type is not a failure - and, now that it is checked, not
+     * a match either: nobody can say, so the student is asked.
+     */
+    public function test_not_stating_a_settlement_type_is_a_question_not_a_failure_or_a_match(): void
+    {
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+        $opportunity->update(['target_settlement_type' => SettlementType::RURAL]);
+
+        $this->student->applicantProfile->update(['settlement_type' => null]);
+
+        $fit = app(\App\Services\RecommendationService::class)->evaluateOne($this->student->fresh(), $opportunity);
+
+        $this->assertFalse($fit->isIneligible(), 'a blank settlement type must never disqualify');
+        $this->assertTrue($fit->needsInformation());
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertSame(['settlement type'], $fit->missingFields());
+    }
     /** The minimum a valid profile POST needs, so each test states only its point. */
     private function form(array $overrides = []): array
     {

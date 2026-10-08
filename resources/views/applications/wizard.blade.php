@@ -37,7 +37,35 @@
                         </div>
                     </div>
                 </div>
-            @elseif($fit && ! $fit->meetsRequirements())
+            @elseif($fit && $fit->needsInformation())
+                {{--
+                    Nothing is certainly wrong, but something could not be checked. The gate
+                    would refuse a submission anyway, so no form is shown - and the wording is
+                    a request, not a verdict.
+                --}}
+                <div class="card border-warning">
+                    <div class="card-header bg-warning-subtle">
+                        <h2 class="h6 fw-semibold mb-0">NEEDS INFORMATION</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>We cannot check every requirement yet, because your profile does not say:</p>
+                        <ul class="list-unstyled d-grid gap-2 mb-3">
+                            @foreach(\App\Services\ScholarFit\RequirementOutcome::rules($fit->outcomes) as $outcome)
+                                <li class="d-flex gap-2 align-items-start">
+                                    <x-icon :name="$outcome->needsInformation ? 'circle' : 'check-circle'" :size="16"
+                                            class="flex-shrink-0 mt-1 {{ $outcome->needsInformation ? 'text-warning' : 'text-success' }}" />
+                                    <span class="{{ $outcome->needsInformation ? '' : 'text-secondary' }}">{{ $outcome->message }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a class="btn btn-primary" href="{{ route('applicant.profile') }}">Update my profile</a>
+                            <a class="btn btn-outline-secondary"
+                               href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
+                        </div>
+                    </div>
+                </div>
+            @elseif($fit && $fit->isIneligible())
                 {{--
                     The submission would be refused server-side regardless of
                     what is filled in below, so the form itself is not shown -

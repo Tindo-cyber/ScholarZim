@@ -15,6 +15,18 @@
         </x-slot:actions>
     </x-page-header>
 
+    @if(session('listingWarnings'))
+        {{-- Where a listing's words disagree with its own settings. Saved anyway; shown once. --}}
+        <div class="alert alert-warning" role="alert" id="listing-warnings">
+            <strong>Check this listing</strong>
+            <ul class="mb-0 mt-2">
+                @foreach(session('listingWarnings') as $warning)
+                    <li>{{ $warning }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     @unless(auth()->user()->isActive())
         <div class="alert alert-warning">
             <h2 class="h6 fw-semibold mb-1">

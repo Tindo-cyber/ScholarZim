@@ -32,6 +32,17 @@
             </div>
         @endif
 
+        @if(! empty($conflicts ?? []))
+            <div class="alert alert-warning" role="alert" id="listing-conflicts">
+                <strong>Check this listing</strong>
+                <ul class="mb-0 mt-2">
+                    @foreach($conflicts as $conflict)
+                        <li>{{ $conflict['message'] }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         @if(($duplicates ?? collect())->isNotEmpty())
             {{--
                 Only ever rendered from the admin moderation preview, which is the

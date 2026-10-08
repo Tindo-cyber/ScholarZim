@@ -127,7 +127,12 @@ class OpportunityService
         // The risk checker reads what the provider wrote (title, description, link),
         // not just the award, and compares the link with who is posting.
         $flags = $this->riskChecker->check(
-            $identity + $award + ['title' => $data['title'] ?? null, 'description' => $data['description'] ?? null],
+            $identity + $award + [
+                'title' => $data['title'] ?? null,
+                'description' => $data['description'] ?? null,
+                'education_level' => $data['education_level'] ?? null,
+                'target_field' => $data['target_field'] ?? null,
+            ],
             $provider
         );
 

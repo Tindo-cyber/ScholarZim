@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\User;
+use App\Services\ScholarFit\DescriptionConflicts;
 use App\Support\AwardSanity;
 
 /**
@@ -49,6 +50,9 @@ class ListingRiskChecker
     public const PHONE_ONLY_CONTACT = 'phone_only_contact';
 
     public const URL_DOMAIN_MISMATCH = 'url_domain_mismatch';
+
+    /** The title or description says something other than the listing's own settings. */
+    public const DESCRIPTION_CONFLICT = 'description_conflict';
 
     /** Set by the report process, not by this checker; kept across edits (see stickyFlags). */
     public const REPORTED = 'reported';
@@ -104,6 +108,16 @@ class ListingRiskChecker
 
         if ($reason = AwardSanity::flagReason($amount, $listing['award_currency'] ?? null)) {
             $flags[] = ['code' => self::AWARD_ABOVE_CEILING, 'message' => $reason];
+        }
+
+        // A listing that contradicts itself is one a reviewer should read before it
+        // goes live, whoever posted it. The settings still win in what students are
+        // checked against; this is only to make sure a person has looked.
+        if ($conflicts = DescriptionConflicts::messages($listing)) {
+            $flags[] = [
+                'code' => self::DESCRIPTION_CONFLICT,
+                'message' => 'The text of the listing disagrees with its settings. ' . implode(' ', $conflicts),
+            ];
         }
 
         if (filled($listing['on_behalf_of'] ?? null)) {

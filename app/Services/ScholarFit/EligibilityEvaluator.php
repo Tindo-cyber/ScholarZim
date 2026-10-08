@@ -8,6 +8,9 @@ use App\Models\OpportunitySubjectRequirement;
 use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
+use App\Support\ZimbabweLocalities;
+use App\Services\ScholarFit\Taxonomy\SettlementType;
+use Illuminate\Support\Carbon;
 
 /**
  * Every hard requirement a listing states, and how this applicant stands
@@ -88,6 +91,9 @@ final class EligibilityEvaluator
             [
                 $this->age($profile, $opportunity),
                 $this->province($profile, $opportunity),
+                $this->locality($profile, $opportunity),
+                $this->settlementType($profile, $opportunity),
+                $this->fieldOfStudy($profile, $opportunity),
                 $this->certificate($profile, $opportunity),
             ],
             $this->descriptionConditions($profile, $opportunity, $record),
@@ -95,13 +101,24 @@ final class EligibilityEvaluator
     }
 
     /**
-     * The failure sentences alone, for callers that only gate.
+     * Everything that stops an application, as sentences, for callers that gate.
+     *
+     * That is the failures AND the requirements that could not be checked. An
+     * unchecked rule is not an open door: letting someone apply because their
+     * profile happened not to say where they live would make the rule optional for
+     * exactly the people it is about. The two read differently - a failure says
+     * what is wrong, an unchecked rule says what to add - and both are here.
      *
      * @return array<int, string>
      */
     public function unmetReasons(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
     {
-        return RequirementOutcome::failureMessages($this->evaluate($profile, $opportunity, $record));
+        $outcomes = $this->evaluate($profile, $opportunity, $record);
+
+        return array_merge(
+            RequirementOutcome::failureMessages($outcomes),
+            RequirementOutcome::messages(RequirementOutcome::pending($outcomes))
+        );
     }
 
     /**
@@ -370,27 +387,45 @@ final class EligibilityEvaluator
         );
     }
 
+    /**
+     * The age limit, judged at the day applications close.
+     *
+     * A limit of 25 is about being 25 or under when the application is made, and the
+     * deadline is the last day it can be: someone a month short of their 26th
+     * birthday today is 26 for a deadline after it. A rolling listing has no
+     * deadline, so today stands in. Age only rises, so judging at the deadline can
+     * only be stricter than judging today - never let in someone today's age would
+     * have refused.
+     *
+     * No date of birth is not a failure: it is the one fact this cannot check, and
+     * the applicant is asked for it.
+     */
     private function age(ApplicantProfile $profile, Opportunity $opportunity): ?RequirementOutcome
     {
         if ($opportunity->max_age === null) {
             return null;
         }
 
-        $age = $profile->age();
+        $on = $opportunity->deadline !== null ? Carbon::parse($opportunity->deadline)->startOfDay() : Carbon::today();
+        $age = $profile->ageOn($on);
 
         if ($age === null) {
-            return RequirementOutcome::fail(
+            return RequirementOutcome::needsInfo(
                 RequirementOutcome::TYPE_AGE,
                 'Age: '.$opportunity->max_age.' and under required - add your date of birth so we can check it.',
+                ScholarFitFieldNames::DATE_OF_BIRTH,
                 required: $opportunity->max_age,
-                actual: null,
             );
         }
+
+        $when = $opportunity->deadline !== null
+            ? 'you will be '.$age.' when applications close on '.$on->format('d M Y')
+            : 'you are '.$age;
 
         if ($age > $opportunity->max_age) {
             return RequirementOutcome::fail(
                 RequirementOutcome::TYPE_AGE,
-                'Age: '.$opportunity->max_age.' and under required, you are '.$age.'.',
+                'Age: '.$opportunity->max_age.' and under required, '.$when.'.',
                 required: $opportunity->max_age,
                 actual: $age,
             );
@@ -398,7 +433,7 @@ final class EligibilityEvaluator
 
         return RequirementOutcome::pass(
             RequirementOutcome::TYPE_AGE,
-            'Age: '.$opportunity->max_age.' and under required, you are '.$age.'.',
+            'Age: '.$opportunity->max_age.' and under required, '.$when.'.',
             required: $opportunity->max_age,
             actual: $age,
         );
@@ -413,11 +448,11 @@ final class EligibilityEvaluator
         $required = $opportunity->required_province;
 
         if (blank($profile->province)) {
-            return RequirementOutcome::fail(
+            return RequirementOutcome::needsInfo(
                 RequirementOutcome::TYPE_PROVINCE,
-                'Province: '.$required.' required - add your province to your profile.',
+                'Province: '.$required.' required - add your province to your profile so we can check it.',
+                ScholarFitFieldNames::PROVINCE,
                 required: $required,
-                actual: null,
             );
         }
 
@@ -438,6 +473,176 @@ final class EligibilityEvaluator
         );
     }
 
+    /**
+     * A town the listing is for.
+     *
+     * Compared by name with case and spacing ignored. Where ZimbabweLocalities
+     * knows the town it also settles a question the applicant's blank leaves open:
+     * someone who has given a province but no town cannot live in a town in a
+     * DIFFERENT province, so that is a certain failure rather than a request for
+     * more detail - while a town in the province they gave is still a question.
+     */
+    private function locality(ApplicantProfile $profile, Opportunity $opportunity): ?RequirementOutcome
+    {
+        if (blank($opportunity->target_locality)) {
+            return null;
+        }
+
+        $required = trim((string) $opportunity->target_locality);
+        $held = trim((string) $profile->locality);
+
+        if ($held === '') {
+            $townProvince = ZimbabweLocalities::provinceFor($required);
+
+            if ($townProvince !== null && filled($profile->province)
+                && strcasecmp(trim($profile->province), $townProvince) !== 0) {
+                return RequirementOutcome::fail(
+                    RequirementOutcome::TYPE_LOCALITY,
+                    'Locality: '.$required.' required, and '.$required.' is in '.$townProvince
+                        .', not '.$profile->province.' where your profile says you live.',
+                    required: $required,
+                    actual: $profile->province,
+                );
+            }
+
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_LOCALITY,
+                'Locality: '.$required.' required - add your town or locality to your profile so we can check it.',
+                ScholarFitFieldNames::LOCALITY,
+                required: $required,
+            );
+        }
+
+        if ($this->normaliseName($held) === $this->normaliseName($required)) {
+            return RequirementOutcome::pass(
+                RequirementOutcome::TYPE_LOCALITY,
+                'Locality: '.$required.' required, your profile states '.$held.'.',
+                required: $required,
+                actual: $held,
+            );
+        }
+
+        return RequirementOutcome::fail(
+            RequirementOutcome::TYPE_LOCALITY,
+            'Locality: '.$required.' required, your profile states '.$held.'.',
+            required: $required,
+            actual: $held,
+        );
+    }
+
+    /** Rural or urban. */
+    private function settlementType(ApplicantProfile $profile, Opportunity $opportunity): ?RequirementOutcome
+    {
+        $required = SettlementType::canonical($opportunity->target_settlement_type);
+
+        if ($required === null) {
+            return null;
+        }
+
+        $held = SettlementType::canonical($profile->settlement_type);
+        $requiredLabel = SettlementType::label($required);
+
+        if ($held === null) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_SETTLEMENT,
+                'Settlement type: '.$requiredLabel.' required - say on your profile whether you live in a rural or urban area so we can check it.',
+                ScholarFitFieldNames::SETTLEMENT_TYPE,
+                required: $requiredLabel,
+            );
+        }
+
+        $heldLabel = SettlementType::label($held);
+
+        if ($held !== $required) {
+            return RequirementOutcome::fail(
+                RequirementOutcome::TYPE_SETTLEMENT,
+                'Settlement type: '.$requiredLabel.' required, your profile states '.$heldLabel.'.',
+                required: $requiredLabel,
+                actual: $heldLabel,
+            );
+        }
+
+        return RequirementOutcome::pass(
+            RequirementOutcome::TYPE_SETTLEMENT,
+            'Settlement type: '.$requiredLabel.' required, your profile states '.$heldLabel.'.',
+            required: $requiredLabel,
+            actual: $heldLabel,
+        );
+    }
+
+    /**
+     * The field of study the provider stated in the listing's structured field.
+     *
+     * A level that has no field of study (an O-Level student) cannot be asked for
+     * one, and an Engineering award open to their level cannot refuse them for
+     * lacking it - they will choose a field when they reach tertiary study. So for
+     * them it is a note, never a rule and never a request.
+     */
+    private function fieldOfStudy(ApplicantProfile $profile, Opportunity $opportunity): ?RequirementOutcome
+    {
+        if (blank($opportunity->target_field)) {
+            return null;
+        }
+
+        $required = trim((string) $opportunity->target_field);
+
+        if (! EducationLevel::usesFieldOfStudy($profile->education_level)) {
+            return RequirementOutcome::note(
+                RequirementOutcome::TYPE_FIELD,
+                true,
+                'This scholarship is for '.$required.'. You do not have a field of study at your current level, so it is not checked yet.',
+                required: $required,
+            );
+        }
+
+        if (blank($profile->field_of_study)) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_FIELD,
+                'Field of study: '.$required.' required - add your field of study to your profile so we can check it.',
+                ScholarFitFieldNames::FIELD_OF_STUDY,
+                required: $required,
+            );
+        }
+
+        if (! $this->fieldsMatch((string) $profile->field_of_study, $required)) {
+            return RequirementOutcome::fail(
+                RequirementOutcome::TYPE_FIELD,
+                'Field of study: '.$required.' required, your profile states '.$profile->field_of_study.'.',
+                required: $required,
+                actual: $profile->field_of_study,
+            );
+        }
+
+        return RequirementOutcome::pass(
+            RequirementOutcome::TYPE_FIELD,
+            'Field of study: '.$required.' required, your profile states '.$profile->field_of_study.'.',
+            required: $required,
+            actual: $profile->field_of_study,
+        );
+    }
+
+    /**
+     * Whether two written fields of study are the same one.
+     *
+     * One place, so every field comparison in the evaluator agrees. For now it is
+     * the same field written the same way - case, spacing and "&" versus "and"
+     * ignored. A looser notion (Computer Science against Computer Science & IT) is
+     * a decision about which fields belong together, and belongs to the field
+     * taxonomy rather than to a string rule here.
+     */
+    private function fieldsMatch(string $applicantField, string $listingField): bool
+    {
+        return FieldOfStudyMatcher::same($applicantField, $listingField);
+    }
+
+    /** Lower-cased, "&" read as "and", every run of whitespace a single space. */
+    private function normaliseName(string $value): string
+    {
+        $clean = strtolower(trim($value));
+        $clean = str_replace('&', ' and ', $clean);
+
+        return trim((string) preg_replace('/\s+/', ' ', $clean));
+    }
     private function certificate(ApplicantProfile $profile, Opportunity $opportunity): ?RequirementOutcome
     {
         if (! $opportunity->requires_results_certificate) {
@@ -486,6 +691,25 @@ final class EligibilityEvaluator
     {
         $conditions = DescriptionEligibility::conditions($opportunity->title, $opportunity->description);
         $outcomes = [];
+
+        // The words only fill gaps. Where the provider filled in the structured field a
+        // condition would duplicate, the structured field is the rule and the matching
+        // reading of the text is not asked at all - the two are never allowed to
+        // disagree about who is eligible. (A disagreement is reported to the provider
+        // and the moderator by DescriptionConflicts, not resolved here.)
+        $conditions = array_values(array_filter($conditions, static function (DescriptionCondition $c) use ($opportunity) {
+            return match ($c->kind) {
+                // The audience reading still defers to a structured MINIMUM, as it always
+                // has. It does not yet defer to the structured target level: that level is
+                // only an advisory note until the hard rule for impossible jumps exists
+                // (plan item 5.2), and until then the title's "Form 1" is what stops an
+                // A-Level student being offered a Form 1 bursary. The two change together.
+                DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->minimum_education_level),
+                DescriptionEligibility::ENTRY_QUALIFICATION => blank($opportunity->minimum_education_level),
+                DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field),
+                default => true,
+            };
+        }));
 
         // Every EDUCATION_LEVEL condition - title and description alike -
         // is grouped into one combined outcome, because "for undergraduate
@@ -842,15 +1066,26 @@ final class EligibilityEvaluator
                 ? ' - add your field of study so we can check.'
                 : '.';
 
-            return RequirementOutcome::fail(
+            // At a level with no field of study there is nothing to add, so the condition
+            // stays unconfirmed rather than becoming a request nobody can answer.
+            if (! EducationLevel::usesFieldOfStudy($profile->education_level)) {
+                return RequirementOutcome::note(
+                    RequirementOutcome::TYPE_DESCRIPTION_FIELD,
+                    true,
+                    'Scholarship description states: '.$requiredField.'. You do not have a field of study at your current level, so it is not checked yet.',
+                    required: $requiredField,
+                );
+            }
+
+            return RequirementOutcome::needsInfo(
                 RequirementOutcome::TYPE_DESCRIPTION_FIELD,
-                'Scholarship description states: '.$requiredField.' required, but your profile has no field of study recorded'.$addIt,
+                'Scholarship description states: '.$requiredField.' required - add your field of study so we can check.',
+                ScholarFitFieldNames::FIELD_OF_STUDY,
                 required: $requiredField,
-                actual: null,
             );
         }
 
-        if (strcasecmp(trim($profile->field_of_study), trim($requiredField)) === 0) {
+        if ($this->fieldsMatch((string) $profile->field_of_study, $requiredField)) {
             return RequirementOutcome::pass(
                 RequirementOutcome::TYPE_DESCRIPTION_FIELD,
                 'Scholarship description states: '.$requiredField.' required, your profile states '.$profile->field_of_study.'.',

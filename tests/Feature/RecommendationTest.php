@@ -221,6 +221,29 @@ class RecommendationTest extends TestCase
     /** A page that asks for N cards gets N, when N are available. */
     public function test_a_limit_returns_exactly_that_many(): void
     {
+        // The seeded student studies Computer Science & IT, and a listing's stated field is a
+        // rule now, so few of the seeded listings are for them. Give the test its own open ones.
+        $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
+
+        foreach (['Trim Test One', 'Trim Test Two', 'Trim Test Three'] as $title) {
+            Opportunity::create([
+                'provider_user_id' => $provider->user_id,
+                'provider_name' => $provider->full_name,
+                'title' => $title,
+                'description' => 'An open listing used to test the limit.',
+                'education_level' => null,
+                'target_field' => null,
+                'funding_type' => 'Full Scholarship',
+                'country' => 'Zimbabwe',
+                'target_country' => 'Zimbabwe',
+                'deadline' => Carbon::today()->addDays(25),
+                'status' => OpportunityStatus::ACTIVE,
+                'moderation_status' => OpportunityModerationStatus::APPROVED,
+                'submitted_at' => Carbon::now()->subDay(),
+                'created_at' => Carbon::now(),
+            ]);
+        }
+
         $all = $this->rankedIds();
         $this->assertGreaterThanOrEqual(2, count($all), 'this test needs a few listings to trim');
 

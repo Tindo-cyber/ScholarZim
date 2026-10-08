@@ -119,6 +119,46 @@
         </div>
     @endif
 
+    @if(! empty($needInfo))
+        {{--
+            Listings ScholarFit could not check, because the profile has no answer to
+            something they ask. Not matches - nothing was compared - and not
+            refusals - nothing failed. Each says exactly which fields to add, and
+            links to them, so one visit to the profile clears the lot.
+        --}}
+        <h2 class="h6 fw-bold mt-5 mb-3" id="needs-information">Complete your profile to check</h2>
+        <p class="text-secondary small mb-3">
+            These scholarships ask something your profile does not answer yet, so we cannot say whether you qualify.
+        </p>
+
+        <div class="d-grid gap-3">
+            @foreach($needInfo as $pending)
+                @php $opportunity = $pending->opportunity; @endphp
+                <article class="card sz-match-card">
+                    <div class="card-body">
+                        <h3 class="h6 fw-bold mb-1">
+                            <a class="text-body text-decoration-none" href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">{{ $opportunity->title }}</a>
+                        </h3>
+                        <p class="small text-secondary mb-2">{{ $opportunity->awardingBody() }}</p>
+
+                        <ul class="list-unstyled d-grid gap-1 small mb-0">
+                            @foreach($pending->pendingInformation() as $outcome)
+                                <li class="d-flex gap-2 align-items-start">
+                                    <x-icon name="circle" :size="14" class="flex-shrink-0 mt-1 text-warning" />
+                                    <span>
+                                        {{ $outcome->message }}
+                                        @if($anchor = \App\Services\ScholarFit\ScholarFitFieldNames::anchor((string) $outcome->missing))
+                                            <a href="{{ route('applicant.profile') }}#{{ $anchor }}">Add your {{ $outcome->missing }}</a>
+                                        @endif
+                                    </span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </article>
+            @endforeach
+        </div>
+    @endif
     @if(! empty($notEligible))
         <h2 class="h6 fw-bold mt-5 mb-3">Scholarships you don't qualify for yet</h2>
         <p class="text-secondary small mb-3">

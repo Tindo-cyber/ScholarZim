@@ -29,6 +29,8 @@ class RecommendationController extends Controller
             // 0 = no limit: My Matches lists every eligible listing, not a sample of them.
             'matches' => $this->recommendationService->forUser($user, 0),
             'notEligible' => $this->recommendationService->notEligibleForUser($user, 6),
+            // Listings that cannot be checked until the profile says more.
+            'needInfo' => $this->recommendationService->needingInformationForUser($user),
             'savedIds' => $this->savedScholarshipService->savedIds($user),
             'appliedIds' => $this->applicationService->appliedIds($user),
             'accepted' => $this->applicationService->acceptedByOpportunity($user),

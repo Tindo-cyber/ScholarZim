@@ -64,7 +64,9 @@ class RecommendationService
     {
         $ineligible = array_values(array_filter(
             $this->evaluatedCandidates($user),
-            static fn (EligibilityResult $r) => ! $r->meetsRequirements()
+            // Certainly ineligible. A listing that could not be checked for want of an
+            // answer is not a refusal - needingInformationForUser() shows those.
+            static fn (EligibilityResult $r) => $r->isIneligible()
         ));
 
         usort($ineligible, static function (EligibilityResult $a, EligibilityResult $b) {
@@ -73,6 +75,33 @@ class RecommendationService
         });
 
         return $limit > 0 ? array_slice($ineligible, 0, $limit) : $ineligible;
+    }
+
+    /**
+     * Listings that cannot be checked yet because the applicant's profile lacks an
+     * answer - no town, no date of birth, no settlement type.
+     *
+     * They are neither matches (nothing was compared) nor refusals (nothing was
+     * failed), so they are their own group, each naming exactly what to add. A
+     * listing that is certainly ineligible is not here even if something else is
+     * also missing: asking for a detail cannot change a "no". Soonest deadline
+     * first, then id, like the matches.
+     *
+     * @return array<int, EligibilityResult>
+     */
+    public function needingInformationForUser(User $user, int $limit = 0): array
+    {
+        $pending = array_values(array_filter(
+            $this->evaluatedCandidates($user),
+            static fn (EligibilityResult $r) => $r->needsInformation()
+        ));
+
+        usort($pending, static function (EligibilityResult $a, EligibilityResult $b) {
+            return [$a->opportunity->deadline?->timestamp ?? PHP_INT_MAX, $a->opportunity->opportunity_id]
+                <=> [$b->opportunity->deadline?->timestamp ?? PHP_INT_MAX, $b->opportunity->opportunity_id];
+        });
+
+        return $limit > 0 ? array_slice($pending, 0, $limit) : $pending;
     }
 
     /**

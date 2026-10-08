@@ -395,6 +395,31 @@ class ApplicantProfile extends Model
     }
 
     /**
+     * How old the applicant is - or will be - on a given day.
+     *
+     * A listing's age limit is about the age they will be when applications close,
+     * not the age they are today: someone a month short of a birthday is, for a
+     * deadline after it, the older age. Computed from the calendar rather than from
+     * a day count, so a birthday that falls exactly on the day counts.
+     */
+    public function ageOn(\Carbon\CarbonInterface $day): ?int
+    {
+        $born = $this->date_of_birth;
+
+        if ($born === null) {
+            return null;
+        }
+
+        $years = $day->year - $born->year;
+
+        if ($day->month < $born->month || ($day->month === $born->month && $day->day < $born->day)) {
+            $years--;
+        }
+
+        return max(0, $years);
+    }
+
+    /**
      * The single source of truth for "is this profile finished": every entry is
      * a field ScholarFit reads, with the anchor that scrolls the profile form to
      * it. The ring, the checklist, and the reminder job all read this, so they

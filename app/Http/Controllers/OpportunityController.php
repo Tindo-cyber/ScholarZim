@@ -118,6 +118,20 @@ class OpportunityController extends Controller
     }
 
     /**
+     * Tell the provider, on the page they land on, where the listing's words disagree
+     * with its own settings. It is saved either way - the settings win, and the
+     * moderator sees it - but a provider who can fix it should know now.
+     *
+     * @param  array<string, mixed>  $input
+     */
+    private function withListingWarnings(\Illuminate\Http\RedirectResponse $response, array $input): \Illuminate\Http\RedirectResponse
+    {
+        $warnings = \App\Services\ScholarFit\DescriptionConflicts::messages($input);
+
+        return $warnings === [] ? $response : $response->with('listingWarnings', $warnings);
+    }
+
+    /**
      * The public page for the form as it stands, in a new tab. Nothing is saved or
      * announced: the listing is built in memory from whatever has been typed, and
      * forgivingly, because the point is to look before the form is complete.
@@ -139,6 +153,9 @@ class OpportunityController extends Controller
             'appliedIds' => [],
             'accepted' => [],
             'acceptedApplication' => null,
+            // Where the words disagree with the settings, shown on the preview so it can be
+            // fixed before submitting rather than after.
+            'conflicts' => \App\Services\ScholarFit\DescriptionConflicts::detect($listing),
         ]);
     }
 
@@ -184,9 +201,12 @@ class OpportunityController extends Controller
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
 
-        return redirect()
-            ->route('provider.dashboard')
-            ->with('successMessage', 'Scholarship submitted for review. It goes live once an administrator approves it.');
+        return $this->withListingWarnings(
+            redirect()
+                ->route('provider.dashboard')
+                ->with('successMessage', 'Scholarship submitted for review. It goes live once an administrator approves it.'),
+            $request->validated()
+        );
     }
 
     public function edit(Request $request, int $id)
@@ -238,9 +258,12 @@ class OpportunityController extends Controller
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
 
-        return redirect()
-            ->route('provider.dashboard')
-            ->with('successMessage', '"' . $opportunity->title . '" was updated and re-submitted for review.');
+        return $this->withListingWarnings(
+            redirect()
+                ->route('provider.dashboard')
+                ->with('successMessage', '"' . $opportunity->title . '" was updated and re-submitted for review.'),
+            $data
+        );
     }
 
     /**

@@ -49,6 +49,15 @@ final class RequirementOutcome
 
     public const TYPE_CERTIFICATE = 'certificate';
 
+    /** A town the listing is for, checked against the applicant's own locality. */
+    public const TYPE_LOCALITY = 'locality';
+
+    /** Rural or urban, checked against the applicant's settlement type. */
+    public const TYPE_SETTLEMENT = 'settlement_type';
+
+    /** The field of study the listing states in its structured field. */
+    public const TYPE_FIELD = 'field_of_study';
+
     /**
      * An eligibility condition read from the listing's free-text description
      * rather than from a structured requirement field - only used when no
@@ -94,6 +103,14 @@ final class RequirementOutcome
          * requires.
          */
         public readonly bool $advisory = false,
+        /**
+         * The applicant's profile has no answer to this question, so it cannot be
+         * checked. Neither a pass nor a failure: the applicant is not excluded for
+         * a blank they may never have been told mattered, and the listing is not
+         * presented as a match nobody tested. `missing` names the profile field.
+         */
+        public readonly bool $needsInformation = false,
+        public readonly ?string $missing = null,
     ) {
     }
 
@@ -139,6 +156,21 @@ final class RequirementOutcome
         return new self($type, $recognised, $message, null, null, null, $required, $actual, true);
     }
 
+    /**
+     * A requirement that cannot be checked because the applicant's profile lacks
+     * the answer.
+     *
+     * @param  string  $missing  the profile field, by its ScholarFitFieldNames name
+     */
+    public static function needsInfo(
+        string $type,
+        string $message,
+        string $missing,
+        string|int|float|null $required = null,
+    ): self {
+        return new self($type, false, $message, null, null, null, $required, null, false, true, $missing);
+    }
+
     /** @return array<string, mixed> */
     public function toArray(): array
     {
@@ -152,6 +184,8 @@ final class RequirementOutcome
             'subject' => $this->subject,
             'required' => $this->required,
             'actual' => $this->actual,
+            'needs_information' => $this->needsInformation,
+            'missing' => $this->missing,
         ];
     }
 
@@ -168,7 +202,33 @@ final class RequirementOutcome
      */
     public static function failures(array $outcomes): array
     {
-        return array_values(array_filter($outcomes, static fn (self $o) => ! $o->passed && ! $o->advisory));
+        return array_values(array_filter($outcomes, static fn (self $o) => ! $o->passed && ! $o->advisory && ! $o->needsInformation));
+    }
+
+    /**
+     * The requirements that could not be checked for want of an answer from the
+     * profile. Not failures, and never counted as passes.
+     *
+     * @param  array<int, self>  $outcomes
+     * @return array<int, self>
+     */
+    public static function pending(array $outcomes): array
+    {
+        return array_values(array_filter($outcomes, static fn (self $o) => $o->needsInformation));
+    }
+
+    /**
+     * The profile fields behind them, each named once.
+     *
+     * @param  array<int, self>  $outcomes
+     * @return array<int, string>
+     */
+    public static function missingFields(array $outcomes): array
+    {
+        return array_values(array_unique(array_map(
+            static fn (self $o) => (string) $o->missing,
+            self::pending($outcomes)
+        )));
     }
 
     /**
@@ -177,7 +237,7 @@ final class RequirementOutcome
      */
     public static function passes(array $outcomes): array
     {
-        return array_values(array_filter($outcomes, static fn (self $o) => $o->passed && ! $o->advisory));
+        return array_values(array_filter($outcomes, static fn (self $o) => $o->passed && ! $o->advisory && ! $o->needsInformation));
     }
 
     /**
@@ -218,9 +278,14 @@ final class RequirementOutcome
         return self::messages(self::failures($outcomes));
     }
 
-    /** @param array<int, self> $outcomes */
+    /**
+     * Every stated requirement is met: none failed AND none is waiting on an answer.
+     * An unchecked rule is not a met one.
+     *
+     * @param array<int, self> $outcomes
+     */
     public static function allMet(array $outcomes): bool
     {
-        return self::failures($outcomes) === [];
+        return self::failures($outcomes) === [] && self::pending($outcomes) === [];
     }
 }

@@ -40,9 +40,13 @@
     $notes = $fit->advisoryNotes();
     $eligible = $fit->meetsRequirements();
     $insufficient = $fit->hasInsufficientInformation();
+    // A rule the profile cannot answer is neither met nor unmet: it is its own state,
+    // shown as a question with what to add, never as a tick or a cross.
+    $pending = $fit->needsInformation();
+    $missing = $fit->missingFields();
     $stated = $rules !== [];
-    $met = count(array_filter($rules, static fn ($o) => $o->passed));
-    $unmet = count($rules) - $met;
+    $met = count(array_filter($rules, static fn ($o) => $o->passed && ! $o->needsInformation));
+    $unmet = count(\App\Services\ScholarFit\RequirementOutcome::failures($rules));
 @endphp
 
 @if($variant === 'compact')
@@ -50,6 +54,9 @@
         @if($insufficient)
             <x-status-badge label="Complete your profile" tone="secondary" icon="shield" />
             <span class="small text-secondary">Not enough information yet to check this one.</span>
+        @elseif($pending)
+            <x-status-badge label="Needs information" tone="warning" icon="shield" />
+            <span class="small text-secondary">Add your {{ implode(' and ', $missing) }} to check this one.</span>
         @elseif(! $stated)
             <x-status-badge label="No stated requirements" tone="secondary" icon="shield" />
             <span class="small text-secondary">The provider decides who is awarded.</span>
@@ -73,14 +80,43 @@
                 <ul class="list-unstyled d-grid gap-1 mt-2 mb-0">
                     @foreach($rules as $outcome)
                         <li class="d-flex gap-2 align-items-start">
-                            <x-icon :name="$outcome->passed ? 'check-circle' : 'x-circle'" :size="14"
-                                    class="flex-shrink-0 mt-1 {{ $outcome->passed ? 'text-success' : 'text-danger' }}" />
+                            <x-icon :name="$outcome->needsInformation ? 'circle' : ($outcome->passed ? 'check-circle' : 'x-circle')" :size="14"
+                                    class="flex-shrink-0 mt-1 {{ $outcome->needsInformation ? 'text-warning' : ($outcome->passed ? 'text-success' : 'text-danger') }}" />
                             <span class="{{ $outcome->passed ? 'text-secondary' : '' }}">{{ $outcome->message }}</span>
                         </li>
                     @endforeach
                 </ul>
             </details>
         @endif
+    </div>
+@elseif($pending)
+    <div {{ $attributes->merge(['class' => 'alert mb-3 alert-warning']) }} role="alert">
+        <div class="d-flex gap-2 align-items-start">
+            <x-icon name="shield" :size="20" class="flex-shrink-0 mt-1" />
+            <div class="w-100">
+                <div class="fw-semibold mb-1">NEEDS INFORMATION</div>
+
+                <p class="small mb-2">
+                    We cannot say yet whether you qualify: your profile does not answer
+                    {{ count($missing) === 1 ? 'one thing' : 'some things' }} this scholarship asks.
+                </p>
+
+                <ul class="list-unstyled d-grid gap-1 mb-0 small">
+                    @foreach($rules as $outcome)
+                        <li class="d-flex gap-2 align-items-start">
+                            <x-icon :name="$outcome->needsInformation ? 'circle' : 'check-circle'" :size="14"
+                                    class="flex-shrink-0 mt-1 {{ $outcome->needsInformation ? 'text-warning' : 'text-success' }}" />
+                            <span class="{{ $outcome->needsInformation ? '' : 'text-secondary' }}">{{ $outcome->message }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+
+                <p class="small mb-0 mt-2">
+                    <a href="{{ route('applicant.profile') }}">Add your {{ implode(' and ', $missing) }}</a>
+                    to your profile and we will check it.
+                </p>
+            </div>
+        </div>
     </div>
 @elseif($stated)
     <div {{ $attributes->merge(['class' => 'alert mb-3 alert-' . ($eligible ? 'success' : 'danger')]) }} role="alert">
@@ -104,8 +140,8 @@
                 <ul class="list-unstyled d-grid gap-1 mb-0 small">
                     @foreach($rules as $outcome)
                         <li class="d-flex gap-2 align-items-start">
-                            <x-icon :name="$outcome->passed ? 'check-circle' : 'x-circle'" :size="14"
-                                    class="flex-shrink-0 mt-1 {{ $outcome->passed ? 'text-success' : 'text-danger' }}" />
+                            <x-icon :name="$outcome->needsInformation ? 'circle' : ($outcome->passed ? 'check-circle' : 'x-circle')" :size="14"
+                                    class="flex-shrink-0 mt-1 {{ $outcome->needsInformation ? 'text-warning' : ($outcome->passed ? 'text-success' : 'text-danger') }}" />
                             <span class="{{ $outcome->passed ? 'text-secondary' : '' }}">{{ $outcome->message }}</span>
                         </li>
                     @endforeach

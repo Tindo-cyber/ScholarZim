@@ -61,7 +61,9 @@ class SubjectRequirementTest extends TestCase
             'title' => 'Engineering Bursary',
             'description' => 'Requires Mathematics and a science.',
             'education_level' => 'A_LEVEL',
-            'target_field' => 'Engineering',
+            // About subjects, not fields of study: no field, so the student's own field of
+            // study is not part of what these tests are checking.
+            'target_field' => null,
             'funding_type' => 'Full Scholarship',
             'country' => 'Zimbabwe',
             'target_country' => 'Zimbabwe',
@@ -99,7 +101,9 @@ class SubjectRequirementTest extends TestCase
             'title' => 'Subject-Gated Scholarship',
             'description' => 'Requires Mathematics.',
             'education_level' => 'UNDERGRADUATE',
-            'target_field' => 'Engineering',
+            // About subjects, not fields of study: no field, so the student's own field of
+            // study is not part of what these tests are checking.
+            'target_field' => null,
             'funding_type' => 'Full Scholarship',
             'country' => 'Zimbabwe',
             'target_country' => 'Zimbabwe',
@@ -250,7 +254,9 @@ class SubjectRequirementTest extends TestCase
                 'title' => $title,
                 'description' => 'Test listing with subject requirements.',
                 'education_level' => 'UNDERGRADUATE',
-            'target_field' => 'Engineering',
+            // About subjects, not fields of study: no field, so the student's own field of
+            // study is not part of what these tests are checking.
+            'target_field' => null,
             'funding_type' => 'Full Scholarship',
             'country' => 'Zimbabwe',
             'target_country' => 'Zimbabwe',

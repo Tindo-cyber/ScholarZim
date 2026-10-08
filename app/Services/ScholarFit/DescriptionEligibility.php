@@ -109,6 +109,31 @@ final class DescriptionEligibility
     ];
 
     /**
+     * Words that turn a statement of who is welcome into one about who is not.
+     *
+     * "This award is not open to Master's students" has the marker ("open to") and
+     * the level ("master's") of a statement that it IS for Master's students, and
+     * reading it that way is the opposite of what it says. A negation word in the
+     * same clause as the marker, or as a level or field phrase, means that phrase is
+     * not a statement of audience.
+     *
+     * It is dropped, never inverted. "Not Master's" does not mean "everyone else",
+     * and guessing that is the kind of inference a small deterministic reader must
+     * not make. Whole-word, so "Norton" and "notably" are not negations; `n't`
+     * covers isn't, can't, won't and the rest.
+     */
+    private const NEGATION_PATTERN = '/\b(?:not|no|non|nor|never|none|cannot|except|excluding|excludes?|excluded|ineligible)\b|\bother\s+than\b|n\'t\b/';
+
+    /**
+     * A negation word just before a phrase in a TITLE, which has no sentence around
+     * it to carry a marker: "(excluding PhD)", "Non-Postgraduate Support Fund",
+     * "Not For Undergraduates". Only a few filler words may sit between the two, so
+     * "No Fee Undergraduate Scholarship" - where the "no" is about money - still
+     * states its audience.
+     */
+    private const TITLE_NEGATION_LEAD = '(?:not|non|no|never|excluding|excludes?|except|other\s+than)\s+(?:(?:for|to|open|be|an?|the|those|students?|applicants?|candidates?|of)\s+){0,3}';
+
+    /**
      * Phrase => the canonical EducationLevel it names. Shared by both
      * EDUCATION_LEVEL and ENTRY_QUALIFICATION conditions - the phrase
      * vocabulary is identical; only the sentence's marker (see above)
@@ -293,7 +318,13 @@ final class DescriptionEligibility
         $found = [];
 
         if (filled($title)) {
-            foreach (self::matches(self::normalise($title), self::EDUCATION_LEVEL_PHRASES) as [$phrase, $level]) {
+            $normalisedTitle = self::normalise($title);
+
+            foreach (self::matches($normalisedTitle, self::EDUCATION_LEVEL_PHRASES) as [$phrase, $level]) {
+                if (self::negatedInTitle($normalisedTitle, $phrase)) {
+                    continue;
+                }
+
                 $found[] = new DescriptionCondition(self::EDUCATION_LEVEL, $level, $phrase, DescriptionCondition::SOURCE_TITLE);
             }
         }
@@ -323,21 +354,32 @@ final class DescriptionEligibility
                 continue;
             }
 
-            $levelMatches = array_merge(
+            // A sentence that says who is NOT welcome states no audience. Judged by
+            // clause: a negation sitting beside the marker cancels the sentence, and one
+            // sitting beside a phrase cancels that phrase - so "Open to undergraduate
+            // students, no age limit applies" keeps its audience, and "Open to
+            // undergraduates, but not postgraduates" keeps only the first.
+            $clauses = self::clauses($normalised);
+
+            if (self::markerIsNegated($clauses)) {
+                continue;
+            }
+
+            $levelMatches = self::outsideNegation($clauses, array_merge(
                 self::matches($normalised, self::EDUCATION_LEVEL_PHRASES),
                 self::matches($normalised, self::DESCRIPTION_ONLY_EDUCATION_LEVEL_PHRASES),
-            );
+            ));
 
             foreach ($levelMatches as [$phrase, $level]) {
                 $found[] = new DescriptionCondition($educationLevelKind, $level, $phrase, DescriptionCondition::SOURCE_DESCRIPTION);
             }
 
-            foreach (self::matches($normalised, self::FIELD_OF_STUDY_PHRASES) as [$phrase, $field]) {
+            foreach (self::outsideNegation($clauses, self::matches($normalised, self::FIELD_OF_STUDY_PHRASES)) as [$phrase, $field]) {
                 $found[] = self::once($seen, self::FIELD_OF_STUDY, $field, $phrase);
             }
 
             foreach (self::UNSUPPORTED_PHRASES as $phrase) {
-                if (self::containsWord($normalised, $phrase)) {
+                if (self::containsWord($normalised, $phrase) && ! self::phraseIsNegated($clauses, $phrase)) {
                     $found[] = self::once($seen, self::UNSUPPORTED, $phrase, $phrase);
                 }
             }
@@ -368,6 +410,76 @@ final class DescriptionEligibility
         $pieces = preg_split('/(?<=[.!?])\s+|\r?\n+/', $description) ?: [$description];
 
         return array_values(array_filter(array_map('trim', $pieces), fn (string $s) => $s !== ''));
+    }
+
+    /**
+     * The sentence split into clauses at commas, semicolons, colons and the joining
+     * words that start a new thought ("but", "however", ...). Negation is judged
+     * within a clause, so an unrelated "no" in another clause does not cancel a
+     * statement of audience.
+     *
+     * @return array<int, string>
+     */
+    private static function clauses(string $normalisedSentence): array
+    {
+        $parts = preg_split('/[,;:]|\s+(?:but|however|although|though|while|whereas)\s+/', $normalisedSentence) ?: [$normalisedSentence];
+
+        return array_values(array_filter(array_map('trim', $parts), static fn (string $c) => $c !== ''));
+    }
+
+    private static function isNegated(string $clause): bool
+    {
+        return preg_match(self::NEGATION_PATTERN, $clause) === 1;
+    }
+
+    /** @param  array<int, string>  $clauses */
+    private static function markerIsNegated(array $clauses): bool
+    {
+        foreach ($clauses as $clause) {
+            $hasMarker = self::matchesAny($clause, self::ENTRY_REQUIREMENT_MARKER_PATTERNS)
+                || self::matchesAny($clause, self::TARGET_MARKER_PATTERNS);
+
+            if ($hasMarker && self::isNegated($clause)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** @param  array<int, string>  $clauses */
+    private static function phraseIsNegated(array $clauses, string $phrase): bool
+    {
+        foreach ($clauses as $clause) {
+            if (self::containsWord($clause, $phrase) && self::isNegated($clause)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The matches whose phrase is not in a negated clause.
+     *
+     * @param  array<int, string>  $clauses
+     * @param  array<int, array{0: string, 1: string}>  $matches
+     * @return array<int, array{0: string, 1: string}>
+     */
+    private static function outsideNegation(array $clauses, array $matches): array
+    {
+        return array_values(array_filter(
+            $matches,
+            static fn (array $match) => ! self::phraseIsNegated($clauses, $match[0])
+        ));
+    }
+
+    private static function negatedInTitle(string $normalisedTitle, string $phrase): bool
+    {
+        return preg_match(
+            '/(?<![a-z0-9])' . self::TITLE_NEGATION_LEAD . '(?<![a-z0-9])' . preg_quote($phrase, '/') . '(?![a-z0-9])/',
+            $normalisedTitle
+        ) === 1;
     }
 
     /** @param  array<int, string>  $patterns */
