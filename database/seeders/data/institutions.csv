@@ -1,0 +1,42 @@
+code,name,type,province
+UZ,University of Zimbabwe,university,Harare
+NUST,National University of Science and Technology,university,Bulawayo
+MSU,Midlands State University,university,Midlands
+CUT,Chinhoyi University of Technology,university,Mashonaland West
+GZU,Great Zimbabwe University,university,Masvingo
+BUSE,Bindura University of Science Education,university,Mashonaland Central
+LSU,Lupane State University,university,Matabeleland North
+ZOU,Zimbabwe Open University,university,Harare
+HIT,Harare Institute of Technology,university,Harare
+GSU,Gwanda State University,university,Matabeleland South
+MUAST,Marondera University of Agricultural Sciences and Technology,university,Mashonaland East
+MSUAS,Manicaland State University of Applied Sciences,university,Manicaland
+AU,Africa University,university,Manicaland
+SOLUSI,Solusi University,university,Matabeleland South
+CUZ,Catholic University of Zimbabwe,university,Harare
+WUA,Women's University in Africa,university,Harare
+ARRUPE,Arrupe Jesuit University,university,Harare
+ZEGU,Zimbabwe Ezekiel Guti University,university,Mashonaland Central
+RCU,Reformed Church University,university,Masvingo
+HARARE-POLY,Harare Polytechnic,polytechnic,Harare
+BYO-POLY,Bulawayo Polytechnic,polytechnic,Bulawayo
+GWERU-POLY,Gweru Polytechnic,polytechnic,Midlands
+MUTARE-POLY,Mutare Polytechnic,polytechnic,Manicaland
+MASVINGO-POLY,Masvingo Polytechnic,polytechnic,Masvingo
+KWEKWE-POLY,Kwekwe Polytechnic,polytechnic,Midlands
+KUSHINGA-POLY,Kushinga Phikelela Polytechnic,polytechnic,Mashonaland East
+MORGAN-ZINTEC,Morgan ZINTEC Teachers' College,teachers_college,Harare
+HILLSIDE,Hillside Teachers' College,teachers_college,Bulawayo
+UCE,United College of Education,teachers_college,Bulawayo
+MKOBA,Mkoba Teachers' College,teachers_college,Midlands
+MASVINGO-TC,Masvingo Teachers' College,teachers_college,Masvingo
+BONDOLFI,Bondolfi Teachers' College,teachers_college,Masvingo
+BELVEDERE,Belvedere Technical Teachers' College,teachers_college,Harare
+SEKE,Seke Teachers' College,teachers_college,Harare
+MARYMOUNT,Marymount Teachers' College,teachers_college,Manicaland
+NYADIRE,Nyadire Teachers' College,teachers_college,Mashonaland East
+MADZIWA,Madziwa Teachers' College,teachers_college,Mashonaland Central
+GWEBI,Gwebi College of Agriculture,other,
+CHIBERO,Chibero College of Agriculture,other,
+ESIGODINI,Esigodini Agricultural College,other,Matabeleland South
+MLEZU,Mlezu Agricultural College,other,Midlands

@@ -62,6 +62,9 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             AcademicQualificationSeeder::class,
+            // The STARTER programme catalogue (unverified - see database/seeders/data/README.md).
+            // Production loads it with `php artisan catalogue:import`, since this seeder will not run there.
+            CatalogueSeeder::class,
         ]);
 
         $admin = $this->admin();
