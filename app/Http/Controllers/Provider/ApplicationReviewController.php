@@ -39,15 +39,23 @@ class ApplicationReviewController extends Controller
         // past the first open, or on anything already decided.
         $this->applicationService->markViewedByProvider($application, $request->user());
 
+        $fit = $application->user && $application->opportunity
+            ? $this->recommendationService->evaluateOne($application->user, $application->opportunity)
+            : null;
+        $sentEligibility = $application->submittedEligibility();
+        // Only said when the live check now gives a different answer from the one saved at submission.
+        $profileChanged = $sentEligibility !== null && $fit !== null
+            && \App\Services\ApplicationSnapshot::eligibility($fit) !== $sentEligibility;
+
         return view('applications.provider-review', [
             'application' => $application,
+            'sentEligibility' => $sentEligibility,
+            'profileChanged' => $profileChanged,
             'applicantProfile' => $application->user?->applicantProfile,
             // Guidance for the reviewer, not an input to the decision: how well
             // this applicant's profile lines up with what the listing asks for.
             // Null when either side of the comparison is missing.
-            'fit' => $application->user && $application->opportunity
-                ? $this->recommendationService->evaluateOne($application->user, $application->opportunity)
-                : null,
+            'fit' => $fit,
             // A decided or withdrawn application yields false, which collapses
             // the decision form - offering buttons whose every outcome would be
             // refused on save is worse than offering none.

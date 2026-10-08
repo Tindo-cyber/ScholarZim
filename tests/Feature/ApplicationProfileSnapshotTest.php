@@ -201,15 +201,98 @@ class ApplicationProfileSnapshotTest extends TestCase
 
     // ------------------------------------------------------------ the eligibility panel --
 
-    public function test_the_eligibility_check_says_it_is_worked_out_from_the_profile_today(): void
+    public function test_an_older_applications_check_says_it_is_worked_out_from_the_profile_today(): void
     {
-        $html = $this->providerSees($this->apply());
+        $application = Application::create([
+            'user_id' => $this->student->user_id, 'opportunity_id' => $this->listing->opportunity_id,
+            'application_status' => ApplicationStatus::PENDING, 'personal_statement' => str_repeat('x', 120), 'submitted_at' => now(),
+        ]);
 
-        $this->assertStringContainsString('Worked out from the applicant\'s profile as it is today', $html);
+        $this->assertStringContainsString('Worked out from the applicant\'s profile as it is today', $this->providerSees($application));
+    }
+
+    public function test_a_new_applications_check_says_it_is_as_it_stood_when_they_applied(): void
+    {
+        $this->assertStringContainsString('As it stood when they applied', $this->providerSees($this->apply()));
+    }
+
+    // ------------------------------------------------ the eligibility verdict as it was --
+
+    /** The award now asks for the first recorded subject at C or better - the applicant holds it at B. */
+    private function requireFirstSubject(): AcademicResult
+    {
+        $result = $this->firstResult();
+        $this->listing->subjectRequirements()->create([
+            'qualification_id' => $result->qualification_id, 'subject_id' => $result->subject_id, 'minimum_grade' => 'C',
+        ]);
+
+        return $result;
+    }
+
+    public function test_the_verdict_and_its_reasons_are_saved_with_the_application(): void
+    {
+        $result = $this->requireFirstSubject();
+        $application = $this->apply();
+
+        $eligibility = $application->fresh()->submitted_snapshot['eligibility'];
+
+        $this->assertSame('eligible', $eligibility['verdict']);
+        $this->assertNotEmpty($eligibility['rules']);
+        $this->assertStringContainsString($result->subjectName(), $eligibility['rules'][0]['message']);
+        $this->assertSame('met', $eligibility['rules'][0]['status']);
+    }
+
+    public function test_the_provider_still_sees_the_verdict_as_it_was_after_the_applicant_edits_results(): void
+    {
+        $result = $this->requireFirstSubject();
+        $application = $this->apply();
+
+        $result->update(['result' => 'U', 'derived_points' => 0]);   // now below the C the award asks for
+
+        $html = $this->providerSees($application);
+
+        $this->assertStringContainsString('ELIGIBLE', $html);
+        $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
+        $this->assertStringContainsString("The applicant's profile has changed since they applied.", $html);
+    }
+
+    public function test_no_change_note_when_the_verdict_still_stands(): void
+    {
+        $this->requireFirstSubject();
+        $application = $this->apply();
+
+        $this->assertStringNotContainsString('has changed since they applied', $this->providerSees($application));
+    }
+
+    public function test_an_application_with_no_saved_verdict_keeps_showing_the_live_one(): void
+    {
+        $result = $this->requireFirstSubject();
+        $application = Application::create([
+            'user_id' => $this->student->user_id, 'opportunity_id' => $this->listing->opportunity_id,
+            'application_status' => ApplicationStatus::PENDING, 'personal_statement' => str_repeat('x', 120), 'submitted_at' => now(),
+        ]);
+        $result->update(['result' => 'U', 'derived_points' => 0]);
+
+        $html = $this->providerSees($application);
+
+        $this->assertStringContainsString('Not eligible', $html);
+        $this->assertStringNotContainsString('has changed since they applied', $html);
+    }
+
+    public function test_resubmitting_saves_a_fresh_verdict(): void
+    {
+        $result = $this->requireFirstSubject();
+        $application = $this->apply();
+        $application->update(['application_status' => ApplicationStatus::WITHDRAWN, 'withdrawn_at' => now()]);
+        $result->update(['result' => 'A', 'derived_points' => 5]);
+
+        $this->apply();
+
+        $rule = $application->fresh()->submitted_snapshot['eligibility']['rules'][0];
+        $this->assertStringContainsString('A', $rule['message']);
     }
 
     // ------------------------------------------------------------------ a minor --
-
     private function makeMinor(): void
     {
         $this->profile()->forceFill([

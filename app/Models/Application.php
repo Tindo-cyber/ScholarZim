@@ -84,6 +84,12 @@ class Application extends Model
             : ['profile' => [], 'minor' => false, 'guardian' => null, 'results' => []];
     }
 
+    /** The eligibility verdict saved when the application was sent; null for one made before that was kept. */
+    public function submittedEligibility(): ?array
+    {
+        return is_array($this->submitted_snapshot) ? ($this->submitted_snapshot['eligibility'] ?? null) : null;
+    }
+
     public function documentFor(string $type): ?array
     {
         $recorded = $this->relationLoaded('documents')

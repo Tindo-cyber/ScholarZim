@@ -179,11 +179,44 @@
                         <h2 class="h6 fw-semibold mb-0">Eligibility check</h2>
                     </div>
                     <div class="card-body">
-                        <x-eligibility-summary :fit="$fit" variant="compact" class="mb-0" />
+                        @if($sentEligibility)
+                            {{-- The verdict as it stood when the application was sent, with its reasons. --}}
+                            @php
+                                $verdictLabel = [
+                                    'eligible' => ['ELIGIBLE', 'success'],
+                                    'not_eligible' => ['NOT ELIGIBLE', 'danger'],
+                                    'needs_information' => ['NEEDS INFORMATION', 'warning'],
+                                    'insufficient' => ['INSUFFICIENT INFORMATION', 'secondary'],
+                                    'no_requirements' => ['NO STATED REQUIREMENTS', 'secondary'],
+                                ][$sentEligibility['verdict']] ?? ['UNKNOWN', 'secondary'];
+                            @endphp
+                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                <x-status-badge :label="$verdictLabel[0]" :tone="$verdictLabel[1]" />
+                                <span class="small text-secondary">As it stood when they applied.</span>
+                            </div>
+                            @if($sentEligibility['rules'])
+                                <ul class="list-unstyled d-grid gap-1 mt-2 mb-0 small">
+                                    @foreach($sentEligibility['rules'] as $rule)
+                                        <li class="d-flex gap-2 align-items-start">
+                                            <x-icon :name="$rule['status'] === 'pending' ? 'circle' : ($rule['status'] === 'met' ? 'check-circle' : 'x-circle')" :size="14"
+                                                    class="flex-shrink-0 mt-1 {{ $rule['status'] === 'pending' ? 'text-warning' : ($rule['status'] === 'met' ? 'text-success' : 'text-danger') }}" />
+                                            <span class="{{ $rule['status'] === 'met' ? 'text-secondary' : '' }}">{{ $rule['message'] }}</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
+                            @if($profileChanged)
+                                <p class="small text-warning-emphasis mt-2 mb-0">The applicant's profile has changed since they applied.</p>
+                            @endif
+                        @else
+                            <x-eligibility-summary :fit="$fit" variant="compact" class="mb-0" />
+                        @endif
 
                         <p class="small text-secondary mt-3 mb-0">
                             A guide to whether the profile meets this listing's stated requirements. The decision is yours.
-                            Worked out from the applicant's profile as it is today; the details on the left are as submitted.
+                            @unless($sentEligibility)
+                                Worked out from the applicant's profile as it is today; the details on the left are as submitted.
+                            @endunless
                         </p>
                     </div>
                 </div>

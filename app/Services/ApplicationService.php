@@ -445,7 +445,14 @@ class ApplicationService
                     $before = \App\Models\ApplicationDocument::where('application_id', $application->application_id)->pluck('path')->all();
                     \App\Models\ApplicationDocument::record($application, $this->profileService->forUser($user));
                     $released = array_values(array_diff($before, \App\Models\ApplicationDocument::where('application_id', $application->application_id)->pluck('path')->all()));
-                    $application->update(['submitted_snapshot' => ApplicationSnapshot::build($this->profileService->forUser($user))]);
+                    $application->update(['submitted_snapshot' => ApplicationSnapshot::build(
+                        $snapshotProfile = $this->profileService->forUser($user),
+                        new \App\Services\ScholarFit\EligibilityResult(
+                            $lockedOpportunity,
+                            $this->eligibilityEvaluator->evaluate($snapshotProfile, $lockedOpportunity, AcademicRecord::fromProfile($snapshotProfile)),
+                            $snapshotProfile->isComplete(),
+                        )
+                    )]);
 
                     // Inside the transaction on purpose: an audit line that
                     // survived a rolled-back submission would be a record of
