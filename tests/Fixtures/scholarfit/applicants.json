@@ -1,0 +1,64 @@
+{
+  "A1": {
+    "name": "Tanashe - Form 6 leaver, wants Computer Science",
+    "level": "A_LEVEL", "dob": "2009-06-15", "province": "Harare", "locality": "Harare", "settlement": "URBAN",
+    "results": { "zimsec-a-level": { "Mathematics": "A", "Physics": "B", "Chemistry": "B" } },
+    "documents": ["results_certificate"],
+    "intended": ["BSc Computer Science"], "applied": ["UZ"]
+  },
+  "A2": {
+    "name": "Rudo - Form 6 leaver, wants Medicine or Nursing, no institution yet",
+    "level": "A_LEVEL", "dob": "2008-02-10", "province": "Manicaland", "locality": "Mutare", "settlement": "RURAL",
+    "results": { "zimsec-a-level": { "Biology": "A", "Chemistry": "A", "Geography": "C" } },
+    "documents": ["results_certificate"],
+    "intended": ["Bachelor of Medicine and Bachelor of Surgery", "BSc Nursing Science"], "applied": []
+  },
+  "A3": {
+    "name": "Farai - Form 4, has not chosen programmes, no results certificate",
+    "level": "O_LEVEL", "dob": "2011-05-01", "province": "Midlands", "locality": "Gweru", "settlement": "URBAN",
+    "results": {}, "documents": [], "intended": [], "applied": []
+  },
+  "A4": {
+    "name": "Kuda - Grade 7 pupil",
+    "level": "PRIMARY", "dob": "2014-03-02", "province": "Mashonaland East", "locality": "Marondera", "settlement": "RURAL",
+    "results": {}, "documents": [], "intended": [], "applied": []
+  },
+  "A5": {
+    "name": "Chipo - BSc Information Systems at NUST, Harare resident",
+    "level": "UNDERGRADUATE", "dob": "2006-08-20", "province": "Harare", "locality": "Harare", "settlement": "URBAN",
+    "results": { "zimsec-a-level": { "Mathematics": "B", "Physics": "B", "Chemistry": "C" } },
+    "documents": ["transcript"],
+    "current": { "programme": "BSc Information Systems", "institution": "NUST" }
+  },
+  "A6": {
+    "name": "Tendai - BEng Civil Engineering at NUST",
+    "level": "UNDERGRADUATE", "dob": "2002-11-03", "province": "Bulawayo", "locality": "Bulawayo", "settlement": "URBAN",
+    "results": { "zimsec-a-level": { "Mathematics": "A", "Physics": "A", "Chemistry": "B" } },
+    "documents": ["transcript"],
+    "current": { "programme": "BEng Civil Engineering", "institution": "NUST" }
+  },
+  "A7": {
+    "name": "Nyasha - Diploma in Accountancy at Masvingo Polytechnic",
+    "level": "DIPLOMA", "dob": "2004-04-04", "province": "Masvingo", "locality": "Masvingo", "settlement": "RURAL",
+    "results": {}, "documents": ["transcript"],
+    "current": { "programme": "Diploma in Accountancy", "institution": "MASVINGO-POLY" }
+  },
+  "A8": {
+    "name": "Mai Grace - MBA at UZ, mature student",
+    "level": "MASTERS", "dob": "1985-01-20", "province": "Harare", "locality": "Harare", "settlement": "URBAN",
+    "results": {}, "documents": ["transcript"],
+    "current": { "programme": "Master of Business Administration", "institution": "UZ" }
+  },
+  "A9": {
+    "name": "Blessing - undergraduate from before the catalogue: old field of study only",
+    "level": "UNDERGRADUATE", "dob": "2007-07-07", "province": "Matabeleland South", "locality": "Gwanda", "settlement": "RURAL",
+    "field_of_study": "Computer Science & IT",
+    "results": { "zimsec-a-level": { "Mathematics": "C", "Physics": "C", "Chemistry": "C" } },
+    "documents": []
+  },
+  "A10": {
+    "name": "Lerato - undergraduate with an almost empty profile",
+    "level": "UNDERGRADUATE", "dob": null, "province": null, "locality": null, "settlement": null,
+    "results": {}, "documents": []
+  }
+}

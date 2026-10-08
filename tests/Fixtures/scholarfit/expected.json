@@ -1,0 +1,50 @@
+{
+  "READ ME": [
+    "This file is the ANSWER KEY for ScholarFitAccuracyTest. It was written by working each case out by hand from the rules,",
+    "not by running the code and copying what it said. The test then runs the real engine over every applicant and every listing",
+    "and fails wherever the engine disagrees with this file.",
+    "",
+    "If you disagree with an entry here, that is a product decision to talk about - change the entry, and the test will tell us",
+    "what the engine has to change to match. If the engine disagrees with an entry you agree with, the engine has a bug.",
+    "",
+    "Each listing has one letter per applicant, in the order A1 to A10:",
+    "  E = eligible (meets every rule it states, or states none)",
+    "  I = ineligible (certainly fails a rule)",
+    "  N = needs information (nothing certainly fails, but the profile has not said something the listing asks about)",
+    "The applicants and listings themselves are in applicants.json and listings.json beside this file."
+  ],
+  "applicant_order": ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10"],
+  "listings": {
+    "L01": { "verdicts": "IIIEIIIIII", "why": { "A4": "The only Grade 7 pupil; everyone else is past Form 1." } },
+    "L02": { "verdicts": "EEEEIIIIII", "why": { "A1": "Back to O-Level is unusual but not refused (a note).", "A5": "Tertiary students are not looking for an O-Level award." } },
+    "L03": { "verdicts": "EEEIIIIIII", "why": { "A4": "A Grade 7 pupil cannot start A-Level." } },
+    "L04": { "verdicts": "EEEIEEEEEE", "why": { "A8": "A Masters student for an undergraduate bursary is unusual, a note only.", "A10": "No rule is stated, so there is nothing to be missing." } },
+    "L05": { "verdicts": "EEIIIEIIII", "why": { "A1": "A+B+B = 13.", "A5": "B+B+C = 11, short of 12.", "A6": "A+A+B = 14.", "A9": "C+C+C = 9.", "A3": "No A-Level results on file: the rule fails with a request to add them.", "A10": "Same: no A-Level results." } },
+    "L06": { "verdicts": "EIIIEEIIII", "why": { "A5": "Mathematics B meets B.", "A9": "Mathematics C is below B.", "A2": "Did not sit Mathematics." } },
+    "L07": { "verdicts": "EEEIEIIIEN", "why": { "A5": "Born 20 Aug 2006: 20 on 1 March 2027.", "A6": "24 on the deadline.", "A7": "22 on the deadline.", "A10": "No date of birth recorded." } },
+    "L08": { "verdicts": "EIIIEIIEIN", "why": { "A8": "Harare.", "A10": "No province recorded." } },
+    "L09": { "verdicts": "IEIIIIEIEN", "why": { "A1": "Urban.", "A2": "Rural.", "A10": "No settlement type recorded." } },
+    "L10": { "verdicts": "IIEIIIIIIN", "why": { "A3": "Lives in Gweru.", "A10": "No town recorded." } },
+    "L11": { "verdicts": "EINIIIIINN", "why": { "A1": "Intends BSc Computer Science.", "A3": "A school-leaver who has not chosen programmes yet.", "A9": "Has only an old field of study (Computer Science & IT). A field cannot say WHICH programme, so ask.", "A10": "Has recorded no programme." } },
+    "L12": { "verdicts": "EINIEIIIEN", "why": { "A1": "BSc Computer Science is in ICT.", "A5": "BSc Information Systems is in ICT.", "A9": "The old field Computer Science & IT stands in for a field rule until a programme is chosen." } },
+    "L13": { "verdicts": "IINIIEIIIN", "why": { "A6": "Civil Engineering is under Architecture and construction (073), which is inside the broad field Engineering and construction (07).", "A9": "Computer Science & IT is not engineering." } },
+    "L14": { "verdicts": "IINIIIIIIN", "why": { "A6": "Civil Engineering is NOT in the narrow field Engineering (071): it is in 073. So a listing for 071 alone does not include civil engineers - choose the broad field to include them.", "A3": "Not chosen programmes yet.", "A10": "Has recorded no programme." } },
+    "L15": { "verdicts": "INNIEEIINN", "why": { "A1": "Has applied only to UZ.", "A2": "Has not said where she has applied: not a refusal.", "A3": "Same.", "A5": "Studies at NUST.", "A6": "Studies at NUST.", "A7": "Studies at Masvingo Polytechnic.", "A8": "Studies at UZ.", "A9": "Has not said where he studies.", "A10": "Same." } },
+    "L16": { "verdicts": "IINIIEIIIN", "why": { "A6": "Civil Engineering (inside 07) at NUST: both halves fit.", "A5": "Right institution, wrong field (ICT).", "A1": "Wrong field, and the wrong institution as well.", "A3": "Neither answer is known yet." } },
+    "L17": { "verdicts": "IIIIIIIENN", "why": { "A8": "On the MBA.", "A5": "Undergraduate to Masters is a normal step, but the programme is not the MBA.", "A7": "Diploma to Masters is unusual (a note); and not the MBA.", "A9": "Only an old field to go on: ask which programme.", "A1": "A school student cannot hold a postgraduate award." } },
+    "L18": { "verdicts": "EINIIIIINN", "why": { "A1": "The title names BSc Computer Science and nothing was chosen, so the title is the rule.", "A9": "Only an old field to go on." } },
+    "L19": { "verdicts": "IIEIIIIIIN", "why": { "A3": "A school student has no field of study yet, so it is not checked: noted, not refused.", "A9": "No programme chosen, so the older field rule reads the sentence: Computer Science is not Law.", "A10": "No field recorded." } },
+    "L20": { "verdicts": "EEIIEEEEII", "why": { "A3": "No results certificate on file.", "A9": "No transcript on file.", "A10": "No transcript on file." } },
+    "L21": { "verdicts": "IIIIEEEEEE", "why": { "A5": "Undergraduate to PhD is unusual - a note only.", "A7": "Diploma to PhD is unusual - a note only.", "A1": "A school student cannot hold a PhD." } }
+  },
+  "order": {
+    "A1": {
+      "about": "Best fit first, no score: own programme, then narrow field, then broad field, then the rest; within those: usual level step, stated rules, place, deadline.",
+      "expected": ["L18", "L11", "L12", "L08", "L05", "L06", "L07", "L20", "L03", "L04", "L02"]
+    },
+    "A5": {
+      "about": "Narrow-field fit first (ICT), then the Harare rule (a place match), then the dated rules by deadline, then the listing with no rules, and the unusual step (PhD) last.",
+      "expected": ["L12", "L08", "L06", "L07", "L20", "L15", "L04", "L21"]
+    }
+  }
+}
