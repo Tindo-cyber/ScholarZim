@@ -500,4 +500,26 @@ class ProgrammeScopeEligibilityTest extends TestCase
         $this->actingAs($this->student)->get('/scholarships/' . $listing->opportunity_id)->assertOk()
             ->assertSee('open to any programme in Computing and ICT');
     }
+    // ---------------------------------------------------------------- ordering --
+
+    public function test_recommendations_put_the_students_own_programme_first_then_narrow_then_broad_then_the_rest(): void
+    {
+        $this->enrolled('BSc Computer Science');
+        $this->profile()->forceFill(['date_of_birth' => Carbon::today()->subYears(21), 'province' => 'Harare'])->save();
+
+        $any = $this->listing([], ['title' => 'Zz Any', 'max_age' => 30, 'deadline' => Carbon::today()->addDays(5)]);
+        $broad = $this->listing(['field' => [$this->field('06')->id]], ['title' => 'Zz Broad', 'deadline' => Carbon::today()->addDays(10)]);
+        $narrow = $this->listing(['field' => [$this->field('061')->id]], ['title' => 'Zz Narrow', 'deadline' => Carbon::today()->addDays(20)]);
+        $exact = $this->listing(['programme' => [$this->programme('BSc Computer Science')->id]], ['title' => 'Zz Exact', 'deadline' => Carbon::today()->addDays(40)]);
+
+        $ids = array_map(
+            fn ($fit) => $fit->opportunity->opportunity_id,
+            app(\App\Services\RecommendationService::class)->forUser($this->student->fresh(), 0)
+        );
+
+        $mine = array_values(array_filter($ids, fn ($id) => in_array($id, [$any->opportunity_id, $broad->opportunity_id, $narrow->opportunity_id, $exact->opportunity_id], true)));
+
+        $this->assertSame([$exact->opportunity_id, $narrow->opportunity_id, $broad->opportunity_id, $any->opportunity_id], $mine);
+    }
+
 }

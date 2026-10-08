@@ -66,6 +66,43 @@ class MatchOrderTest extends TestCase
         $this->assertSame([2, 1], $this->ids([$open, $exact]), 'even though the open one closes sooner');
     }
 
+    private function scope(string $fit): RequirementOutcome
+    {
+        return RequirementOutcome::pass(RequirementOutcome::TYPE_PROGRAMME_SCOPE, 'Programme', fit: $fit);
+    }
+
+    public function test_programme_then_narrow_field_then_broad_field_then_any(): void
+    {
+        $this->assertSame([4, 3, 2, 1], $this->ids([
+            $this->eligible(1, [$this->rule()], '2030-01-01'),
+            $this->eligible(2, [$this->scope(RequirementOutcome::FIT_BROAD_FIELD)], '2030-02-01'),
+            $this->eligible(3, [$this->scope(RequirementOutcome::FIT_NARROW_FIELD)], '2030-03-01'),
+            $this->eligible(4, [$this->scope(RequirementOutcome::FIT_PROGRAMME)], '2030-04-01'),
+        ]));
+    }
+
+    public function test_a_listing_limited_only_by_institution_has_no_field_fit(): void
+    {
+        $institutionOnly = RequirementOutcome::pass(RequirementOutcome::TYPE_INSTITUTION_SCOPE, 'Institution');
+
+        $this->assertSame([2, 1], $this->ids([
+            $this->eligible(1, [$institutionOnly], '2030-01-01'),
+            $this->eligible(2, [$this->scope(RequirementOutcome::FIT_BROAD_FIELD)], '2030-06-01'),
+        ]));
+    }
+
+    public function test_a_matching_older_field_setting_ranks_with_a_narrow_field_fit(): void
+    {
+        $this->assertSame([1, 2], $this->ids([
+            $this->eligible(1, [$this->field('Engineering', 'engineering')], '2030-01-01'),
+            $this->eligible(2, [$this->scope(RequirementOutcome::FIT_NARROW_FIELD)], '2030-02-01'),
+        ]), 'a tie on the field: the deadline decides');
+        $this->assertSame([2, 1], $this->ids([
+            $this->eligible(1, [$this->field('Engineering', 'engineering')], '2030-01-01'),
+            $this->eligible(2, [$this->scope(RequirementOutcome::FIT_PROGRAMME)], '2030-02-01'),
+        ]));
+    }
+
     public function test_a_usual_step_comes_before_an_unusual_one_when_the_field_ties(): void
     {
         $unusual = $this->eligible(1, [$this->step(false)]);

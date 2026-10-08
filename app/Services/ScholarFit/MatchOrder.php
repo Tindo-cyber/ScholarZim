@@ -11,10 +11,10 @@ namespace App\Services\ScholarFit;
  * produced for anyone to see - EligibilityResult stays free of a score and this class
  * returns an order, not a rating.
  *
- *   1. field of study   an exact match to the listing's field, then everything else
- *                       (a listing open to any field, or one whose field is not checked
- *                       at the applicant's level). "Same group" slots in between once the
- *                       field groups are agreed - see FieldOfStudyMatcher::relation().
+ *   1. field of study   the applicant's own programme named by the listing, then a narrow field
+ *                       they are in, then a broad field they are in, then everything else (a
+ *                       listing open to any field, or limited only by institution). An older
+ *                       free-text field setting that matches counts as a narrow field.
  *   2. level step       a usual next step, then a listing that states no level, then an
  *                       unusual step
  *   3. stated rules     listings that state rules the applicant meets, then those that
@@ -64,18 +64,27 @@ final class MatchOrder
     private static function fieldTier(array $outcomes): int
     {
         foreach ($outcomes as $outcome) {
-            $isField = in_array($outcome->type, [RequirementOutcome::TYPE_FIELD, RequirementOutcome::TYPE_DESCRIPTION_FIELD], true);
-
-            if ($isField && ! $outcome->advisory && $outcome->passed) {
-                return match (FieldOfStudyMatcher::relation((string) $outcome->actual, (string) $outcome->required)) {
-                    FieldOfStudyMatcher::EXACT => 0,
-                    FieldOfStudyMatcher::GROUP => 1,
-                    default => 2,
+            if ($outcome->type === RequirementOutcome::TYPE_PROGRAMME_SCOPE && ! $outcome->advisory && $outcome->passed) {
+                return match ($outcome->fit) {
+                    RequirementOutcome::FIT_PROGRAMME => 0,
+                    RequirementOutcome::FIT_NARROW_FIELD => 1,
+                    RequirementOutcome::FIT_BROAD_FIELD => 2,
+                    default => 3,
                 };
             }
         }
 
-        return 2;
+        // The older, free-text field of study: a match is as good as a narrow field.
+        foreach ($outcomes as $outcome) {
+            $isField = in_array($outcome->type, [RequirementOutcome::TYPE_FIELD, RequirementOutcome::TYPE_DESCRIPTION_FIELD], true);
+
+            if ($isField && ! $outcome->advisory && $outcome->passed
+                && FieldOfStudyMatcher::relation((string) $outcome->actual, (string) $outcome->required) === FieldOfStudyMatcher::EXACT) {
+                return 1;
+            }
+        }
+
+        return 3;
     }
 
     /** @param  array<int, RequirementOutcome>  $outcomes */
