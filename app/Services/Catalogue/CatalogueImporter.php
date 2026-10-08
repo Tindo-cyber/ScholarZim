@@ -25,6 +25,10 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx as XlsxWriter;
  */
 class CatalogueImporter
 {
+    public function __construct(private readonly ?CatalogueMentions $mentions = null)
+    {
+    }
+
     public const FIELDS = 'fields';
 
     public const INSTITUTIONS = 'institutions';
@@ -153,6 +157,8 @@ class CatalogueImporter
                 self::PROGRAMMES => $this->importProgrammes($rows, $report),
             };
         });
+
+        $this->mentions?->flush();
 
         return $report;
     }

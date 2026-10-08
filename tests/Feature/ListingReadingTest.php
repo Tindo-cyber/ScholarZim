@@ -226,14 +226,27 @@ class ListingReadingTest extends TestCase
         $this->assertSame([], array_values(array_filter($rules, fn ($r) => $r['source'] === ListingReading::FROM_TEXT && str_starts_with($r['text'], 'Open to:'))));
     }
 
-    public function test_the_preview_says_the_scope_does_not_yet_change_matching(): void
+    public function test_the_count_follows_what_the_listing_is_open_to(): void
+    {
+        $open = $this->listing(['title' => 'Open award', 'education_level' => EducationLevel::UNDERGRADUATE]);
+        $law = $this->listing([
+            'title' => 'Law award', 'education_level' => EducationLevel::UNDERGRADUATE,
+            'scope_fields' => [\App\Models\Field::where('code', '042')->value('id')],
+        ]);
+
+        // Nobody in the demo data has chosen a Law programme (or has Law as their field).
+        $this->assertLessThanOrEqual(ListingReading::matchingCount($open), ListingReading::matchingCount($law));
+        $this->assertSame(0, ListingReading::matchingCount($law));
+    }
+
+    public function test_the_preview_no_longer_says_the_scope_is_unenforced(): void
     {
         $html = $this->actingAs($this->provider)->post('/opportunities/preview', [
             'title' => 'Scoped', 'education_level' => EducationLevel::UNDERGRADUATE,
             'scope_fields' => [\App\Models\Field::where('code', '07')->value('id')],
         ])->assertOk()->getContent();
 
-        $this->assertStringContainsString('listing-reading-scope-note', $html);
+        $this->assertStringNotContainsString('listing-reading-scope-note', $html);
         $this->assertStringContainsString('Open to: any programme in Engineering and construction', $html);
     }
 

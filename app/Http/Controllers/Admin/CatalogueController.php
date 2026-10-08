@@ -26,6 +26,7 @@ class CatalogueController extends Controller
         private readonly CatalogueImporter $importer,
         private readonly ProgrammeCatalogue $catalogue,
         private readonly AuditService $audit,
+        private readonly \App\Services\Catalogue\CatalogueMentions $mentions,
     ) {
     }
 
@@ -97,6 +98,7 @@ class CatalogueController extends Controller
 
             return $programme;
         });
+        $this->mentions->flush();
 
         $this->audit->log($request->user()->email, AuditAction::CATALOGUE_CHANGED, 'Programme', $programme->id, 'Added ' . $programme->name);
 
@@ -120,6 +122,7 @@ class CatalogueController extends Controller
             ]);
             $this->syncRelations($programme, $data);
         });
+        $this->mentions->flush();
 
         $this->audit->log($request->user()->email, AuditAction::CATALOGUE_CHANGED, 'Programme', $programme->id, 'Edited ' . $programme->name);
 

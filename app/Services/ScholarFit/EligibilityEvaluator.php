@@ -5,6 +5,7 @@ namespace App\Services\ScholarFit;
 use App\Models\ApplicantProfile;
 use App\Models\Opportunity;
 use App\Models\OpportunitySubjectRequirement;
+use App\Services\Catalogue\LegacyFieldMap;
 use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
@@ -60,6 +61,10 @@ use Illuminate\Support\Carbon;
  */
 final class EligibilityEvaluator
 {
+    public function __construct(private readonly ProgrammeScope $programmeScope)
+    {
+    }
+
     /**
      * Ordinal position of each EducationLevel::TIER_* constant, oldest
      * first. Used only by descriptionEducationLevel() to tell whether an
@@ -96,6 +101,7 @@ final class EligibilityEvaluator
                 $this->fieldOfStudy($profile, $opportunity),
                 $this->certificate($profile, $opportunity),
             ],
+            $this->programmeScope->evaluate($profile, $opportunity),
             $this->descriptionConditions($profile, $opportunity, $record),
         )));
     }
@@ -596,6 +602,12 @@ final class EligibilityEvaluator
             return null;
         }
 
+        // Once the provider has chosen what the listing is open to, that is the rule; the older
+        // free-text field is not also applied beside it.
+        if (ProgrammeScope::hasChosenScope($opportunity)) {
+            return null;
+        }
+
         $required = trim((string) $opportunity->target_field);
 
         if (! EducationLevel::usesFieldOfStudy($profile->education_level)) {
@@ -713,7 +725,7 @@ final class EligibilityEvaluator
                 // different statement (what must already be held) and no longer silences it.
                 DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->education_level),
                 DescriptionEligibility::ENTRY_QUALIFICATION => blank($opportunity->minimum_education_level),
-                DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field),
+                DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field) && ! ProgrammeScope::hasChosenScope($opportunity),
                 default => true,
             };
         }));
@@ -771,7 +783,9 @@ final class EligibilityEvaluator
 
         foreach ($conditions as $condition) {
             $outcome = match ($condition->kind) {
-                DescriptionEligibility::FIELD_OF_STUDY => $this->descriptionFieldOfStudy($profile, $condition),
+                DescriptionEligibility::FIELD_OF_STUDY => $this->programmeScope->hasProgrammes($profile) && LegacyFieldMap::codesFor($condition->value) !== []
+                    ? null   // read against the catalogue by ProgrammeScope, from the programme they chose
+                    : $this->descriptionFieldOfStudy($profile, $condition),
                 DescriptionEligibility::UNSUPPORTED => $this->descriptionUnsupported($condition),
                 default => null,
             };

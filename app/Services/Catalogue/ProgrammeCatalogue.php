@@ -25,8 +25,10 @@ use Illuminate\Support\Facades\DB;
  */
 class ProgrammeCatalogue
 {
-    public function __construct(private readonly AuditService $audit)
-    {
+    public function __construct(
+        private readonly AuditService $audit,
+        private readonly CatalogueMentions $mentions,
+    ) {
     }
 
     // ---------------------------------------------------------------- search --
@@ -198,6 +200,7 @@ class ProgrammeCatalogue
         $this->mustBePending($programme);
 
         $programme->update(['status' => Programme::APPROVED]);
+        $this->mentions->flush();
 
         $this->audit->log($admin->email, AuditAction::CATALOGUE_PROGRAMME_APPROVED, 'Programme', $programme->id, $programme->name);
     }
@@ -236,6 +239,8 @@ class ProgrammeCatalogue
             $pending->update(['status' => 'merged', 'is_active' => false, 'merged_into_id' => $target->id]);
         });
 
+        $this->mentions->flush();
+
         $this->audit->log($admin->email, AuditAction::CATALOGUE_PROGRAMME_MERGED, 'Programme', $pending->id, $pending->name . ' -> ' . $target->name);
     }
 
@@ -248,6 +253,8 @@ class ProgrammeCatalogue
             OpportunityScope::where('programme_id', $pending->id)->delete();
             $pending->update(['status' => 'rejected', 'is_active' => false]);
         });
+
+        $this->mentions->flush();
 
         $this->audit->log($admin->email, AuditAction::CATALOGUE_PROGRAMME_REJECTED, 'Programme', $pending->id, $pending->name);
     }

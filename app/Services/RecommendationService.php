@@ -121,7 +121,11 @@ class RecommendationService
         // Load the profile's structured academic results and each listing's
         // subject requirements up-front so the evaluator does not hit the DB
         // once per listing while checking a catalogue.
-        $profile->loadMissing(['academicResults.qualification', 'academicResults.subject.qualification']);
+        $profile->loadMissing([
+            'academicResults.qualification', 'academicResults.subject.qualification',
+            // What the programme rules read, once for the whole list rather than once per listing.
+            'programmeChoices.programme.field.parent', 'programmeChoices.institution', 'appliedInstitutions.institution',
+        ]);
 
         // Only applications that actually block a fresh one are excluded, and
         // the rule for that lives on the Application model rather than being
@@ -134,7 +138,10 @@ class RecommendationService
         $candidates = Opportunity::query()
             ->publiclyVisible()
             ->when($blockedIds !== [], fn ($q) => $q->whereNotIn('opportunity_id', $blockedIds))
-            ->with(['subjectRequirements', 'subjectRequirements.subject.qualification', 'subjectRequirements.qualification'])
+            ->with([
+                'subjectRequirements', 'subjectRequirements.subject.qualification', 'subjectRequirements.qualification',
+                'scopes.programme.field.parent', 'scopes.field.parent', 'scopes.institution',
+            ])
             ->get();
 
         $record = AcademicRecord::fromProfile($profile);

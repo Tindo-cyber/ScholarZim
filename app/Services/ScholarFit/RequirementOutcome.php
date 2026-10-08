@@ -79,6 +79,19 @@ final class RequirementOutcome
 
     public const TYPE_DESCRIPTION_FIELD = 'description_field';
 
+    /** The programmes and fields a listing is open to (see ProgrammeScope). */
+    public const TYPE_PROGRAMME_SCOPE = 'programme_scope';
+
+    /** The institutions a listing is limited to (see ProgrammeScope). */
+    public const TYPE_INSTITUTION_SCOPE = 'institution_scope';
+
+    /** How closely the applicant's programme matched: used only to order listings, never shown as a number. */
+    public const FIT_PROGRAMME = 'programme';
+
+    public const FIT_NARROW_FIELD = 'narrow_field';
+
+    public const FIT_BROAD_FIELD = 'broad_field';
+
     /**
      * A condition the description states explicitly, but which the
      * applicant profile has no authoritative field to check - e.g. a named
@@ -113,6 +126,8 @@ final class RequirementOutcome
          */
         public readonly bool $needsInformation = false,
         public readonly ?string $missing = null,
+        /** For a passed programme-scope rule: FIT_PROGRAMME, FIT_NARROW_FIELD or FIT_BROAD_FIELD. */
+        public readonly ?string $fit = null,
     ) {
     }
 
@@ -124,8 +139,9 @@ final class RequirementOutcome
         ?string $subject = null,
         string|int|float|null $required = null,
         string|int|float|null $actual = null,
+        ?string $fit = null,
     ): self {
-        return new self($type, true, $message, $qualificationKey, $qualificationName, $subject, $required, $actual);
+        return new self($type, true, $message, $qualificationKey, $qualificationName, $subject, $required, $actual, false, false, null, $fit);
     }
 
     public static function fail(
@@ -188,6 +204,7 @@ final class RequirementOutcome
             'actual' => $this->actual,
             'needs_information' => $this->needsInformation,
             'missing' => $this->missing,
+            'fit' => $this->fit,
         ];
     }
 

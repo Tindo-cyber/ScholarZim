@@ -222,9 +222,22 @@ class ListingScopes
      */
     public function describe(Collection $scopes): string
     {
+        $text = $this->describeProgrammes($scopes) ?? 'any programme';
+        $where = $this->describeInstitutions($scopes);
+
+        return $where === null ? $text : $text . ' at ' . $where;
+    }
+
+    /**
+     * The programmes and fields alone ("BSc X or any Engineering programme"), or null when the
+     * listing names none.
+     *
+     * @param  Collection<int, OpportunityScope>  $scopes
+     */
+    public function describeProgrammes(Collection $scopes): ?string
+    {
         $programmes = $scopes->pluck('programme')->filter()->map->name->sort(SORT_NATURAL | SORT_FLAG_CASE)->values();
         $fields = $scopes->pluck('field')->filter()->sortBy('code')->values();
-        $institutions = $scopes->pluck('institution')->filter()->map(fn (Institution $i) => $this->short($i))->sort(SORT_NATURAL | SORT_FLAG_CASE)->values();
 
         $what = [];
 
@@ -238,13 +251,20 @@ class ListingScopes
                 : 'any ' . $f->label() . ' programme')->all());
         }
 
-        $text = $what === [] ? 'any programme' : $this->join($what);
-
-        // "any programme in X or any programme in Y" reads better as written; with several fields the
-        // join above already gives "any X programme or any Y programme".
-        return $institutions->isEmpty() ? $text : $text . ' at ' . $this->join($institutions->all());
+        return $what === [] ? null : $this->join($what);
     }
 
+    /**
+     * The institutions alone ("MSU or NUST"), or null when the listing names none.
+     *
+     * @param  Collection<int, OpportunityScope>  $scopes
+     */
+    public function describeInstitutions(Collection $scopes): ?string
+    {
+        $institutions = $scopes->pluck('institution')->filter()->map(fn (Institution $i) => $this->short($i))->sort(SORT_NATURAL | SORT_FLAG_CASE)->values();
+
+        return $institutions->isEmpty() ? null : $this->join($institutions->all());
+    }
     /** "MSU" for a short code, the full name when the code is a hyphenated label. */
     private function short(Institution $institution): string
     {

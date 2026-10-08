@@ -24,12 +24,18 @@ final class ScholarFitFieldNames
 
     public const FIELD_OF_STUDY = 'field of study';
 
+    public const PROGRAMME = 'programme';
+
+    public const INSTITUTION = 'institution';
+
     private const ANCHORS = [
         self::DATE_OF_BIRTH => 'date_of_birth',
         self::PROVINCE => 'province',
         self::LOCALITY => 'locality',
         self::SETTLEMENT_TYPE => 'settlement_type',
         self::FIELD_OF_STUDY => 'field_of_study',
+        self::PROGRAMME => 'programme-card',
+        self::INSTITUTION => 'programme-card',
     ];
 
     private function __construct()
