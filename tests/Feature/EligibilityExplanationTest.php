@@ -287,7 +287,10 @@ class EligibilityExplanationTest extends TestCase
     {
         // Unusual, not impossible: an A-Level student looking at an O-Level award.
         $award = $this->listing('School Fees Award', ['education_level' => EducationLevel::O_LEVEL, 'target_field' => null]);
-        $aLevel = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
+        $aLevel = $this->applicant;
+        // Recorded results make the profile complete, so the page reaches its verdict wording
+        // (without them it says "complete your profile" instead).
+        $this->giveResults(['Mathematics' => 'A']);
 
         $html = $this->actingAs($aLevel)
             ->get('/scholarships/'.$award->opportunity_id)
@@ -297,7 +300,7 @@ class EligibilityExplanationTest extends TestCase
         $this->assertStringContainsString('not a usual next step', $html);
         // The listing states nothing, so it must still say that rather than
         // treating the note as a rule that was passed or failed.
-        $this->assertStringContainsString('does not specify entry requirements', $html);
+        $this->assertStringContainsString('No entry requirements specified', $html);
         $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
     }
 }
