@@ -4,82 +4,35 @@
 
 @section('content')
 
-    <x-page-header title="Post a scholarship"
+    <x-page-header :title="isset($duplicateOf) ? 'Post another intake' : 'Post a scholarship'"
                    subtitle="Listings go live once an administrator has reviewed them."
                    eyebrow="Provider" />
+
+    @isset($duplicateOf)
+        {{--
+            A copy fills the form; it is not saved. The deadline is blank and the title has the
+            next year in it, and the copy goes through review like any new listing.
+        --}}
+        <div class="alert alert-info" role="note">
+            Copied from <strong>{{ $duplicateOf->title }}</strong>. Set the new deadline and check
+            the details, then submit. It is a new listing and is reviewed like one.
+        </div>
+    @endisset
 
     <div class="row g-4">
         <div class="col-xl-8">
             <form method="POST" action="{{ route('opportunities.store') }}" novalidate>
                 @csrf
 
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2 class="h6 fw-semibold mb-0">The offer</h2>
-                    </div>
-                    <div class="card-body">
-                        <x-form.input name="title" label="Scholarship title" required
-                                      hint="For example: Zimplats Engineering Undergraduate Bursary 2026." />
-
-                        <x-form.input name="provider_display_name" label="Awarding on behalf of another organisation (optional)"
-                                      hint="Leave blank to publish as your own organisation. Fill it in only if you are awarding for another organisation: it is then shown publicly as &quot;Posted by [your organisation] on behalf of [this name]&quot; and an administrator checks it before it goes live." />
-
-                        <x-form.textarea name="description" label="Full description" :rows="8" required
-                                         hint="Cover what the award pays for, who it is aimed at, and what applicants must submit." />
-                    </div>
-                </div>
-
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h2 class="h6 fw-semibold mb-0">Eligibility and deadline</h2>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <x-form.select name="education_level" label="Who this scholarship is for"
-                                               :options="$educationLevels" :grouped="true"
-                                               placeholder="Any level"
-                                               hint="Form 1 is a transition award for pupils finishing Primary school." />
-                            </div>
-                            <div class="col-md-6">
-                                <x-form.select name="minimum_education_level" label="Minimum qualifying level (optional)"
-                                               :options="$minimumLevels" :grouped="true"
-                                               placeholder="Whatever the level above allows"
-                                               hint="Only set this if your listing is stricter than the general pathway - for example, an Undergraduate award that requires A-Level rather than accepting O-Level applicants directly." />
-                            </div>
-                            <div class="col-md-6">
-                                <x-form.select name="country" label="Country where it is held"
-                                               :options="$countries" :value="\App\Support\FormOptions::DEFAULT_COUNTRY"
-                                               :placeholder="null"
-                                               hint="Where the student will study. Defaults to Zimbabwe." />
-                            </div>
-                            <div class="col-md-6">
-                                <x-form.input name="target_field" label="Field of study"
-                                              list="field-list"
-                                              hint="Leave blank to accept any field." />
-                                <datalist id="field-list">
-                                    @foreach(array_unique(array_merge($fields, $targetFieldSuggestions)) as $field)
-                                        <option value="{{ $field }}"></option>
-                                    @endforeach
-                                </datalist>
-                            </div>
-                            <div class="col-md-3">
-                                <x-form.select name="funding_type" label="Funding type"
-                                               :options="$fundingTypes" placeholder="Not specified" />
-                            </div>
-                            <div class="col-md-3">
-                                <x-form.input name="deadline" label="Application deadline" type="date"
-                                              min="{{ now()->toDateString() }}"
-                                              hint="Leave blank for a rolling intake." />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                @include('opportunities.partials.award-fields')
+                {{-- A new listing, or a copy of one ($prefill) - see OpportunityController::duplicate. --}}
+                @include('opportunities.partials.listing-fields', ['opportunity' => $prefill ?? null, 'defaults' => $defaults ?? []])
 
                 <div class="d-flex flex-wrap gap-2">
                     <x-submit-button label="Submit for review" size="lg" busy-label="Submitting..." />
+                    <button type="submit" class="btn btn-outline-secondary btn-lg"
+                            formaction="{{ route('opportunities.preview') }}" formmethod="post" formtarget="_blank" formnovalidate>
+                        Preview
+                    </button>
                     <a class="btn btn-outline-secondary btn-lg" href="{{ route('provider.dashboard') }}">Cancel</a>
                 </div>
             </form>

@@ -56,6 +56,7 @@ final class AuditAction
     public const REPORT_OPPORTUNITY = 'REPORT_OPPORTUNITY';
     public const HIDE_REPORTED_OPPORTUNITY = 'HIDE_REPORTED_OPPORTUNITY';
     public const RESOLVE_REPORTS = 'RESOLVE_REPORTS';
+    public const CONFIRM_PROVIDER_WEBSITE = 'CONFIRM_PROVIDER_WEBSITE';
 
     private function __construct()
     {
@@ -86,7 +87,7 @@ final class AuditAction
             self::BULK_STATUS_UPDATE, self::BULK_MODERATION,
             self::UPDATE_SCHOLARFIT_WEIGHTS, self::WITHDRAW_APPLICATION,
             self::SET_PROVIDER_TRUST, self::PUBLISH_WITHOUT_REVIEW, self::REPORT_OPPORTUNITY,
-            self::RESOLVE_REPORTS => 'warning',
+            self::RESOLVE_REPORTS, self::CONFIRM_PROVIDER_WEBSITE => 'warning',
             default => 'secondary',
         };
     }

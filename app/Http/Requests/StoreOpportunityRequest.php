@@ -54,6 +54,16 @@ class StoreOpportunityRequest extends FormRequest
         if (is_array($rows)) {
             $this->merge(['subject_requirements' => array_values($rows)]);
         }
+
+        // The form's script adds this marker once it has started hiding fields the
+        // chosen level does not use. With it, a value left in such a field is stale
+        // and is dropped; without it (JavaScript off, every field visible) a value
+        // is something the provider typed and is judged by the ordinary rules.
+        $level = $this->input('education_level');
+
+        if ($this->boolean('level_driven') && filled($level) && in_array($level, EducationLevel::TARGET_LEVELS, true)) {
+            $this->merge(OpportunityLevelRules::clearInapplicable($this->all(), $level));
+        }
     }
 
     /** @return array<string, mixed> */

@@ -41,9 +41,64 @@ class OpportunityController extends Controller
         ]);
     }
 
-    public function create()
+    public function create(Request $request)
     {
-        return view('opportunities.create', [
+        return view('opportunities.create', $this->formData() + [
+            // What a new listing starts with: the currency, province and (confirmed)
+            // website this provider used last time. See ListingDefaults.
+            'defaults' => \App\Support\ListingDefaults::forProvider($request->user()),
+        ]);
+    }
+
+    /**
+     * The create form, filled from an earlier listing of the provider's.
+     *
+     * A copy is a NEW listing: the form posts to the ordinary create action, so it
+     * is validated, risk-checked and routed to review (or, for a trusted provider,
+     * published) exactly like one typed from scratch. What is copied is decided by
+     * ListingTemplate, which takes what the provider wrote and nothing that
+     * happened to the original.
+     */
+    public function duplicate(Request $request, int $id)
+    {
+        $source = $this->ownedListing($request, $id, 'update') ?? abort(404);
+
+        return view('opportunities.create', $this->formData() + [
+            'defaults' => [],
+            'prefill' => \App\Support\ListingTemplate::copyOf($source->load('subjectRequirements.qualification', 'subjectRequirements.subject')),
+            'duplicateOf' => $source,
+        ]);
+    }
+
+    /**
+     * The public page for the form as it stands, in a new tab. Nothing is saved or
+     * announced: the listing is built in memory from whatever has been typed, and
+     * forgivingly, because the point is to look before the form is complete.
+     */
+    public function preview(Request $request)
+    {
+        $listing = \App\Support\ListingPreview::build(
+            $request->except(['_token', '_method']),
+            $request->user()
+        );
+
+        return view('public.detail', [
+            'opportunity' => $listing,
+            'preview' => true,
+            'isSaved' => false,
+            'hasApplied' => false,
+            'fit' => null,
+            'related' => collect(),
+            'appliedIds' => [],
+            'accepted' => [],
+            'acceptedApplication' => null,
+        ]);
+    }
+
+    /** What the listing form needs to render, shared by create and duplicate. */
+    private function formData(): array
+    {
+        return [
             'educationLevels' => FormOptions::targetEducationLevelGroups(),
             'minimumLevels' => FormOptions::educationLevelGroups(),
             'fields' => FormOptions::FIELDS_OF_STUDY,
@@ -56,9 +111,8 @@ class OpportunityController extends Controller
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
             'qualifications' => $qualifications = $this->qualificationCatalogue(),
             'qualificationCatalogue' => $this->qualificationCataloguePayload($qualifications),
-        ]);
+        ];
     }
-
     public function store(StoreOpportunityRequest $request)
     {
         $this->authorize('create', Opportunity::class);
@@ -136,6 +190,11 @@ class OpportunityController extends Controller
             $data['subject_requirements'] = array_values($data['subject_requirements']);
         } else {
             unset($data['subject_requirements']);
+        }
+
+        // What saving would do includes the clearing saving would do.
+        if (! empty($data['level_driven']) && in_array($data['education_level'] ?? null, \App\Support\EducationLevel::TARGET_LEVELS, true)) {
+            $data = \App\Support\OpportunityLevelRules::clearInapplicable($data, $data['education_level']) + $data;
         }
 
         try {

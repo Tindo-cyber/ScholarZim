@@ -175,6 +175,89 @@ final class OpportunityLevelRules
 
         return in_array($held, self::QUALIFICATION_LEVELS_BY_TARGET[$goal] ?? [$held], true);
     }
+
+    /**
+     * Whether a subject requirement can be set at all for this target: some
+     * qualification that holds subjects must lead into it. Honours and above are
+     * entered from a degree, and the degree classification carries no subjects, so
+     * there is nothing a subject row could name.
+     */
+    public static function allowsSubjectRequirements(?string $target): bool
+    {
+        $goal = EducationLevel::canonical($target);
+
+        if ($goal === null) {
+            return true;
+        }
+
+        return array_diff(self::QUALIFICATION_LEVELS_BY_TARGET[$goal] ?? [], [EducationLevel::UNDERGRADUATE]) !== [];
+    }
+
+    /**
+     * Which parts of the listing form a target level uses.
+     *
+     * One answer, read by the page (as JSON, for the script that hides what does
+     * not apply) and by the server (to clear what a hidden field left behind), so
+     * the two cannot drift: a field the form tidies away is exactly a field the
+     * server would refuse or ignore.
+     *
+     *   field       field of study is a meaningful concept at this level
+     *   points      minimum ZIMSEC A-Level points can apply
+     *   certificate "proof of results on file" can be asked of an applicant here
+     *   subjects    a required subject can be named
+     *
+     * No target ("Any level") uses everything: nothing is known to be irrelevant.
+     *
+     * @return array{field: bool, points: bool, certificate: bool, subjects: bool}
+     */
+    public static function capabilities(?string $target): array
+    {
+        $known = EducationLevel::canonical($target) !== null;
+
+        return [
+            'field' => ! $known || EducationLevel::usesFieldOfStudy($target),
+            'points' => self::allowsPoints($target),
+            'certificate' => self::allowsResultsCertificate($target),
+            'subjects' => self::allowsSubjectRequirements($target),
+        ];
+    }
+
+    /**
+     * What to blank in a submission because the target level does not use it.
+     *
+     * Applied only when the form says its script has been tidying the page (see
+     * StoreOpportunityRequest). The script clears a field as it hides it, but a
+     * stale value can still arrive - a browser that restored old form state, a
+     * second tab - and a value for a field nobody can see is an error nobody can
+     * fix, so it is dropped instead of reported.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed> only the keys to overwrite
+     */
+    public static function clearInapplicable(array $input, ?string $target): array
+    {
+        $uses = self::capabilities($target);
+        $clear = [];
+
+        if (! $uses['field']) {
+            $clear['target_field'] = null;
+        }
+
+        if (! $uses['points']) {
+            $clear['min_academic_points'] = null;
+        }
+
+        if (! $uses['certificate']) {
+            $clear['requires_results_certificate'] = false;
+        }
+
+        if (! $uses['subjects']) {
+            $clear['subject_requirements'] = [];
+        }
+
+        return $clear;
+    }
+
     public static function qualificationProblem(AcademicQualification $qualification, ?string $target): ?string
     {
         if (self::qualificationFits($qualification->education_level, $target)) {

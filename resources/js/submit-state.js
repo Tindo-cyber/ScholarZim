@@ -78,6 +78,13 @@
             return;
         }
 
+        // A submission that opens in a new tab (the listing form's Preview) leaves
+        // this page exactly as it is, so there is nothing to show as busy - and
+        // marking the form as submitting would make the real Save refuse to work.
+        if (event.submitter && event.submitter.getAttribute('formtarget') === '_blank') {
+            return;
+        }
+
         var buttons = buttonsFor(form);
         if (!buttons.length) {
             return;

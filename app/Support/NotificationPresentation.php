@@ -120,6 +120,7 @@ final class NotificationPresentation
             NotificationType::PROFILE_INCOMPLETE => 'person-exclamation',
             NotificationType::PROVIDER_APPLICATION, NotificationType::SCHOLARSHIP_PENDING_REVIEW => 'shield-check',
             NotificationType::SCHOLARSHIP_CLOSED => 'lock',
+            NotificationType::SCHOLARSHIP_REPORTED => 'shield',
             default => 'bell',
         };
     }
@@ -132,7 +133,7 @@ final class NotificationPresentation
             NotificationType::LEGACY_APPLICATION_APPROVED,
             NotificationType::LEGACY_APPLICATION_AWARDED => 'success',
             NotificationType::APPLICATION_REJECTED, NotificationType::PROVIDER_REJECTED,
-            NotificationType::SCHOLARSHIP_REJECTED => 'danger',
+            NotificationType::SCHOLARSHIP_REJECTED, NotificationType::SCHOLARSHIP_REPORTED => 'danger',
             NotificationType::DEADLINE_REMINDER, NotificationType::PROFILE_INCOMPLETE,
             NotificationType::SCHOLARSHIP_CLOSED,
             NotificationType::LEGACY_DOCUMENTS_REQUESTED,

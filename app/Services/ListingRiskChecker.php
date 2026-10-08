@@ -259,6 +259,20 @@ class ListingRiskChecker
             return null;
         }
 
+        // A website an administrator has confirmed as the organisation's own is the
+        // best evidence of who they are, and replaces the email domain rather than
+        // adding to it. One that has only been typed in is not evidence, so it is
+        // ignored and the email domain is used as before.
+        $confirmed = $provider->providerProfile?->confirmedWebsiteHost();
+
+        if ($confirmed !== null) {
+            if ($host === $confirmed || str_ends_with($host, '.' . $confirmed)) {
+                return null;
+            }
+
+            return 'The application link (' . $host . ') is not on the provider\'s confirmed website (' . $confirmed . ').';
+        }
+
         $domain = $this->emailDomain($provider->email);
 
         if ($domain === null || in_array($domain, self::FREE_EMAIL_DOMAINS, true)) {

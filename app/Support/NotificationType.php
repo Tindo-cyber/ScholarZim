@@ -76,6 +76,14 @@ final class NotificationType
     // the same email preference that gates every other listing announcement.
     public const SCHOLARSHIP_SEARCH_MATCH = 'SCHOLARSHIP_SEARCH_MATCH';
 
+    /**
+     * To administrators: a listing came off the public site because enough students
+     * reported it. Its own type, not a reuse of "awaiting review", because the email
+     * subject and the bell icon are what get a person to open it - and "a scholarship
+     * is awaiting review" does not say a live listing was just taken down.
+     */
+    public const SCHOLARSHIP_REPORTED = 'SCHOLARSHIP_REPORTED';
+
     /** Every type the platform can still produce. */
     public const ALL = [
         self::APPLICATION_SUBMITTED,
@@ -97,6 +105,7 @@ final class NotificationType
         self::SCHOLARSHIP_WITHDRAWN,
         self::SCHOLARSHIP_CLOSED,
         self::SCHOLARSHIP_SEARCH_MATCH,
+        self::SCHOLARSHIP_REPORTED,
     ];
 
     private function __construct()

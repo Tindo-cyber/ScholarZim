@@ -232,6 +232,9 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
 
     Route::get('/provider/analytics', [Provider\AnalyticsController::class, 'index'])->name('provider.analytics');
 
+    // The organisation's website, which an administrator then confirms.
+    Route::post('/provider/website', [Provider\WebsiteController::class, 'update'])->name('provider.website.update');
+
     Route::get('/provider/applications', [Provider\ApplicationReviewController::class, 'index'])
         ->name('provider.applications');
     Route::get('/provider/applications/{id}', [Provider\ApplicationReviewController::class, 'show'])
@@ -250,6 +253,16 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
     Route::middleware('account.active')->group(function () {
         Route::get('/opportunities/create', [OpportunityController::class, 'create'])->name('opportunities.create');
         Route::post('/opportunities/create', [OpportunityController::class, 'store'])->name('opportunities.store');
+
+        // The public page for a half-filled form. Accepts PUT as well as POST: the edit
+        // form carries a hidden _method=PUT, and its Preview button posts the same fields.
+        Route::match(['POST', 'PUT'], '/opportunities/preview', [OpportunityController::class, 'preview'])
+            ->middleware('throttle:60,1')
+            ->name('opportunities.preview');
+
+        Route::get('/opportunities/{id}/duplicate', [OpportunityController::class, 'duplicate'])
+            ->whereNumber('id')
+            ->name('opportunities.duplicate');
 
         Route::get('/opportunities/{id}/edit', [OpportunityController::class, 'edit'])
             ->whereNumber('id')
@@ -311,6 +324,9 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
     Route::post('/users/providers/{id}/approve', [Admin\UserController::class, 'approveProvider'])
         ->whereNumber('id')
         ->name('providers.approve');
+    Route::post('/users/providers/{id}/website', [Admin\ProviderWebsiteController::class, 'update'])
+        ->whereNumber('id')
+        ->name('providers.website');
     Route::post('/users/providers/{id}/trust', [Admin\ProviderTrustController::class, 'update'])
         ->whereNumber('id')
         ->name('providers.trust');

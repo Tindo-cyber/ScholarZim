@@ -72,7 +72,7 @@ class UserController extends Controller
     public function approveProvider(Request $request, int $id)
     {
         try {
-            $user = $this->adminUserService->approveProvider($id, $request->user());
+            $user = $this->adminUserService->approveProvider($id, $request->user(), $request->boolean('website_checked'));
         } catch (ModelNotFoundException $e) {
             // Not the "refused" case below - an unknown id stays a plain 404.
             throw $e;

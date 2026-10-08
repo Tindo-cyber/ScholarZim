@@ -24,12 +24,16 @@ class ProviderProfile extends Model
         'reviewed_by',
         'rejection_reason',
         'trusted_override',
+        'website',
+        'website_verified_at',
+        'website_verified_by',
     ];
 
     protected $casts = [
         'submitted_at' => 'datetime',
         'reviewed_at' => 'datetime',
         'trusted_override' => 'boolean',
+        'website_verified_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -40,6 +44,17 @@ class ProviderProfile extends Model
     public function organisationTypeLabel(): string
     {
         return ProviderOrgType::label($this->organisation_type);
+    }
+
+    public function hasConfirmedWebsite(): bool
+    {
+        return filled($this->website) && $this->website_verified_at !== null;
+    }
+
+    /** The host of the website an administrator has confirmed, or null when there is none to rely on. */
+    public function confirmedWebsiteHost(): ?string
+    {
+        return $this->hasConfirmedWebsite() ? \App\Support\WebsiteAddress::host($this->website) : null;
     }
 
     public function isReviewed(): bool

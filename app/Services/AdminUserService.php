@@ -84,7 +84,7 @@ class AdminUserService
         return $user;
     }
 
-    public function approveProvider(int $userId, User $admin): User
+    public function approveProvider(int $userId, User $admin, bool $websiteChecked = false): User
     {
         $user = $this->requireProvider($userId);
 
@@ -94,6 +94,12 @@ class AdminUserService
             'reviewed_by' => $admin->email,
             'rejection_reason' => null,
         ]);
+
+        // Verifying the organisation is the natural moment to check its website too;
+        // ticking the box confirms it in the same step.
+        if ($websiteChecked) {
+            app(ProviderWebsiteService::class)->confirmDuringApproval($admin, $user);
+        }
 
         $this->auditService->log(
             $admin->email,

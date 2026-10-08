@@ -67,6 +67,7 @@ class DatabaseSeeder extends Seeder
         $admin = $this->admin();
         $provider = $this->provider();
         $pendingProvider = $this->pendingProvider();
+        $this->newProvider();
 
         // Six applicants across the education pathway spectrum, so a viva can
         // walk every rule in App\Services\ScholarFit\EducationPathway against a
@@ -91,7 +92,7 @@ class DatabaseSeeder extends Seeder
         $this->auditTrail($admin, $provider, $pendingProvider);
 
         $this->command->info(
-            'Seeded admin, two providers (one pending), six applicants spanning Primary through Masters '
+            'Seeded admin, three providers (one pending, one new and untrusted), six applicants spanning Primary through Masters '
             . '(one incomplete), demo listings, applications in three statuses, notifications, and audit history.'
         );
     }
@@ -144,6 +145,40 @@ class DatabaseSeeder extends Seeder
                 'certificate_filename' => 'registration-certificate.pdf',
                 'submitted_at' => Carbon::now()->subMonths(6),
                 'reviewed_at' => Carbon::now()->subMonths(6)->addDay(),
+                'reviewed_by' => config('scholarzim.admin.email'),
+            ]
+        );
+
+        return $provider;
+    }
+
+    /**
+     * An active provider with no track record, so a demo can show both publishing
+     * paths: this one's listings wait for review, while the demo provider above has
+     * enough approved listings to be trusted and goes live at once.
+     */
+    private function newProvider(): User
+    {
+        $provider = User::updateOrCreate(
+            ['email' => 'newprovider@scholarzim.co.zw'],
+            [
+                'role_id' => Role::where('role_name', RoleNames::PROVIDER)->value('role_id'),
+                'full_name' => 'Kariba Youth Skills Initiative',
+                'phone' => '0771900001',
+                'password_hash' => Hash::make('ChangeMe123'),
+                'account_status' => AccountStatus::ACTIVE,
+                'email_verified' => true,
+            ]
+        );
+
+        ProviderProfile::updateOrCreate(
+            ['user_id' => $provider->user_id],
+            [
+                'organisation_type' => ProviderOrgType::NGO,
+                'certificate_path' => 'provider-certificates/demo-new-certificate.pdf',
+                'certificate_filename' => 'registration-certificate.pdf',
+                'submitted_at' => Carbon::now()->subDays(10),
+                'reviewed_at' => Carbon::now()->subDays(9),
                 'reviewed_by' => config('scholarzim.admin.email'),
             ]
         );

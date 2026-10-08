@@ -148,6 +148,10 @@
                 <tr>
                     <x-data-table.cell label="Organisation">
                         <span class="fw-semibold d-block">{{ $profile->user?->displayName() }}</span>
+                        @if($profile->website)
+                            <a class="small text-decoration-none d-block mt-1" href="{{ $profile->website }}"
+                               target="_blank" rel="noopener noreferrer">{{ $profile->website }}</a>
+                        @endif
                         @if($profile->certificate_filename)
                             <a class="small text-decoration-none d-inline-flex align-items-center gap-1 mt-1"
                                href="{{ route('admin.providers.certificate', $profile->user_id) }}"
@@ -184,7 +188,18 @@
                                               trigger-class="btn btn-sm btn-success"
                                               confirm-label="Verify provider"
                                               tone="success"
-                                              message="They can publish scholarships from that moment, and every listing they post still comes here for review before it goes public. Check the registration certificate first." />
+                                              message="They can publish scholarships from that moment, and every listing they post still comes here for review before it goes public. Check the registration certificate first.">
+                                @if($profile->website)
+                                    <div class="form-check mt-3">
+                                        <input class="form-check-input" type="checkbox" name="website_checked" value="1"
+                                               id="website-checked-{{ $profile->user_id }}">
+                                        <label class="form-check-label" for="website-checked-{{ $profile->user_id }}">
+                                            I have checked that <a href="{{ $profile->website }}" target="_blank" rel="noopener noreferrer">{{ $profile->website }}</a>
+                                            is this organisation's own website.
+                                        </label>
+                                    </div>
+                                @endif
+                            </x-confirm-dialog>
 
                             <x-confirm-dialog :id="'reject-provider-' . $profile->user_id"
                                               :action="route('admin.providers.reject', $profile->user_id)"

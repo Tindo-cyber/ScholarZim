@@ -160,7 +160,7 @@ class EmailService
         return true;
     }
 
-    private function subjectFor(string $type): string
+    public function subjectFor(string $type): string
     {
         return match ($type) {
             'APPLICATION_SUBMITTED' => 'Your application was submitted',
@@ -184,6 +184,7 @@ class EmailService
             'SCHOLARSHIP_APPROVED' => 'Your scholarship post is now live',
             'SCHOLARSHIP_REJECTED' => 'Your scholarship post needs changes',
             'SCHOLARSHIP_PENDING_REVIEW' => 'A scholarship is awaiting review',
+            'SCHOLARSHIP_REPORTED' => 'A scholarship was hidden after student reports',
             'SCHOLARSHIP_CLOSED' => 'Your scholarship post was archived',
             'SCHOLARSHIP_SEARCH_MATCH' => 'A new scholarship matches your saved search',
             default => 'ScholarZim notification',

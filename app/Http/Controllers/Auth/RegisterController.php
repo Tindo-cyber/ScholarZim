@@ -49,6 +49,9 @@ class RegisterController extends Controller
 
     public function registerProvider(Request $request)
     {
+        // "kariba-trust.org" and "https://kariba-trust.org" are the same answer; accept both.
+        $request->merge(['website' => \App\Support\WebsiteAddress::normalise($request->input('website'))]);
+
         $data = $request->validate([
             // Not FormOptions::NAME_PATTERN: this is an organisation or
             // contact name ("Chikafu Education Trust"), free text for the
@@ -61,6 +64,8 @@ class RegisterController extends Controller
             // carry an extension - see InternationalPhoneNumber's own docblock.
             'phone' => ['nullable', 'string', new InternationalPhoneNumber()],
             'organisation_type' => ['required', Rule::in(ProviderOrgType::ALL)],
+            // Optional, and unconfirmed until an administrator says it is theirs.
+            'website' => \App\Support\WebsiteAddress::rules(),
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
             // The organisation's confirmation that it is registered and that this

@@ -21,6 +21,17 @@
             </ol>
         </nav>
 
+        @if($preview ?? false)
+            {{-- Only ever rendered by OpportunityController::preview, from an unsaved form. --}}
+            <div class="alert alert-info d-flex gap-2" role="note" id="listing-preview-banner">
+                <x-icon name="eye" :size="18" class="flex-shrink-0 mt-1" />
+                <div>
+                    <strong>Preview.</strong> This is how the listing would look to students. Nothing has been saved,
+                    and nobody has been told. Close this tab to go back to the form.
+                </div>
+            </div>
+        @endif
+
         @if(($duplicates ?? collect())->isNotEmpty())
             {{--
                 Only ever rendered from the admin moderation preview, which is the

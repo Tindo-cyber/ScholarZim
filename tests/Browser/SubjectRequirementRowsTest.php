@@ -30,6 +30,8 @@ class SubjectRequirementRowsTest extends DuskTestCase
         $this->browse(function (Browser $browser) {
             $browser->loginAs($this->provider())
                 ->visit('/opportunities/create')
+                ->waitFor('#advanced-rules summary', self::WAIT)
+                ->click('#advanced-rules summary') // the subject grid lives under "Add stricter rules"
                 ->waitFor(self::ADD, self::WAIT);
 
             foreach (range(1, 3) as $ignored) {
@@ -62,6 +64,8 @@ class SubjectRequirementRowsTest extends DuskTestCase
         $this->browse(function (Browser $browser) use ($qualification, $subjects, $grade) {
             $browser->loginAs($this->provider())
                 ->visit('/opportunities/create')
+                ->waitFor('#advanced-rules summary', self::WAIT)
+                ->click('#advanced-rules summary') // the subject grid lives under "Add stricter rules"
                 ->waitFor(self::ADD, self::WAIT)
                 ->type('description', 'Covers tuition for a four-year degree.');
 

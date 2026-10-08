@@ -1,4 +1,4 @@
-@props(['opportunity' => null])
+@props(['opportunity' => null, 'defaults' => []])
 
 @php
     /**
@@ -8,7 +8,26 @@
      * $opportunity is null when posting a new listing; every field then falls
      * back to old() and renders empty.
      */
-    $value = static fn (string $field, $fallback = null) => $opportunity?->{$field} ?? $fallback;
+    $value = static fn (string $field, $fallback = null) => $opportunity?->{$field} ?? ($defaults[$field] ?? $fallback);
+
+    /*
+     * Whether the "stricter rules" section starts open.
+     *
+     * It is folded away on a fresh form so the basics are what a provider sees, but
+     * it must never hide something that matters: if any rule in it has a value
+     * (stored, defaulted, or carried back from a failed save) or an error, it opens.
+     * A rule that silently disqualifies applicants from behind a closed section is
+     * the thing this must not become.
+     */
+    $advancedKeys = ['max_age', 'required_province', 'target_locality', 'target_settlement_type', 'min_academic_points', 'minimum_education_level'];
+
+    $advancedOpen = collect($advancedKeys)->contains(fn ($key) => filled(old($key, $value($key))))
+        || (bool) old('requires_results_certificate', $value('requires_results_certificate', false))
+        || count((array) old('subject_requirements', $opportunity?->subjectRequirements?->all() ?? [])) > 0
+        || collect($errors->keys())->contains(
+            fn ($key) => in_array($key, array_merge($advancedKeys, ['requires_results_certificate']), true)
+                || str_starts_with($key, 'subject_requirements')
+        );
 @endphp
 
 <div class="card mb-4">
@@ -56,6 +75,13 @@
     </div>
 </div>
 
+{{--
+    The stricter rules, folded away. Native <details>, so it opens and closes with
+    JavaScript off, and the server decides whether it starts open ({{ '$advancedOpen' }}).
+--}}
+<details class="mb-4" id="advanced-rules" @if($advancedOpen) open @endif>
+    <summary class="btn btn-outline-secondary mb-3">Add stricter rules (optional)</summary>
+
 <div class="card mb-4">
     <div class="card-header">
         <h2 class="h6 fw-semibold mb-0">General eligibility</h2>
@@ -72,6 +98,13 @@
         </div>
 
         <div class="row">
+            <div class="col-md-6">
+                <x-form.select name="minimum_education_level" label="Minimum qualifying level"
+                               :options="$minimumLevels" :grouped="true"
+                               :value="$value('minimum_education_level')"
+                               placeholder="Whatever the level above allows"
+                               hint="Only set this if your listing is stricter than the general pathway - for example, an Undergraduate award that requires A-Level rather than accepting O-Level applicants directly." />
+            </div>
             <div class="col-md-6">
                 <x-form.input name="max_age" label="Maximum age" type="number"
                               min="10" max="99" step="1"
@@ -96,7 +129,7 @@
                                :value="$value('target_settlement_type')"
                                placeholder="No restriction" />
             </div>
-            <div class="col-12">
+            <div class="col-12" data-level-needs="certificate">
                 <x-form.checkbox name="requires_results_certificate" wrapper-class="mb-0"
                                  label="Proof of academic results must be on file before applying"
                                  hint="A results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants."
@@ -125,6 +158,7 @@
         <h2 class="h6 fw-semibold mb-0">Academic requirements (optional)</h2>
     </div>
     <div class="card-body">
+        <div data-level-needs="subjects">
         <h3 class="sz-eyebrow">Subject requirements</h3>
 
         <p class="text-secondary small">
@@ -302,7 +336,9 @@
         </button>
 
         <hr class="my-4">
+        </div>
 
+        <div data-level-needs="points">
         <h3 class="sz-eyebrow">Total A-Level points</h3>
 
         <p class="text-secondary small">
@@ -317,6 +353,7 @@
                               :value="$value('min_academic_points')"
                               hint="ZIMSEC A-Level only: A=5, B=4, C=3, D=2, E=1, so three A grades is 15. O-Level, Cambridge and degree results are never counted towards this." />
             </div>
+        </div>
         </div>
 
         {{--
@@ -343,3 +380,4 @@
         --}}
     </div>
 </div>
+</details>

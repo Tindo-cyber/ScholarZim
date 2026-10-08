@@ -22,7 +22,7 @@
 @endsection
 
 @php
-    $step1Fields = ['full_name', 'email', 'phone', 'organisation_type', 'certificate'];
+    $step1Fields = ['full_name', 'email', 'phone', 'organisation_type', 'website', 'certificate'];
     $step2Fields = ['password', 'password_confirmation', 'authorised'];
     $initialStep = collect($step1Fields)->contains(fn ($field) => $errors->has($field))
         ? 1
@@ -65,6 +65,10 @@
 
             <x-form.select name="organisation_type" label="Organisation type" :options="$orgTypes"
                            placeholder="Select a type" required />
+
+            <x-form.input name="website" label="Organisation website (optional)" type="text" inputmode="url"
+                          autocomplete="url" placeholder="kariba-trust.org"
+                          hint="We check it when we verify you. Once confirmed, your application links are checked against it and your listing form is pre-filled with it." />
 
             <div class="mb-4">
                 <label class="form-label" for="certificate">

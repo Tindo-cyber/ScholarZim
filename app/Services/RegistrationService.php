@@ -79,6 +79,7 @@ class RegistrationService
                 ProviderProfile::create([
                     'user_id' => $user->user_id,
                     'organisation_type' => $data['organisation_type'],
+                    'website' => $data['website'] ?? null,
                     'certificate_path' => $certificatePath,
                     'certificate_filename' => $certificate->getClientOriginalName(),
                     'submitted_at' => Carbon::now(),

@@ -111,6 +111,25 @@
                                 <x-status-badge :label="$trust['trusted'] ? 'Trusted' : 'Standard'"
                                                 :tone="$trust['trusted'] ? 'success' : 'secondary'" />
                                 <span class="d-block small text-secondary mt-1">{{ implode(' ', $trust['reasons']) }}</span>
+                                {{-- The website the provider gave, and whether an administrator has confirmed it. --}}
+                                @if($user->providerProfile->website)
+                                    <div class="small mt-2">
+                                        <a href="{{ $user->providerProfile->website }}" target="_blank" rel="noopener noreferrer"
+                                           class="text-decoration-none">{{ $user->providerProfile->website }}</a>
+                                        <form method="POST" action="{{ route('admin.providers.website', $user->user_id) }}" class="d-inline">
+                                            @csrf
+                                            @if($user->providerProfile->hasConfirmedWebsite())
+                                                <input type="hidden" name="decision" value="clear">
+                                                <span class="text-success">Confirmed</span>
+                                                <button class="btn btn-link btn-sm p-0 ms-1" type="submit">Withdraw</button>
+                                            @else
+                                                <input type="hidden" name="decision" value="confirm">
+                                                <span class="text-secondary">Not confirmed</span>
+                                                <button class="btn btn-link btn-sm p-0 ms-1" type="submit">Confirm it is theirs</button>
+                                            @endif
+                                        </form>
+                                    </div>
+                                @endif
                                 <form method="POST" action="{{ route('admin.providers.trust', $user->user_id) }}"
                                       class="d-flex gap-1 mt-1">
                                     @csrf

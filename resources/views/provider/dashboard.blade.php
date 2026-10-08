@@ -203,6 +203,11 @@
                                             @endif
                                         </td>
                                         <td class="text-end" data-label="">
+                                            {{-- A withdrawn listing has no Manage menu, but is the one most worth posting again. --}}
+                                            @if($opportunity->isWithdrawn())
+                                                <a class="btn btn-sm btn-outline-secondary"
+                                                   href="{{ route('opportunities.duplicate', $opportunity->opportunity_id) }}">Duplicate</a>
+                                            @endif
                                             @unless($opportunity->isWithdrawn())
                                                 <div class="dropdown">
                                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -210,10 +215,24 @@
                                                         Manage
                                                     </button>
                                                     <ul class="dropdown-menu dropdown-menu-end">
+                                                        @if($opportunity->isPubliclyVisible())
+                                                            <li>
+                                                                <a class="dropdown-item"
+                                                                   href="{{ url('/scholarships/' . $opportunity->opportunity_id) }}">
+                                                                    View public page
+                                                                </a>
+                                                            </li>
+                                                        @endif
                                                         <li>
                                                             <a class="dropdown-item"
                                                                href="{{ route('opportunities.edit', $opportunity->opportunity_id) }}">
                                                                 Edit
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a class="dropdown-item"
+                                                               href="{{ route('opportunities.duplicate', $opportunity->opportunity_id) }}">
+                                                                Duplicate
                                                             </a>
                                                         </li>
                                                         {{-- A rolling listing has no deadline to extend. --}}
@@ -290,6 +309,39 @@
         </div>
 
         <div class="col-xl-4">
+            {{--
+                The organisation's website. The provider states it; an administrator
+                confirms it as theirs. Until then it is only what somebody typed, and
+                the link check on their listings falls back to their email domain - so
+                the card says which of the two states it is in rather than leaving a
+                provider to wonder why a link of theirs was flagged.
+            --}}
+            @php($profile = auth()->user()->providerProfile)
+            <div class="card mb-4" id="organisation-website">
+                <div class="card-header">
+                    <h2 class="h6 fw-semibold mb-0">Organisation website</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ route('provider.website.update') }}">
+                        @csrf
+                        <x-form.input name="website" label="Website" type="text" inputmode="url"
+                                      :value="$profile?->website" bag="website"
+                                      placeholder="kariba-trust.org"
+                                      hint="Used to pre-fill the link on new listings, and to check the links you post." />
+                        <x-submit-button label="Save website" size="sm" tone="outline-primary" busy-label="Saving..." />
+                    </form>
+
+                    @if($profile?->website)
+                        <p class="small mb-0 mt-3 {{ $profile->hasConfirmedWebsite() ? 'text-success' : 'text-secondary' }}">
+                            @if($profile->hasConfirmedWebsite())
+                                Confirmed by an administrator.
+                            @else
+                                Waiting for an administrator to confirm.
+                            @endif
+                        </p>
+                    @endif
+                </div>
+            </div>
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h6 fw-semibold mb-0">Recent applications</h2>

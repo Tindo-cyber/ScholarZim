@@ -228,8 +228,8 @@ class OpportunityReportService
 
         $this->notificationService->notifyMany(
             $admins,
-            NotificationType::SCHOLARSHIP_PENDING_REVIEW,
-            '"' . $opportunity->title . '" was reported by ' . $reporters . ' students and hidden. Decide whether the reports are right.',
+            NotificationType::SCHOLARSHIP_REPORTED,
+            '"' . $opportunity->title . '" was reported by ' . $reporters . ' students and hidden from the public site. Decide whether the reports are right.',
             '/admin/listing-reports',
             $opportunity->opportunity_id
         );
