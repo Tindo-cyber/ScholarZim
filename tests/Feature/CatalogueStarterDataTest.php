@@ -106,6 +106,34 @@ class CatalogueStarterDataTest extends TestCase
         }
     }
 
+    public function test_no_synonym_belongs_to_two_programmes(): void
+    {
+        (new CatalogueSeeder())->load();
+
+        $owners = [];
+
+        foreach (\App\Models\ProgrammeSynonym::with('programme')->get() as $synonym) {
+            $owners[Programme::normalise($synonym->synonym)][] = $synonym->programme->name;
+        }
+
+        foreach ($owners as $text => $programmes) {
+            $this->assertCount(1, array_unique($programmes), '"' . $text . '" is a synonym of more than one programme: ' . implode(' | ', array_unique($programmes)));
+        }
+    }
+
+    public function test_no_synonym_is_also_the_name_of_a_different_programme(): void
+    {
+        (new CatalogueSeeder())->load();
+
+        $names = Programme::all()->groupBy(fn (Programme $p) => Programme::normalise($p->name));
+
+        foreach (\App\Models\ProgrammeSynonym::with('programme')->get() as $synonym) {
+            $same = $names->get(Programme::normalise($synonym->synonym), collect())->where('id', '!=', $synonym->programme_id);
+
+            $this->assertCount(0, $same, '"' . $synonym->synonym . '" (a synonym of ' . $synonym->programme->name . ') is also the name of ' . $same->pluck('name')->implode(', '));
+        }
+    }
+
     public function test_the_demo_seed_includes_the_catalogue(): void
     {
         $this->seed(DatabaseSeeder::class);

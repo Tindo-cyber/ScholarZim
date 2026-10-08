@@ -266,6 +266,13 @@ class CatalogueImporter
 
     private function importProgrammes(array $rows, ImportReport $report): void
     {
+        // Who owns each synonym, so one cannot be claimed by two programmes. Kept up to date as rows go in.
+        $owners = [];
+
+        foreach (ProgrammeSynonym::with('programme:id,name')->get() as $existing) {
+            $owners[Programme::normalise($existing->synonym)] = ['id' => $existing->programme_id, 'name' => $existing->programme?->name];
+        }
+
         foreach ($rows as $index => $row) {
             $number = $index + 1;
             $name = $this->cell($row, 'name');
@@ -286,13 +293,30 @@ class CatalogueImporter
                 default => null,
             };
 
+            $programme = $problem === null
+                ? Programme::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->where('education_level', $level)->first()
+                : null;
+
+            // A synonym means one programme. If it already means another, the row would make a search for
+            // it ambiguous, so the row is refused and the person who owns the file decides which is right.
+            if ($problem === null) {
+                foreach ($synonyms as $synonym) {
+                    $owner = $owners[Programme::normalise($synonym)] ?? null;
+
+                    if ($owner !== null && $owner['id'] !== $programme?->id) {
+                        $problem = 'The synonym "' . $synonym . '" already belongs to "' . $owner['name'] . '". A synonym can belong to only one programme.';
+
+                        break;
+                    }
+                }
+            }
+
             if ($problem !== null) {
                 $report->reject($number, $problem, $this->plain($row));
 
                 continue;
             }
 
-            $programme = Programme::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->where('education_level', $level)->first();
             $isNew = $programme === null;
             $changed = false;
 
@@ -318,6 +342,7 @@ class CatalogueImporter
                 }
 
                 ProgrammeSynonym::create(['programme_id' => $programme->id, 'synonym' => $synonym]);
+                $owners[Programme::normalise($synonym)] = ['id' => $programme->id, 'name' => $programme->name];
                 $have[] = mb_strtolower($synonym);
                 $changed = true;
             }

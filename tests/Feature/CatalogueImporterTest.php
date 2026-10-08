@@ -41,7 +41,11 @@ class CatalogueImporterTest extends TestCase
 
     private function programme(array $row = []): array
     {
-        return $row + ['name' => 'BSc Information Systems', 'level' => 'Undergraduate', 'field_code' => '061', 'institutions' => 'MSU;NUST', 'synonyms' => 'BIS;Info Systems'];
+        $name = $row['name'] ?? 'BSc Information Systems';
+
+        // Only the default programme carries synonyms: a synonym belongs to one programme, so rows that
+        // share a default would refuse each other.
+        return $row + ['name' => $name, 'level' => 'Undergraduate', 'field_code' => '061', 'institutions' => 'MSU;NUST', 'synonyms' => $name === 'BSc Information Systems' ? 'BIS;Info Systems' : ''];
     }
 
     // ------------------------------------------------------------- fields --
@@ -145,6 +149,43 @@ class CatalogueImporterTest extends TestCase
         $this->assertSame('071', $programme->field->code);
         $this->assertCount(2, $programme->institutions, 'a link left out of the file is not removed');
         $this->assertCount(3, $programme->synonyms);
+    }
+
+    public function test_a_synonym_that_already_belongs_to_another_programme_refuses_the_row(): void
+    {
+        $this->importer->import(CatalogueImporter::PROGRAMMES, [$this->programme(['name' => 'BSc Information Systems', 'synonyms' => 'BIS'])]);
+
+        $report = $this->importer->import(CatalogueImporter::PROGRAMMES, [
+            $this->programme(['name' => 'BSc Business Information Systems', 'synonyms' => 'bis;Business IS']),
+            $this->programme(['name' => 'BSc Something Else', 'synonyms' => 'Something']),
+        ]);
+
+        $this->assertSame(1, $report->created);
+        $this->assertCount(1, $report->rejected);
+        $this->assertSame(1, $report->rejected[0]['row']);
+        $this->assertStringContainsStringIgnoringCase('bis', $report->rejected[0]['reason']);
+        $this->assertStringContainsString('BSc Information Systems', $report->rejected[0]['reason']);
+        $this->assertNull(Programme::where('name', 'BSc Business Information Systems')->first());
+    }
+
+    public function test_two_rows_in_one_file_cannot_claim_the_same_synonym(): void
+    {
+        $report = $this->importer->import(CatalogueImporter::PROGRAMMES, [
+            $this->programme(['name' => 'Programme One', 'synonyms' => 'Shared Name']),
+            $this->programme(['name' => 'Programme Two', 'synonyms' => 'shared name']),
+        ]);
+
+        $this->assertSame(1, $report->created);
+        $this->assertCount(1, $report->rejected);
+    }
+
+    public function test_a_programme_may_repeat_its_own_synonyms_when_reimported(): void
+    {
+        $this->importer->import(CatalogueImporter::PROGRAMMES, [$this->programme()]);
+
+        $again = $this->importer->import(CatalogueImporter::PROGRAMMES, [$this->programme()]);
+
+        $this->assertSame([], $again->rejected);
     }
 
     public function test_the_same_name_at_a_different_level_is_a_different_programme(): void
