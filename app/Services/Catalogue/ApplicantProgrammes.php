@@ -17,7 +17,8 @@ use Illuminate\Validation\ValidationException;
  *
  *   enrolled (Certificate and above)   one current programme, at their own level, and where
  *   school-leaver (O-Level, A-Level)   up to three programmes they hope to study next, at the
- *                                      levels a school-leaver enters
+ *                                      levels a school-leaver enters, and optionally up to three
+ *                                      institutions they have applied to or hold an offer from
  *   Primary or no level yet            none
  *
  * A programme is chosen from the catalogue. One that is not listed is suggested (and waits for
@@ -74,8 +75,15 @@ class ApplicantProgrammes
         $institutionId = filled($input['current_institution_id'] ?? null) ? (int) $input['current_institution_id'] : null;
         $intended = array_values(array_unique(array_map('intval', array_filter((array) ($input['intended_programme_ids'] ?? []), 'is_scalar'))));
         $suggestion = trim((string) ($input['programme_suggestion'] ?? ''));
+        $applied = array_values(array_unique(array_map('intval', array_filter((array) ($input['applied_institution_ids'] ?? []), 'is_scalar'))));
 
         $errors = [];
+
+        if ($applied && $mode !== self::INTENDED) {
+            $errors['applied_institution_ids'] = $mode === self::CURRENT
+                ? 'Say where you study with your current programme above. This list is for school-leavers.'
+                : 'Institutions you have applied to only apply once you are at O-Level or A-Level.';
+        }
 
         if ($mode === self::NONE && ($currentId || $intended || $suggestion !== '')) {
             $errors['intended_programme_ids'] = 'Programmes do not apply at your current level. Set your level first, then choose a programme.';
@@ -118,6 +126,14 @@ class ApplicantProgrammes
 
         $chosen['intended'] = collect($chosen['intended'])->unique('id')->values()->all();
 
+        if ($applied && ! isset($errors['applied_institution_ids'])) {
+            if (count($applied) > \App\Models\ApplicantInstitution::MAX) {
+                $errors['applied_institution_ids'] = 'Choose up to ' . \App\Models\ApplicantInstitution::MAX . ' institutions - the ones you have applied to or hold an offer from.';
+            } elseif (Institution::active()->whereIn('id', $applied)->count() !== count($applied)) {
+                $errors['applied_institution_ids'] = 'Choose institutions from the list.';
+            }
+        }
+
         if (count($chosen['intended']) > ApplicantProgramme::MAX_INTENDED) {
             $errors['intended_programme_ids'] = 'Choose up to ' . ApplicantProgramme::MAX_INTENDED . ' programmes - the ones you are most likely to apply for.';
         }
@@ -126,8 +142,13 @@ class ApplicantProgrammes
             throw ValidationException::withMessages($errors);
         }
 
-        DB::transaction(function () use ($profile, $chosen, $institutionId): void {
+        DB::transaction(function () use ($profile, $chosen, $institutionId, $applied): void {
             ApplicantProgramme::where('profile_id', $profile->profile_id)->delete();
+            \App\Models\ApplicantInstitution::where('profile_id', $profile->profile_id)->delete();
+
+            foreach ($applied as $id) {
+                \App\Models\ApplicantInstitution::create(['profile_id' => $profile->profile_id, 'institution_id' => $id]);
+            }
 
             if ($chosen['current'] !== null) {
                 ApplicantProgramme::create([

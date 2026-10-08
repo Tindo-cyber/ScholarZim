@@ -64,6 +64,12 @@ class ApplicantProfile extends Model
         'transcript_uploaded_at' => 'datetime',
     ];
 
+    /** Institutions a school-leaver has applied to or holds an offer from. */
+    public function appliedInstitutions(): HasMany
+    {
+        return $this->hasMany(ApplicantInstitution::class, 'profile_id', 'profile_id');
+    }
+
     /** The programme(s) this applicant is on or hopes to be on. See ApplicantProgrammes. */
     public function programmeChoices(): HasMany
     {

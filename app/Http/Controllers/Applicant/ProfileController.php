@@ -41,6 +41,7 @@ class ProfileController extends Controller
             'profile' => $profile,
             'catalogue' => app(\App\Services\Catalogue\ProgrammeCatalogue::class)->formOptions($user),
             'programmeChoices' => $profile->programmeChoices()->get(),
+            'appliedInstitutionIds' => $profile->appliedInstitutions()->pluck('institution_id')->all(),
             'educationLevels' => FormOptions::educationLevelGroups(),
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
@@ -84,6 +85,8 @@ class ProfileController extends Controller
         $request->validate([
             'current_programme_id' => ['nullable', 'integer'],
             'current_institution_id' => ['nullable', 'integer'],
+            'applied_institution_ids' => ['nullable', 'array', 'max:20'],
+            'applied_institution_ids.*' => ['integer'],
             'intended_programme_ids' => ['nullable', 'array', 'max:20'],
             'intended_programme_ids.*' => ['integer'],
             'programme_suggestion' => ['nullable', 'string', 'max:200'],

@@ -315,4 +315,94 @@ class ApplicantProgrammesTest extends TestCase
 
         $this->assertNotContains(ProfileDataQuality::PROGRAMME, array_column(ProfileDataQuality::warnings($this->profile()->fresh()), 'code'));
     }
+
+    // --------------------------------------------- institutions applied to --
+
+    private function institution(string $code): int
+    {
+        return Institution::where('code', $code)->value('id');
+    }
+
+    private function applied(): array
+    {
+        return \App\Models\ApplicantInstitution::where('profile_id', $this->profile()->profile_id)->pluck('institution_id')->all();
+    }
+
+    public function test_a_school_leaver_can_record_up_to_three_institutions_they_applied_to(): void
+    {
+        $this->level(EducationLevel::A_LEVEL);
+
+        $this->save(['applied_institution_ids' => [$this->institution('UZ'), $this->institution('MSU'), $this->institution('NUST')]])
+            ->assertSessionHasNoErrors();
+
+        $this->assertEqualsCanonicalizing([$this->institution('UZ'), $this->institution('MSU'), $this->institution('NUST')], $this->applied());
+    }
+
+    public function test_four_institutions_is_too_many(): void
+    {
+        $this->level(EducationLevel::A_LEVEL);
+
+        $this->save(['applied_institution_ids' => [
+            $this->institution('UZ'), $this->institution('MSU'), $this->institution('NUST'), $this->institution('CUT'),
+        ]])->assertSessionHasErrors('applied_institution_ids');
+
+        $this->assertSame([], $this->applied());
+    }
+
+    public function test_an_unknown_or_switched_off_institution_is_refused(): void
+    {
+        $this->level(EducationLevel::A_LEVEL);
+        Institution::where('code', 'CUT')->update(['is_active' => false]);
+
+        $this->save(['applied_institution_ids' => [999999]])->assertSessionHasErrors('applied_institution_ids');
+        $this->save(['applied_institution_ids' => [$this->institution('CUT')]])->assertSessionHasErrors('applied_institution_ids');
+    }
+
+    public function test_saving_replaces_the_list_and_saving_none_clears_it(): void
+    {
+        $this->level(EducationLevel::O_LEVEL);
+        $this->save(['applied_institution_ids' => [$this->institution('UZ'), $this->institution('MSU')]]);
+
+        $this->save(['applied_institution_ids' => [$this->institution('NUST')]]);
+        $this->assertSame([$this->institution('NUST')], $this->applied());
+
+        $this->save([]);
+        $this->assertSame([], $this->applied());
+    }
+
+    public function test_the_same_institution_twice_counts_once(): void
+    {
+        $this->level(EducationLevel::A_LEVEL);
+        $id = $this->institution('UZ');
+
+        $this->save(['applied_institution_ids' => [$id, $id]])->assertSessionHasNoErrors();
+
+        $this->assertSame([$id], $this->applied());
+    }
+
+    public function test_an_enrolled_student_uses_where_they_study_instead(): void
+    {
+        $this->level(EducationLevel::UNDERGRADUATE);
+
+        $this->save(['applied_institution_ids' => [$this->institution('UZ')]])->assertSessionHasErrors('applied_institution_ids');
+    }
+
+    public function test_the_school_leavers_page_asks_for_them_and_an_enrolled_students_does_not(): void
+    {
+        $this->level(EducationLevel::A_LEVEL);
+        $this->assertStringContainsString('applied_institution_ids[]', $this->actingAs($this->student)->get('/applicant/profile')->getContent());
+
+        $this->level(EducationLevel::UNDERGRADUATE);
+        $this->assertStringNotContainsString('applied_institution_ids[]', $this->actingAs($this->student)->get('/applicant/profile')->getContent());
+    }
+
+    public function test_programmes_and_institutions_are_saved_together(): void
+    {
+        $this->level(EducationLevel::A_LEVEL);
+        $this->save(['applied_institution_ids' => [$this->institution('UZ')], 'intended_programme_ids' => [$this->programme('BSc Computer Science')]]);
+
+        $this->assertCount(1, $this->rows('intended'));
+        $this->assertCount(1, $this->applied());
+    }
+
 }

@@ -84,6 +84,23 @@
                     <div class="form-text">Hold Ctrl (or Cmd) to choose several. You can search by name or abbreviation.</div>
                     @error('intended_programme_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                 </div>
+
+                <div class="mb-3" data-catalogue-filter>
+                    <label class="form-label" for="applied_institution_ids">Institutions you have applied to or have an offer from (optional, up to 3)</label>
+                    <select class="form-select @error('applied_institution_ids') is-invalid @enderror" id="applied_institution_ids"
+                            name="applied_institution_ids[]" multiple size="6">
+                        @foreach($catalogue['institutions']->groupBy('type') as $type => $institutions)
+                            <optgroup label="{{ \App\Models\Institution::TYPE_LABELS[$type] ?? $type }}">
+                                @foreach($institutions as $institution)
+                                    <option value="{{ $institution->id }}" data-search="{{ strtolower($institution->name . ' ' . $institution->code) }}"
+                                            @selected(in_array($institution->id, array_map('intval', (array) old('applied_institution_ids', $appliedInstitutionIds)), true))>{{ $institution->name }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+                    </select>
+                    <div class="form-text">Some scholarships are only for students at certain institutions. This lets us tell you which ones you can apply for.</div>
+                    @error('applied_institution_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                </div>
             @endif
 
             <details class="mb-3" @if(old('programme_suggestion')) open @endif>
