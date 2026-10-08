@@ -30,7 +30,7 @@ class AnalyticsService
     public function opportunitiesPerMonth(int $months = 12): array
     {
         return $this->monthlySeries(
-            Opportunity::query(),
+            Opportunity::query()->notDraft(),
             'created_at',
             $months
         );
@@ -90,7 +90,9 @@ class AnalyticsService
             ->selectRaw('(SELECT COUNT(*) FROM applications a'
                 . ' WHERE a.opportunity_id IN'
                 . ' (SELECT o2.opportunity_id FROM opportunities o2'
-                . '  WHERE o2.provider_name = opportunities.provider_name)) as applications')
+                . '  WHERE o2.provider_name = opportunities.provider_name'
+                . "  AND o2.moderation_status <> 'DRAFT')) as applications")
+            ->notDraft()
             ->whereNotNull('provider_name')
             ->where('provider_name', '<>', '')
             ->groupBy('provider_name')

@@ -37,7 +37,7 @@ class PlatformStatsService
             'applicants' => User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::APPLICANT))->count(),
             'providers' => User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::PROVIDER))->count(),
             'admins' => User::whereHas('role', fn ($q) => $q->where('role_name', RoleNames::ADMIN))->count(),
-            'totalOpportunities' => Opportunity::count(),
+            'totalOpportunities' => Opportunity::query()->notDraft()->count(),
             'activeOpportunities' => Opportunity::query()->publiclyVisible()->count(),
             'totalApplications' => Application::count(),
             'acceptedApplications' => Application::where('application_status', ApplicationStatus::ACCEPTED)->count(),

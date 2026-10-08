@@ -57,6 +57,7 @@ final class AuditAction
     public const HIDE_REPORTED_OPPORTUNITY = 'HIDE_REPORTED_OPPORTUNITY';
     public const RESOLVE_REPORTS = 'RESOLVE_REPORTS';
     public const CONFIRM_PROVIDER_WEBSITE = 'CONFIRM_PROVIDER_WEBSITE';
+    public const DISCARD_DRAFT = 'DISCARD_DRAFT';
 
     private function __construct()
     {

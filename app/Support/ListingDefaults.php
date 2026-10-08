@@ -36,6 +36,8 @@ final class ListingDefaults
 
         $last = Opportunity::query()
             ->where('provider_user_id', $provider->user_id)
+            // A draft is unfinished and may be wrong; defaults come from what was actually submitted.
+            ->notDraft()
             ->orderByDesc('opportunity_id')
             ->first();
 

@@ -203,12 +203,33 @@
                                             @endif
                                         </td>
                                         <td class="text-end" data-label="">
+                                            {{--
+                                                A draft is the provider's own and not yet a listing: it can be continued,
+                                                copied or thrown away, and has no live actions (nothing to extend or
+                                                withdraw, no public page).
+                                            --}}
+                                            @if($opportunity->isDraft())
+                                                <div class="d-inline-flex flex-wrap gap-1 justify-content-end">
+                                                    <a class="btn btn-sm btn-outline-primary"
+                                                       href="{{ route('opportunities.edit', $opportunity->opportunity_id) }}">Continue</a>
+                                                    <a class="btn btn-sm btn-outline-secondary"
+                                                       href="{{ route('opportunities.duplicate', $opportunity->opportunity_id) }}">Duplicate</a>
+                                                    <x-confirm-dialog :id="'discard-' . $opportunity->opportunity_id"
+                                                                      :action="route('opportunities.draft.discard', $opportunity->opportunity_id)"
+                                                                      :title="'Discard draft: ' . $opportunity->title"
+                                                                      trigger-label="Discard"
+                                                                      trigger-class="btn btn-sm btn-outline-danger"
+                                                                      confirm-label="Discard draft"
+                                                                      method="DELETE"
+                                                                      message="This deletes the draft for good. Nobody else has seen it." />
+                                                </div>
+                                            @endif
                                             {{-- A withdrawn listing has no Manage menu, but is the one most worth posting again. --}}
                                             @if($opportunity->isWithdrawn())
                                                 <a class="btn btn-sm btn-outline-secondary"
                                                    href="{{ route('opportunities.duplicate', $opportunity->opportunity_id) }}">Duplicate</a>
                                             @endif
-                                            @unless($opportunity->isWithdrawn())
+                                            @unless($opportunity->isWithdrawn() || $opportunity->isDraft())
                                                 <div class="dropdown">
                                                     <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                                             type="button" data-bs-toggle="dropdown" aria-expanded="false">

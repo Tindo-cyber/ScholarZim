@@ -338,6 +338,12 @@ class OpportunityModerationService
             throw new RuntimeException('You cannot moderate a scholarship you posted yourself.');
         }
 
+        // A draft is its provider's own work. Nobody has been asked to decide on it, and
+        // an administrator has no business reading or ruling on it.
+        if ($opportunity->isDraft()) {
+            throw new RuntimeException('This scholarship is a draft its provider has not submitted, so there is nothing to review.');
+        }
+
         if (! OpportunityModerationStatus::isPending($opportunity->moderation_status)) {
             throw new RuntimeException('This scholarship has already been reviewed.');
         }

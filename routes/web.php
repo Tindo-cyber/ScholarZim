@@ -260,6 +260,13 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
             ->middleware('throttle:60,1')
             ->name('opportunities.preview');
 
+        // Drafts: saved without full validation, never public, discarded outright.
+        Route::post('/opportunities/draft', [OpportunityController::class, 'saveDraft'])
+            ->name('opportunities.draft.save');
+        Route::delete('/opportunities/{id}/draft', [OpportunityController::class, 'discardDraft'])
+            ->whereNumber('id')
+            ->name('opportunities.draft.discard');
+
         Route::get('/opportunities/{id}/duplicate', [OpportunityController::class, 'duplicate'])
             ->whereNumber('id')
             ->name('opportunities.duplicate');

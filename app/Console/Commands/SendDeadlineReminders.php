@@ -40,6 +40,7 @@ class SendDeadlineReminders extends Command
         $sent = 0;
 
         $closingSoon = Opportunity::where('status', OpportunityStatus::ACTIVE)
+            ->notDraft()
             ->whereBetween('deadline', [$today->toDateString(), $windowEnd->toDateString()])
             ->get();
 

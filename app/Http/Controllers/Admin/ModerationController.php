@@ -26,6 +26,9 @@ class ModerationController extends Controller
     {
         $opportunity = Opportunity::with('provider')->findOrFail($id);
 
+        // A draft is private to its provider; there is nothing here for a moderator to see.
+        abort_if($opportunity->isDraft(), 404);
+
         return view('public.detail', [
             'opportunity' => $opportunity,
             'isSaved' => false,

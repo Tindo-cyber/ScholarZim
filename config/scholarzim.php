@@ -93,4 +93,16 @@ return [
         'per_hour' => (int) env('SCHOLARZIM_REPORTS_PER_HOUR', 10),
     ],
 
+    /*
+     * Drafts: listings a provider has started and not submitted.
+     *
+     * `max_per_provider` is how many one provider may hold at once. Drafts are
+     * private, unreviewed and free to make, so something has to stop them being a
+     * place to dump data; twenty is plenty for real use. Saving a draft that
+     * already exists is never blocked by this - only starting another.
+     */
+    'drafts' => [
+        'max_per_provider' => (int) env('SCHOLARZIM_DRAFTS_MAX', 20),
+    ],
+
 ];

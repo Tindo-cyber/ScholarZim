@@ -29,7 +29,7 @@ class ReportService
     public function opportunitiesReportPdf(): string
     {
         return $this->render('Opportunities Report', 'reports.opportunities', [
-            'opportunities' => Opportunity::orderBy('opportunity_id')->get(),
+            'opportunities' => Opportunity::notDraft()->orderBy('opportunity_id')->get(),
         ]);
     }
 

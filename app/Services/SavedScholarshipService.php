@@ -13,6 +13,9 @@ class SavedScholarshipService
     {
         return SavedScholarship::with('opportunity.provider')
             ->where('user_id', $user->user_id)
+            // save() only accepts a public listing, so a draft cannot be here by that road;
+            // this keeps one out whatever road put it there.
+            ->whereHas('opportunity', fn ($q) => $q->notDraft())
             ->orderByDesc('saved_at')
             ->get();
     }
@@ -55,12 +58,15 @@ class SavedScholarshipService
         }
 
         return SavedScholarship::where('user_id', $user->user_id)
+            ->whereHas('opportunity', fn ($q) => $q->notDraft())
             ->pluck('opportunity_id')
             ->all();
     }
 
     public function count(User $user): int
     {
-        return SavedScholarship::where('user_id', $user->user_id)->count();
+        return SavedScholarship::where('user_id', $user->user_id)
+            ->whereHas('opportunity', fn ($q) => $q->notDraft())
+            ->count();
     }
 }

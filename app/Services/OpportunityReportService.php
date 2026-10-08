@@ -92,6 +92,7 @@ class OpportunityReportService
     {
         return Opportunity::with(['provider', 'reports' => fn ($q) => $q->where('status', ReportStatus::PENDING)->with('user')->orderBy('created_at')])
             ->whereHas('reports', fn ($q) => $q->where('status', ReportStatus::PENDING))
+            ->notDraft()
             ->withCount(['reports as pending_reports_count' => fn ($q) => $q->where('status', ReportStatus::PENDING)])
             ->orderByDesc('pending_reports_count')
             ->orderBy('opportunity_id')
@@ -100,7 +101,7 @@ class OpportunityReportService
 
     public function pendingListingCount(): int
     {
-        return Opportunity::whereHas('reports', fn ($q) => $q->where('status', ReportStatus::PENDING))->count();
+        return Opportunity::whereHas('reports', fn ($q) => $q->where('status', ReportStatus::PENDING))->notDraft()->count();
     }
 
     /** The reports are wrong, or not enough: close them, and put the listing back if reports had hidden it. */

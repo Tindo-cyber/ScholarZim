@@ -112,7 +112,7 @@ class OpportunityService
      * once it has actually committed - telling them about one that then
      * rolled back would be reporting a scholarship that never existed.
      */
-    public function create(array $data, User $provider): Opportunity
+    public function create(array $data, User $provider, ?Opportunity $draft = null): Opportunity
     {
         if (! $provider->isActive()) {
             throw new UnauthorizedException(
@@ -136,8 +136,8 @@ class OpportunityService
         // Trust is the shortcut; a flag is the reason not to take it.
         $autoApprove = $flags === [] && ProviderTrust::isTrusted($provider);
 
-        $opportunity = DB::transaction(function () use ($data, $provider, $country, $identity, $award, $flags, $autoApprove) {
-            $opportunity = Opportunity::create([
+        $opportunity = DB::transaction(function () use ($data, $provider, $country, $identity, $award, $flags, $autoApprove, $draft) {
+            $attributes = [
                 'provider_user_id' => $provider->user_id,
                 'title' => $data['title'],
                 'description' => $data['description'] ?? null,
@@ -151,7 +151,32 @@ class OpportunityService
                 'moderation_status' => OpportunityModerationStatus::PENDING,
                 'submitted_at' => Carbon::now(),
                 'created_at' => Carbon::now(),
-            ] + $identity + $award + ['risk_flags' => $flags ?: null]);
+            ] + $identity + $award + ['risk_flags' => $flags ?: null];
+
+            if ($draft !== null) {
+                // Submitting a draft turns that row into the listing rather than making a
+                // second one, so there is one history and no orphan. It takes the same legal
+                // step any new listing takes - DRAFT -> PENDING - and then, if it earns it,
+                // PENDING -> APPROVED below. Everything else (validation, the risk checker,
+                // trust, telling the administrators) has just run as for a listing typed from
+                // scratch, because this IS that path.
+                abort_unless(
+                    $draft->isDraft() && $draft->provider_user_id === $provider->user_id,
+                    404
+                );
+
+                OpportunityLifecycle::assertModeration($draft->moderation_status, OpportunityModerationStatus::PENDING);
+
+                $draft->update($attributes + [
+                    'reviewed_at' => null,
+                    'reviewed_by' => null,
+                    'rejection_reason' => null,
+                ]);
+
+                $opportunity = $draft;
+            } else {
+                $opportunity = Opportunity::create($attributes);
+            }
 
             $this->saveSubjectRequirements($opportunity, $data['subject_requirements'] ?? []);
 
@@ -257,6 +282,10 @@ class OpportunityService
     public function update(int $opportunityId, array $data, User $provider, string $reason): Opportunity
     {
         $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
+
+        if ($opportunity->isDraft()) {
+            throw new \RuntimeException('This listing is still a draft. Save it as a draft, or submit it for review.');
+        }
 
         if ($opportunity->isWithdrawn()) {
             throw InvalidOpportunityTransition::withdrawn();
@@ -412,6 +441,10 @@ class OpportunityService
     {
         $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
 
+        if ($opportunity->isDraft()) {
+            throw new \RuntimeException('A draft has no review to predict. Submit it to find out.');
+        }
+
         if ($opportunity->isWithdrawn()) {
             throw InvalidOpportunityTransition::withdrawn();
         }
@@ -433,6 +466,10 @@ class OpportunityService
     public function extendDeadline(int $opportunityId, User $provider, string $newDeadline, string $reason): Opportunity
     {
         $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
+
+        if ($opportunity->isDraft()) {
+            throw new \RuntimeException('A draft has not been published, so its deadline cannot be extended. Change it in the draft.');
+        }
 
         if ($opportunity->isWithdrawn()) {
             throw InvalidOpportunityTransition::withdrawn();
@@ -505,6 +542,10 @@ class OpportunityService
     public function delete(int $opportunityId, User $provider, string $reason): Opportunity
     {
         $opportunity = $this->findOwnedOrFail($opportunityId, $provider);
+
+        if ($opportunity->isDraft()) {
+            throw new \RuntimeException('A draft is discarded, not withdrawn: nobody has seen it.');
+        }
 
         // Publication axis only. The administrator's verdict is left exactly as
         // it was, so the platform still knows whether this listing had passed
@@ -784,6 +825,7 @@ class OpportunityService
 
         return Opportunity::query()
             ->where('opportunity_id', '!=', $opportunity->opportunity_id)
+            ->notDraft()
             ->where('moderation_status', '!=', OpportunityModerationStatus::REJECTED)
             ->where(function ($q) use ($opportunity, $like) {
                 $q->where('title', 'like', $like);

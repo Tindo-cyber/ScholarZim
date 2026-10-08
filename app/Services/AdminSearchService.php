@@ -28,6 +28,7 @@ class AdminSearchService
             ->get();
 
         $opportunities = Opportunity::with('provider')
+            ->notDraft() // A draft is its provider's private work: not counted, listed or searched here.
             ->where(fn ($q) => $q->where('title', 'like', $like)->orWhere('provider_name', 'like', $like))
             ->limit($perGroup)
             ->get();

@@ -62,6 +62,7 @@ class ApplicantDashboardService
         }
 
         return Opportunity::whereIn('opportunity_id', $watchedIds)
+            ->notDraft()
             ->whereNotNull('deadline')
             ->whereDate('deadline', '>=', Carbon::today())
             ->orderBy('deadline')

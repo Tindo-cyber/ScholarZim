@@ -35,14 +35,22 @@ class OpportunityPolicy
         return $this->owns($user, $opportunity) && ! $opportunity->isWithdrawn();
     }
 
+    /** A draft is discarded, not withdrawn: applicants were never told about it. */
     public function withdraw(User $user, Opportunity $opportunity): bool
     {
-        return $this->owns($user, $opportunity) && ! $opportunity->isWithdrawn();
+        return $this->owns($user, $opportunity) && ! $opportunity->isWithdrawn() && ! $opportunity->isDraft();
     }
 
+    /** Nothing to extend on a listing that has no public deadline yet. */
     public function extendDeadline(User $user, Opportunity $opportunity): bool
     {
-        return $this->update($user, $opportunity);
+        return $this->update($user, $opportunity) && ! $opportunity->isDraft();
+    }
+
+    /** Only a draft can be thrown away, and only by its owner. */
+    public function discardDraft(User $user, Opportunity $opportunity): bool
+    {
+        return $this->owns($user, $opportunity) && $opportunity->isDraft();
     }
 
     /**

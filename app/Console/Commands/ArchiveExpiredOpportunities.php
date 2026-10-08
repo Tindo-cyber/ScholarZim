@@ -25,6 +25,8 @@ class ArchiveExpiredOpportunities extends Command
     public function handle(NotificationService $notifications): int
     {
         $expired = Opportunity::where('status', OpportunityStatus::ACTIVE)
+            // A draft has no public life to archive, and no applicants to tell.
+            ->notDraft()
             ->whereNotNull('deadline')
             ->where('deadline', '<', Carbon::today()->toDateString())
             ->get();

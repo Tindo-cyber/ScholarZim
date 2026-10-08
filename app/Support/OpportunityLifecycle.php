@@ -46,6 +46,12 @@ final class OpportunityLifecycle
      * the queue, and that is a publication-side action, handled below.
      */
     private const MODERATION_TRANSITIONS = [
+        // A draft is only ever submitted. It cannot be approved or declined (nobody has
+        // been asked), and nothing can become one: a live or queued listing that
+        // quietly turned back into a draft would vanish without anyone deciding it
+        // should. A trusted provider's clean submit goes DRAFT -> PENDING -> APPROVED
+        // like any new listing, in two legal steps rather than one shortcut.
+        OpportunityModerationStatus::DRAFT => [OpportunityModerationStatus::PENDING],
         OpportunityModerationStatus::PENDING => [
             OpportunityModerationStatus::APPROVED,
             OpportunityModerationStatus::REJECTED,

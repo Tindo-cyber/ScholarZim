@@ -41,7 +41,7 @@ class ExcelReportService
         return $this->build('Opportunities', [
             'Title', 'Provider', 'Education Level', 'Field',
             'Location', 'Funding', 'Deadline', 'Status',
-        ], Opportunity::orderBy('opportunity_id')->cursor(), fn (Opportunity $opp) => [
+        ], Opportunity::notDraft()->orderBy('opportunity_id')->cursor(), fn (Opportunity $opp) => [
             $opp->title,
             $opp->provider_name,
             $opp->education_level ? \App\Support\EducationLevel::label($opp->education_level) : null,

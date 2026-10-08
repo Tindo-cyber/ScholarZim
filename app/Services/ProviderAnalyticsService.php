@@ -29,6 +29,7 @@ class ProviderAnalyticsService
     public function overview(User $provider): array
     {
         $opportunityIds = Opportunity::where('provider_user_id', $provider->user_id)
+            ->notDraft()
             ->pluck('opportunity_id')
             ->all();
 

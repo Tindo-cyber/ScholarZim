@@ -118,6 +118,17 @@ class Opportunity extends Model
             });
     }
 
+    /**
+     * Everything except drafts. Applied wherever listings are counted, listed,
+     * searched, reminded about or exported without already going through
+     * publiclyVisible(): a draft is its provider's private work, and must not
+     * change a number or appear in a list that is not theirs.
+     */
+    public function scopeNotDraft(Builder $query): Builder
+    {
+        return $query->where('moderation_status', '<>', OpportunityModerationStatus::DRAFT);
+    }
+
     public function scopeApproved(Builder $query): Builder
     {
         return $query->where('moderation_status', OpportunityModerationStatus::APPROVED);
@@ -222,6 +233,11 @@ class Opportunity extends Model
     public function reports(): HasMany
     {
         return $this->hasMany(OpportunityReport::class, 'opportunity_id', 'opportunity_id');
+    }
+
+    public function isDraft(): bool
+    {
+        return OpportunityModerationStatus::isDraft($this->moderation_status);
     }
 
     public function statusLabel(): string

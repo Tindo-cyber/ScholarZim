@@ -14,7 +14,9 @@ class ProviderService
 {
     public function dashboardStats(User $provider): array
     {
+        // Drafts are the provider's own, but they are not listings yet and are not counted.
         $opportunityIds = Opportunity::where('provider_user_id', $provider->user_id)
+            ->notDraft()
             ->pluck('opportunity_id');
 
         $applications = Application::whereIn('opportunity_id', $opportunityIds);
@@ -92,6 +94,7 @@ class ProviderService
     public function upcomingDeadlines(User $provider, int $limit = 5)
     {
         return Opportunity::where('provider_user_id', $provider->user_id)
+            ->notDraft()
             ->whereNotNull('deadline')
             ->whereDate('deadline', '>=', Carbon::today())
             ->where('status', '!=', OpportunityStatus::WITHDRAWN)

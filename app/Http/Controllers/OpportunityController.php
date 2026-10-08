@@ -71,6 +71,53 @@ class OpportunityController extends Controller
     }
 
     /**
+     * Save the form as a draft: only a title is required, and whatever else can be
+     * stored is. What cannot is listed afterwards, never dropped silently.
+     */
+    public function saveDraft(Request $request)
+    {
+        $this->authorize('create', Opportunity::class);
+
+        $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+        ], [
+            'title.required' => 'Give the draft a title, so you can find it again.',
+        ]);
+
+        try {
+            $result = app(\App\Services\ListingDraftService::class)->save(
+                $request->all(),
+                $request->user(),
+                $request->filled('draft_id') ? (int) $request->input('draft_id') : null
+            );
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpExceptionInterface $e) {
+            throw $e;
+        } catch (\RuntimeException $e) {
+            return back()->withInput()->with('errorMessage', $e->getMessage());
+        }
+
+        $redirect = redirect()
+            ->route('opportunities.edit', $result['draft']->opportunity_id)
+            ->with('successMessage', 'Draft saved. Only you can see it, and nobody has been told.');
+
+        return $result['notKept'] === [] ? $redirect : $redirect->with('draftNotKept', $result['notKept']);
+    }
+
+    public function discardDraft(Request $request, int $id)
+    {
+        $draft = Opportunity::query()
+            ->whereKey($id)
+            ->where('provider_user_id', $request->user()->user_id)
+            ->first() ?? abort(404);
+
+        $this->authorize('discardDraft', $draft);
+
+        app(\App\Services\ListingDraftService::class)->discard($draft, $request->user());
+
+        return redirect()->route('provider.dashboard')->with('successMessage', 'Draft discarded.');
+    }
+
+    /**
      * The public page for the form as it stands, in a new tab. Nothing is saved or
      * announced: the listing is built in memory from whatever has been typed, and
      * forgivingly, because the point is to look before the form is complete.
@@ -117,8 +164,22 @@ class OpportunityController extends Controller
     {
         $this->authorize('create', Opportunity::class);
 
+        // A draft being submitted arrives with its id. It must be this provider's own
+        // draft: the submit path must not be a way to overwrite a live listing, or someone
+        // else's.
+        $draft = null;
+
+        if ($request->filled('draft_id')) {
+            $draft = Opportunity::query()
+                ->whereKey((int) $request->input('draft_id'))
+                ->where('provider_user_id', $request->user()->user_id)
+                ->first();
+
+            abort_if($draft === null || ! $draft->isDraft(), 404);
+        }
+
         try {
-            $this->opportunityService->create($request->validated(), $request->user());
+            $this->opportunityService->create($request->validated(), $request->user(), $draft);
         } catch (UnauthorizedException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
@@ -131,6 +192,17 @@ class OpportunityController extends Controller
     public function edit(Request $request, int $id)
     {
         $opportunity = $this->ownedListing($request, $id, 'update') ?? abort(404);
+
+        // A draft has no review history to explain and no live listing to protect, so it
+        // is edited in the create form it came from; submitting it goes through the
+        // ordinary submit.
+        if ($opportunity->isDraft()) {
+            return view('opportunities.create', $this->formData() + [
+                'defaults' => [],
+                'prefill' => $opportunity->load('subjectRequirements.qualification', 'subjectRequirements.subject'),
+                'draft' => $opportunity,
+            ]);
+        }
 
         if ($opportunity->isWithdrawn()) {
             return redirect()

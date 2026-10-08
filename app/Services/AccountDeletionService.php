@@ -64,7 +64,9 @@ class AccountDeletionService
         // lives on the publication column: checking moderation alone would have
         // counted a withdrawn listing as live, because withdrawing no longer
         // overwrites the approval it used to erase.
+        // Drafts never held anyone's attention or application, so they do not block it.
         $liveListings = Opportunity::where('provider_user_id', $user->user_id)
+            ->notDraft()
             ->where('status', '!=', OpportunityStatus::WITHDRAWN)
             ->where('moderation_status', '!=', OpportunityModerationStatus::REJECTED)
             ->count();
