@@ -5,6 +5,7 @@
         'fields' => ['Fields', route('admin.catalogue.fields')],
         'institutions' => ['Institutions', route('admin.catalogue.institutions')],
         'pending' => ['Waiting for approval', route('admin.catalogue.pending')],
+        'old' => ['Old values', route('admin.catalogue.oldValues')],
     ];
 @endphp
 <ul class="nav nav-pills mb-4 gap-1" aria-label="Catalogue sections">

@@ -20,7 +20,7 @@ class OpportunityScope extends Model
 
     protected $table = 'opportunity_scopes';
 
-    protected $fillable = ['opportunity_id', 'programme_id', 'field_id', 'institution_id'];
+    protected $fillable = ['opportunity_id', 'programme_id', 'field_id', 'institution_id', 'source'];
 
     public function opportunity(): BelongsTo
     {

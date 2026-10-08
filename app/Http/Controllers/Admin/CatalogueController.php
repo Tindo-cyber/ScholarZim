@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Field;
 use App\Models\Institution;
+use App\Models\LegacyFieldAlias;
 use App\Models\Programme;
 use App\Models\ProgrammeSynonym;
 use App\Services\AuditService;
 use App\Services\Catalogue\CatalogueImporter;
+use App\Services\Catalogue\LegacyFieldBackfill;
+use App\Services\Catalogue\LegacyFieldMap;
 use App\Services\Catalogue\ProgrammeCatalogue;
 use App\Support\AuditAction;
 use App\Support\FormOptions;
@@ -231,6 +234,65 @@ class CatalogueController extends Controller
         }
 
         return back()->with('successMessage', $done);
+    }
+
+    // -------------------------------------------------------------- old values --
+
+    /** Old free-text fields of study that nothing in the catalogue knows, and what each should mean. */
+    public function oldValues(LegacyFieldBackfill $backfill)
+    {
+        return view('admin.catalogue.old-values', [
+            'unmapped' => $backfill->run(dryRun: true)->unmapped,
+            'aliases' => LegacyFieldAlias::with('field.parent')->orderBy('original_value')->get(),
+            'fields' => $this->fieldOptions(),
+            'migratable' => $backfill->run(dryRun: true)->listingsMigrated,
+        ]);
+    }
+
+    public function mapOldValue(Request $request, LegacyFieldBackfill $backfill)
+    {
+        $data = $request->validate([
+            'value' => ['required', 'string', 'max:255'],
+            'field_id' => ['required', 'integer', 'exists:fields,id'],
+        ]);
+
+        $key = Programme::normalise($data['value']);
+
+        if ($key === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['value' => 'Enter the old value as it was written.']);
+        }
+
+        if (LegacyFieldMap::codesFor($data['value']) !== [] || LegacyFieldMap::isSchoolLabel($data['value'])) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['value' => 'That value is already understood, so it needs no alias.']);
+        }
+
+        $alias = LegacyFieldAlias::create(['value_key' => $key, 'original_value' => trim(strip_tags($data['value'])), 'field_id' => $data['field_id']]);
+
+        // Every listing that wrote it that way is settled now, without waiting for anyone to run a command.
+        $report = $backfill->run();
+
+        $this->audit->log($request->user()->email, AuditAction::CATALOGUE_CHANGED, 'LegacyFieldAlias', $alias->id, '"' . $alias->original_value . '" means ' . $alias->field->code);
+
+        return back()->with('successMessage', '"' . $alias->original_value . '" now means ' . $alias->field->label() . '. ' . $report->listingsMigrated . ' listing(s) updated.');
+    }
+
+    public function deleteAlias(Request $request, int $id)
+    {
+        $alias = LegacyFieldAlias::findOrFail($id);
+        $alias->delete();
+
+        $this->audit->log($request->user()->email, AuditAction::CATALOGUE_CHANGED, 'LegacyFieldAlias', $id, 'Removed alias "' . $alias->original_value . '"');
+
+        return back()->with('successMessage', 'Alias removed. Listings already migrated keep their rows; undo with catalogue:migrate-fields --undo.');
+    }
+
+    public function migrateOldFields(Request $request, LegacyFieldBackfill $backfill)
+    {
+        $report = $backfill->run();
+
+        $this->audit->log($request->user()->email, AuditAction::CATALOGUE_CHANGED, 'Catalogue', null, 'Migrated ' . $report->listingsMigrated . ' listing(s) from the old field of study');
+
+        return back()->with('successMessage', $report->listingsMigrated . ' listing(s) migrated (' . $report->rowsCreated . ' rows).');
     }
 
     // --------------------------------------------------------- import / export --

@@ -2,7 +2,9 @@
 
 namespace App\Services\Catalogue;
 
+use App\Models\LegacyFieldAlias;
 use App\Models\Programme;
+use Illuminate\Database\QueryException;
 
 /**
  * The sixteen fields of study the old forms offered, mapped onto the ISCED-F catalogue.
@@ -41,10 +43,19 @@ final class LegacyFieldMap
     {
     }
 
-    /** @return array<int, string> narrow field codes for an old value (any case, "&" or "and"), or none */
+    /**
+     * The catalogue field codes an old value means: the built-in map first, then any alias an
+     * administrator has made. Empty when nothing knows it - and for a school label, on purpose.
+     *
+     * @return array<int, string>
+     */
     public static function codesFor(?string $value): array
     {
         $wanted = Programme::normalise($value);
+
+        if ($wanted === '') {
+            return [];
+        }
 
         foreach (self::MAP as $old => $codes) {
             if (Programme::normalise($old) === $wanted) {
@@ -52,6 +63,26 @@ final class LegacyFieldMap
             }
         }
 
-        return [];
+        try {
+            $alias = LegacyFieldAlias::with('field')->where('value_key', $wanted)->first();
+        } catch (QueryException) {
+            return [];
+        }
+
+        return $alias?->field ? [$alias->field->code] : [];
+    }
+
+    /** "General Primary" and "General Secondary": levels, not subjects. They map to nothing on purpose. */
+    public static function isSchoolLabel(?string $value): bool
+    {
+        $wanted = Programme::normalise($value);
+
+        foreach (self::MAP as $old => $codes) {
+            if ($codes === [] && Programme::normalise($old) === $wanted) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Models\ApplicantProfile;
+use App\Models\ApplicantProgramme;
+use App\Services\Catalogue\ApplicantProgrammes;
 use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\EducationLevel;
 use Illuminate\Support\Carbon;
@@ -93,6 +95,20 @@ final class ProfileDataQuality
         }
 
         return $highest;
+    }
+
+    /**
+     * An enrolled student who has not said which programme they are on. Their old free-text field
+     * of study cannot be turned into a programme for them - that would be inventing a fact - so
+     * they are asked, once, and it stops the moment they choose.
+     */
+    public static function programmeNeedsChoosing(ApplicantProfile $profile): bool
+    {
+        if (! $profile->exists || ApplicantProgrammes::modeFor($profile) !== ApplicantProgrammes::CURRENT) {
+            return false;
+        }
+
+        return ! $profile->programmeChoices()->where('kind', ApplicantProgramme::CURRENT)->exists();
     }
 
     /**

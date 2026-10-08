@@ -26,6 +26,21 @@
     </div>
 @endif
 
+@if(\App\Services\ProfileDataQuality::programmeNeedsChoosing($profile))
+    <div {{ $attributes->merge(['class' => 'alert alert-info']) }} role="note" id="choose-programme-prompt">
+        <div class="fw-semibold mb-1">Which programme are you on?</div>
+        <p class="small mb-2">
+            @if(filled($profile->field_of_study))
+                You told us your field is <strong>{{ $profile->field_of_study }}</strong>. Scholarships are now matched to the
+                programme you are studying, which is more exact. Choose yours from the list.
+            @else
+                Scholarships are matched to the programme you are studying. Choose yours from the list so they can find you.
+            @endif
+        </p>
+        <a class="btn btn-sm btn-primary" href="{{ route('applicant.profile') }}#programme-card">Choose my programme</a>
+    </div>
+@endif
+
 @if($warnings !== [])
     <div {{ $attributes->merge(['class' => 'alert alert-warning']) }} role="alert" id="profile-quality-warnings">
         <div class="fw-semibold mb-1">Check your profile</div>

@@ -369,6 +369,10 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
         Route::post('/institutions', [Admin\CatalogueController::class, 'storeInstitution'])->name('catalogue.institutions.store');
         Route::post('/institutions/{id}', [Admin\CatalogueController::class, 'updateInstitution'])->whereNumber('id')->name('catalogue.institutions.update');
         Route::get('/pending', [Admin\CatalogueController::class, 'pending'])->name('catalogue.pending');
+        Route::get('/old-values', [Admin\CatalogueController::class, 'oldValues'])->name('catalogue.oldValues');
+        Route::post('/old-values', [Admin\CatalogueController::class, 'mapOldValue'])->name('catalogue.oldValues.map');
+        Route::post('/old-values/migrate', [Admin\CatalogueController::class, 'migrateOldFields'])->name('catalogue.oldValues.migrate');
+        Route::post('/old-values/{id}/delete', [Admin\CatalogueController::class, 'deleteAlias'])->whereNumber('id')->name('catalogue.oldValues.delete');
         Route::post('/pending/{id}/approve', [Admin\CatalogueController::class, 'approve'])->whereNumber('id')->name('catalogue.pending.approve');
         Route::post('/pending/{id}/merge', [Admin\CatalogueController::class, 'merge'])->whereNumber('id')->name('catalogue.pending.merge');
         Route::post('/pending/{id}/reject', [Admin\CatalogueController::class, 'reject'])->whereNumber('id')->name('catalogue.pending.reject');
