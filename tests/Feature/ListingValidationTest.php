@@ -141,7 +141,8 @@ class ListingValidationTest extends TestCase
             'certificate' => [EducationLevel::CERTIFICATE, true],
             'diploma' => [EducationLevel::DIPLOMA, true],
             'undergraduate' => [EducationLevel::UNDERGRADUATE, true],
-            'honours' => [EducationLevel::HONOURS, false],
+            // In Zimbabwe a BSc / BCom Honours is the ordinary degree, entered from A-Level.
+            'honours' => [EducationLevel::HONOURS, true],
             'postgraduate' => [EducationLevel::POSTGRADUATE, false],
             'masters' => [EducationLevel::MASTERS, false],
             'phd' => [EducationLevel::PHD, false],
@@ -149,10 +150,10 @@ class ListingValidationTest extends TestCase
         ];
     }
 
-    public function test_the_points_set_is_exactly_certificate_diploma_and_undergraduate(): void
+    public function test_the_points_set_is_exactly_certificate_diploma_undergraduate_and_honours(): void
     {
         $this->assertSame(
-            [EducationLevel::CERTIFICATE, EducationLevel::DIPLOMA, EducationLevel::UNDERGRADUATE],
+            [EducationLevel::CERTIFICATE, EducationLevel::DIPLOMA, EducationLevel::UNDERGRADUATE, EducationLevel::HONOURS],
             OpportunityLevelRules::POINTS_TARGETS
         );
     }
@@ -228,6 +229,9 @@ class ListingValidationTest extends TestCase
             'o level for diploma' => [$o, EducationLevel::DIPLOMA, true],
             'a level for undergraduate' => [$a, EducationLevel::UNDERGRADUATE, true],
             'cambridge a level for certificate' => [$cambridgeA, EducationLevel::CERTIFICATE, true],
+            // Honours is the ordinary degree in Zimbabwe, so school results lead into it.
+            'a level for honours' => [$a, EducationLevel::HONOURS, true],
+            'o level for honours' => [$o, EducationLevel::HONOURS, true],
             'primary for undergraduate' => [$p, EducationLevel::UNDERGRADUATE, false],
             'a level for masters' => [$a, EducationLevel::MASTERS, false],
             'o level for phd' => [$o, EducationLevel::PHD, false],

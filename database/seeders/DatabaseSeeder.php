@@ -597,6 +597,13 @@ class DatabaseSeeder extends Seeder
             // pupil, never a level any applicant's own profile is set to. See
             // EducationLevel's class docblock.
             ['Chinhoyi Form 1 Transition Bursary', 'General Secondary', EducationLevel::FORM_1, 'Full Scholarship', 60],
+            // Open to any field of study, so a student always has a realistic handful of matches
+            // alongside the field-specific awards above. A listing's field is a rule, and a demo
+            // where the main student matched almost nothing would look broken rather than strict.
+            ['National Merit Undergraduate Bursary', null, EducationLevel::UNDERGRADUATE, 'Tuition Only', 40],
+            ['Skills for All Diploma Award', null, EducationLevel::DIPLOMA, 'Partial Scholarship', 35],
+            ['Open Doors Master\'s Fellowship', null, EducationLevel::MASTERS, 'Tuition + Accommodation', 75],
+            ['Zimbabwe Open Merit Scholarship', null, null, 'Partial Scholarship', 50],
         ];
 
         foreach ($listings as [$title, $field, $level, $funding, $daysOut]) {

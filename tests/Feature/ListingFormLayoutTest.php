@@ -384,4 +384,37 @@ class ListingFormLayoutTest extends TestCase
             'reviewed_by' => 'admin@scholarzim.co.zw',
         ], $attributes));
     }
+    // ------------------------------------------------ Honours, as Zimbabwe means it --
+
+    public function test_honours_uses_everything_like_undergraduate(): void
+    {
+        $this->assertSame(
+            OpportunityLevelRules::capabilities(EducationLevel::UNDERGRADUATE),
+            OpportunityLevelRules::capabilities(EducationLevel::HONOURS),
+            'a BSc Honours bursary is decided on A-Level points and school subjects, like any degree bursary'
+        );
+    }
+
+    public function test_the_provider_form_explains_what_honours_means_and_where_a_zimbabwean_degree_belongs(): void
+    {
+        $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
+
+        $this->assertStringContainsString('Honours (a one-year postgraduate year, e.g. in South Africa)', $html);
+        // (The apostrophe in "bachelor's" is HTML-escaped in the page, so match around it.)
+        $this->assertStringContainsString('including BSc / BCom Honours at Zimbabwean universities)', $html);
+        $this->assertStringContainsString('belongs under Undergraduate', $html);
+        $this->assertStringNotContainsString('>Honours Degree<', $html, 'the bare, ambiguous label is gone from the provider form');
+    }
+
+    public function test_the_minimum_level_options_carry_the_same_wording(): void
+    {
+        $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
+
+        $this->assertSame(2, substr_count($html, 'Honours (a one-year postgraduate year, e.g. in South Africa)'), 'in both the target and the minimum level lists');
+    }
+
+    public function test_an_honours_award_can_still_be_saved_with_a_level_it_is_chosen_for(): void
+    {
+        $this->submit(EducationLevel::HONOURS, ['min_academic_points' => 12])->assertSessionHasNoErrors();
+    }
 }

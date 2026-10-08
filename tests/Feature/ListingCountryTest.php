@@ -90,22 +90,22 @@ class ListingCountryTest extends TestCase
 
     public function test_a_real_country_search_also_finds_listings_usable_anywhere_and_online(): void
     {
-        $this->listing('Berlin Award', 'Germany');
-        $this->listing('Harare Award', 'Zimbabwe');
-        $this->listing('Anywhere Award', 'Any country');
-        $this->listing('Remote Award', 'Online / distance');
+        $this->listing('Qzx Berlin Award', 'Germany');
+        $this->listing('Qzx Harare Award', 'Zimbabwe');
+        $this->listing('Qzx Anywhere Award', 'Any country');
+        $this->listing('Qzx Remote Award', 'Online / distance');
 
-        $this->get('/scholarships?country=Germany')
-            ->assertSee('Berlin Award')
-            ->assertSee('Anywhere Award')
-            ->assertSee('Remote Award')
-            ->assertDontSee('Harare Award');
+        $this->get('/scholarships?keyword=Qzx&country=Germany')
+            ->assertSee('Qzx Berlin Award')
+            ->assertSee('Qzx Anywhere Award')
+            ->assertSee('Qzx Remote Award')
+            ->assertDontSee('Qzx Harare Award');
 
-        $this->get('/scholarships?country=Zimbabwe')
-            ->assertSee('Harare Award')
-            ->assertSee('Anywhere Award')
-            ->assertSee('Remote Award')
-            ->assertDontSee('Berlin Award');
+        $this->get('/scholarships?keyword=Qzx&country=Zimbabwe')
+            ->assertSee('Qzx Harare Award')
+            ->assertSee('Qzx Anywhere Award')
+            ->assertSee('Qzx Remote Award')
+            ->assertDontSee('Qzx Berlin Award');
     }
 
     public function test_choosing_online_shows_only_online_listings(): void

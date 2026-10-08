@@ -426,6 +426,7 @@ class RecommendationTest extends TestCase
         $award = $this->gatedListing('Undergraduate Computer Science Scholarship', [
             'description' => 'A well-funded award for high-achieving students.',
         ]);
+        $this->onlyThisListingIsLive($award);
 
         $html = $this->actingAs($kudzai)
             ->get('/applicant/recommendations')
@@ -453,6 +454,7 @@ class RecommendationTest extends TestCase
         $award = $this->gatedListing('Undergraduate Computer Science Scholarship', [
             'description' => 'A well-funded award for high-achieving students.',
         ]);
+        $this->onlyThisListingIsLive($award);
 
         $html = $this->actingAs($this->student)
             ->get('/applicant/recommendations')
@@ -592,6 +594,7 @@ class RecommendationTest extends TestCase
         $award = $this->gatedListing('Community Futures Award', [
             'description' => 'Funding is available to students pursuing a bachelor\'s degree.',
         ]);
+        $this->onlyThisListingIsLive($award);
 
         $html = $this->actingAs($kudzai)
             ->get('/applicant/recommendations')
@@ -732,7 +735,7 @@ class RecommendationTest extends TestCase
 
         $this->actingAs($chipo)
             ->post('/apply/' . $award->opportunity_id . '/quick')
-            ->assertSessionHas('errorMessage', fn (string $m) => str_contains($m, 'intended for Form 1')
+            ->assertSessionHas('errorMessage', fn (string $m) => str_contains($m, 'Form 1 transition award')
                 && str_contains($m, 'A Level'));
 
         $this->assertDatabaseMissing('applications', [
@@ -793,6 +796,16 @@ class RecommendationTest extends TestCase
 
     // --------------------------------------------------------------- helpers --
 
+    /**
+     * The recommendations page lists only the closest few refusals. A Primary pupil now fails
+     * nearly every listing, so a test about ONE of them needs the others out of the way.
+     */
+    private function onlyThisListingIsLive(Opportunity $keep): void
+    {
+        Opportunity::where('opportunity_id', '!=', $keep->opportunity_id)
+            ->update(['moderation_status' => OpportunityModerationStatus::PENDING]);
+    }
+
     /** @return array<int, int> */
     private function rankedIds(): array
     {
@@ -826,5 +839,32 @@ class RecommendationTest extends TestCase
                 'submitted_at' => Carbon::now()->subDay(),
             ]
         );
+    }
+    // --------------------------------------------------------------- the demo --
+
+    /**
+     * A listing's stated field is a rule, so a demo student only matches listings for
+     * their field - unless the listing is open to any. The seeded data includes open
+     * ones so the main demo student has a realistic handful of matches rather than
+     * one, which would look like the product was broken.
+     */
+    public function test_the_seeded_demo_student_has_a_realistic_handful_of_matches(): void
+    {
+        $this->assertGreaterThanOrEqual(3, count($this->rankedIds()));
+    }
+
+    public function test_the_open_demo_listings_state_no_field(): void
+    {
+        $open = Opportunity::whereIn('title', [
+            'National Merit Undergraduate Bursary', 'Skills for All Diploma Award',
+            "Open Doors Master's Fellowship", 'Zimbabwe Open Merit Scholarship',
+        ])->get();
+
+        $this->assertCount(4, $open);
+
+        foreach ($open as $listing) {
+            $this->assertNull($listing->target_field, $listing->title);
+            $this->assertTrue($listing->isPubliclyVisible(), $listing->title);
+        }
     }
 }

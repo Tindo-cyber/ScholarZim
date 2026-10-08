@@ -142,6 +142,18 @@ final class EligibilityEvaluator
             return null;
         }
 
+        // An impossible jump is the one thing about the level that refuses someone - a Grade 7
+        // pupil for a diploma, an O-Level student for a PhD. Everything merely unusual stays a
+        // note below. See LevelJump for exactly where the line is.
+        if (LevelJump::verdict($profile->education_level, $opportunity->education_level) === LevelJump::FAIL) {
+            return RequirementOutcome::fail(
+                RequirementOutcome::TYPE_PROGRESSION,
+                LevelJump::failureMessage($profile->education_level, $opportunity->education_level),
+                required: EducationLevel::label($opportunity->education_level),
+                actual: EducationLevel::label($profile->education_level),
+            );
+        }
+
         return RequirementOutcome::note(
             RequirementOutcome::TYPE_PROGRESSION,
             EducationPathway::isValid($profile->education_level, $opportunity->education_level),
@@ -699,12 +711,9 @@ final class EligibilityEvaluator
         // and the moderator by DescriptionConflicts, not resolved here.)
         $conditions = array_values(array_filter($conditions, static function (DescriptionCondition $c) use ($opportunity) {
             return match ($c->kind) {
-                // The audience reading still defers to a structured MINIMUM, as it always
-                // has. It does not yet defer to the structured target level: that level is
-                // only an advisory note until the hard rule for impossible jumps exists
-                // (plan item 5.2), and until then the title's "Form 1" is what stops an
-                // A-Level student being offered a Form 1 bursary. The two change together.
-                DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->minimum_education_level),
+                // Who the award is FOR is the structured target level's to say. The minimum is a
+                // different statement (what must already be held) and no longer silences it.
+                DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->education_level),
                 DescriptionEligibility::ENTRY_QUALIFICATION => blank($opportunity->minimum_education_level),
                 DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field),
                 default => true,
@@ -788,10 +797,11 @@ final class EligibilityEvaluator
      * titled for "Postgraduate" students - and only a rung in a genuinely
      * later tier is read as having moved past it.
      *
-     * Never runs alongside a structured minimum: once a listing states one
-     * explicitly, that is the authoritative rule for this concept, and the
-     * title/description are not independently re-checked against it - the
-     * two are never allowed to disagree with each other.
+     * Only runs when the listing's structured target level is blank - see
+     * descriptionConditions(). A level the provider chose is the rule, and LevelJump
+     * applies it; the words are not independently re-checked against it, so the two
+     * can never disagree about who the award is for. (A disagreement is reported to
+     * the provider and the moderator by DescriptionConflicts.)
      *
      * More than one distinct level ("Undergraduate and Master's
      * Scholarship") is read as *either* being acceptable - the applicant
@@ -805,10 +815,6 @@ final class EligibilityEvaluator
         AcademicRecord $record,
         array $conditions,
     ): ?RequirementOutcome {
-        if (filled($opportunity->minimum_education_level)) {
-            return null;
-        }
-
         $sourcesByLevel = [];
 
         foreach ($conditions as $condition) {

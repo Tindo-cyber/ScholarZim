@@ -163,8 +163,8 @@ class OpportunityController extends Controller
     private function formData(): array
     {
         return [
-            'educationLevels' => FormOptions::targetEducationLevelGroups(),
-            'minimumLevels' => FormOptions::educationLevelGroups(),
+            'educationLevels' => FormOptions::providerLevelGroups(forTarget: true),
+            'minimumLevels' => FormOptions::providerLevelGroups(forTarget: false),
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'settlementTypes' => \App\Services\ScholarFit\Taxonomy\SettlementType::ALL,
             'fundingTypes' => FormOptions::FUNDING_TYPES,
@@ -232,8 +232,8 @@ class OpportunityController extends Controller
 
         return view('opportunities.edit', [
             'opportunity' => $opportunity,
-            'educationLevels' => FormOptions::targetEducationLevelGroups(),
-            'minimumLevels' => FormOptions::educationLevelGroups(),
+            'educationLevels' => FormOptions::providerLevelGroups(forTarget: true),
+            'minimumLevels' => FormOptions::providerLevelGroups(forTarget: false),
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'settlementTypes' => \App\Services\ScholarFit\Taxonomy\SettlementType::ALL,
             'fundingTypes' => FormOptions::FUNDING_TYPES,

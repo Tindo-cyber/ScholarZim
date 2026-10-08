@@ -48,8 +48,11 @@ final class EducationPathway
      * it.
      */
     private const VALID_TARGETS = [
+        // A Grade 7 leaver starting Form 1 is starting O-Level, so an O-Level award covering
+        // Forms 1-4 is an ordinary fit for them as well as a Form 1 transition one.
         EducationLevel::PRIMARY => [
             EducationLevel::FORM_1,
+            EducationLevel::O_LEVEL,
         ],
         EducationLevel::O_LEVEL => [
             EducationLevel::O_LEVEL,
@@ -57,17 +60,22 @@ final class EducationPathway
             EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
+            // In Zimbabwe an Honours degree is usually the ordinary four-year degree, so it
+            // is entered from school like Undergraduate. See LevelJump.
+            EducationLevel::HONOURS,
         ],
         EducationLevel::A_LEVEL => [
             EducationLevel::A_LEVEL,
             EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
+            EducationLevel::HONOURS,
         ],
         EducationLevel::CERTIFICATE => [
             EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
+            EducationLevel::HONOURS,
         ],
         EducationLevel::DIPLOMA => [
             EducationLevel::DIPLOMA,

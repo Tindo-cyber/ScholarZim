@@ -29,11 +29,13 @@ final class RequirementOutcome
     /**
      * How the applicant's current level relates to what the listing funds.
      *
-     * Always advisory. A recognised progression is reported so an applicant can
-     * see it was considered, and an unusual one is reported so they know it is
-     * unusual - but neither decides anything. Whether a particular scholarship
-     * accepts a particular applicant is answered by the requirements that
-     * scholarship actually states, not by a table of what usually follows what.
+     * Advisory, with one exception. A recognised progression is reported so an
+     * applicant can see it was considered, and an unusual one so they know it is
+     * unusual - but neither decides anything: whether a scholarship accepts an
+     * applicant is answered by the requirements it states, not by a table of what
+     * usually follows what. The exception is a jump nobody makes (a Grade 7 pupil
+     * for a diploma, an O-Level student for a PhD), which LevelJump reports as a
+     * failed requirement.
      */
     public const TYPE_PROGRESSION = 'progression';
 

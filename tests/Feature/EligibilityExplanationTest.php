@@ -285,18 +285,19 @@ class EligibilityExplanationTest extends TestCase
     /** A progression note is rendered, and is not dressed up as a requirement. */
     public function test_an_advisory_progression_note_is_shown_apart_from_requirements(): void
     {
-        $phd = $this->listing('Research Grant', ['education_level' => EducationLevel::PHD]);
-        $oLevel = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
+        // Unusual, not impossible: an A-Level student looking at an O-Level award.
+        $award = $this->listing('School Fees Award', ['education_level' => EducationLevel::O_LEVEL, 'target_field' => null]);
+        $aLevel = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
 
-        $html = $this->actingAs($oLevel)
-            ->get('/scholarships/'.$phd->opportunity_id)
+        $html = $this->actingAs($aLevel)
+            ->get('/scholarships/'.$award->opportunity_id)
             ->assertOk()
             ->getContent();
 
         $this->assertStringContainsString('not a usual next step', $html);
         // The listing states nothing, so it must still say that rather than
         // treating the note as a rule that was passed or failed.
-        $this->assertStringContainsString('No entry requirements specified', $html);
+        $this->assertStringContainsString('does not specify entry requirements', $html);
         $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
     }
 }

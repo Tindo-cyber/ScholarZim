@@ -260,6 +260,27 @@ final class FormOptions
         ];
     }
 
+    /**
+     * The level options a PROVIDER chooses from, worded so each can be picked correctly.
+     *
+     * "Honours" means two different things. In Zimbabwe a BSc Honours or BCom Honours is
+     * normally the ordinary four-year degree, entered from A-Level; in South Africa it is a
+     * one-year postgraduate year after a degree. A provider who reads "Honours Degree" and
+     * picks it for a Zimbabwean degree bursary has chosen the minority meaning, so the
+     * options say which is which and where a Zimbabwean degree belongs.
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function providerLevelGroups(bool $forTarget = true): array
+    {
+        $groups = $forTarget ? self::targetEducationLevelGroups() : self::educationLevelGroups();
+
+        $groups['Tertiary'][EducationLevel::UNDERGRADUATE] = 'Undergraduate (a bachelor\'s degree, including BSc / BCom Honours at Zimbabwean universities)';
+        $groups['Postgraduate'][EducationLevel::HONOURS] = 'Honours (a one-year postgraduate year, e.g. in South Africa)';
+
+        return $groups;
+    }
+
     /** The same groups, for a scholarship's target level - includes Form 1 as its own entry point. */
     public static function targetEducationLevelGroups(): array
     {

@@ -47,16 +47,13 @@ class ApplicationGateTest extends TestCase
     }
 
     /**
-     * An unusual step is not a refusal. This listing states no entry
-     * requirement, so nothing refuses a Primary pupil - they are told the
-     * progression is unusual and left to decide.
+     * A Grade 7 pupil cannot enter a degree, whatever the listing does or does not say.
      *
-     * This previously asserted the opposite, on the strength of the pathway
-     * table alone. That was the assumption the product no longer makes: a
-     * level does not imply its destinations, and only the provider can say who
-     * their award is for.
+     * This once asserted the opposite - "an unusual step is not a refusal" - when a
+     * listing's target level was only a note. A jump nobody makes is now refused (see
+     * LevelJump); the unusual-but-possible ones are still only notes.
      */
-    public function test_a_primary_pupil_is_not_refused_by_a_listing_that_states_no_requirement(): void
+    public function test_a_primary_pupil_cannot_apply_to_an_undergraduate_award(): void
     {
         $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
@@ -65,9 +62,9 @@ class ApplicationGateTest extends TestCase
 
         $this->actingAs($kudzai)
             ->post('/apply/' . $opportunity->opportunity_id . '/quick')
-            ->assertRedirect();
+            ->assertSessionHas('errorMessage', fn (string $m) => str_contains($m, 'Undergraduate') && str_contains($m, 'Primary'));
 
-        $this->assertDatabaseHas('applications', [
+        $this->assertDatabaseMissing('applications', [
             'user_id' => $kudzai->user_id,
             'opportunity_id' => $opportunity->opportunity_id,
         ]);
@@ -89,24 +86,19 @@ class ApplicationGateTest extends TestCase
     }
 
     /**
-     * A research grant that asks for nothing refuses nobody. The applicant is
-     * told this is not a usual next step, and the provider - who alone knows
-     * who the award is for - can state a requirement if it is not open to them.
+     * An O-Level student cannot hold a PhD. The listing states no requirement of its own,
+     * and does not need to: the level it is for is enough, and the refusal says so.
      */
-    public function test_an_o_level_applicant_is_told_a_phd_award_is_an_unusual_step_not_refused(): void
+    public function test_an_o_level_applicant_is_refused_a_phd_award_by_the_level_alone(): void
     {
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'Agribusiness Innovation Research Grant')->firstOrFail();
 
         $fit = app(\App\Services\RecommendationService::class)->evaluateOne($farai, $opportunity);
 
-        $this->assertTrue($fit->meetsRequirements(), 'nothing stated, nothing refused');
-
-        $notes = array_map(fn ($n) => $n->message, $fit->advisoryNotes());
-        $this->assertNotEmpty($notes);
-        $this->assertStringContainsString('not a usual next step', implode(' ', $notes));
+        $this->assertTrue($fit->isIneligible());
+        $this->assertStringContainsString('PhD', implode(' ', $fit->failureMessages()));
     }
-
     public function test_an_o_level_applicant_is_refused_a_phd_award_that_requires_a_degree(): void
     {
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();

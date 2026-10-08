@@ -30,13 +30,17 @@ final class OpportunityLevelRules
      * Targets an A-Level result leads into. The minimum-points rule is ZIMSEC
      * A-Level points only (EligibilityEvaluator::points), so it is only
      * meaningful where an applicant can already hold A-Level results: a
-     * Certificate, Diploma or Undergraduate award. Below that the applicant has
+     * Certificate, Diploma, Undergraduate or Honours award (Honours being the ordinary
+     * degree in Zimbabwe). Below that the applicant has
      * no A-Level yet; above it they are judged on a degree.
      */
     public const POINTS_TARGETS = [
         EducationLevel::CERTIFICATE,
         EducationLevel::DIPLOMA,
         EducationLevel::UNDERGRADUATE,
+        // In Zimbabwe a BSc or BCom Honours is the ordinary four-year degree, entered from
+        // A-Level, so its bursaries are decided on A-Level points like an Undergraduate one.
+        EducationLevel::HONOURS,
     ];
 
     private const FORM_1_POSITION = 1;
@@ -153,7 +157,10 @@ final class OpportunityLevelRules
         EducationLevel::CERTIFICATE => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL],
         EducationLevel::DIPLOMA => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL],
         EducationLevel::UNDERGRADUATE => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL],
-        EducationLevel::HONOURS => [EducationLevel::UNDERGRADUATE],
+        // Honours is usually the ordinary degree in Zimbabwe, entered from school, so school
+        // results apply to it like they do to Undergraduate; the degree classification still
+        // applies to anyone coming up from one.
+        EducationLevel::HONOURS => [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL, EducationLevel::UNDERGRADUATE],
         EducationLevel::POSTGRADUATE => [EducationLevel::UNDERGRADUATE],
         EducationLevel::MASTERS => [EducationLevel::UNDERGRADUATE],
         EducationLevel::PHD => [EducationLevel::UNDERGRADUATE],

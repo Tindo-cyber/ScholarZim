@@ -412,7 +412,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['description' => 'This scholarship supports bright, community-minded students.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'This scholarship supports bright, community-minded students.'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -428,7 +428,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['description' => 'This scholarship aims to support students interested in technology and innovation.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'This scholarship aims to support students interested in technology and innovation.'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -443,7 +443,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['description' => 'This scholarship is for undergraduate Computer Science students.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'This scholarship is for undergraduate Computer Science students.'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -458,7 +458,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
-            $this->opportunity(['target_field' => null, 'description' => 'This scholarship is for undergraduate Computer Science students.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'target_field' => null, 'description' => 'This scholarship is for undergraduate Computer Science students.'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -553,7 +553,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['description' => 'This grant is open to postgraduate students.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'This grant is open to postgraduate students.'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -575,7 +575,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
-            $this->opportunity(['description' => 'This opportunity is open to students currently enrolled in secondary school.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'This opportunity is open to students currently enrolled in secondary school.'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -589,7 +589,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
-            $this->opportunity(['title' => 'Doctoral Research Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'Doctoral Research Scholarship'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -607,7 +607,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => 'Undergraduate Scholarship 2027'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'Undergraduate Scholarship 2027'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -625,9 +625,8 @@ class ScholarFitEligibilityTest extends TestCase
      */
     public function test_a_form_1_title_is_closed_to_applicants_who_have_left_form_1(): void
     {
-        $listing = fn () => $this->opportunity([
+        $listing = fn () => $this->opportunity(['education_level' => null, 'target_field' => null, 
             'title' => 'Chinhoyi Form 1 Transition Bursary',
-            'education_level' => EducationLevel::FORM_1,
         ]);
 
         foreach ([
@@ -692,7 +691,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
-            $this->opportunity(['title' => "Master's Research Scholarship"])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => "Master's Research Scholarship"])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -706,7 +705,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => "Master's Research Scholarship"])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => "Master's Research Scholarship"])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -723,14 +722,14 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $mastersFit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => 'Masters Research Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'Masters Research Scholarship'])
         );
         $this->assertFalse($mastersFit->meetsRequirements());
         $this->assertStringContainsString('Masters', implode(' ', $mastersFit->failureMessages()));
 
         $bachelorsFit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => 'Bachelors Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'Bachelors Scholarship'])
         );
         $this->assertFalse($bachelorsFit->meetsRequirements());
         $this->assertStringContainsString('Undergraduate', implode(' ', $bachelorsFit->failureMessages()));
@@ -745,7 +744,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
-            $this->opportunity(['title' => 'Postgraduate Research Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'Postgraduate Research Scholarship'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -759,7 +758,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => 'Postgraduate Research Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'Postgraduate Research Scholarship'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -786,7 +785,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => 'Primary School Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'Primary School Scholarship'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -808,7 +807,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => 'High School Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'High School Scholarship'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -822,7 +821,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => 'Secondary School Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'Secondary School Scholarship'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -840,7 +839,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
-            $this->opportunity(['title' => 'High School Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'High School Scholarship'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -868,7 +867,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE]),
-            $this->opportunity(['title' => 'PhD Scholarship'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => 'PhD Scholarship'])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -911,7 +910,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['title' => "Undergraduate and Master's Scholarship"])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'title' => "Undergraduate and Master's Scholarship"])
         );
 
         $this->assertFalse($fit->meetsRequirements());
@@ -1095,7 +1094,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['description' => 'Scholarship research focuses on undergraduate education.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'Scholarship research focuses on undergraduate education.'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -1105,7 +1104,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['description' => 'Previous undergraduate research experience is an advantage.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'Previous undergraduate research experience is an advantage.'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
@@ -1115,7 +1114,7 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::PRIMARY], grades: []),
-            $this->opportunity(['description' => 'Study opportunities include undergraduate and postgraduate programmes.'])
+            $this->opportunity(['education_level' => null, 'target_field' => null, 'description' => 'Study opportunities include undergraduate and postgraduate programmes.'])
         );
 
         $this->assertTrue($fit->meetsRequirements());
