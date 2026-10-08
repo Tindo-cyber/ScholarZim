@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\ScholarFit\AcademicRecord;
 use App\Services\ScholarFit\EligibilityEvaluator;
 use App\Services\ScholarFit\EligibilityResult;
+use App\Services\ScholarFit\MatchOrder;
 
 
 class RecommendationService
@@ -17,7 +18,8 @@ class RecommendationService
     }
 
     /**
-     * Eligible listings for an applicant, soonest deadline first.
+     * Eligible listings for an applicant, best fit first (see MatchOrder: field of study,
+     * level step, stated rules met, place, then deadline). No score is computed or shown.
      *
      * Listings they have already applied to are dropped: a recommendation
      * they cannot act on is noise. So are listings whose stated requirements
@@ -43,10 +45,7 @@ class RecommendationService
             static fn (EligibilityResult $r) => $r->meetsRequirements() && ! $r->hasInsufficientInformation()
         ));
 
-        usort($eligible, static function (EligibilityResult $a, EligibilityResult $b) {
-            return [$a->opportunity->deadline?->timestamp ?? PHP_INT_MAX, $a->opportunity->opportunity_id]
-                <=> [$b->opportunity->deadline?->timestamp ?? PHP_INT_MAX, $b->opportunity->opportunity_id];
-        });
+        $eligible = MatchOrder::sort($eligible);
 
         return $limit > 0 ? array_slice($eligible, 0, $limit) : $eligible;
     }

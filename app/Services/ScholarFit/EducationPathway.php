@@ -28,8 +28,9 @@ use App\Support\EducationLevel;
  * inferred and nothing is refused.
  *
  * What this table is still good for: telling an applicant that a progression
- * is an unusual one, and helping `EducationMatcher` rank an already-eligible
- * field. Both are things worth saying. Neither is a refusal.
+ * is an unusual one, and letting `MatchOrder` put an ordinary step ahead of an unusual one
+ * among listings the applicant is already eligible for. Neither is a refusal - only
+ * `LevelJump` refuses a level, and only for a jump nobody makes.
  */
 final class EducationPathway
 {

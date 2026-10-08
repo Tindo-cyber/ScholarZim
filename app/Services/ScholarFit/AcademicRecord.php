@@ -121,7 +121,7 @@ final class AcademicRecord
      * The qualification evidencing a level at or above the one asked for, or
      * null when the applicant has recorded nothing that reaches it.
      *
-     * Ranked on the same ladder EducationMatcher scores with, so a Masters
+     * Ranked on EducationLadder, the one ordering of levels ScholarFit uses, so a Masters
      * holder satisfies "requires at least Undergraduate" without every level
      * in between needing its own row.
      */

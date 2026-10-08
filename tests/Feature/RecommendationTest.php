@@ -11,6 +11,7 @@ use App\Models\Opportunity;
 use App\Models\OpportunitySubjectRequirement;
 use App\Models\User;
 use App\Services\RecommendationService;
+use App\Services\ScholarFit\MatchOrder;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\ApplicationStatus;
 use App\Support\OpportunityModerationStatus;
@@ -44,19 +45,36 @@ class RecommendationTest extends TestCase
 
     // --------------------------------------------------- eligible listings --
 
-    public function test_recommendations_come_back_soonest_deadline_first(): void
+    public function test_recommendations_come_back_in_match_order_not_just_by_deadline(): void
     {
-        $deadlines = array_map(
-            static fn ($fit) => $fit->opportunity->deadline?->timestamp ?? PHP_INT_MAX,
-            app(RecommendationService::class)->forUser($this->student, 20)
-        );
+        $fits = app(RecommendationService::class)->forUser($this->student, 20);
+        $keys = array_map(MatchOrder::key(...), $fits);
 
-        $sorted = $deadlines;
+        $sorted = $keys;
         sort($sorted);
 
-        $this->assertSame($sorted, $deadlines);
+        $this->assertSame($sorted, $keys);
     }
 
+    /**
+     * The point of the order: a listing for the applicant's own field comes before one open to
+     * any field, even though the open one closes sooner.
+     */
+    public function test_a_listing_for_the_students_own_field_comes_before_an_open_one_that_closes_sooner(): void
+    {
+        $this->assertSame('Computer Science & IT', $this->student->applicantProfile->field_of_study);
+
+        $open = $this->gatedListing('Zzz Open Soon Award', ['target_field' => null, 'deadline' => Carbon::today()->addDays(2)]);
+        $own = $this->gatedListing('Zzz Own Field Award', ['target_field' => 'Computer Science & IT', 'deadline' => Carbon::today()->addDays(300)]);
+
+        $ids = array_map(
+            fn ($fit) => $fit->opportunity->opportunity_id,
+            app(RecommendationService::class)->forUser($this->student, 0)
+        );
+
+        $this->assertContains($open->opportunity_id, $ids);
+        $this->assertLessThan(array_search($open->opportunity_id, $ids), array_search($own->opportunity_id, $ids));
+    }
     public function test_a_student_with_no_profile_gets_no_recommendations(): void
     {
         $stranger = User::create([

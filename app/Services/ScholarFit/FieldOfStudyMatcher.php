@@ -21,12 +21,28 @@ final class FieldOfStudyMatcher
     {
     }
 
+    public const EXACT = 'exact';
+
+    /** Not produced yet: it needs the agreed field groups (5.6). Ordering already makes room for it. */
+    public const GROUP = 'group';
+
+    public const NONE = 'none';
+
     public static function same(?string $a, ?string $b): bool
+    {
+        return self::relation($a, $b) !== self::NONE;
+    }
+
+    /**
+     * How two fields relate: the same field written the same way, or not related.
+     * The field groups will add GROUP between the two without changing any caller.
+     */
+    public static function relation(?string $a, ?string $b): string
     {
         $left = self::normalise($a);
         $right = self::normalise($b);
 
-        return $left !== '' && $left === $right;
+        return $left !== '' && $left === $right ? self::EXACT : self::NONE;
     }
 
     /** Lower-cased, "&" read as "and", every run of whitespace a single space. */

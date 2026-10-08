@@ -29,7 +29,8 @@ namespace App\Support;
 final class ScholarFitCopy
 {
     /**
-     * The phrasings EducationMatcher produces, and what a student sees instead.
+     * Older explanation phrasings (from the level scorer that no longer exists), and what a
+     * student sees instead. Kept so an explanation stored under the old wording still reads well.
      *
      * Applied after the level tokens have been replaced, so the captures are
      * already labels ("O Level") rather than constants ("O_LEVEL").

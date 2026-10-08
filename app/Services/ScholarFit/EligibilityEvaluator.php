@@ -46,9 +46,9 @@ use Illuminate\Support\Carbon;
  * apply for an undergraduate award unless that award explicitly asks for
  * A-Level.
  *
- * EducationMatcher is a third thing again: it scores how well an
- * already-eligible applicant's level fits, which is what keeps an unusual
- * progression ranked below an ordinary one without refusing it.
+ * MatchOrder is a third thing again: it orders the listings an applicant is already
+ * eligible for - an ordinary level step ahead of an unusual one - without scoring
+ * anything and without refusing anyone.
  *
  * Grades are always compared under the qualification and subject they were sat
  * in, through that subject's own ordered grade list. Nothing here compares a
@@ -194,8 +194,8 @@ final class EligibilityEvaluator
         $statedLevelMeets = true;
 
         if ($applicantLevel !== null && $minimumLevel !== null && $applicantLevel !== $minimumLevel) {
-            // Ranked on the same ladder EducationMatcher scores with - ordering
-            // is being borrowed here, not distance.
+            // Ranked on EducationLadder - its ordering is being borrowed here,
+            // not distance.
             $applicantRank = EducationLadder::rung($applicantLevel);
             $minimumRank = EducationLadder::rung($minimumLevel);
 
