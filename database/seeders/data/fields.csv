@@ -1,41 +1,41 @@
-code,name,parent_code
-00,Generic programmes and qualifications,
-001,Basic programmes and qualifications,00
-002,Literacy and numeracy,00
-003,Personal skills and development,00
-01,Education,
-011,Education,01
-02,Arts and humanities,
-021,Arts,02
-022,Humanities (except languages),02
-023,Languages,02
-03,"Social sciences, journalism and information",
-031,Social and behavioural sciences,03
-032,Journalism and information,03
-04,"Business, administration and law",
-041,Business and administration,04
-042,Law,04
-05,"Natural sciences, mathematics and statistics",
-051,Biological and related sciences,05
-052,Environment,05
-053,Physical sciences,05
-054,Mathematics and statistics,05
-06,Information and Communication Technologies (ICTs),
-061,Information and Communication Technologies (ICTs),06
-07,"Engineering, manufacturing and construction",
-071,Engineering and engineering trades,07
-072,Manufacturing and processing,07
-073,Architecture and construction,07
-08,"Agriculture, forestry, fisheries and veterinary",
-081,Agriculture,08
-082,Forestry,08
-083,Fisheries,08
-084,Veterinary,08
-09,Health and welfare,
-091,Health,09
-092,Welfare,09
-10,Services,
-101,Personal services,10
-102,Hygiene and occupational health services,10
-103,Security services,10
-104,Transport services,10
+code,name,parent_code,display_name
+00,Generic programmes and qualifications,,Generic programmes
+001,Basic programmes and qualifications,00,Basic programmes
+002,Literacy and numeracy,00,Literacy and numeracy
+003,Personal skills and development,00,Personal skills
+01,Education,,Education
+011,Education,01,Education
+02,Arts and humanities,,Arts and humanities
+021,Arts,02,Arts
+022,Humanities (except languages),02,Humanities
+023,Languages,02,Languages
+03,"Social sciences, journalism and information",,Social sciences and media
+031,Social and behavioural sciences,03,Social sciences
+032,Journalism and information,03,Journalism and information
+04,"Business, administration and law",,Business and law
+041,Business and administration,04,Business and administration
+042,Law,04,Law
+05,"Natural sciences, mathematics and statistics",,Sciences and mathematics
+051,Biological and related sciences,05,Biological sciences
+052,Environment,05,Environment
+053,Physical sciences,05,Physical sciences
+054,Mathematics and statistics,05,Mathematics and statistics
+06,Information and Communication Technologies (ICTs),,Computing and ICT
+061,Information and Communication Technologies (ICTs),06,Computing and ICT
+07,"Engineering, manufacturing and construction",,Engineering and construction
+071,Engineering and engineering trades,07,Engineering
+072,Manufacturing and processing,07,Manufacturing and mining
+073,Architecture and construction,07,Architecture and construction
+08,"Agriculture, forestry, fisheries and veterinary",,Agriculture and veterinary
+081,Agriculture,08,Agriculture
+082,Forestry,08,Forestry
+083,Fisheries,08,Fisheries
+084,Veterinary,08,Veterinary
+09,Health and welfare,,Health and welfare
+091,Health,09,Health
+092,Welfare,09,Social work and welfare
+10,Services,,Services
+101,Personal services,10,Personal services
+102,Hygiene and occupational health services,10,Health and safety services
+103,Security services,10,Security
+104,Transport services,10,Transport and logistics

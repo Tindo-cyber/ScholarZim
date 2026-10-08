@@ -100,9 +100,9 @@
                         <select class="form-select @error('programme_suggestion_field') is-invalid @enderror" id="programme_suggestion_field" name="programme_suggestion_field">
                             <option value="">Choose a field</option>
                             @foreach($narrowFields as $broad)
-                                <optgroup label="{{ $broad->name }}">
+                                <optgroup label="{{ $broad->label() }}">
                                     @foreach($broad->children as $narrow)
-                                        <option value="{{ $narrow->id }}" @selected((int) old('programme_suggestion_field') === $narrow->id)>{{ $narrow->name }}</option>
+                                        <option value="{{ $narrow->id }}" @selected((int) old('programme_suggestion_field') === $narrow->id)>{{ $narrow->label() }}</option>
                                     @endforeach
                                 </optgroup>
                             @endforeach

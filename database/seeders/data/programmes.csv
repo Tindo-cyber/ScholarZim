@@ -93,7 +93,7 @@ MSc Computer Science,Masters,061,UZ;NUST;MSU,Master of Science in Computer Scien
 MSc Data Science,Masters,061,NUST;UZ;HIT,Master of Science in Data Science
 MSc Information Systems,Masters,061,NUST;UZ,Master of Science in Information Systems
 PhD in Computer Science,PhD,061,UZ;NUST,Doctor of Philosophy in Computer Science
-BEng Civil Engineering,Undergraduate,071,UZ;NUST;HIT,Civil Engineering
+BEng Civil Engineering,Undergraduate,073,UZ;NUST;HIT,Civil Engineering
 BEng Electrical Engineering,Undergraduate,071,UZ;NUST,Electrical Engineering
 BEng Electronic Engineering,Undergraduate,071,UZ;NUST;HIT,Electronic Engineering
 BEng Mechanical Engineering,Undergraduate,071,UZ;NUST,Mechanical Engineering
@@ -103,7 +103,7 @@ BEng Telecommunications Engineering,Undergraduate,071,NUST;UZ,Telecommunications
 BEng Mining Engineering,Undergraduate,072,NUST;UZ;ZEGU,Mining Engineering
 BEng Metallurgical Engineering,Undergraduate,072,NUST;HIT,Metallurgy;Metallurgical Engineering
 BSc Food Science and Technology,Undergraduate,072,CUT;MSU,Food Science;Food Technology
-Diploma in Civil Engineering,Diploma,071,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY;MASVINGO-POLY;KWEKWE-POLY,Civil Engineering Diploma
+Diploma in Civil Engineering,Diploma,073,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY;MASVINGO-POLY;KWEKWE-POLY,Civil Engineering Diploma
 Diploma in Electrical Engineering,Diploma,071,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY;KWEKWE-POLY,Electrical Engineering Diploma
 Diploma in Mechanical Engineering,Diploma,071,HARARE-POLY;BYO-POLY;GWERU-POLY;KWEKWE-POLY,Mechanical Engineering Diploma
 Diploma in Automotive Engineering,Diploma,071,HARARE-POLY;BYO-POLY;KWEKWE-POLY,Motor Mechanics;Automotive
@@ -111,7 +111,7 @@ Diploma in Mining Engineering,Diploma,072,BYO-POLY;KWEKWE-POLY,Mining Diploma
 Certificate in Welding and Fabrication,Certificate,071,,Welding;Welding and Fabrication
 Certificate in Electrical Installation,Certificate,071,,Electrical Installation;Electrician
 Certificate in Motor Vehicle Mechanics,Certificate,071,,Motor Mechanics;Motor Vehicle Mechanic
-MSc Civil Engineering,Masters,071,UZ;NUST,Master of Science in Civil Engineering
+MSc Civil Engineering,Masters,073,UZ;NUST,Master of Science in Civil Engineering
 MSc Engineering Management,Masters,071,NUST;UZ,Engineering Management
 PhD in Engineering,PhD,071,UZ;NUST,Doctor of Philosophy in Engineering
 Bachelor of Architecture,Undergraduate,073,NUST,Architecture;BArch

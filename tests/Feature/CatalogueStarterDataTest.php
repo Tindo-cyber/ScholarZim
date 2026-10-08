@@ -81,6 +81,31 @@ class CatalogueStarterDataTest extends TestCase
         $this->assertSame($count, Programme::count());
     }
 
+    public function test_every_field_has_a_short_display_name_and_keeps_its_official_one(): void
+    {
+        (new CatalogueSeeder())->load();
+
+        foreach (Field::all() as $field) {
+            $this->assertNotEmpty($field->display_name, $field->code);
+            $this->assertNotEmpty($field->name, $field->code);
+            $this->assertLessThanOrEqual(40, mb_strlen($field->display_name), $field->code . ' is not short');
+        }
+
+        $engineering = Field::where('code', '071')->firstOrFail();
+        $this->assertSame('Engineering', $engineering->label());
+        $this->assertSame('Engineering and engineering trades', $engineering->name);
+        $this->assertSame('Engineering and construction > Engineering', $engineering->trail());
+    }
+
+    public function test_civil_engineering_is_filed_under_architecture_and_construction(): void
+    {
+        (new CatalogueSeeder())->load();
+
+        foreach (Programme::where('name', 'like', '%Civil Engineering%')->get() as $programme) {
+            $this->assertSame('073', $programme->field->code, $programme->name);
+        }
+    }
+
     public function test_the_demo_seed_includes_the_catalogue(): void
     {
         $this->seed(DatabaseSeeder::class);

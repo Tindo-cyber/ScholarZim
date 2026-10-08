@@ -347,11 +347,11 @@ class ListingScopeTest extends TestCase
     {
         $this->assertSame('any programme', $this->described([]));
         $this->assertSame(
-            'any Engineering and engineering trades programme at MSU or NUST',
+            'any Engineering programme at MSU or NUST',
             $this->described(['scope_fields' => [$this->field('071')], 'scope_institutions' => [$this->institution('MSU'), $this->institution('NUST')]])
         );
         $this->assertSame(
-            'any programme in Engineering, manufacturing and construction',
+            'any programme in Engineering and construction',
             $this->described(['scope_fields' => [$this->field('07')]])
         );
         $this->assertSame(

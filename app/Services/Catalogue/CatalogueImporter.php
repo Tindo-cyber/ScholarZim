@@ -37,7 +37,7 @@ class CatalogueImporter
 
     /** kind => columns, in file order. The first ones are required. */
     public const COLUMNS = [
-        self::FIELDS => ['code', 'name', 'parent_code'],
+        self::FIELDS => ['code', 'name', 'parent_code', 'display_name'],
         self::INSTITUTIONS => ['code', 'name', 'type', 'province'],
         self::PROGRAMMES => ['name', 'level', 'field_code', 'institutions', 'synonyms'],
     ];
@@ -172,10 +172,12 @@ class CatalogueImporter
             $code = $this->cell($row, 'code');
             $name = $this->cell($row, 'name');
             $parentCode = $this->cell($row, 'parent_code');
+            $display = $this->cell($row, 'display_name');
 
             $problem = match (true) {
                 ! preg_match('/^\d{2,4}$/', $code) => 'The code must be 2 to 4 digits (an ISCED-F code such as 07 or 071).',
                 $name === '' || mb_strlen($name) > 150 => 'The name is required and must be at most 150 characters.',
+                mb_strlen($display) > 100 => 'The display name must be at most 100 characters.',
                 default => null,
             };
 
@@ -200,6 +202,13 @@ class CatalogueImporter
             $field = Field::firstOrNew(['code' => $code]);
             $isNew = ! $field->exists;
             $field->fill(['name' => $name, 'parent_id' => $parent?->id]);
+
+            // A blank display name in the file leaves an existing one alone: adding a column to a
+            // spreadsheet must not wipe what an administrator typed on screen.
+            if ($display !== '') {
+                $field->display_name = $display;
+            }
+
             $changed = $field->isDirty();
             $field->save();
 
@@ -356,7 +365,7 @@ class CatalogueImporter
 
         if ($kind === self::FIELDS) {
             foreach (Field::with('parent')->orderBy('code')->get() as $field) {
-                $rows[] = [$field->code, $field->name, $field->parent?->code ?? ''];
+                $rows[] = [$field->code, $field->name, $field->parent?->code ?? '', $field->display_name ?? ''];
             }
         } elseif ($kind === self::INSTITUTIONS) {
             foreach (Institution::orderBy('code')->get() as $i) {

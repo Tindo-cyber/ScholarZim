@@ -234,8 +234,8 @@ class ListingScopes
 
         if ($fields->isNotEmpty()) {
             $what[] = $this->join($fields->map(fn (Field $f) => $f->isBroad()
-                ? 'any programme in ' . $f->name
-                : 'any ' . $f->name . ' programme')->all());
+                ? 'any programme in ' . $f->label()
+                : 'any ' . $f->label() . ' programme')->all());
         }
 
         $text = $what === [] ? 'any programme' : $this->join($what);

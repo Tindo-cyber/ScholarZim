@@ -11,7 +11,7 @@ class Field extends Model
 {
     protected $table = 'fields';
 
-    protected $fillable = ['code', 'name', 'parent_id'];
+    protected $fillable = ['code', 'name', 'parent_id', 'display_name'];
 
     public function parent(): BelongsTo
     {
@@ -28,6 +28,12 @@ class Field extends Model
         return $this->hasMany(Programme::class, 'field_id');
     }
 
+    /** What people see: the short display name when there is one, otherwise the official name. */
+    public function label(): string
+    {
+        return filled($this->display_name) ? $this->display_name : $this->name;
+    }
+
     public function isBroad(): bool
     {
         return $this->parent_id === null;
@@ -42,6 +48,6 @@ class Field extends Model
     /** "Engineering, manufacturing and construction > Engineering and engineering trades" */
     public function trail(): string
     {
-        return $this->isBroad() ? $this->name : $this->broad()->name . ' > ' . $this->name;
+        return $this->isBroad() ? $this->label() : $this->broad()->label() . ' > ' . $this->label();
     }
 }

@@ -19,7 +19,8 @@ final class LegacyFieldMap
     /** @var array<string, array<int, string>> old value => narrow field codes */
     public const MAP = [
         'Computer Science & IT' => ['061'],
-        'Engineering' => ['071'],
+        // Civil engineering is filed under 073 (building and civil engineering) in ISCED-F, not 071.
+        'Engineering' => ['071', '073'],
         'Medicine & Health Sciences' => ['091'],
         'Law' => ['042'],
         'Business & Finance' => ['041'],

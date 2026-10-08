@@ -54,12 +54,12 @@
             <select class="form-select @error('scope_fields') is-invalid @enderror" id="scope-fields"
                     name="scope_fields[]" multiple size="6" aria-describedby="scope-fields-help">
                 @foreach($catalogue['fields'] as $broad)
-                    <optgroup label="{{ $broad->name }}">
-                        <option value="{{ $broad->id }}" data-search="{{ strtolower($broad->name) }}"
-                                @selected(in_array($broad->id, $chosen['fields'], true))>All of {{ $broad->name }}</option>
+                    <optgroup label="{{ $broad->label() }}">
+                        <option value="{{ $broad->id }}" data-search="{{ strtolower($broad->label() . ' ' . $broad->name) }}"
+                                @selected(in_array($broad->id, $chosen['fields'], true))>All of {{ $broad->label() }}</option>
                         @foreach($broad->children as $narrow)
-                            <option value="{{ $narrow->id }}" data-search="{{ strtolower($narrow->name . ' ' . $broad->name) }}"
-                                    @selected(in_array($narrow->id, $chosen['fields'], true))>{{ $narrow->name }}</option>
+                            <option value="{{ $narrow->id }}" data-search="{{ strtolower($narrow->label() . ' ' . $narrow->name . ' ' . $broad->label()) }}"
+                                    @selected(in_array($narrow->id, $chosen['fields'], true))>{{ $narrow->label() }}</option>
                         @endforeach
                     </optgroup>
                 @endforeach
@@ -103,9 +103,9 @@
                     <select class="form-select @error('programme_suggestion_field') is-invalid @enderror" id="programme_suggestion_field" name="programme_suggestion_field">
                         <option value="">Choose a field</option>
                         @foreach($catalogue['fields'] as $broad)
-                            <optgroup label="{{ $broad->name }}">
+                            <optgroup label="{{ $broad->label() }}">
                                 @foreach($broad->children as $narrow)
-                                    <option value="{{ $narrow->id }}" @selected((int) old('programme_suggestion_field') === $narrow->id)>{{ $narrow->name }}</option>
+                                    <option value="{{ $narrow->id }}" @selected((int) old('programme_suggestion_field') === $narrow->id)>{{ $narrow->label() }}</option>
                                 @endforeach
                             </optgroup>
                         @endforeach

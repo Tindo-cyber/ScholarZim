@@ -129,6 +129,11 @@ class CatalogueMentionsTest extends TestCase
         $this->assertSame([], LegacyFieldMap::MAP['General Primary'], 'school-level labels have no programme field');
     }
 
+    public function test_the_old_engineering_field_includes_building_and_civil_engineering(): void
+    {
+        $this->assertEqualsCanonicalizing(['071', '073'], LegacyFieldMap::codesFor('Engineering'));
+    }
+
     public function test_a_legacy_value_resolves_ignoring_case_and_ampersands(): void
     {
         $this->assertSame(['061'], LegacyFieldMap::codesFor('computer science and it'));

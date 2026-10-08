@@ -76,6 +76,17 @@ class CatalogueImporterTest extends TestCase
         $this->assertSame(Field::where('code', '08')->value('id'), Field::where('code', '081')->value('parent_id'));
     }
 
+    public function test_a_display_name_is_imported_and_a_blank_one_leaves_it_alone(): void
+    {
+        $this->importer->import(CatalogueImporter::FIELDS, [['code' => '071', 'name' => 'Engineering trades', 'parent_code' => '07', 'display_name' => 'Engineering']]);
+        $this->assertSame('Engineering', Field::where('code', '071')->value('display_name'));
+
+        $this->importer->import(CatalogueImporter::FIELDS, [['code' => '071', 'name' => 'Engineering trades', 'parent_code' => '07', 'display_name' => '']]);
+        $this->assertSame('Engineering', Field::where('code', '071')->value('display_name'), 'a spreadsheet without the column does not wipe it');
+
+        $this->assertStringContainsString('code,name,parent_code,display_name', $this->importer->exportCsv(CatalogueImporter::FIELDS));
+    }
+
     // ------------------------------------------------------- institutions --
 
     public function test_an_institution_needs_a_known_type_and_province(): void

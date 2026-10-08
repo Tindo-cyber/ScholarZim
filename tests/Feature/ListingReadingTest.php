@@ -199,7 +199,7 @@ class ListingReadingTest extends TestCase
             ],
         ]);
 
-        $this->assertContains('Open to: any Engineering and engineering trades programme at MSU or NUST', $this->texts($rules));
+        $this->assertContains('Open to: any Engineering programme at MSU or NUST', $this->texts($rules));
         $this->assertSame(ListingReading::FROM_SETTING, collect($rules)->firstWhere(fn ($r) => str_starts_with($r['text'], 'Open to:'))['source']);
     }
 
@@ -234,7 +234,7 @@ class ListingReadingTest extends TestCase
         ])->assertOk()->getContent();
 
         $this->assertStringContainsString('listing-reading-scope-note', $html);
-        $this->assertStringContainsString('Open to: any programme in Engineering, manufacturing and construction', $html);
+        $this->assertStringContainsString('Open to: any programme in Engineering and construction', $html);
     }
 
     public function test_a_student_cannot_use_the_preview(): void
