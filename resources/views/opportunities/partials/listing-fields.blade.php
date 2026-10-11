@@ -33,8 +33,7 @@
         <x-form.select name="education_level" label="Level of study"
                        :options="$educationLevels" :grouped="true"
                        :value="\App\Support\EducationLevel::canonical($opportunity?->education_level) ?? $opportunity?->education_level"
-                       placeholder="Any level"
-                       hint="This decides which of the questions below apply. A Zimbabwean degree programme such as BSc Honours or BCom Honours belongs under Undergraduate; a one-year Honours after a degree (as in South Africa) belongs under Postgraduate. Form 1 is a transition award for pupils finishing Primary school." />
+                       placeholder="Any level" />
     </div>
 </div>
 

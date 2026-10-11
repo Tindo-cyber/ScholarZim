@@ -402,7 +402,9 @@ class ListingFormLayoutTest extends TestCase
         // (The apostrophe in "bachelor's" is HTML-escaped in the page, so match around it.)
         $this->assertStringContainsString('including BSc / BCom Honours at Zimbabwean universities)', $html);
         $this->assertStringContainsString('Postgraduate (including a one-year Honours after a degree, e.g. in South Africa)', $html);
-        $this->assertStringContainsString('belongs under Postgraduate', $html);
+        // The long explanation under the level dropdown was removed; the option labels carry the wording.
+        $this->assertStringNotContainsString('This decides which of the questions below apply', $html);
+        $this->assertStringNotContainsString('transition award for pupils finishing Primary school', $html);
     }
 
     public function test_the_minimum_level_options_carry_the_same_wording(): void
