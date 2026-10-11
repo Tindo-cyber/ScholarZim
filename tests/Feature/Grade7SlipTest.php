@@ -243,6 +243,7 @@ class Grade7SlipTest extends TestCase
         $outcome = $this->certificate($listing);
 
         $this->assertFalse($outcome->passed, 'an O-Level student holding only a Grade 7 slip has no results certificate');
+        $this->assertTrue($outcome->needsInformation, 'and can upload one, so it is a question');
         $this->assertStringContainsString('a results certificate', $outcome->message);
     }
 
@@ -250,7 +251,9 @@ class Grade7SlipTest extends TestCase
     {
         $this->profile()->update(['results_certificate_path' => 'profiles/demo/certificate.pdf']);
 
-        $this->assertFalse($this->certificate($this->formOne(true))->passed, 'a Form 1 award asking for the slip is not met by a certificate');
+        $outcome = $this->certificate($this->formOne(true));
+        $this->assertFalse($outcome->passed, 'a Form 1 award asking for the slip is not met by a certificate');
+        $this->assertTrue($outcome->needsInformation);
     }
 
     public function test_the_slip_is_still_there_if_the_pupil_goes_back_to_primary(): void
@@ -342,6 +345,7 @@ class Grade7SlipTest extends TestCase
         $outcome = $this->certificate($listing, $profile);
 
         $this->assertFalse($outcome->passed);
+        $this->assertTrue($outcome->needsInformation);
         $this->assertStringContainsString('a results certificate', $outcome->message);
         $this->assertStringNotContainsString('Grade 7', $outcome->message);
     }
@@ -389,11 +393,26 @@ class Grade7SlipTest extends TestCase
     {
         $html = $this->actingAs($this->pupil)->get('/apply/' . $this->formOne(true)->opportunity_id)->assertOk()->getContent();
 
-        $this->assertStringContainsString('NOT ELIGIBLE', $html);
+        $this->assertStringContainsString('NEEDS INFORMATION', $html, 'a slip he can upload is a question, not a refusal');
+        $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
         $this->assertStringContainsString('Grade 7 results slip', $html);
         $this->assertStringContainsString('Upload my Grade 7 results slip', $html);
         $this->assertStringContainsString('#grade7-slip-card', $html);
         $this->assertStringNotContainsString('name="documents[grade7_slip]"', $html, 'a submit button that cannot succeed is not shown');
+    }
+
+    public function test_a_student_missing_their_results_certificate_is_asked_for_it_not_refused(): void
+    {
+        $student = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
+        ApplicantProfile::where('user_id', $student->user_id)->update(['education_level' => EducationLevel::A_LEVEL, 'results_certificate_path' => null]);
+        $listing = $this->formOne(false, ['education_level' => EducationLevel::UNDERGRADUATE, 'requires_results_certificate' => true]);
+
+        $html = $this->actingAs($student)->get('/apply/' . $listing->opportunity_id)->assertOk()->getContent();
+
+        // Above Primary the missing evidence also makes the profile incomplete, which is the first thing said.
+        $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
+        $this->assertStringContainsString('COMPLETE YOUR PROFILE FIRST', $html);
+        $this->assertStringContainsString('Results certificate', $html);
     }
 
     public function test_with_the_slip_on_file_the_wizard_opens_and_says_it_will_be_attached(): void
@@ -454,8 +473,9 @@ class Grade7SlipTest extends TestCase
     {
         $fit = app(RecommendationService::class)->evaluateOne($this->pupil, $this->formOne(true));
 
-        $this->assertTrue($fit->isIneligible());
-        $this->assertStringContainsString('Grade 7 results slip', implode(' ', $fit->failureMessages()));
+        $this->assertTrue($fit->needsInformation());
+        $this->assertFalse($fit->isIneligible());
+        $this->assertStringContainsString('Grade 7 results slip', implode(' ', $fit->missingFields()));
     }
 
     // ----------------------------------------------------------------- providers --

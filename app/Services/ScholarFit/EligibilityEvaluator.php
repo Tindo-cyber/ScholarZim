@@ -747,18 +747,20 @@ final class EligibilityEvaluator
 
         // Which document: a Grade 7 slip for a Primary pupil (a Form 1 award can ask for it), a results certificate
         // for O/A-Level, a transcript above that.
-        $document = match (true) {
-            EducationLevel::isPrimary($profile->education_level) => 'a Grade 7 results slip',
-            EducationLevel::usesSchoolResults($profile->education_level) => 'a results certificate',
-            default => 'a transcript',
+        [$document, $field] = match (true) {
+            EducationLevel::isPrimary($profile->education_level) => ['a Grade 7 results slip', ScholarFitFieldNames::GRADE7_SLIP],
+            EducationLevel::usesSchoolResults($profile->education_level) => ['a results certificate', ScholarFitFieldNames::RESULTS_CERTIFICATE],
+            default => ['a transcript', ScholarFitFieldNames::TRANSCRIPT],
         };
 
+        // A document the student can still upload is a question, not a refusal: nothing is wrong with them, the
+        // check just has nothing to read yet.
         if (! $profile->hasRequiredAcademicEvidence()) {
-            return RequirementOutcome::fail(
+            return RequirementOutcome::needsInfo(
                 RequirementOutcome::TYPE_CERTIFICATE,
-                'Proof of results: this provider requires '.$document.' on file before you can apply.',
+                'Proof of results: this provider requires '.$document.' on file - upload your '.$field.' to your profile so we can check it.',
+                $field,
                 required: $document,
-                actual: null,
             );
         }
 

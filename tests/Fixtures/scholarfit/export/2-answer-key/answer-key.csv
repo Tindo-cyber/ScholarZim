@@ -19,7 +19,7 @@ L16,"Engineering at MSU or NUST Award",I,I,N,I,I,E,I,I,I,N,N
 L17,"MBA Fellowship",I,I,I,I,I,I,I,E,N,N,N
 L18,"BSc Computer Science Bursary",E,I,N,I,I,I,I,I,N,N,N
 L19,"General Degree Support",I,I,N,I,I,I,I,I,I,N,N
-L20,"Bursary requiring proof of results",E,E,I,I,E,E,E,E,I,I,N
+L20,"Bursary requiring proof of results",E,E,N,I,E,E,E,E,N,N,N
 L21,"Doctoral Research Award",I,I,I,I,E,E,I,E,E,E,N
 
 "Order, best first (no score)"

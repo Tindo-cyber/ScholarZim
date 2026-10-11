@@ -131,6 +131,31 @@ class ScholarFitEligibilityTest extends TestCase
         $this->assertFalse($fit->meetsRequirements());
     }
 
+    /** A document the student can still upload is a question, not a refusal. */
+    public function test_a_missing_document_is_needs_information_not_ineligible(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['transcript_path' => null]),
+            $this->opportunity(['requires_results_certificate' => true])
+        );
+
+        $this->assertTrue($fit->needsInformation());
+        $this->assertFalse($fit->isIneligible());
+        $this->assertStringContainsString('transcript', implode(' ', $fit->missingFields()));
+    }
+
+    /** ...and a certain failure elsewhere outweighs it: there is no point asking for a document when the answer is already no. */
+    public function test_a_certain_failure_outweighs_a_missing_document(): void
+    {
+        $fit = $this->evaluate(
+            $this->profile(['transcript_path' => null, 'date_of_birth' => now()->subYears(60)->toDateString()]),
+            $this->opportunity(['requires_results_certificate' => true, 'max_age' => 25])
+        );
+
+        $this->assertTrue($fit->isIneligible());
+        $this->assertFalse($fit->needsInformation());
+    }
+
     /**
      * A requirement we cannot confirm is a requirement not yet met, and the
      * sentence says which of the two it is: the student is told what to add
@@ -355,7 +380,9 @@ class ScholarFitEligibilityTest extends TestCase
         $without = $this->evaluate($profile, $listing);
 
         $this->assertFalse($without->meetsRequirements());
-        $this->assertStringContainsString('Grade 7 results slip', implode(' ', $without->failureMessages()));
+        $this->assertTrue($without->needsInformation(), 'a slip the pupil can upload is a question, not a refusal');
+        $this->assertFalse($without->isIneligible());
+        $this->assertStringContainsString('Grade 7 results slip', implode(' ', $without->missingFields()));
 
         $profile->forceFill(['grade7_slip_path' => 'profiles/demo/slip.pdf']);
 

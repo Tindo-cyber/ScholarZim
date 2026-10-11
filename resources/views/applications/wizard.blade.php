@@ -79,9 +79,10 @@
                             @endforeach
                         </ul>
                         <div class="d-flex flex-wrap gap-2">
-                            @if(\App\Support\EducationLevel::isPrimary($profile->education_level)
-                                && collect($fit->failedRequirements())->contains(fn ($o) => $o->type === \App\Services\ScholarFit\RequirementOutcome::TYPE_CERTIFICATE))
-                                <a class="btn btn-primary" href="{{ route('applicant.profile') }}#grade7-slip-card">Upload my Grade 7 results slip</a>
+                            {{-- A missing proof-of-results document is something the student can fix here and now. --}}
+                            @php $documentGap = collect($fit->pendingInformation())->first(fn ($o) => $o->type === \App\Services\ScholarFit\RequirementOutcome::TYPE_CERTIFICATE); @endphp
+                            @if($documentGap)
+                                <a class="btn btn-primary" href="{{ route('applicant.profile') }}#{{ \App\Services\ScholarFit\ScholarFitFieldNames::anchor($documentGap->missing) }}">Upload my {{ $documentGap->missing }}</a>
                             @endif
                             <a class="btn btn-primary" href="{{ route('applicant.profile') }}">Update my profile</a>
                             <a class="btn btn-outline-secondary"
@@ -130,9 +131,10 @@
                             </p>
                         @endforeach
                         <div class="d-flex flex-wrap gap-2">
-                            @if(\App\Support\EducationLevel::isPrimary($profile->education_level)
-                                && collect($fit->failedRequirements())->contains(fn ($o) => $o->type === \App\Services\ScholarFit\RequirementOutcome::TYPE_CERTIFICATE))
-                                <a class="btn btn-primary" href="{{ route('applicant.profile') }}#grade7-slip-card">Upload my Grade 7 results slip</a>
+                            {{-- A missing proof-of-results document is something the student can fix here and now. --}}
+                            @php $documentGap = collect($fit->pendingInformation())->first(fn ($o) => $o->type === \App\Services\ScholarFit\RequirementOutcome::TYPE_CERTIFICATE); @endphp
+                            @if($documentGap)
+                                <a class="btn btn-primary" href="{{ route('applicant.profile') }}#{{ \App\Services\ScholarFit\ScholarFitFieldNames::anchor($documentGap->missing) }}">Upload my {{ $documentGap->missing }}</a>
                             @endif
                             <a class="btn btn-primary" href="{{ route('applicant.profile') }}">Update my profile</a>
                             <a class="btn btn-outline-secondary"

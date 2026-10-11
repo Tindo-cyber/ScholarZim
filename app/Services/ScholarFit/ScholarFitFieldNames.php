@@ -32,6 +32,13 @@ final class ScholarFitFieldNames
 
     public const INSTITUTION = 'institution';
 
+    /** Documents the student can upload to their profile. */
+    public const GRADE7_SLIP = 'Grade 7 results slip';
+
+    public const RESULTS_CERTIFICATE = 'results certificate';
+
+    public const TRANSCRIPT = 'transcript';
+
     private const ANCHORS = [
         self::DATE_OF_BIRTH => 'date_of_birth',
         self::PROVINCE => 'province',
@@ -42,6 +49,9 @@ final class ScholarFitFieldNames
         self::EDUCATION_LEVEL => 'education_level',
         self::ACADEMIC_RESULTS => 'academic-results',
         self::INSTITUTION => 'programme-card',
+        self::GRADE7_SLIP => 'grade7-slip-card',
+        self::RESULTS_CERTIFICATE => 'documents',
+        self::TRANSCRIPT => 'documents',
     ];
 
     private function __construct()
