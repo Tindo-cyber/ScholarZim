@@ -6,7 +6,7 @@ This document supports viva/defense questions about how the system was verified.
 
 **Command:** `cd ScholarZim && php artisan test`
 
-**Last verified:** 2026-09-05 — 597 passed, 2 warnings, 1 skipped, 0 failures, 1875 assertions.
+**Last verified:** 2026-10-11 — 2,232 tests, 9,196 assertions, 1 skipped, 0 failures. Browser tests (Dusk, `php artisan dusk`): 49 passed, 271 assertions.
 
 The exact count above will drift as the suite grows; the command is the source of truth, not
 this number. The skip is a Windows-only `finfo` limitation in one document-type test, not a
@@ -29,6 +29,10 @@ table went stale the first time a suite was renamed and nobody caught it:
 | PWA | Manifest and service worker content, precache scope (no private pages, no non-GET requests cached), offline fallback |
 | Database / deployment | TLS certificate-authority path resolution, the container entrypoint's `APP_KEY` and CA-permission handling, empty-database safety for the public pages |
 | Storage configuration | The private disk's root is read from `FILESYSTEM_ROOT` rather than hard-coded; documents are written under whatever root is configured, a root change does not silently resolve an old file, a document copied to a new root resolves under its original relative path unchanged, and download authorization is unaffected by where the disk physically points |
+| ScholarFit accuracy | All 231 pairs of 11 hand-built applicants against 21 listings are compared with a hand-written answer key (`tests/Fixtures/scholarfit/`); see [scholarfit-accuracy.md](scholarfit-accuracy.md) for the method and the independent marking |
+| Applications as submitted | The provider sees the applicant's results, profile fields, guardian (for a minor) and eligibility verdict as they were when the application was sent; later edits do not change them; older applications fall back to the live profile |
+| Applicants under 18 | Decided from date of birth (school level if none); a guardian's name, phone, relationship and confirmation are required to submit, not to browse or build a profile |
+| Application tracker | A progress rail per application with the date of each step, on its own page and the dashboard, from the same source as the detail page |
 | Education pathway / eligibility | All fifteen brief-specified pathway scenarios (Primary→Form 1 through A-Level→PhD), an unusual progression reported as a note rather than a refusal, a listing's own stricter minimum level, no GPA field anywhere, a transcript on file not satisfying a points requirement by itself, country never being a hard eligibility requirement, and a real HTTP submission refused for a pathway violation - not only excluded from recommendations |
 
 ## Continuous integration

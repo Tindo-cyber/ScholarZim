@@ -507,9 +507,10 @@ bar (or under the browser menu) once the manifest and worker are both in place.
 php artisan test
 ```
 
-556 tests, 1,804 assertions (one skipped on Windows only — a `finfo` limitation in a single
-document-type test, not a coverage gap). Run `php artisan test` for the current number; this
-one will drift as the suite grows.
+2,232 tests, 9,196 assertions as of 2026-10-11 (one skipped on Windows only — a `finfo` limitation in a single
+document-type test, not a coverage gap), plus 49 browser tests (see Dusk below). Run `php artisan test` for the
+current number; this one will drift as the suite grows. The full run takes several minutes; `php artisan test --parallel`
+is faster.
 
 - `SmokeTest` renders every authenticated page for each role and checks the role guards.
 - `WorkflowTest` covers the moderation gate, the apply-once rule, and provider decisions.

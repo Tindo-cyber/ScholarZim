@@ -88,7 +88,7 @@ Security-relevant events written to `audit_log`:
 | ACCOUNT_SELF_DELETED | A user deleted their own account |
 | WITHDRAW_APPLICATION, REQUEST_APPLICATION_INFO, PROVIDE_APPLICATION_INFO | Application lifecycle |
 | BULK_STATUS_UPDATE, BULK_MODERATION | A decision applied across a selection |
-| UPDATE_SCHOLARFIT_WEIGHTS | Scoring weights changed or reset |
+| UPDATE_SCHOLARFIT_WEIGHTS | Historical only: ScholarFit used to have configurable scoring weights, which were removed (it now has no score), so nothing writes this any more; old audit rows may still carry it |
 
 Admin can review entries at `/admin/dashboard` → audit log section.
 
