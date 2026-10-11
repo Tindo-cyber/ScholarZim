@@ -39,6 +39,11 @@ class AppServiceProvider extends ServiceProvider
 
         // How many reports one account may file in an hour. Read from config on each
         // request, so changing the setting takes effect without redeploying code.
+        // Each paste-to-prefill is a paid API call: limited per provider, not per address.
+        RateLimiter::for('listing-prefill', fn (Request $request) => Limit::perHour(
+            max(1, (int) config('scholarzim.prefill.per_hour', 10))
+        )->by((string) ($request->user()?->user_id ?? $request->ip())));
+
         RateLimiter::for('listing-reports', fn (Request $request) => Limit::perHour(
             max(1, (int) config('scholarzim.reports.per_hour', 10))
         )->by((string) ($request->user()?->user_id ?? $request->ip())));

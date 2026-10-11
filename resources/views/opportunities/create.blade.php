@@ -44,6 +44,50 @@
         </div>
     @endisset
 
+    @isset($pastedReport)
+        {{--
+            What the pasted advert filled in, for this one visit. Nothing is saved: the form below is the
+            provider's to read, correct and submit like any other.
+        --}}
+        <div class="alert alert-info" role="note" id="pasted-report">
+            <strong>Filled in from your pasted text.</strong> Nothing has been saved. Check every field before you
+            submit: a reading of an advert can be wrong.
+            @if(count($pastedReport['understood']))
+                <div class="small mt-2"><strong>Understood from your text:</strong> {{ implode(', ', $pastedReport['understood']) }}.</div>
+            @endif
+            @if(count($pastedReport['notKept']))
+                <div class="small mt-2"><strong>Not used</strong> (left blank for you to fill in):</div>
+                <ul class="small mb-0">
+                    @foreach($pastedReport['notKept'] as $lost)
+                        <li><strong>{{ $lost['field'] }}</strong>: {{ $lost['reason'] }}</li>
+                    @endforeach
+                </ul>
+            @endif
+        </div>
+    @endisset
+
+    @if(($pasteEnabled ?? false) && ! isset($draft) && ! isset($duplicateOf))
+        <details class="card mb-4" id="paste-advert" @if($errors->has('pasted_text') || old('pasted_text')) open @endif>
+            <summary class="card-header fw-semibold">Have the advert as text? Paste it to fill this in</summary>
+            <div class="card-body">
+                <form method="POST" action="{{ route('opportunities.prefill') }}">
+                    @csrf
+                    <label class="form-label" for="pasted_text">The advert's text</label>
+                    <textarea class="form-control @error('pasted_text') is-invalid @enderror" id="pasted_text" name="pasted_text"
+                              rows="6" maxlength="{{ (int) config('scholarzim.prefill.max_chars', 10000) }}">{{ old('pasted_text') }}</textarea>
+                    @error('pasted_text')
+                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                    @enderror
+                    <div class="form-text mb-3">
+                        The text you paste is sent to Anthropic's AI service to be read, so do not paste anything private.
+                        It only fills in this form: nothing is saved or submitted until you do that yourself.
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary">Fill in the form from this text</button>
+                </form>
+            </div>
+        </details>
+    @endif
+
     <div class="row g-4">
         <div class="col-xl-8">
             <form method="POST" action="{{ route('opportunities.store') }}" novalidate>
