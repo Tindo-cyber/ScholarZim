@@ -62,7 +62,6 @@ Laravel's `throttle` middleware, keyed per client IP:
 | `POST /register/provider` | 5 per hour |
 | `POST /forgot-password` | 5 per minute |
 | `POST /resend-verification` | 3 per minute |
-| `POST /opportunities/prefill` (paste-to-prefill) | 10 per hour **per provider** (`SCHOLARZIM_PREFILL_PER_HOUR`), because each is a paid API call |
 
 
 **Limitation:** the default cache driver is per-instance, so limits are not shared across multiple app instances (future work: a Redis-backed cache store).
@@ -141,13 +140,3 @@ Production: set `SESSION_SECURE_COOKIE=true` so session cookies are only sent ov
 - **Ephemeral uploads on free Render** — the disk root is configurable (`FILESYSTEM_ROOT`), but no disk is actually attached on `plan: free`, so uploads still do not survive a redeploy today. Upgrading the plan, attaching a Render Persistent Disk, and setting `FILESYSTEM_ROOT` to its mount path (see `docs/DEPLOYMENT.md`) is what closes this - it is configuration, not a code change, but it has not been done because the current deployment stays on the free plan.
 - **Admin PDF/Excel reports** — current exporters load full tables into memory; fine for FYP scale; paginate or stream before large production datasets.
 - **`style-src 'unsafe-inline'`** — inline `style="..."` attributes remain across a number of views; extracting them is future work.
-
-## Paste-to-prefill (optional, off by default)
-
-A provider can paste the text of an advert and have the listing form filled in from it. This is the only place provider-written text is sent to a third party (Anthropic's API), so:
-
-- It is **off unless both `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` are set**; the form says plainly that the pasted text is sent to Anthropic.
-- The key is read from the environment, goes out in a request header only, and is never logged, shown or put in an error. The audit log records that a paste happened and how many fields it filled, never the text.
-- The model's answer is untrusted: only a fixed list of fields is read, each is checked with the listing form's own rules (and the cross-field level rules), anything that fails is dropped and listed to the provider, and the description is always the provider's own pasted text.
-- It saves nothing and submits nothing. The provider reads the filled form and submits it through the ordinary create path, so risk checks and moderation still apply.
-- Programme, field and institution choices and subject requirements are not read: they point into the catalogue and stay a manual choice.

@@ -152,8 +152,6 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ---
 
-**Paste an advert to fill in a listing (optional).** If your administrator has switched it on, **Post a scholarship** has a box where you can paste the advert's text. The form is filled in from it - nothing is saved or submitted - and a note lists what was understood and what was left blank. Check every field, then submit as usual. The text you paste is sent to Anthropic's AI service to be read, so do not paste anything private.
-
 ## Administrator
 
 ### Dashboard

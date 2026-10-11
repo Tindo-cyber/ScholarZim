@@ -139,5 +139,3 @@ Seeded by `database/seeders/DatabaseSeeder.php`, password `ChangeMe123` for all.
 | Applicant, Masters | `blessing.moyana@scholarzim.co.zw` | Active, transcript on file |
 
 Record any failures with browser, role, URL, and steps to reproduce.
-
-- [ ] Paste-to-prefill (only when `ANTHROPIC_API_KEY` and `ANTHROPIC_MODEL` are set): the paste box on **Post a scholarship** fills the form from an advert, saves nothing, lists what was understood and what was not used; with either value unset the box is not shown.

@@ -21,17 +21,6 @@ return [
         'scheme' => 'https',
     ],
 
-    /*
-     * Paste-to-prefill: reads the text of a scholarship advert to fill in the listing form.
-     * Off unless BOTH the key and the model are set. The provider's pasted text is sent to
-     * Anthropic's API when it is used. See App\Services\PastedListingReader.
-     */
-    'anthropic' => [
-        'key' => env('ANTHROPIC_API_KEY'),
-        'model' => env('ANTHROPIC_MODEL'),
-        'endpoint' => env('ANTHROPIC_ENDPOINT', 'https://api.anthropic.com/v1/messages'),
-    ],
-
     'postmark' => [
         'token' => env('POSTMARK_TOKEN'),
     ],

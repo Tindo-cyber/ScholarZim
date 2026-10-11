@@ -43,63 +43,11 @@ class OpportunityController extends Controller
 
     public function create(Request $request)
     {
-        // Set by prefill() for exactly one visit: what the pasted advert filled in, as an unsaved listing.
-        $pasted = session('pastedListing');
-        $prefill = null;
-
-        if (is_array($pasted)) {
-            $prefill = new Opportunity();
-            foreach ($pasted['fields'] as $field => $value) {
-                $prefill->setAttribute($field, $value);
-            }
-        }
-
         return view('opportunities.create', $this->formData() + [
             // What a new listing starts with: the currency, province and (confirmed)
             // website this provider used last time. See ListingDefaults.
             'defaults' => \App\Support\ListingDefaults::forProvider($request->user()),
-            'prefill' => $prefill,
-            'pastedReport' => is_array($pasted) ? $pasted : null,
-            'pasteEnabled' => app(\App\Services\PastedListingReader::class)->isEnabled(),
         ]);
-    }
-
-    /**
-     * Fill the create form from the text of an advert.
-     *
-     * Nothing is saved and nothing is submitted: the answer goes to the create page for one visit, where the
-     * provider reads every field and submits it like any other listing. See PastedListingReader.
-     */
-    public function prefill(Request $request, \App\Services\PastedListingReader $reader)
-    {
-        $this->authorize('create', Opportunity::class);
-
-        if (! $reader->isEnabled()) {
-            return redirect()->route('opportunities.create')->with('errorMessage', 'Paste-to-prefill is not switched on.');
-        }
-
-        $data = $request->validate([
-            'pasted_text' => ['required', 'string', 'min:50', 'max:' . (int) config('scholarzim.prefill.max_chars', 10000)],
-        ], [
-            'pasted_text.min' => 'Paste the whole advert - that is too short to read.',
-        ]);
-
-        try {
-            $result = $reader->read($data['pasted_text']);
-        } catch (\RuntimeException $e) {
-            return redirect()->route('opportunities.create')->withInput()->with('errorMessage', $e->getMessage());
-        }
-
-        // Only that it happened and how much it filled: never the text, never the key.
-        app(\App\Services\AuditService::class)->log(
-            $request->user()->email,
-            \App\Support\AuditAction::PASTE_PREFILL,
-            'OPPORTUNITY',
-            null,
-            count($result['fields']) . ' field(s) filled from a pasted advert; ' . count($result['notKept']) . ' not used.'
-        );
-
-        return redirect()->route('opportunities.create')->with('pastedListing', $result);
     }
 
     /**

@@ -88,15 +88,6 @@ return [
      * it. `per_hour` limits how many reports one account can file, so the button
      * cannot be used to harass a provider.
      */
-    /*
-     * Paste-to-prefill limits: how many adverts one provider may have read in an hour (each is a paid
-     * API call), and the longest text accepted - the same ceiling as a listing's description.
-     */
-    'prefill' => [
-        'per_hour' => (int) env('SCHOLARZIM_PREFILL_PER_HOUR', 10),
-        'max_chars' => 10000,
-    ],
-
     'reports' => [
         'hide_after' => (int) env('SCHOLARZIM_REPORTS_HIDE_AFTER', 3),
         'per_hour' => (int) env('SCHOLARZIM_REPORTS_PER_HOUR', 10),

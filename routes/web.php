@@ -265,11 +265,6 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
             ->middleware('throttle:60,1')
             ->name('opportunities.preview');
 
-        // Paste-to-prefill: reads an advert's text and fills the create form. Saves nothing.
-        Route::post('/opportunities/prefill', [OpportunityController::class, 'prefill'])
-            ->middleware('throttle:listing-prefill')
-            ->name('opportunities.prefill');
-
         // Drafts: saved without full validation, never public, discarded outright.
         Route::post('/opportunities/draft', [OpportunityController::class, 'saveDraft'])
             ->name('opportunities.draft.save');
