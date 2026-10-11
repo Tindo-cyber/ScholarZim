@@ -1,11 +1,11 @@
 @extends('layouts.app')
 
-@section('title', 'My applications')
+@section('title', 'Application tracker')
 
 @section('content')
 
-    <x-page-header title="My applications"
-                   subtitle="Track the progress and status of your scholarship applications.">
+    <x-page-header title="Application tracker"
+                   subtitle="See how far each of your scholarship applications has got, and when each step happened.">
         <x-slot:actions>
             <a class="btn btn-primary" href="{{ route('applicant.recommendations') }}">Find more matches</a>
         </x-slot:actions>
@@ -77,6 +77,15 @@
                            :action-href="route('opportunities.index')" />
         </div>
     @else
+        {{-- The tracker: one progress rail per application, above the detailed list. --}}
+        <section aria-labelledby="tracker-heading" class="mb-4">
+            <h2 id="tracker-heading" class="h5 fw-semibold mb-3">Where each application stands</h2>
+            @foreach($applications as $application)
+                <x-application-tracker-card :application="$application" />
+            @endforeach
+        </section>
+
+        <h2 class="h6 fw-semibold text-secondary mb-2">Details</h2>
         <div class="card">
             <x-data-table :columns="[
                 'Scholarship',

@@ -84,6 +84,27 @@ class Application extends Model
             : ['profile' => [], 'minor' => false, 'guardian' => null, 'results' => []];
     }
 
+    /**
+     * The tracker rail for this application: the same stages as ApplicationStatus::timeline() - so the detail
+     * page and the tracker can never disagree - each with the date it was reached (null if it has not been).
+     *
+     * @return array<int, array{label: string, done: bool, tone?: string, date: ?string}>
+     */
+    public function trackerStages(): array
+    {
+        return array_map(function (array $stage) {
+            $at = match ($stage['label']) {
+                'Applied' => $this->submitted_at,
+                'Under review', 'Reviewed' => $this->viewed_by_provider_at,
+                'Accepted', 'Not successful', 'Decision' => $this->decided_at,
+                'Withdrawn' => $this->withdrawn_at,
+                default => null,
+            };
+
+            return $stage + ['date' => $stage['done'] ? $at?->format('d M Y') : null];
+        }, ApplicationStatus::timeline($this->application_status, $this->viewed_by_provider_at));
+    }
+
     /** The eligibility verdict saved when the application was sent; null for one made before that was kept. */
     public function submittedEligibility(): ?array
     {

@@ -113,7 +113,7 @@ something that was deliberately removed, not a regression.
 - [ ] Forgot password / reset password flows work
 - [ ] Scholarships browse, search, filter, and save work
 - [ ] Provider dashboard loads; an Accept/Reject decision notifies the applicant
-- [ ] Applicant dashboard and "my applications" list load correctly
+- [ ] Applicant dashboard (latest three in the tracker) and the **Application tracker** page (a rail per application with dates) load correctly
 - [ ] Sorting and filter chips survive paging
 - [ ] With `npm run build` run, pages load hashed assets from `/build`; without it, the
       unminified fallback still renders

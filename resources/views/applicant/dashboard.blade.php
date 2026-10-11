@@ -71,36 +71,27 @@
                 </div>
             </div>
 
-            <div class="card">
-                <div class="card-header d-flex align-items-center justify-content-between">
-                    <h2 class="h6 fw-semibold mb-0">Recent applications</h2>
+            {{-- The application tracker: the latest three, each with its progress rail. --}}
+            <section aria-labelledby="dashboard-tracker-heading">
+                <div class="d-flex align-items-center justify-content-between mb-3">
+                    <h2 id="dashboard-tracker-heading" class="h5 fw-semibold mb-0">Application tracker</h2>
                     <a class="btn btn-sm btn-outline-primary" href="{{ route('applications.mine') }}">View all applications</a>
                 </div>
 
                 @if($recentApplications->isEmpty())
-                    <x-empty-state title="You have not applied yet"
-                                   message="When you apply, every status change shows up here."
-                                   icon="file-text"
-                                   action-label="Find a scholarship"
-                                   :action-href="route('opportunities.index')" />
+                    <div class="card">
+                        <x-empty-state title="You have not applied yet"
+                                       message="When you apply, you can follow every step of it here."
+                                       icon="file-text"
+                                       action-label="Find a scholarship"
+                                       :action-href="route('opportunities.index')" />
+                    </div>
                 @else
-                    <x-data-table :columns="['Scholarship', 'Submitted', 'Status', ['label' => 'Action', 'align' => 'end']]">
-                        @foreach($recentApplications as $application)
-                            <tr>
-                                <x-data-table.cell label="Scholarship" class="fw-semibold">{{ $application->opportunity?->title ?? 'Removed listing' }}</x-data-table.cell>
-                                <x-data-table.cell label="Submitted" class="text-secondary small">{{ $application->submitted_at?->format('d M Y') }}</x-data-table.cell>
-                                <x-data-table.cell label="Status">
-                                    <x-status-badge :label="$application->statusLabel()" :tone="$application->statusTone()" />
-                                </x-data-table.cell>
-                                <x-data-table.cell align="end">
-                                    <a class="btn btn-sm btn-outline-secondary"
-                                       href="{{ route('applications.confirmation', $application->application_id) }}">View</a>
-                                </x-data-table.cell>
-                            </tr>
-                        @endforeach
-                    </x-data-table>
+                    @foreach($recentApplications->take(3) as $application)
+                        <x-application-tracker-card :application="$application" />
+                    @endforeach
                 @endif
-            </div>
+            </section>
         </div>
 
         <div class="col-xl-4">

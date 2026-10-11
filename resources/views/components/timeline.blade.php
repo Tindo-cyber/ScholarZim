@@ -1,7 +1,7 @@
-@props(['stages' => []])
+@props(['stages' => [], 'label' => 'Application progress'])
 
-{{-- Horizontal progress rail for an application's lifecycle. --}}
-<ol {{ $attributes->merge(['class' => 'sz-timeline list-unstyled d-flex gap-0 mb-0']) }}>
+{{-- Horizontal progress rail for an application's lifecycle. A stage may carry a 'date', shown under its label. --}}
+<ol aria-label="{{ $label }}" {{ $attributes->merge(['class' => 'sz-timeline list-unstyled d-flex gap-0 mb-0']) }}>
     @foreach($stages as $index => $stage)
         @php
             $tone = $stage['tone'] ?? 'primary';
@@ -17,6 +17,10 @@
                 @endif
             </span>
             <span class="d-block small mt-2 {{ $done ? 'fw-semibold' : 'text-secondary' }}">{{ $stage['label'] }}</span>
+            <span class="visually-hidden">{{ $done ? 'Step reached' : 'Not reached yet' }}</span>
+            @if(! empty($stage['date']))
+                <span class="d-block small text-secondary sz-tabular">{{ $stage['date'] }}</span>
+            @endif
         </li>
     @endforeach
 </ol>

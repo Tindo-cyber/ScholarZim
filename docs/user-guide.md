@@ -29,9 +29,9 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
   are not eligible for refuses the submission with the same reason the listing page already
   showed you, and the wizard does not even offer a Submit button for it.
 - Complete the application wizard (personal statement; optional supporting document).
-- Track status at `/my-applications`.
+- Follow each application in the **Application tracker** (`/my-applications`, also on your dashboard): a progress rail per application - Applied, Under review, Decision - with the date each step happened. (The screenshot below is from before it was renamed.)
 
-![My applications](../docs/screenshots/06-my-applications.png)
+![Application tracker](../docs/screenshots/06-my-applications.png)
 
 ### While an application is open
 
