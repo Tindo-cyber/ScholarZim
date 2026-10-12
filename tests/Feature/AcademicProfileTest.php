@@ -546,14 +546,14 @@ class AcademicProfileTest extends TestCase
      * Levels at or below are offered, because holding O-Level results is the
      * ordinary case for an A-Level applicant rather than an exception.
      */
-    public function test_an_a_level_applicant_is_offered_primary_o_level_and_a_level(): void
+    public function test_an_a_level_applicant_is_offered_o_level_and_a_level_but_not_grade_7(): void
     {
         $offered = $this->profile()->selectableQualifications()->pluck('qualification_key')->all();
 
         $this->assertContains(AcademicCatalogue::ZIMSEC_O_LEVEL, $offered);
         $this->assertContains(AcademicCatalogue::ZIMSEC_A_LEVEL, $offered);
         $this->assertContains(AcademicCatalogue::CAMBRIDGE_A_LEVEL, $offered);
-        $this->assertContains(AcademicCatalogue::ZIMBABWE_PRIMARY, $offered);
+        $this->assertNotContains(AcademicCatalogue::ZIMBABWE_PRIMARY, $offered, 'Grade 7 results are for Primary applicants only');
 
         // A degree is above them, so it is not offered.
         $this->assertNotContains(AcademicCatalogue::TERTIARY, $offered);
@@ -584,6 +584,88 @@ class AcademicProfileTest extends TestCase
         ]))->assertSessionHasNoErrors();
 
         $this->assertSame(1, $this->profile()->academicResults()->count());
+    }
+
+    // ------------------------------------------- Grade 7 results are for Primary only --
+
+    /** @return array<string, array{0: string}> */
+    public static function levelsAbovePrimary(): array
+    {
+        return array_combine(
+            ['O-Level', 'A-Level', 'Certificate', 'Diploma', 'Undergraduate', 'Postgraduate', 'Masters', 'PhD'],
+            array_map(fn ($l) => [$l], [
+                EducationLevel::O_LEVEL, EducationLevel::A_LEVEL, EducationLevel::CERTIFICATE, EducationLevel::DIPLOMA,
+                EducationLevel::UNDERGRADUATE, EducationLevel::POSTGRADUATE, EducationLevel::MASTERS, EducationLevel::PHD,
+            ])
+        );
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('levelsAbovePrimary')]
+    public function test_grade_7_results_are_not_offered_above_primary(string $level): void
+    {
+        $profile = $this->profile();
+        $profile->forceFill(['education_level' => $level])->save();
+
+        $offered = $profile->fresh()->selectableQualifications()->pluck('qualification_key')->all();
+
+        $this->assertNotContains(AcademicCatalogue::ZIMBABWE_PRIMARY, $offered);
+        $this->assertNotEmpty($offered, 'the other qualifications are still offered');
+    }
+
+    public function test_the_profile_page_does_not_offer_grade_7_to_a_student_above_primary(): void
+    {
+        $html = $this->actingAs($this->student)->get('/applicant/profile')->assertOk()->getContent();
+
+        // Not in the new-row template, and not as a row choice.
+        $this->assertStringNotContainsString('Zimbabwe Primary (Grade 7)', $html);
+        $this->assertStringContainsString('ZIMSEC Ordinary Level', $html);
+    }
+
+    public function test_the_page_marks_grade_7_so_the_form_can_hide_it_the_moment_the_level_changes(): void
+    {
+        // A Primary pupil sees it, marked as the Primary-only choice, so changing the level
+        // to anything else can hide it without waiting for a save.
+        $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
+        ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail()->academicResults()->delete();
+
+        $html = $this->actingAs($pupil)->get('/applicant/profile')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('/<option[^>]*data-primary-only[^>]*>\s*Zimbabwe Primary \(Grade 7\)/', $html);
+    }
+
+    public function test_grade_7_results_already_recorded_stay_and_survive_a_save_above_primary(): void
+    {
+        $primary = AcademicQualification::findByKey(AcademicCatalogue::ZIMBABWE_PRIMARY);
+        $subject = $primary->activeSubjects()->first();
+        $this->profile()->academicResults()->create([
+            'qualification_id' => $primary->id, 'subject_id' => $subject->id,
+            'result' => $primary->grades()[0], 'derived_points' => null,
+        ]);
+
+        // Still offered (not silently lost) because it is already held...
+        $offered = $this->profile()->fresh()->selectableQualifications()->pluck('qualification_key')->all();
+        $this->assertContains(AcademicCatalogue::ZIMBABWE_PRIMARY, $offered);
+
+        // ...and a save that resubmits it keeps it.
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields() + [
+            'academic_results_submitted' => '1',
+            'academic_subject_results' => [['qualification_id' => $primary->id, 'subject_id' => $subject->id, 'result' => $primary->grades()[0]]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $this->profile()->academicResults()->count());
+    }
+
+    public function test_a_student_above_primary_cannot_add_a_grade_7_result(): void
+    {
+        $primary = AcademicQualification::findByKey(AcademicCatalogue::ZIMBABWE_PRIMARY);
+        $subject = $primary->activeSubjects()->first();
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields() + [
+            'academic_results_submitted' => '1',
+            'academic_subject_results' => [['qualification_id' => $primary->id, 'subject_id' => $subject->id, 'result' => $primary->grades()[0]]],
+        ])->assertSessionHasErrors();
+
+        $this->assertSame(0, $this->profile()->academicResults()->count(), 'nothing was written');
     }
 
     /** An applicant who has not stated a level yet is not filtered on anything. */

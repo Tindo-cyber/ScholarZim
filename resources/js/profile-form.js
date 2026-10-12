@@ -60,6 +60,24 @@
         const staleNotice = document.getElementById('academic-level-stale-notice');
         const initialLevel = select.value;
 
+        // Grade 7 results are for Primary applicants only. The option is marked data-primary-only, and is
+        // hidden (and disabled, for browsers that ignore hidden on options) for any other level. One that a
+        // row has already selected is left alone: hiding it would not remove the result, only make the row
+        // look as if it had lost it. Applies to rows added later too.
+        const resultsList = document.getElementById('academic-results-list');
+        const syncPrimaryOnly = () => {
+            const primary = select.value === '' || select.value === 'PRIMARY';
+
+            document.querySelectorAll('#academic-results option[data-primary-only]').forEach((option) => {
+                const keep = primary || option.selected;
+                option.hidden = !keep;
+                option.disabled = !keep;
+            });
+        };
+        if (resultsList) {
+            new MutationObserver(syncPrimaryOnly).observe(resultsList, { childList: true });
+        }
+
         const sync = () => {
             const tier = TIER_BY_LEVEL[select.value] || null;
 
@@ -76,6 +94,8 @@
             minorFor.forEach((el) => {
                 el.hidden = !isMinor();
             });
+
+            syncPrimaryOnly();
 
             if (staleNotice) {
                 staleNotice.classList.toggle('d-none', select.value === initialLevel);

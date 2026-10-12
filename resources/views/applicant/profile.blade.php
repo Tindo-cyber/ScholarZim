@@ -301,7 +301,7 @@
                                                         name="academic_subject_results[{{ $idx }}][qualification_id]"
                                                         aria-label="Qualification">
                                                     @foreach($qualifications as $qual)
-                                                        <option value="{{ $qual->id }}"
+                                                        <option value="{{ $qual->id }}" @if($qual->isPrimaryEducation()) data-primary-only @endif
                                                             @selected($qual->id == $result->qualification_id)>{{ $qual->name }}</option>
                                                     @endforeach
                                                 </select>
@@ -365,7 +365,7 @@
                                             name="academic_subject_results[__IDX__][qualification_id]" aria-label="Qualification">
                                         <option value="">Select qualification</option>
                                         @foreach($qualifications as $qual)
-                                            <option value="{{ $qual->id }}">{{ $qual->name }}</option>
+                                            <option value="{{ $qual->id }}" @if($qual->isPrimaryEducation()) data-primary-only @endif>{{ $qual->name }}</option>
                                         @endforeach
                                     </select>
                                 </td>

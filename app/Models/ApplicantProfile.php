@@ -211,9 +211,17 @@ class ApplicantProfile extends Model
             ? $this->academicResults->pluck('qualification_id')->unique()->all()
             : $this->academicResults()->distinct()->pluck('qualification_id')->all();
 
-        return $active->filter(function (AcademicQualification $qualification) use ($rung, $alreadyHeld) {
+        $isPrimary = EducationLevel::isPrimary($this->education_level);
+
+        return $active->filter(function (AcademicQualification $qualification) use ($rung, $alreadyHeld, $isPrimary) {
             if (in_array((int) $qualification->id, array_map('intval', $alreadyHeld), true)) {
                 return true;
+            }
+
+            // Grade 7 results belong to a Primary applicant. Anyone who has moved on is not asked for them
+            // (unless they already hold some, handled above so nothing is silently lost).
+            if ($qualification->isPrimaryEducation() && ! $isPrimary) {
+                return false;
             }
 
             $qualificationRung = EducationLadder::rung(
