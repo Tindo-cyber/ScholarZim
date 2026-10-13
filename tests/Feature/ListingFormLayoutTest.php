@@ -100,7 +100,7 @@ class ListingFormLayoutTest extends TestCase
     public function test_form_1_uses_no_field_of_study_or_points_but_can_ask_for_proof_of_results(): void
     {
         $this->assertSame(
-            ['field' => false, 'points' => false, 'certificate' => true, 'subjects' => true, 'programmes' => false],
+            ['field' => false, 'points' => false, 'certificate' => true, 'subjects' => true, 'programmes' => false, 'olevel' => false],
             OpportunityLevelRules::capabilities(EducationLevel::FORM_1),
             'Form 1 hides field of study and points; Grade 7 subjects and the Grade 7 results slip remain valid'
         );
@@ -109,7 +109,7 @@ class ListingFormLayoutTest extends TestCase
     public function test_a_phd_uses_a_field_but_no_points_and_no_school_subjects(): void
     {
         $this->assertSame(
-            ['field' => true, 'points' => false, 'certificate' => true, 'subjects' => false, 'programmes' => true],
+            ['field' => true, 'points' => false, 'certificate' => true, 'subjects' => false, 'programmes' => true, 'olevel' => false],
             OpportunityLevelRules::capabilities(EducationLevel::PHD)
         );
     }
@@ -117,7 +117,7 @@ class ListingFormLayoutTest extends TestCase
     public function test_an_undergraduate_award_uses_everything(): void
     {
         $this->assertSame(
-            ['field' => true, 'points' => true, 'certificate' => true, 'subjects' => true, 'programmes' => true],
+            ['field' => true, 'points' => true, 'certificate' => true, 'subjects' => true, 'programmes' => true, 'olevel' => true],
             OpportunityLevelRules::capabilities(EducationLevel::UNDERGRADUATE)
         );
     }
@@ -125,7 +125,7 @@ class ListingFormLayoutTest extends TestCase
     public function test_no_level_hides_nothing(): void
     {
         $this->assertSame(
-            ['field' => true, 'points' => true, 'certificate' => true, 'subjects' => true, 'programmes' => true],
+            ['field' => true, 'points' => true, 'certificate' => true, 'subjects' => true, 'programmes' => true, 'olevel' => true],
             OpportunityLevelRules::capabilities(null)
         );
     }

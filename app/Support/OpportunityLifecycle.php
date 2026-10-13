@@ -92,6 +92,12 @@ final class OpportunityLifecycle
         'required_province',
         'requires_results_certificate',
         'subject_requirements',
+        // Who the listing is open to, and what else it asks: each changes who qualifies.
+        'open_to_all_programmes',
+        'any_institution',
+        'accepts_o_level',
+        'host_institutions',
+        'other_conditions',
         'award_amount',
         'award_currency',
         'award_slots',
@@ -176,6 +182,13 @@ final class OpportunityLifecycle
             }
 
             $current = $opportunity->getAttribute($field);
+
+            // A listing posted before "Open to" was required answering it for the first time is not a new
+            // claim: who it is for changes only through the programmes, fields and institutions chosen,
+            // which are compared on their own (ListingScopes::changed).
+            if (in_array($field, ['open_to_all_programmes', 'any_institution'], true) && $current === null) {
+                continue;
+            }
 
             // A listing saved under a legacy spelling ('Undergraduate') compared
             // against a resubmission of the very same level in its canonical

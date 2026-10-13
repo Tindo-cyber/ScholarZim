@@ -80,6 +80,12 @@ class ApplicantProfile extends Model
         return $this->hasMany(ApplicantProgramme::class, 'profile_id', 'profile_id');
     }
 
+    /** Up to three fields an enrolled student or graduate wants to study next. See ApplicantTargetField. */
+    public function targetFields(): HasMany
+    {
+        return $this->hasMany(ApplicantTargetField::class, 'profile_id', 'profile_id');
+    }
+
     /** documentType => column prefix, as used by the upload routes. */
     public const DOCUMENT_TYPES = [
         'results' => 'results_certificate',

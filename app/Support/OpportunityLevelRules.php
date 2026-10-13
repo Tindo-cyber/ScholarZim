@@ -210,7 +210,7 @@ final class OpportunityLevelRules
      *
      * No target ("Any level") uses everything: nothing is known to be irrelevant.
      *
-     * @return array{field: bool, points: bool, certificate: bool, subjects: bool, programmes: bool}
+     * @return array{field: bool, points: bool, certificate: bool, subjects: bool, programmes: bool, olevel: bool}
      */
     public static function capabilities(?string $target): array
     {
@@ -222,6 +222,8 @@ final class OpportunityLevelRules
             'certificate' => self::allowsResultsCertificate($target),
             'subjects' => self::allowsSubjectRequirements($target),
             'programmes' => \App\Services\Catalogue\ListingScopes::appliesTo($target),
+            // Only a degree award is asked whether it takes O-Level holders; see EligibilityEvaluator::progression().
+            'olevel' => ! $known || EducationLevel::canonical($target) === EducationLevel::UNDERGRADUATE,
         ];
     }
 

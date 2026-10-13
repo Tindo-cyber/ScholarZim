@@ -76,6 +76,7 @@ class ApplicantProgrammes
         $intended = array_values(array_unique(array_map('intval', array_filter((array) ($input['intended_programme_ids'] ?? []), 'is_scalar'))));
         $suggestion = trim((string) ($input['programme_suggestion'] ?? ''));
         $applied = array_values(array_unique(array_map('intval', array_filter((array) ($input['applied_institution_ids'] ?? []), 'is_scalar'))));
+        $targets = array_values(array_unique(array_map('intval', array_filter((array) ($input['target_field_ids'] ?? []), 'is_scalar'))));
 
         $errors = [];
 
@@ -134,6 +135,16 @@ class ApplicantProgrammes
             }
         }
 
+        if ($targets !== []) {
+            if ($mode !== self::CURRENT) {
+                $errors['target_field_ids'] = 'Fields to study next are for students already on a programme or holding a qualification. Choose the programmes you hope to study instead.';
+            } elseif (count($targets) > \App\Models\ApplicantTargetField::MAX) {
+                $errors['target_field_ids'] = 'Choose up to ' . \App\Models\ApplicantTargetField::MAX . ' fields - the ones you most want to study next.';
+            } elseif (\App\Models\Field::whereIn('id', $targets)->count() !== count($targets)) {
+                $errors['target_field_ids'] = 'Choose fields from the list.';
+            }
+        }
+
         if (count($chosen['intended']) > ApplicantProgramme::MAX_INTENDED) {
             $errors['intended_programme_ids'] = 'Choose up to ' . ApplicantProgramme::MAX_INTENDED . ' programmes - the ones you are most likely to apply for.';
         }
@@ -142,9 +153,16 @@ class ApplicantProgrammes
             throw ValidationException::withMessages($errors);
         }
 
-        DB::transaction(function () use ($profile, $chosen, $institutionId, $applied): void {
+        DB::transaction(function () use ($profile, $chosen, $institutionId, $applied, $targets, $mode): void {
             ApplicantProgramme::where('profile_id', $profile->profile_id)->delete();
             \App\Models\ApplicantInstitution::where('profile_id', $profile->profile_id)->delete();
+            \App\Models\ApplicantTargetField::where('profile_id', $profile->profile_id)->delete();
+
+            if ($mode === self::CURRENT) {
+                foreach ($targets as $id) {
+                    \App\Models\ApplicantTargetField::create(['profile_id' => $profile->profile_id, 'field_id' => $id]);
+                }
+            }
 
             foreach ($applied as $id) {
                 \App\Models\ApplicantInstitution::create(['profile_id' => $profile->profile_id, 'institution_id' => $id]);

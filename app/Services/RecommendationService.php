@@ -124,7 +124,7 @@ class RecommendationService
         $profile->loadMissing([
             'academicResults.qualification', 'academicResults.subject.qualification',
             // What the programme rules read, once for the whole list rather than once per listing.
-            'programmeChoices.programme.field.parent', 'programmeChoices.institution', 'appliedInstitutions.institution',
+            'programmeChoices.programme.field.parent', 'programmeChoices.institution', 'appliedInstitutions.institution', 'targetFields.field.parent',
         ]);
 
         // Only applications that actually block a fresh one are excluded, and

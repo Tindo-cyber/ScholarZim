@@ -101,6 +101,12 @@ final class RequirementOutcome
      */
     public const TYPE_DESCRIPTION_UNSUPPORTED = 'description_unsupported';
 
+    /**
+     * A condition the provider listed for students to check for themselves (IELTS, work experience). Always
+     * advisory, like TYPE_DESCRIPTION_UNSUPPORTED: the profile has nothing to check it against.
+     */
+    public const TYPE_PROVIDER_CONDITION = 'provider_condition';
+
     private function __construct(
         public readonly string $type,
         public readonly bool $passed,

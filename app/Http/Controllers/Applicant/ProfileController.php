@@ -42,6 +42,7 @@ class ProfileController extends Controller
             'catalogue' => app(\App\Services\Catalogue\ProgrammeCatalogue::class)->formOptions($user),
             'programmeChoices' => $profile->programmeChoices()->get(),
             'appliedInstitutionIds' => $profile->appliedInstitutions()->pluck('institution_id')->all(),
+            'targetFieldIds' => $profile->targetFields()->pluck('field_id')->map(fn ($id) => (int) $id)->all(),
             'educationLevels' => FormOptions::educationLevelGroups(),
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
@@ -92,6 +93,10 @@ class ProfileController extends Controller
             'programme_suggestion' => ['nullable', 'string', 'max:200'],
             'programme_suggestion_field' => ['nullable', 'integer'],
             'programme_suggestion_level' => ['nullable', 'string', 'max:30'],
+            'applied_institution_ids' => ['nullable', 'array', 'max:20'],
+            'applied_institution_ids.*' => ['integer'],
+            'target_field_ids' => ['nullable', 'array', 'max:20'],
+            'target_field_ids.*' => ['integer'],
         ]);
 
         $profile = $this->profileService->forUser($request->user());

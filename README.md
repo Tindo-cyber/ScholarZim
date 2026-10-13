@@ -221,6 +221,16 @@ a results certificate for O/A-Level applicants, a transcript for everyone from C
 upward — there is no GPA field anywhere on the platform).
 Each is one plain check producing one plain sentence naming the required and actual value.
 
+**Who a listing is open to** is the programme half of that check (`ProgrammeScope.php`). At Certificate
+level and above a provider must answer it: specific programmes or fields, or "all programmes" on purpose,
+and for study in Zimbabwe specific institutions or "any institution". A scholarship to study abroad is open
+to fields only (the international ISCED codes), and a student's own programme is matched through its
+field. An O-Level student is refused a degree award unless the provider ticked that O-Level holders may
+apply; a school-leaver's chosen programmes are compared at the award's level, so one who chose only
+diplomas is not matched to a degree; an enrolled student or graduate can name up to three fields to study
+next; and conditions ScholarFit cannot check (IELTS, work experience) are shown as "Also check yourself",
+never decided. See [docs/scholarfit-accuracy.md](docs/scholarfit-accuracy.md).
+
 Any unmet requirement keeps the listing out of that student's recommendations — it is shown
 instead in a separate "scholarships you don't qualify for yet" list, with the specific
 requirements met and unmet. A requirement the provider did not set is never held against
@@ -507,7 +517,7 @@ bar (or under the browser menu) once the manifest and worker are both in place.
 php artisan test
 ```
 
-2,232 tests, 9,196 assertions as of 2026-10-11 (one skipped on Windows only — a `finfo` limitation in a single
+2,308 tests as of 2026-10-13 (one skipped on Windows only — a `finfo` limitation in a single
 document-type test, not a coverage gap), plus 49 browser tests (see Dusk below). Run `php artisan test` for the
 current number; this one will drift as the suite grows. The full run takes several minutes; `php artisan test --parallel`
 is faster.

@@ -53,7 +53,8 @@ class CatalogueMentions
      */
     public function read(Opportunity $listing): array
     {
-        if (filled($listing->target_field)) {
+        // "All programmes", chosen on purpose, is the answer; the words do not narrow it.
+        if (filled($listing->target_field) || $listing->open_to_all_programmes === true) {
             return [];
         }
 

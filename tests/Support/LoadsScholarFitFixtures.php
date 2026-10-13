@@ -125,6 +125,10 @@ trait LoadsScholarFitFixtures
             ApplicantProgramme::create(['profile_id' => $profile->profile_id, 'programme_id' => Programme::where('name', $name)->value('id'), 'kind' => 'intended']);
         }
 
+        foreach ($spec['targets'] ?? [] as $code) {
+            \App\Models\ApplicantTargetField::create(['profile_id' => $profile->profile_id, 'field_id' => Field::where('code', $code)->value('id')]);
+        }
+
         foreach ($spec['applied'] ?? [] as $code) {
             ApplicantInstitution::create(['profile_id' => $profile->profile_id, 'institution_id' => Institution::where('code', $code)->value('id')]);
         }
@@ -147,7 +151,13 @@ trait LoadsScholarFitFixtures
             'target_settlement_type' => $spec['settlement'] ?? null,
             'requires_results_certificate' => (bool) ($spec['requires_certificate'] ?? false),
             'funding_type' => 'Full Scholarship',
-            'country' => 'Zimbabwe', 'target_country' => 'Zimbabwe',
+            'country' => $spec['country'] ?? 'Zimbabwe', 'target_country' => $spec['country'] ?? 'Zimbabwe',
+            // "Who is it open to?" as answered; absent for a listing posted before it was asked (L01-L21).
+            'open_to_all_programmes' => $spec['open_to_all'] ?? null,
+            'any_institution' => $spec['any_institution'] ?? null,
+            'accepts_o_level' => (bool) ($spec['accepts_o_level'] ?? false),
+            'host_institutions' => $spec['host_institutions'] ?? null,
+            'other_conditions' => $spec['other_conditions'] ?? null,
             'deadline' => $spec['deadline'] ?? null,
             'status' => OpportunityStatus::ACTIVE,
             'moderation_status' => OpportunityModerationStatus::APPROVED,

@@ -684,6 +684,45 @@ class DatabaseSeeder extends Seeder
                 'created_at' => Carbon::now()->subDays(2),
             ]
         );
+
+        // A scholarship to study abroad, for showing how ScholarFit matches one: the catalogue holds Zimbabwean
+        // programmes only, so it is open to a FIELD (ICT), names its host university in words, and lists the
+        // conditions ScholarFit cannot check as "Also check yourself". A fictional award, not any real one.
+        $abroad = Opportunity::updateOrCreate(
+            ['title' => 'Rhine Valley ICT Masters Scholarship'],
+            [
+                'provider_user_id' => $provider->user_id,
+                'provider_name' => $provider->full_name,
+                'description' => 'A fully funded one-year Masters in an ICT field at a partner university in Germany, '
+                    . 'covering tuition, travel and a monthly stipend.',
+                'education_level' => EducationLevel::MASTERS,
+                'funding_type' => 'Full Scholarship',
+                'country' => 'Germany',
+                'target_country' => 'Germany',
+                'host_institutions' => 'A partner university in Germany',
+                'other_conditions' => "IELTS 6.5 or higher\nTwo years of work experience after your first degree",
+                'open_to_all_programmes' => false,
+                'deadline' => Carbon::today()->addDays(100),
+                'status' => OpportunityStatus::ACTIVE,
+                'moderation_status' => OpportunityModerationStatus::APPROVED,
+                'submitted_at' => Carbon::now()->subDays(10),
+                'reviewed_at' => Carbon::now()->subDays(9),
+                'reviewed_by' => config('scholarzim.admin.email'),
+                'created_at' => Carbon::now()->subDays(10),
+            ]
+        );
+
+        if (($ict = \App\Models\Field::where('code', '061')->value('id')) !== null) {
+            \App\Models\OpportunityScope::firstOrCreate(['opportunity_id' => $abroad->opportunity_id, 'field_id' => $ict]);
+        }
+
+        // The demo awards above are for anyone at their level, and say so: "Who is it open to?" answered with
+        // "All programmes" and "Any institution", as a provider posting them today would have to.
+        Opportunity::where('provider_user_id', $provider->user_id)
+            ->whereIn('education_level', \App\Models\Programme::LEVELS)
+            ->whereNull('open_to_all_programmes')
+            ->whereDoesntHave('scopes')
+            ->update(['open_to_all_programmes' => true, 'any_institution' => true]);
     }
 
     /**
