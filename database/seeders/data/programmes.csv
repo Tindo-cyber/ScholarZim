@@ -11,7 +11,7 @@ Master of Education,Masters,011,UZ;MSU;ZOU;BUSE,MEd;M.Ed
 PhD in Education,PhD,011,UZ;MSU;ZOU,Doctor of Philosophy in Education
 Bachelor of Fine Arts,Undergraduate,021,,BFA;Fine Art
 BA Visual and Performing Arts,Undergraduate,021,,Music and Drama;Performing Arts
-Diploma in Graphic Design,Diploma,021,,Graphic Design
+Diploma in Graphic Design,Diploma,021,ZEGU,Graphic Design
 Diploma in Fashion and Design,Diploma,021,,Fashion Design
 BA History,Undergraduate,022,UZ;MSU,History
 BA Religious Studies,Undergraduate,022,UZ;MSU,Religious Studies;Theology and Religious Studies
@@ -20,10 +20,10 @@ BA English and Communication,Undergraduate,023,UZ;MSU;GZU,English;English Langua
 BA African Languages and Culture,Undergraduate,023,UZ;MSU;GZU,Shona;Ndebele;African Languages
 BA Linguistics,Undergraduate,023,UZ,Linguistics
 BSc Psychology,Undergraduate,031,UZ;MSU;AU,Psychology;BSc Hons Psychology
-BSc Sociology,Undergraduate,031,UZ;MSU,Sociology
-BSc Economics,Undergraduate,031,UZ;MSU;NUST,Economics;BSc Economics and Finance
+BSc Sociology,Undergraduate,031,UZ;MSU;LSU,Sociology
+BSc Economics,Undergraduate,031,UZ;MSU;NUST;BUSE;ZEGU;LSU,Economics;BSc Economics and Finance
 BSc Political and Administrative Studies,Undergraduate,031,UZ;MSU,Politics;Political Science
-BSc Development Studies,Undergraduate,031,MSU;ZOU,Development Studies
+BSc Development Studies,Undergraduate,031,MSU;ZOU;BUSE;ZEGU;LSU,Development Studies
 BSc Geography and Environmental Studies,Undergraduate,052,UZ;MSU;GZU,Geography
 Master of Science in Economics,Masters,031,UZ,MSc Economics
 MA Development Studies,Masters,031,MSU;ZOU,MA Development
@@ -32,20 +32,20 @@ BA Media and Society Studies,Undergraduate,032,MSU,Media Studies
 BA Journalism and Media Studies,Undergraduate,032,NUST,Journalism;Mass Communication
 BSc Library and Information Science,Undergraduate,032,NUST,Library Science;Information Science
 Diploma in Journalism and Media Studies,Diploma,032,,Journalism Diploma
-BCom Accounting,Undergraduate,041,UZ;MSU;NUST;GZU;AU,Accounting;BAcc;Bachelor of Accountancy
-BCom Banking and Finance,Undergraduate,041,MSU;NUST;UZ,Banking;Finance;BCom Finance
-BCom Marketing,Undergraduate,041,MSU;NUST;UZ,Marketing
-BCom Human Resource Management,Undergraduate,041,MSU;NUST;UZ,HRM;HR Management;Human Resources
+BCom Accounting,Undergraduate,041,UZ;MSU;NUST;GZU;AU;BUSE;ZEGU,Accounting;BAcc;Bachelor of Accountancy
+BCom Banking and Finance,Undergraduate,041,MSU;NUST;UZ;BUSE;ZEGU;LSU,Banking;Finance;BCom Finance
+BCom Marketing,Undergraduate,041,MSU;NUST;UZ;BUSE;ZEGU,Marketing
+BCom Human Resource Management,Undergraduate,041,MSU;NUST;UZ;ZEGU;LSU,HRM;HR Management;Human Resources
 BCom Business Management,Undergraduate,041,MSU;NUST;UZ;GZU,Business Management
 BCom Entrepreneurship,Undergraduate,041,MSU;NUST;GZU,Entrepreneurship
-BCom Supply Chain Management,Undergraduate,041,MSU;NUST;CUT,Purchasing and Supply;Procurement;Supply Chain
+BCom Supply Chain Management,Undergraduate,041,MSU;NUST;CUT;BUSE,Purchasing and Supply;Procurement;Supply Chain
 BCom Insurance and Risk Management,Undergraduate,041,NUST,Insurance;Risk Management
 BSc Actuarial Science,Undergraduate,054,UZ;NUST,Actuarial Science;Actuarial
 Bachelor of Business Administration,Undergraduate,041,ZOU;AU;WUA,BBA
 Diploma in Accountancy,Diploma,041,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY;MASVINGO-POLY;KWEKWE-POLY,Accountancy;Accounting Diploma
 Diploma in Marketing,Diploma,041,HARARE-POLY;BYO-POLY;GWERU-POLY,Marketing Diploma
 Diploma in Human Resources Management,Diploma,041,HARARE-POLY;BYO-POLY;GWERU-POLY,HR Diploma
-Diploma in Banking and Finance,Diploma,041,HARARE-POLY;BYO-POLY,Banking Diploma
+Diploma in Banking and Finance,Diploma,041,HARARE-POLY;BYO-POLY;ZEGU,Banking Diploma
 Diploma in Secretarial Studies,Diploma,041,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY,Office Administration
 Certificate in Bookkeeping,Certificate,041,,Bookkeeping;Book-keeping
 Postgraduate Diploma in Management,Postgraduate,041,UZ;MSU;ZOU,PGD Management
@@ -54,32 +54,32 @@ Master of Public Administration,Masters,041,UZ;MSU,MPA
 MSc Finance,Masters,041,UZ;NUST;MSU,Master of Science in Finance
 Master of Commerce,Masters,041,UZ;NUST;MSU,MCom
 PhD in Business Administration,PhD,041,UZ;NUST;MSU;ZOU,DBA;Doctor of Business Administration
-Bachelor of Laws,Undergraduate,042,UZ;MSU;GZU,LLB
+Bachelor of Laws,Undergraduate,042,UZ;MSU;GZU;ZEGU,LLB
 Master of Laws,Masters,042,UZ;MSU,LLM
 Diploma in Paralegal Studies,Diploma,042,,Paralegal
-BSc Biological Sciences,Undergraduate,051,UZ;MSU;GZU,Biology;Biological Science
+BSc Biological Sciences,Undergraduate,051,UZ;MSU;GZU;BUSE,Biology;Biological Science
 BSc Biochemistry,Undergraduate,051,UZ;NUST,Biochemistry
 BSc Biotechnology,Undergraduate,051,BUSE;NUST;HIT,Biotechnology
-BSc Environmental Science,Undergraduate,052,AU;MSU;BUSE;GZU,Environmental Studies;Environmental Science and Technology
+BSc Environmental Science,Undergraduate,052,AU;MSU;BUSE;GZU;LSU,Environmental Studies;Environmental Science and Technology
 BSc Wildlife and Safari Management,Undergraduate,052,CUT,Wildlife Management;Wildlife Ecology
-BSc Natural Resources Management,Undergraduate,052,MSU;LSU;GZU,Natural Resources
+BSc Natural Resources Management,Undergraduate,052,MSU;LSU;GZU;BUSE,Natural Resources
 Master of Science in Environmental Science,Masters,052,UZ;MSU;AU,MSc Environmental Science
-BSc Chemistry,Undergraduate,053,UZ;NUST;MSU,Chemistry
-BSc Physics,Undergraduate,053,UZ;NUST;MSU,Physics
+BSc Chemistry,Undergraduate,053,UZ;NUST;MSU;BUSE,Chemistry
+BSc Physics,Undergraduate,053,UZ;NUST;MSU;BUSE,Physics
 BSc Geology,Undergraduate,053,UZ;MSU,Geology;Earth Sciences
 BSc Applied Physics,Undergraduate,053,NUST,Applied Physics
 BSc Applied Chemistry,Undergraduate,053,NUST,Applied Chemistry
 MSc Physics,Masters,053,UZ;NUST,Master of Science in Physics
 MSc Chemistry,Masters,053,UZ;NUST,Master of Science in Chemistry
 BSc Mathematics,Undergraduate,054,UZ;MSU;GZU;BUSE,Maths;Pure Mathematics
-BSc Applied Mathematics,Undergraduate,054,NUST,Applied Maths
+BSc Applied Mathematics,Undergraduate,054,NUST;BUSE,Applied Maths
 BSc Statistics,Undergraduate,054,UZ;NUST;MSU,Statistics;BSc Statistics and Operations Research
 MSc Mathematics,Masters,054,UZ;NUST,Master of Science in Mathematics
 PhD in Mathematics,PhD,054,UZ;NUST,Doctor of Philosophy in Mathematics
 BSc Computer Science,Undergraduate,061,UZ;NUST;MSU;CUT;GZU;BUSE;HIT,Computer Science;Comp Sci;BSc CS
-BSc Information Systems,Undergraduate,061,NUST;MSU;CUT;GZU,BIS;Info Systems;Information Systems
-BSc Information Technology,Undergraduate,061,HIT;CUT;GZU;ZOU,IT;Information Technology
-BSc Software Engineering,Undergraduate,061,HIT;NUST;CUT,Software Engineering
+BSc Information Systems,Undergraduate,061,NUST;MSU;CUT;GZU;ZEGU,BIS;Info Systems;Information Systems
+BSc Information Technology,Undergraduate,061,HIT;CUT;GZU;ZOU;LSU,IT;Information Technology
+BSc Software Engineering,Undergraduate,061,HIT;NUST;CUT;BUSE,Software Engineering
 BSc Computer Engineering,Undergraduate,061,HIT;NUST,Computer Engineering
 BSc Cyber Security,Undergraduate,061,HIT;NUST,Cybersecurity;Cyber Security and Digital Forensics
 BSc Data Science,Undergraduate,061,HIT;NUST;UZ,Data Science;Data Science and Informatics
@@ -119,14 +119,14 @@ BSc Quantity Surveying,Undergraduate,073,NUST;UZ,Quantity Surveying;QS
 BSc Construction Management,Undergraduate,073,NUST;HIT,Construction Management
 BSc Surveying and Geomatics,Undergraduate,073,UZ;NUST;MSU,Land Surveying;Geomatics
 BSc Real Estate Management,Undergraduate,073,UZ;MSU,Real Estate;Property Management
-BSc Urban and Regional Planning,Undergraduate,073,NUST;UZ,Town Planning;Urban Planning
+BSc Urban and Regional Planning,Undergraduate,073,NUST;UZ;LSU,Town Planning;Urban Planning
 Diploma in Building,Diploma,073,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY,Building Technology;Building Diploma
 Diploma in Quantity Surveying,Diploma,073,HARARE-POLY;BYO-POLY,QS Diploma
 National Certificate in Building,Certificate,073,,Building Certificate;Bricklaying
 BSc Agriculture,Undergraduate,081,UZ;MUAST;CUT;MSU,Agriculture;General Agriculture
 BSc Agricultural Economics,Undergraduate,081,UZ;MUAST,Agricultural Economics;Agricultural Economics and Extension
-BSc Crop Science,Undergraduate,081,UZ;MUAST;CUT,Crop Science;Crop Production
-BSc Animal Science,Undergraduate,081,UZ;MUAST;CUT,Animal Science;Animal Production
+BSc Crop Science,Undergraduate,081,UZ;MUAST;CUT;BUSE,Crop Science;Crop Production
+BSc Animal Science,Undergraduate,081,UZ;MUAST;CUT;BUSE,Animal Science;Animal Production
 BSc Horticulture,Undergraduate,081,CUT;MUAST,Horticulture
 BSc Agribusiness,Undergraduate,081,MUAST;MSU;GZU,Agribusiness;Agribusiness Management
 Diploma in Agriculture,Diploma,081,GWEBI;CHIBERO;ESIGODINI;MLEZU,Agriculture Diploma
@@ -152,8 +152,8 @@ Postgraduate Diploma in Public Health,Postgraduate,091,UZ;AU,PGD Public Health
 Master of Public Health,Masters,091,UZ;AU;MSU,MPH
 Master of Medicine,Masters,091,UZ,MMed
 PhD in Medicine,PhD,091,UZ,Doctor of Philosophy in Medicine
-BSc Social Work,Undergraduate,092,UZ;MSU;ZOU,Social Work;Bachelor of Social Work;BSW
-Diploma in Social Work,Diploma,092,,Social Work Diploma
+BSc Social Work,Undergraduate,092,UZ;MSU;ZOU;BUSE;ZEGU,Social Work;Bachelor of Social Work;BSW
+Diploma in Social Work,Diploma,092,ZEGU,Social Work Diploma
 Master of Social Work,Masters,092,UZ,MSW
 BSc Hospitality and Tourism Management,Undergraduate,101,CUT;MSU;ZOU,Hospitality Management;Tourism Management
 Diploma in Hospitality Management,Diploma,101,HARARE-POLY;BYO-POLY;GWERU-POLY;MUTARE-POLY,Hospitality Diploma
@@ -161,7 +161,7 @@ Diploma in Tourism,Diploma,101,,Tourism Diploma
 Diploma in Culinary Arts,Diploma,101,,Catering;Chef Training
 Certificate in Hairdressing and Beauty Therapy,Certificate,101,,Hairdressing;Cosmetology
 Diploma in Environmental Health,Diploma,102,,Environmental Health Technician
-Diploma in Occupational Health and Safety,Diploma,102,,OHS;Health and Safety
+Diploma in Occupational Health and Safety,Diploma,102,ZEGU,OHS;Health and Safety
 Diploma in Security Management,Diploma,103,,Security Studies
 Diploma in Logistics and Transport Management,Diploma,104,HARARE-POLY;BYO-POLY,Logistics;Transport Management
 Diploma in Aviation Management,Diploma,104,,Aviation
@@ -170,3 +170,83 @@ BSc Local Governance Studies,Undergraduate,031,MSU,Local Governance;Local Govern
 BA Philosophy,Undergraduate,022,UZ,Philosophy
 BA Music and Musicology,Undergraduate,021,MSU,Music;Musicology
 BA Film and Theatre Arts,Undergraduate,021,MSU,Film Studies;Theatre Arts;Film and Theatre
+BSc Statistics and Financial Mathematics,Undergraduate,054,BUSE,
+BSc Chemical Technology,Undergraduate,071,BUSE,
+BSc Optometry,Undergraduate,091,BUSE,
+BSc Network Engineering,Undergraduate,061,BUSE,
+BSc Sport Science and Management,Undergraduate,101,BUSE,
+BSc Environmental Physics and Energy Sources,Undergraduate,053,BUSE,
+BSc Agricultural Engineering,Undergraduate,071,BUSE,
+BSc Electronic Engineering,Undergraduate,071,BUSE,
+BSc Mining Engineering,Undergraduate,072,BUSE,
+BSc Grain Milling and Processing Engineering,Undergraduate,072,BUSE,
+BSc Forestry and Environmental Management,Undergraduate,082,BUSE,
+BSc Wildlife Ecology and Fisheries Management,Undergraduate,052,BUSE,
+"BSc Safety, Health and Environmental Management",Undergraduate,102,BUSE,
+BSc Animal Health and Production Extension,Undergraduate,081,BUSE,
+BSc Agricultural Economics and Management,Undergraduate,081,BUSE,
+BSc Peace and Governance,Undergraduate,031,BUSE,
+BSc Culture and Heritage Studies,Undergraduate,022,BUSE,
+Bachelor of Communication Science,Undergraduate,032,BUSE,
+BSc Information and Knowledge Management,Undergraduate,032,BUSE,
+BCom Human Capital Management,Undergraduate,041,BUSE,
+BCom Financial Intelligence,Undergraduate,041,BUSE,
+Bachelor of Business Administration in Police and Security Studies,Undergraduate,103,BUSE,
+BA Theology and Religious Studies,Undergraduate,022,ZEGU,
+"BA Theology, Pastoral Care and Counselling",Undergraduate,022,ZEGU,
+Bachelor of Education in Early Childhood Development,Undergraduate,011,ZEGU,
+Bachelor of Education in Philosophy,Undergraduate,011,ZEGU,
+Bachelor of Education in Psychology,Undergraduate,011,ZEGU,
+Bachelor of Education in Sociology,Undergraduate,011,ZEGU,
+BSc Development Sociology,Undergraduate,031,ZEGU,
+BSc Digital Technology,Undergraduate,061,ZEGU,
+BCom Business Administration and Management,Undergraduate,041,ZEGU,
+BSc Supply Chain Management,Undergraduate,041,ZEGU;LSU,
+BSc Agri-Business Management,Undergraduate,081,ZEGU,
+Diploma in Accounting and Finance,Diploma,041,ZEGU,
+Diploma in Information Systems,Diploma,061,ZEGU,
+Diploma in Supply Chain Management,Diploma,041,ZEGU,
+Diploma in Digital Marketing,Diploma,041,ZEGU,
+Diploma in Microfinance Management,Diploma,041,ZEGU,
+Diploma in Payroll Management,Diploma,041,ZEGU,
+Diploma in Strategic Management,Diploma,041,ZEGU,
+BSc Wildlife Resources Management,Undergraduate,052,LSU,
+BCom Real Estate Management,Undergraduate,073,LSU,
+BSc Tourism and Hospitality Management,Undergraduate,101,LSU,
+BCom Accounting and Finance,Undergraduate,041,LSU,
+BSc Human Resource Management,Undergraduate,041,LSU,
+BCom Entrepreneurship and Business Management,Undergraduate,041,LSU,
+BCom Digital Marketing,Undergraduate,041,LSU,
+BCom Marketing Management,Undergraduate,041,LSU,
+BCom Procurement and Supply Chain Management,Undergraduate,041,LSU,
+BAgSc Animal Science and Rangeland Management,Undergraduate,081,LSU,
+BSc Forest Resources Management,Undergraduate,082,LSU,
+BAgSc Crop Science,Undergraduate,081,LSU,
+BAgSc Soil Science,Undergraduate,081,LSU,
+BAgSc Agricultural Economics,Undergraduate,081,LSU,
+BAgSc Horticulture and Landscaping,Undergraduate,081,LSU,
+BSc Irrigation Engineering,Undergraduate,071,LSU,
+BSc Food Science and Agricultural Processing,Undergraduate,072,LSU,
+BSc Agricultural Food Processing and Technology,Undergraduate,072,LSU,
+Diploma in Agribusiness,Diploma,081,LSU,
+BEng Production Engineering,Undergraduate,071,LSU,
+BEng Mechatronics Engineering,Undergraduate,071,LSU,
+BEng Fuels and Energy Engineering,Undergraduate,071,LSU,
+BSc Business Computing,Undergraduate,061,LSU,
+BSocSc Geography and Population Studies,Undergraduate,031,LSU,
+BA Language and Communication Studies,Undergraduate,023,LSU,
+BA IsiNdebele,Undergraduate,023,LSU,
+BA Applied Language Studies,Undergraduate,023,LSU,
+Diploma in Court Interpreting and Translation,Diploma,023,LSU,
+Bachelor of Education in Mathematics,Undergraduate,011,LSU,
+Bachelor of Education in English and Communication,Undergraduate,011,LSU,
+Bachelor of Education in Agriculture,Undergraduate,011,LSU,
+Bachelor of Education in Geography,Undergraduate,011,LSU,
+Bachelor of Education in Language and Communication (IsiNdebele),Undergraduate,011,LSU,
+Diploma in Development Studies,Diploma,031,LSU,
+Diploma in Youth and Community Development Studies,Diploma,031,LSU,
+BSc Urban Management Studies,Undergraduate,073,LSU,
+BSc Anthropology,Undergraduate,031,LSU,
+BSc Peace and Security Studies,Undergraduate,031,LSU,
+BSc Industrial Psychology,Undergraduate,031,LSU,
+BSc Applied Biotechnology,Undergraduate,051,LSU,
