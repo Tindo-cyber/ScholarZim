@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Applicant;
 
 use App\Http\Controllers\Controller;
+use App\Models\OpportunityReport;
 use App\Services\OpportunityReportService;
 use App\Support\ReportReason;
 use Illuminate\Http\Request;
@@ -13,6 +14,18 @@ class ListingReportController extends Controller
 {
     public function __construct(private readonly OpportunityReportService $reportService)
     {
+    }
+
+    /** The signed-in student's own reports, newest first. Never anyone else's. */
+    public function index(Request $request)
+    {
+        return view('applicant.reports', [
+            'reports' => OpportunityReport::with('opportunity')
+                ->where('user_id', $request->user()->user_id)
+                ->orderByDesc('created_at')
+                ->orderByDesc('report_id')
+                ->paginate(15),
+        ]);
     }
 
     /**

@@ -55,6 +55,8 @@
                     <x-nav-section label="Applications">
                         <x-nav-item :href="route('applications.mine')" icon="file-text"
                                     :active="request()->routeIs('applications.mine')">Application tracker</x-nav-item>
+                        <x-nav-item :href="route('applicant.reports')" icon="shield"
+                                    :active="request()->routeIs('applicant.reports')">My reports</x-nav-item>
                     </x-nav-section>
 
                     <x-nav-section label="Profile">

@@ -187,6 +187,9 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT, 'cache.headers:no_sto
     Route::get('/applicant/recommendations', [Applicant\RecommendationController::class, 'index'])
         ->name('applicant.recommendations');
 
+    // The student's own list of the reports they have made, and what became of each.
+    Route::get('/applicant/reports', [Applicant\ListingReportController::class, 'index'])->name('applicant.reports');
+
     // Reporting a listing. Limited per account (see AppServiceProvider), because a
     // report is a cost to the provider it names.
     Route::post('/scholarships/{id}/report', [Applicant\ListingReportController::class, 'store'])
