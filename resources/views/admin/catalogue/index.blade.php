@@ -8,12 +8,6 @@
                    subtitle="What students study and what scholarships are open to. Everyone picks from this one list."
                    eyebrow="Governance" />
 
-    <div class="alert alert-warning small" role="note">
-        <strong>The starter list is unverified.</strong>
-        It was written from general knowledge, not from the institutions' own prospectuses. Check it in Excel
-        (export, correct, import) before you rely on it - especially which institution offers which programme.
-    </div>
-
     @include('admin.catalogue.nav', ['active' => 'overview'])
 
     <div class="row g-3 mb-4">

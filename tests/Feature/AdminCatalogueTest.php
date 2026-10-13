@@ -61,14 +61,20 @@ class AdminCatalogueTest extends TestCase
         $this->actingAs($provider)->post('/admin/catalogue/programmes', ['name' => 'x'])->assertForbidden();
     }
 
+    public function test_the_overview_no_longer_carries_the_starter_list_warning(): void
+    {
+        $this->asAdmin()->get('/admin/catalogue')->assertOk()
+            ->assertDontSee('The starter list is unverified')
+            ->assertDontSee('written from general knowledge');
+    }
+
     public function test_the_overview_counts_the_catalogue_and_links_to_the_queue(): void
     {
         app(ProgrammeCatalogue::class)->suggest($this->admin, 'Odd Studies', EducationLevel::DIPLOMA, Field::where('code', '061')->value('id'));
 
         $this->asAdmin()->get('/admin/catalogue')->assertOk()
             ->assertSee('Programme catalogue')
-            ->assertSee('1 waiting')
-            ->assertSee('starter list', false);
+            ->assertSee('1 waiting');
     }
 
     // -------------------------------------------------------------- programmes --
