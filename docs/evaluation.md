@@ -83,7 +83,6 @@ Fill in after a peer walkthrough:
 - SMS is not implemented. It was scoped out along with 2FA, saved-search alerts, bulk
   moderation of applications, and the public JSON API when the project was narrowed to its
   five objectives on 2026-08-31. Reintroducing it is a scope decision, not a bug fix.
-- Browser E2E is not automated (the manual checklist above is used instead).
-- `composer audit` reports no advisories; the `audit.block-insecure=false` setting in
-  `composer.json` is a leftover from the Laravel 10 era and no longer reflects a real
-  constraint — safe to remove whenever someone is next in that file.
+- Browser tests (Laravel Dusk, `tests/Browser`, 11 files) cover the listing form, drafts, reports, flash
+  messages, dialogs and role sessions, but they need Chrome and are run by hand with `php artisan dusk`;
+  CI runs only `php artisan test`. The manual checklist above covers the rest.

@@ -49,7 +49,7 @@ Stored filenames are server-generated UUIDs, so a client-supplied name never rea
 
 - Uploads are content-sniffed in `FileStorageService::guard()` — `UploadedFile::getMimeType()` inspects the actual file bytes via finfo rather than trusting the client-supplied `Content-Type` header, and size is capped at 5 MB. Accepted types: PDF, Word, JPEG, PNG.
 - Laravel form-request validation on registration and profile forms, with a second `mimes`/`max` check at the controller boundary.
-- CSRF protection on every session-authenticated POST via the `web` middleware group; public GET `/api/public/**` needs none.
+- CSRF protection on every POST, PUT and DELETE via the `web` middleware group. There is no `/api` route group to exempt.
 
 ## Rate limiting
 
@@ -81,14 +81,12 @@ Security-relevant events written to `audit_log`:
 | VIEW_PROVIDER_CERTIFICATE | Admin downloads provider cert |
 | VIEW_APPLICANT_RESULTS | Provider/admin views results PDF |
 | APPLY, STATUS_UPDATE, admin user ops | Business workflows |
-| TWO_FACTOR_ENABLED / TWO_FACTOR_DISABLED | Second factor turned on or off |
-| TWO_FACTOR_CHALLENGE_FAILED | Wrong code at setup or sign-in |
 | LOGOUT_OTHER_SESSIONS | Every other session for an account ended |
-| API_TOKEN_CREATED / API_TOKEN_REVOKED | Personal access token issued or revoked |
 | ACCOUNT_SELF_DELETED | A user deleted their own account |
-| WITHDRAW_APPLICATION, REQUEST_APPLICATION_INFO, PROVIDE_APPLICATION_INFO | Application lifecycle |
-| BULK_STATUS_UPDATE, BULK_MODERATION | A decision applied across a selection |
+| WITHDRAW_APPLICATION | An applicant withdrew an application |
+| BULK_MODERATION | One moderation decision applied to several listings |
 | UPDATE_SCHOLARFIT_WEIGHTS | Historical only: ScholarFit used to have configurable scoring weights, which were removed (it now has no score), so nothing writes this any more; old audit rows may still carry it |
+| TWO_FACTOR_ENABLED, TWO_FACTOR_DISABLED, TWO_FACTOR_CHALLENGE_FAILED, API_TOKEN_CREATED, API_TOKEN_REVOKED, REQUEST_APPLICATION_INFO, PROVIDE_APPLICATION_INFO, BULK_STATUS_UPDATE | Historical only: written by two-factor sign-in, API tokens, the "information requested" status and bulk application decisions, all removed on 2026-08-31. Nothing writes them now; the names stay so old audit rows still display |
 
 Admin can review entries at `/admin/dashboard` → audit log section.
 
@@ -136,7 +134,6 @@ Production: set `SESSION_SECURE_COOKIE=true` so session cookies are only sent ov
 ## Known limitations (future work)
 
 - **Cluster rate limiting** — per-instance cache only.
-- **`composer audit` is non-blocking** — `audit.block-insecure=false` remains in `composer.json` from the Laravel 10 era, when every release carried an advisory with no fix to move to. The framework is now Laravel 12 and the audit reports nothing; the setting is stale rather than load-bearing and should be removed.
 - **Ephemeral uploads on free Render** — the disk root is configurable (`FILESYSTEM_ROOT`), but no disk is actually attached on `plan: free`, so uploads still do not survive a redeploy today. Upgrading the plan, attaching a Render Persistent Disk, and setting `FILESYSTEM_ROOT` to its mount path (see `docs/DEPLOYMENT.md`) is what closes this - it is configuration, not a code change, but it has not been done because the current deployment stays on the free plan.
 - **Admin PDF/Excel reports** — current exporters load full tables into memory; fine for FYP scale; paginate or stream before large production datasets.
 - **`style-src 'unsafe-inline'`** — inline `style="..."` attributes remain across a number of views; extracting them is future work.
