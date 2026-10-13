@@ -264,38 +264,76 @@ class CatalogueImporter
 
     // ------------------------------------------------------------- programmes --
 
+    /**
+     * Programmes go in with a fixed number of queries, however many rows there are.
+     *
+     * This used to look each row up and save it on its own - about ten queries a row, so ten thousand for the
+     * real catalogue. Against a database on another machine that is minutes, and the upload timed out. Now the
+     * fields, institutions, existing programmes, their institution links and their synonyms are read once, every
+     * row is judged in memory against them, and what is new is written in a few bulk statements at the end. The
+     * rules are exactly the ones that were applied row by row: the same refusals with the same row numbers, and
+     * the same programme met again later in the file is the same programme.
+     */
     private function importProgrammes(array $rows, ImportReport $report): void
     {
+        $fieldIds = Field::pluck('id', 'code')->all();
+        $institutionIds = array_change_key_case(Institution::pluck('id', 'code')->all(), CASE_UPPER);
+
+        // One entry per programme, existing or about to be created, keyed by lower-cased name and level.
+        // $state[...]['ref'] is its database id once it has one, otherwise a temporary stand-in.
+        $state = [];
+        $byId = [];
+
+        foreach (Programme::select('id', 'name', 'education_level', 'field_id', 'status')->get() as $p) {
+            $key = mb_strtolower($p->name) . '|' . $p->education_level;
+            $state[$key] = [
+                'ref' => $p->id, 'id' => $p->id, 'name' => $p->name, 'level' => $p->education_level, 'field_id' => $p->field_id,
+                'status' => $p->status, 'new' => false, 'update' => false, 'institutions' => [], 'addInstitutions' => [],
+                'synonyms' => [], 'addSynonyms' => [],
+            ];
+            $byId[$p->id] = $key;
+        }
+
+        foreach (DB::table('institution_programme')->get(['programme_id', 'institution_id']) as $link) {
+            if (isset($byId[$link->programme_id])) {
+                $state[$byId[$link->programme_id]]['institutions'][$link->institution_id] = true;
+            }
+        }
+
         // Who owns each synonym, so one cannot be claimed by two programmes. Kept up to date as rows go in.
         $owners = [];
 
-        foreach (ProgrammeSynonym::with('programme:id,name')->get() as $existing) {
-            $owners[Programme::normalise($existing->synonym)] = ['id' => $existing->programme_id, 'name' => $existing->programme?->name];
+        foreach (ProgrammeSynonym::select('programme_id', 'synonym')->get() as $existing) {
+            if (isset($byId[$existing->programme_id])) {
+                $key = $byId[$existing->programme_id];
+                $state[$key]['synonyms'][mb_strtolower($existing->synonym)] = true;
+                $owners[Programme::normalise($existing->synonym)] = ['ref' => $existing->programme_id, 'name' => $state[$key]['name']];
+            }
         }
+
+        $temporary = 0;
 
         foreach ($rows as $index => $row) {
             $number = $index + 1;
             $name = $this->cell($row, 'name');
             $level = EducationLevel::canonical(str_replace(["'", "\u{2019}"], '', $this->cell($row, 'level')));
-            $field = ($code = $this->cell($row, 'field_code')) === '' ? null : Field::where('code', $code)->first();
+            $fieldId = ($code = $this->cell($row, 'field_code')) === '' ? null : ($fieldIds[$code] ?? null);
             $institutionCodes = $this->list($this->cell($row, 'institutions'), upper: true);
             $synonyms = $this->list($this->cell($row, 'synonyms'));
 
-            $institutions = Institution::whereIn('code', $institutionCodes)->get();
-            $unknown = array_values(array_diff($institutionCodes, $institutions->pluck('code')->all()));
+            $unknown = array_values(array_filter($institutionCodes, fn ($c) => ! isset($institutionIds[$c])));
 
             $problem = match (true) {
                 $name === '' || mb_strlen($name) > 200 => 'The name is required and must be at most 200 characters.',
                 ! in_array($level, Programme::LEVELS, true) => 'The level must be Certificate, Diploma, Undergraduate, Postgraduate, Masters or PhD.',
-                $field === null => 'The field code "' . $code . '" does not exist.',
+                $fieldId === null => 'The field code "' . $code . '" does not exist.',
                 $unknown !== [] => 'Unknown institution code(s): ' . implode(', ', $unknown) . '.',
                 collect($synonyms)->contains(fn ($s) => mb_strlen($s) > 200) => 'A synonym is longer than 200 characters.',
                 default => null,
             };
 
-            $programme = $problem === null
-                ? Programme::whereRaw('LOWER(name) = ?', [mb_strtolower($name)])->where('education_level', $level)->first()
-                : null;
+            $key = $problem === null ? mb_strtolower($name) . '|' . $level : null;
+            $known = $key !== null ? ($state[$key] ?? null) : null;
 
             // A synonym means one programme. If it already means another, the row would make a search for
             // it ambiguous, so the row is refused and the person who owns the file decides which is right.
@@ -303,7 +341,7 @@ class CatalogueImporter
                 foreach ($synonyms as $synonym) {
                     $owner = $owners[Programme::normalise($synonym)] ?? null;
 
-                    if ($owner !== null && $owner['id'] !== $programme?->id) {
+                    if ($owner !== null && (string) $owner['ref'] !== (string) ($known['ref'] ?? '')) {
                         $problem = 'The synonym "' . $synonym . '" already belongs to "' . $owner['name'] . '". A synonym can belong to only one programme.';
 
                         break;
@@ -317,37 +355,105 @@ class CatalogueImporter
                 continue;
             }
 
-            $isNew = $programme === null;
+            $isNew = $known === null;
             $changed = false;
 
             if ($isNew) {
-                $programme = Programme::create([
-                    'name' => $name, 'education_level' => $level, 'field_id' => $field->id,
-                    'is_active' => true, 'status' => Programme::APPROVED,
-                ]);
-            } else {
-                $programme->fill(['field_id' => $field->id, 'status' => Programme::APPROVED]);
-                $changed = $programme->isDirty();
-                $programme->save();
+                $state[$key] = $known = [
+                    'ref' => 'new:' . (++$temporary), 'id' => null, 'name' => $name, 'level' => $level, 'field_id' => $fieldId,
+                    'status' => Programme::APPROVED, 'new' => true, 'update' => false, 'institutions' => [], 'addInstitutions' => [],
+                    'synonyms' => [], 'addSynonyms' => [],
+                ];
+            } elseif ((int) $known['field_id'] !== (int) $fieldId || $known['status'] !== Programme::APPROVED) {
+                $state[$key]['field_id'] = $fieldId;
+                $state[$key]['status'] = Programme::APPROVED;
+                $state[$key]['update'] = ! $known['new'];
+                $changed = true;
             }
 
-            $attached = $programme->institutions()->syncWithoutDetaching($institutions->pluck('id')->all());
-            $changed = $changed || $attached['attached'] !== [];
+            foreach ($institutionCodes as $institutionCode) {
+                $id = $institutionIds[$institutionCode];
 
-            $have = $programme->synonyms()->pluck('synonym')->map(fn ($s) => mb_strtolower($s))->all();
+                if (! isset($state[$key]['institutions'][$id]) && ! isset($state[$key]['addInstitutions'][$id])) {
+                    $state[$key]['addInstitutions'][$id] = true;
+                    $changed = true;
+                }
+            }
 
             foreach ($synonyms as $synonym) {
-                if (mb_strtolower($synonym) === mb_strtolower($name) || in_array(mb_strtolower($synonym), $have, true)) {
+                $lower = mb_strtolower($synonym);
+
+                if ($lower === mb_strtolower($name) || isset($state[$key]['synonyms'][$lower]) || isset($state[$key]['addSynonyms'][$lower])) {
                     continue;
                 }
 
-                ProgrammeSynonym::create(['programme_id' => $programme->id, 'synonym' => $synonym]);
-                $owners[Programme::normalise($synonym)] = ['id' => $programme->id, 'name' => $programme->name];
-                $have[] = mb_strtolower($synonym);
+                $state[$key]['addSynonyms'][$lower] = $synonym;
+                $owners[Programme::normalise($synonym)] = ['ref' => $state[$key]['ref'], 'name' => $state[$key]['name']];
                 $changed = true;
             }
 
             $isNew ? $report->created++ : ($changed ? $report->updated++ : null);
+        }
+
+        $this->writeProgrammes($state);
+    }
+
+    /** The bulk writes behind importProgrammes(): new programmes, changed ones, then their institution links and synonyms. */
+    private function writeProgrammes(array $state): void
+    {
+        $now = now();
+
+        $new = array_filter($state, fn ($p) => $p['new']);
+
+        foreach (array_chunk($new, 200, true) as $chunk) {
+            DB::table('programmes')->insert(array_map(fn ($p) => [
+                'name' => $p['name'], 'education_level' => $p['level'], 'field_id' => $p['field_id'],
+                'is_active' => true, 'status' => Programme::APPROVED, 'created_at' => $now, 'updated_at' => $now,
+            ], array_values($chunk)));
+        }
+
+        if ($new !== []) {
+            $created = [];
+
+            foreach (Programme::select('id', 'name', 'education_level')->get() as $p) {
+                $created[mb_strtolower($p->name) . '|' . $p->education_level] = $p->id;
+            }
+
+            foreach ($new as $key => $p) {
+                $state[$key]['id'] = $created[$key] ?? null;
+            }
+        }
+
+        // A programme that already existed and whose field or status changed.
+        foreach ($state as $p) {
+            if ($p['update'] && $p['id'] !== null) {
+                DB::table('programmes')->where('id', $p['id'])->update(['field_id' => $p['field_id'], 'status' => $p['status'], 'updated_at' => $now]);
+            }
+        }
+
+        $links = [];
+        $synonymRows = [];
+
+        foreach ($state as $p) {
+            if ($p['id'] === null) {
+                continue;
+            }
+
+            foreach (array_keys($p['addInstitutions']) as $institutionId) {
+                $links[] = ['institution_id' => $institutionId, 'programme_id' => $p['id']];
+            }
+
+            foreach ($p['addSynonyms'] as $synonym) {
+                $synonymRows[] = ['programme_id' => $p['id'], 'synonym' => $synonym];
+            }
+        }
+
+        foreach (array_chunk($links, 500) as $chunk) {
+            DB::table('institution_programme')->insertOrIgnore($chunk);
+        }
+
+        foreach (array_chunk($synonymRows, 500) as $chunk) {
+            DB::table('programme_synonyms')->insertOrIgnore($chunk);
         }
     }
 

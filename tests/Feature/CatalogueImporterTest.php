@@ -48,6 +48,65 @@ class CatalogueImporterTest extends TestCase
         return $row + ['name' => $name, 'level' => 'Undergraduate', 'field_code' => '061', 'institutions' => 'MSU;NUST', 'synonyms' => $name === 'BSc Information Systems' ? 'BIS;Info Systems' : ''];
     }
 
+    // ------------------------------------------------------------- speed --
+
+    /**
+     * On a hosted database every query costs a network round trip, so an import that does a handful of queries
+     * per row takes minutes for the real catalogue (about 1,400 programmes) and the request times out. The
+     * number of queries must not depend on the number of rows.
+     */
+    public function test_the_number_of_queries_does_not_grow_with_the_number_of_rows(): void
+    {
+        $rows = [];
+        for ($i = 1; $i <= 300; $i++) {
+            $rows[] = ['name' => "Programme $i", 'level' => 'Undergraduate', 'field_code' => '061', 'institutions' => 'MSU;NUST', 'synonyms' => "Short $i;Alias $i"];
+        }
+
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        \Illuminate\Support\Facades\DB::enableQueryLog();
+        $report = $this->importer->import(CatalogueImporter::PROGRAMMES, $rows);
+        $first = count(\Illuminate\Support\Facades\DB::getQueryLog());
+
+        \Illuminate\Support\Facades\DB::flushQueryLog();
+        $again = $this->importer->import(CatalogueImporter::PROGRAMMES, $rows);
+        $second = count(\Illuminate\Support\Facades\DB::getQueryLog());
+        \Illuminate\Support\Facades\DB::disableQueryLog();
+
+        $this->assertSame(300, $report->created);
+        $this->assertSame(0, $again->created);
+        $this->assertSame(0, $again->updated, 'nothing changed the second time');
+        $this->assertSame(300, Programme::count());
+        $this->assertSame(600, \Illuminate\Support\Facades\DB::table('institution_programme')->count());
+        $this->assertSame(600, \Illuminate\Support\Facades\DB::table('programme_synonyms')->count());
+
+        $this->assertLessThan(40, $first, "importing 300 new programmes took $first queries");
+        $this->assertLessThan(40, $second, "re-importing 300 programmes took $second queries");
+    }
+
+    public function test_the_same_programme_twice_in_one_file_is_one_programme_with_both_rows_applied(): void
+    {
+        $report = $this->importer->import(CatalogueImporter::PROGRAMMES, [
+            ['name' => 'BSc Mining', 'level' => 'Undergraduate', 'field_code' => '071', 'institutions' => 'MSU', 'synonyms' => ''],
+            ['name' => 'bsc mining', 'level' => 'Undergraduate', 'field_code' => '071', 'institutions' => 'NUST', 'synonyms' => 'Mining Degree'],
+        ]);
+
+        $this->assertSame(1, $report->created);
+        $this->assertSame(1, Programme::count());
+
+        $programme = Programme::with(['institutions', 'synonyms'])->firstOrFail();
+        $this->assertEqualsCanonicalizing(['MSU', 'NUST'], $programme->institutions->pluck('code')->all());
+        $this->assertSame(['Mining Degree'], $programme->synonyms->pluck('synonym')->all());
+    }
+
+    public function test_a_new_programmes_dates_are_set(): void
+    {
+        $this->importer->import(CatalogueImporter::PROGRAMMES, [$this->programme()]);
+
+        $programme = Programme::firstOrFail();
+        $this->assertNotNull($programme->created_at);
+        $this->assertNotNull($programme->updated_at);
+    }
+
     // ------------------------------------------------------------- fields --
 
     public function test_fields_are_created_with_their_parent(): void
