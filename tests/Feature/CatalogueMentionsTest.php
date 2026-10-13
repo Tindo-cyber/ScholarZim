@@ -25,6 +25,7 @@ class CatalogueMentionsTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->useFullCatalogue();   // mention detection is checked against the real, shipped catalogue
         (new CatalogueSeeder())->load();
     }
 

@@ -21,6 +21,14 @@ class CatalogueSeeder extends Seeder
         CatalogueImporter::PROGRAMMES => 'programmes.csv',
     ];
 
+    /** The shipped starter files, unless config says otherwise (only the test suite does: see config/scholarzim.php). */
+    private function directory(): string
+    {
+        $configured = config('scholarzim.catalogue.path');
+
+        return rtrim(filled($configured) ? (string) $configured : database_path('seeders/data'), '/\\');
+    }
+
     /** @return array<string, ImportReport> per kind */
     public function load(): array
     {
@@ -28,7 +36,7 @@ class CatalogueSeeder extends Seeder
         $reports = [];
 
         foreach (self::FILES as $kind => $file) {
-            $reports[$kind] = $importer->importFile($kind, database_path('seeders/data/' . $file));
+            $reports[$kind] = $importer->importFile($kind, $this->directory() . '/' . $file);
         }
 
         return $reports;

@@ -88,6 +88,16 @@ return [
      * it. `per_hour` limits how many reports one account can file, so the button
      * cannot be used to harass a provider.
      */
+    /*
+     * Where the programme catalogue's starter CSVs are read from. Empty means the shipped files in
+     * database/seeders/data. Only the test suite sets it: the shipped catalogue has over a thousand programmes
+     * and every seeded test loads it, so tests default to a small copy (tests/Fixtures/catalogue) and the few
+     * that exercise the real data ask for it with TestCase::useFullCatalogue().
+     */
+    'catalogue' => [
+        'path' => env('SCHOLARZIM_CATALOGUE_PATH'),
+    ],
+
     'reports' => [
         'hide_after' => (int) env('SCHOLARZIM_REPORTS_HIDE_AFTER', 3),
         'per_hour' => (int) env('SCHOLARZIM_REPORTS_PER_HOUR', 10),

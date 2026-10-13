@@ -40,6 +40,7 @@ class ScholarFitAccuracyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->useFullCatalogue();   // eligibility is checked against the real, shipped catalogue
 
         ['applicants' => $this->applicants, 'listings' => $this->listings] = $this->loadScholarFitFixtures();
         $this->key = $this->fixture('expected');

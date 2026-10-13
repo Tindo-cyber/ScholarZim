@@ -11,6 +11,12 @@ abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
 
+    /** For the few tests about the real shipped catalogue (call it after parent::setUp()). */
+    protected function useFullCatalogue(): void
+    {
+        config(['scholarzim.catalogue.path' => null]);
+    }
+
     /**
      * No test may reach Mailgun.
      *
@@ -34,6 +40,10 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Every seeded test loads the programme catalogue. The shipped one has over a thousand programmes, so tests
+        // use a small copy of the original starter list unless they ask for the real thing.
+        config(['scholarzim.catalogue.path' => base_path('tests/Fixtures/catalogue')]);
 
         $this->app->instance(HttpClientInterface::class, new MockHttpClient(
             fn () => new MockResponse(

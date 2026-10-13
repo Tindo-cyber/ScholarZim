@@ -18,6 +18,12 @@ class CatalogueStarterDataTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->useFullCatalogue();   // these are about the files that ship
+    }
+
     public function test_every_row_of_every_starter_file_is_accepted(): void
     {
         foreach ((new CatalogueSeeder())->load() as $kind => $report) {
