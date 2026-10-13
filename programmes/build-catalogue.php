@@ -165,7 +165,7 @@ $subjectOf = static function (string $name): string {
     $s = preg_replace('/^(BSc|BCom|BA|BEng|BTech|BSocSc|BAgSc)\s+(Special\s+in\s+|Special\s+)?/i', '', $name);
     $s = preg_replace('/^(Post-Basic\s+)?(Executive\s+)?(Master|Masters|Bachelor|Doctor)(\'s)?\s+(of|in)\s+[A-Za-z]+(\s+[A-Za-z]+)?(?:\s+in\s+|\s*$)/i', '', $s);
     $s = preg_replace('/^(Executive\s+)?(Master|Masters)(\'s)?\s+in\s+/i', '', $s);
-    $s = preg_replace('/^(Postgraduate|Graduate)\s+Diploma\s+in\s+|^Diploma\s+in\s+|^Certificate\s+in\s+|^Executive\s+Certificate\s+in\s+|^PhD\s+in\s+/i', '', $s);
+    $s = preg_replace('/^(Postgraduate|Graduate)\s+Diploma\s+in\s+|^Higher\s+National\s+Diploma\s+in\s+|^National\s+Certificate\s+in\s+|^Diploma\s+in\s+|^Certificate\s+in\s+|^Executive\s+Certificate\s+in\s+|^PhD\s+in\s+/i', '', $s);
     return trim($s) !== '' ? trim($s) : $name;
 };
 // Broad subject area -> the narrow field used when no rule matches. null = no safe default.
@@ -217,6 +217,7 @@ $rows = $existing;
 $index = [];
 foreach ($rows as $i => $r) {
     $index[$key($r[0]) . '|' . $r[1]] = $i;
+    $index[$key(preg_replace('/^National\s+/i', '', $r[0])) . '|' . $r[1]] ??= $i;
     foreach (array_filter(array_map('trim', explode(';', $r[4] ?? ''))) as $s) {
         $index[$key($s) . '|' . $r[1]] = $i;
     }
@@ -274,15 +275,196 @@ foreach ($sheet as $r) {
     $stats['new']++;
 }
 
+// ------------------------------------------------------------ polytechnics --
+//
+// The second workbook: eight polytechnic colleges. One row per course per college, with the awards it leads to
+// grouped in one cell ("NC; ND; HND"). Each award is its own programme: a National Certificate, a Diploma (the
+// National Diploma) and a Higher National Diploma are different levels of study; a B-Tech is Undergraduate.
+
+$polyFile = __DIR__ . '/zimbabwe_polytechnic_programmes_directory.xlsx';
+$polyStats = ['read' => 0, 'new' => 0, 'merged_existing' => 0, 'same_as_before' => 0, 'fallback_new' => 0, 'not_added' => 0, 'level_unclear' => 0];
+
+if (is_file($polyFile)) {
+    $polyInstitution = [
+        'Bulawayo Polytechnic' => 'BYO-POLY', 'Harare Polytechnic' => 'HARARE-POLY', 'Gweru Polytechnic' => 'GWERU-POLY',
+        'Mutare Polytechnic' => 'MUTARE-POLY', 'Masvingo Polytechnic' => 'MASVINGO-POLY', 'Kwekwe Polytechnic' => 'KWEKWE-POLY',
+        'Kwekwe Polytechnic — Gokwe Campus' => 'KWEKWE-POLY', 'Kushinga Phikelela Polytechnic' => 'KUSHINGA-POLY',
+        'Joshua Mqabuko Nkomo Polytechnic' => 'JMN-POLY',
+    ];
+
+    /** The trade and technical subjects; tried on the course name before the general rules. [regex, field] */
+    $polyRules = [
+        ['/clothing|garment|tailor|textile|leather|upholster|weaving|knitting|dressmak|rubber|plastic|polymer|food (technology|processing)|brewing|baking|dairy/i', '072'],
+        ['/plumb|carpentry|joinery|bricklay|plaster|tiling|roofing|masonry|painting and decorat|building|construction|civil|quantity|surveying|draughting|architect|housing|estate|town/i', '073'],
+        ['/meat (hygiene|inspection)|food (hygiene|inspection)|environmental health|health inspection/i', '102'],
+        ['/food (technology|processing)|brewing|baking|dairy|clothing|garment|tailor|textile|leather|upholster|weaving|knitting|dressmak/i', '072'],
+        ['/refrigerat|air.?condition|boiler|weld|fabricat|machin|fitt(er|ing)|tool ?mak|millwright|instrumentation|motor|vehicle|automotive|automobile|diesel|panel|spray|plant|foundry|pattern|electrical|electronic|power|mechatronic|engineering|mechanic/i', '071'],
+        ['/hairdress|beauty|cosmetolog|barber|nail|make-?up|hospitality|catering|food and beverage|cookery|chef|confectionery|housekeeping|tourism|travel|front office/i', '101'],
+        ['/printing|graphic|publishing|bookbinding|sculpt|ceramic|pottery|music|photograph|drama|theatre|jewel|fine art|craft|fashion|design/i', '021'],
+        ['/journalism|mass communication|public relations|media|broadcast|library|information (science|management)/i', '032'],
+        ['/computer|\bict\b|information technology|software|network|web |programming|database|cyber|data /i', '061'],
+        ['/transport|logistics|aviation|road and rail/i', '104'],
+        ['/records|archives/i', '032'],
+        ['/secretar|office|receptionist|typing|clerical|administration|payroll|accountancy|accounting|cost |bookkeeping|banking|insurance|marketing|purchasing|supply|stores|business|commerce|management|human resource|entrepreneur|sales|retail|public sector/i', '041'],
+    ];
+
+    /** When no keyword in the course name applies, the college division's name may still say. [regex, field] */
+    $divisionDefaults = [
+        ['/automotive|mechanical|electrical|production/i', '071'], ['/civil|construction|building/i', '073'],
+        ['/commerce|management|business|accountancy|secretarial/i', '041'], ['/applied art|art & design|printing|graphic/i', '021'],
+        ['/applied science/i', '053'], ['/hospitality|tourism/i', '101'], ['/journalism|mass comm/i', '032'],
+        ['/information science|information technology|\bict\b/i', '061'], ['/adult|education/i', '011'], ['/agricultur/i', '081'],
+    ];
+
+    $polyField = static function (string $course, string $name, string $division) use ($polyRules, $divisionDefaults, $fieldOf, $educationRule): array {
+        if (preg_match($educationRule, $name)) {
+            return ['011', 'rule'];
+        }
+        foreach ($polyRules as [$regex, $code]) {
+            if (preg_match($regex, $course)) {
+                return [$code, 'rule'];
+            }
+        }
+        [$general, $how] = $fieldOf($name, '');
+        if ($general !== null && $how === 'rule') {
+            return [$general, 'rule'];
+        }
+        // A division that says "(see notes)" or lists several areas is not a safe hint.
+        if (! preg_match('/see notes|confirm|\//', $division)) {
+            foreach ($divisionDefaults as [$regex, $code]) {
+                if (preg_match($regex, $division)) {
+                    return [$code, 'area'];
+                }
+            }
+        }
+        return [null, 'none'];
+    };
+
+    $tidyCourse = static function (string $c): string {
+        $c = trim(preg_replace('/\s+/', ' ', str_replace('&', 'and', $c)));
+        $c = preg_replace('/\s*\((see notes|confirm[^)]*|leading to[^)]*)\)\s*/i', ' ', $c);
+        $c = preg_replace('/\s*\((?:[A-Z][a-z]?){2,8}\)/', '', $c);
+        return trim($c, " -,;");
+    };
+
+    $polyWb = \PhpOffice\PhpSpreadsheet\IOFactory::load($polyFile);
+    $polyRows = $polyWb->getSheetByName('Programmes')->toArray(null, true, true, false);
+    array_shift($polyRows);
+
+    foreach ($polyRows as $r) {
+        [, $college, , $division, $courseRaw, $levelCell] = array_pad($r, 6, '');
+        $course = $tidyCourse((string) $courseRaw);
+        if ($course === '') {
+            continue;
+        }
+        $polyStats['read']++;
+
+        $code = $polyInstitution[trim((string) $college)] ?? null;
+        if ($code === null || ! in_array($code, $validInstitutions, true)) {
+            $review[] = [$courseRaw, $levelCell, $college, '', 'polytechnic not recognised: not added'];
+            $polyStats['not_added']++;
+            continue;
+        }
+
+        $cellText = trim((string) $levelCell);
+        $tokens = [];
+        if (! preg_match('/short course|skills development|confirm award level|confirm exact award level|^department\/course area/i', $cellText)) {
+            foreach (['NC' => '/\bNC\b/', 'ND' => '/\bND\b/', 'HND' => '/\bHND\b/', 'BT' => '/B-?Tech/i'] as $t => $re) {
+                if (preg_match($re, $cellText)) {
+                    $tokens[] = $t;
+                }
+            }
+            if (preg_match('/^Diploma$/i', $cellText)) {
+                $tokens[] = 'ND';
+            }
+            if (preg_match('/^Certificate$/i', $cellText)) {
+                $tokens[] = 'NC';
+            }
+        }
+
+        if ($tokens === []) {
+            $polyStats['level_unclear']++;
+            $review[] = [$courseRaw, $levelCell, $college, '', 'the award level is not stated: not added'];
+            continue;
+        }
+
+        $unsure = (bool) preg_match('/pathway|confirm/i', $cellText);
+        $named = (bool) preg_match('/\b(diploma|certificate)\b/i', $course);
+
+        foreach ($tokens as $t) {
+            // A course that already names its own award ("... Certificate") has no Higher National version to name.
+            if ($named && $t === 'HND') {
+                $review[] = [$courseRaw, $levelCell, $college, '', 'the course names its own award, so a Higher National version was not added'];
+                continue;
+            }
+
+            [$level, $name] = match ($t) {
+                'NC' => ['Certificate', $named ? $course : 'National Certificate in ' . $course],
+                'ND' => ['Diploma', $named ? $course : 'Diploma in ' . $course],
+                'HND' => ['Diploma', 'Higher National Diploma in ' . $course],
+                // A B-Tech listed under its full name ("Bachelor of Technology (Honours) in X") is styled like the university degrees.
+                default => ['Undergraduate', preg_match('/^Bachelor of/i', $course) ? $styled($course, 'Undergraduate') : 'BTech ' . $course],
+            };
+            $name = trim(preg_replace('/\s+/', ' ', $name));
+            $k1 = $key($name) . '|' . $level;
+            $k2 = $key(preg_replace('/^National\s+/i', '', $name)) . '|' . $level;
+
+            $hit = $index[$k1] ?? $index[$k2] ?? null;
+            if ($hit !== null) {
+                $have = array_filter(array_map('trim', explode(';', $rows[$hit][3] ?? '')));
+                if (! in_array($code, $have, true)) {
+                    $rows[$hit][3] = implode(';', array_merge($have, [$code]));
+                    $polyStats['merged_existing']++;
+                } else {
+                    $polyStats['same_as_before']++;
+                }
+                continue;
+            }
+
+            [$field, $how] = $polyField($course, $name, (string) $division);
+            if ($field === null || ! in_array($field, $validFields, true)) {
+                $polyStats['not_added']++;
+                $review[] = [$courseRaw, $levelCell, $college, '', 'no field could be chosen (division: ' . $division . '): not added'];
+                continue;
+            }
+            if ($how === 'area') {
+                $polyStats['fallback_new']++;
+                $review[] = [$courseRaw, $levelCell, $college, $field, 'field taken from the college division (' . $division . '): check it'];
+            }
+            if ($unsure) {
+                $review[] = [$courseRaw, $levelCell, $college, $field, 'the workbook says the awards for this course need confirming: ' . $cellText];
+            }
+
+            $rows[] = [$name, $level, $field, $code, ''];
+            $index[$k1] = $index[$k2] = array_key_last($rows);
+            $polyStats['new']++;
+        }
+    }
+}
+
 // the same name under a different case/spelling can never have got in: the index is on normalised names.
 $lines = [implode(',', array_map($cell, $header))];
 foreach ($rows as $r) {
     $lines[] = implode(',', array_map($cell, array_pad($r, 5, '')));
 }
 
-$reviewLines = [implode(',', ['programme_in_workbook', 'award_level', 'university', 'field_chosen', 'why'])];
+// The review list accumulates: a later run (which finds nothing new to add) must not erase what an earlier run flagged.
+$reviewHeader = ['programme_in_workbook', 'award_level', 'university', 'field_chosen', 'why'];
+$kept = [];
+if (is_file(__DIR__ . '/needs-review.csv')) {
+    $old = $readCsv(__DIR__ . '/needs-review.csv');
+    array_shift($old);
+    foreach ($old as $r) {
+        $kept[implode('|', $r)] = $r;
+    }
+}
 foreach ($review as $r) {
-    $reviewLines[] = implode(',', array_map($cell, array_map('strval', $r)));
+    $r = array_map('strval', $r);
+    $kept[implode('|', $r)] = $r;
+}
+$reviewLines = [implode(',', $reviewHeader)];
+foreach ($kept as $r) {
+    $reviewLines[] = implode(',', array_map($cell, $r));
 }
 
 echo "workbook rows read:            {$stats['read']}\n";
@@ -292,6 +474,9 @@ echo "existing ones given a university: {$stats['merged_existing']}\n";
 echo "already there, nothing to do:  {$stats['same_as_before']}\n";
 echo "not added (no field):          {$stats['not_added']}\n";
 echo "unknown institution:           {$stats['unknown_institution']}\n";
+echo "--- polytechnics workbook: read {$polyStats['read']}, new {$polyStats['new']} (field from division: {$polyStats['fallback_new']}), "
+    . "given a college {$polyStats['merged_existing']}, already there {$polyStats['same_as_before']}, "
+    . "not added {$polyStats['not_added']}, award level unclear {$polyStats['level_unclear']}\n";
 echo "catalogue now:                 " . count($rows) . " programmes\n";
 
 if (! $dry) {

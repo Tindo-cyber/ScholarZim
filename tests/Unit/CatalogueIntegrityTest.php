@@ -134,11 +134,44 @@ class CatalogueIntegrityTest extends TestCase
         }
     }
 
+    /** The eight polytechnics (workbook: 345 records). Floors, because the same course under NC, ND and HND is three programmes at most. */
+    public function test_the_polytechnics_are_covered(): void
+    {
+        $count = [];
+
+        foreach (self::programmes() as $p) {
+            foreach ($p['institutions'] as $code) {
+                $count[$code] = ($count[$code] ?? 0) + 1;
+            }
+        }
+
+        foreach (['BYO-POLY' => 60, 'HARARE-POLY' => 60, 'MASVINGO-POLY' => 35, 'KWEKWE-POLY' => 30, 'KUSHINGA-POLY' => 20, 'GWERU-POLY' => 20, 'JMN-POLY' => 15, 'MUTARE-POLY' => 8] as $code => $floor) {
+            $this->assertGreaterThanOrEqual($floor, $count[$code] ?? 0, "$code should list at least $floor programmes");
+        }
+    }
+
+    /** A polytechnic award is named for what it is, and never carries the workbook's shorthand (NC, ND, HND) or its notes. */
+    public function test_polytechnic_awards_are_named_in_full(): void
+    {
+        foreach (self::programmes() as $p) {
+            $this->assertDoesNotMatchRegularExpression('/(^|[\s;(])(NC|ND|HND)([\s;)]|$)/', $p['name'], "'{$p['name']}' carries shorthand");
+            $this->assertDoesNotMatchRegularExpression('/confirm|pathway|short course|skills development/i', $p['name'], "'{$p['name']}' carries a note from the workbook");
+
+            if ($p['level'] === 'Certificate' && str_starts_with($p['name'], 'National Certificate in ')) {
+                $this->assertNotSame('National Certificate in ', $p['name']);
+            }
+
+            if (str_starts_with($p['name'], 'Higher National Diploma')) {
+                $this->assertSame('Diploma', $p['level'], "'{$p['name']}' is a Diploma-level award");
+            }
+        }
+    }
+
     public function test_the_catalogue_has_all_the_levels_and_some_postgraduate_study(): void
     {
         $levels = array_count_values(array_column(self::programmes(), 'level'));
 
-        foreach (['Undergraduate' => 300, 'Masters' => 100, 'PhD' => 5, 'Diploma' => 30, 'Postgraduate' => 5, 'Certificate' => 8] as $level => $floor) {
+        foreach (['Undergraduate' => 300, 'Masters' => 100, 'PhD' => 5, 'Diploma' => 120, 'Postgraduate' => 5, 'Certificate' => 100] as $level => $floor) {
             $this->assertGreaterThanOrEqual($floor, $levels[$level] ?? 0, "$level");
         }
     }

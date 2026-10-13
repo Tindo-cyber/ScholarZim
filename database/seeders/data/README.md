@@ -1,7 +1,7 @@
-# Programme catalogue - STARTER DATA
+# Programme catalogue - STARTER DATA, NOT VERIFIED
 
-> **Update:** `programmes.csv` now also holds the programmes from the national accreditation list (1,139
-> programmes). Where each came from, how it was merged, and what still needs checking is in
+> **Update:** `programmes.csv` now also holds the programmes from the national accreditation list and the
+> polytechnic directory (about 1,440 programmes), which are sourced; the original starter rows are still unverified. Where each came from, how it was merged, and what still needs checking is in
 > [docs/catalogue-sources.md](../../../docs/catalogue-sources.md). The notes below describe the ORIGINAL starter list.
 
 These three files seed the programme catalogue (fields, institutions, programmes).
