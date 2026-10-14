@@ -23,7 +23,7 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ### Applying
 
-- Click **Apply** on a scholarship you are eligible for. Your current education level, the
+- Click **Apply** on a scholarship you are eligible for. The highest level you have completed, the
   level the scholarship targets, and any hard requirement it states are all checked again at
   the moment you apply — not only when the recommendations list was built — so a listing you
   are not eligible for refuses the submission with the same reason the listing page already
@@ -55,11 +55,13 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 - ScholarFit is not a score or a percentage. It checks whether your profile meets what a
   listing actually requires, and shows **Eligible** or **Not eligible** with the exact
   reasons either way.
-- Two rules apply to every listing regardless of what the provider configured: whether your
-  current education level can ever reach what the listing targets (a Primary pupil cannot
-  apply for a Diploma or Masters award, and an O-Level student cannot apply for a PhD, no
-  matter how the listing is set up; a step that is merely unusual is only noted), and whether this specific
-  listing has raised its own minimum qualifying level.
+- Two rules apply to every listing regardless of what the provider configured: whether the
+  listing is for the next stage after the highest level you have completed (your profile level
+  is the one you have FINISHED, so an O-Level leaver is not matched with O-Level funding, a
+  graduate is not matched with degree bursaries, and a PhD needs a Master's first), and whether
+  this specific listing has raised its own minimum qualifying level.
+- Record the results of the level you have completed. Results from an earlier level are offered
+  only when a scholarship you could apply for asks for them.
 - On top of those, providers can set their own hard rules — a minimum points figure, required
   subject grades, an age limit, a province requirement, proof of academic results on file.
   Failing any one of these means you cannot be considered: the listing is left out of your

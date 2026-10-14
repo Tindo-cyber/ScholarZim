@@ -47,7 +47,7 @@
     "applied": []
   },
   "A3": {
-    "name": "Farai - Form 4, has not chosen programmes, no results certificate",
+    "name": "Farai - O-Level leaver, has not chosen programmes, no results certificate",
     "level": "O_LEVEL",
     "dob": "2011-05-01",
     "province": "Midlands",
@@ -71,19 +71,13 @@
     "applied": []
   },
   "A5": {
-    "name": "Chipo - BSc Information Systems at NUST, Harare resident",
+    "name": "Chipo - BSc Information Systems graduate from NUST, Harare resident",
     "level": "UNDERGRADUATE",
     "dob": "2006-08-20",
     "province": "Harare",
     "locality": "Harare",
     "settlement": "URBAN",
-    "results": {
-      "zimsec-a-level": {
-        "Mathematics": "B",
-        "Physics": "B",
-        "Chemistry": "C"
-      }
-    },
+    "results": {},
     "documents": [
       "transcript"
     ],
@@ -93,19 +87,13 @@
     }
   },
   "A6": {
-    "name": "Tendai - BEng Civil Engineering at NUST",
+    "name": "Tendai - BEng Civil Engineering graduate from NUST",
     "level": "UNDERGRADUATE",
     "dob": "2002-11-03",
     "province": "Bulawayo",
     "locality": "Bulawayo",
     "settlement": "URBAN",
-    "results": {
-      "zimsec-a-level": {
-        "Mathematics": "A",
-        "Physics": "A",
-        "Chemistry": "B"
-      }
-    },
+    "results": {},
     "documents": [
       "transcript"
     ],
@@ -115,7 +103,7 @@
     }
   },
   "A7": {
-    "name": "Nyasha - Diploma in Accountancy at Masvingo Polytechnic",
+    "name": "Nyasha - Diploma in Accountancy graduate from Masvingo Polytechnic",
     "level": "DIPLOMA",
     "dob": "2004-04-04",
     "province": "Masvingo",
@@ -131,7 +119,7 @@
     }
   },
   "A8": {
-    "name": "Mai Grace - MBA at UZ, mature student",
+    "name": "Mai Grace - MBA graduate from UZ, mature student",
     "level": "MASTERS",
     "dob": "1985-01-20",
     "province": "Harare",
@@ -147,24 +135,18 @@
     }
   },
   "A9": {
-    "name": "Blessing - undergraduate from before the catalogue: old field of study only",
+    "name": "Blessing - graduate from before the catalogue: old field of study only",
     "level": "UNDERGRADUATE",
     "dob": "2007-07-07",
     "province": "Matabeleland South",
     "locality": "Gwanda",
     "settlement": "RURAL",
     "field_of_study": "Computer Science & IT",
-    "results": {
-      "zimsec-a-level": {
-        "Mathematics": "C",
-        "Physics": "C",
-        "Chemistry": "C"
-      }
-    },
+    "results": {},
     "documents": []
   },
   "A10": {
-    "name": "Lerato - undergraduate with an almost empty profile",
+    "name": "Lerato - graduate with an almost empty profile",
     "level": "UNDERGRADUATE",
     "dob": null,
     "province": null,
@@ -190,13 +172,7 @@
     "province": "Harare",
     "locality": "Harare",
     "settlement": "URBAN",
-    "results": {
-      "zimsec-a-level": {
-        "Mathematics": "B",
-        "Accounting": "A",
-        "Business Studies": "B"
-      }
-    },
+    "results": {},
     "documents": [
       "transcript"
     ],

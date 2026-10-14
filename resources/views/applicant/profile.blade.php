@@ -93,8 +93,9 @@
                         --}}
                         <div class="row">
                             <div class="col-md-6">
-                                <x-form.select name="education_level" label="Current education level"
+                                <x-form.select name="education_level" label="Highest level you have completed"
                                                :options="$educationLevels" :grouped="true"
+                                               hint="Choose the highest level you have finished. Scholarships are matched to the next stage after it."
                                                :value="$profile->education_level"
                                                placeholder="Select your level"
                                                id="sz-education-level" />
@@ -259,10 +260,14 @@
                             ScholarZim works out any points itself - you never type a points total, and
                             grades from one examination board are never converted into another's.
                         </p>
+                        <p class="text-secondary small">
+                            Record the results of the level you have completed. Results from an earlier level
+                            are listed only when a scholarship you could apply for asks for them.
+                        </p>
 
                         {{--
                             The qualification choices below were rendered for the education level
-                            this page loaded with. Changing "Current education level" above does not
+                            this page loaded with. Changing "Highest level you have completed" above does not
                             re-fetch that list live - it still reflects your previous answer until you
                             save - so this says so plainly rather than leaving a stale dropdown to
                             speak for itself. Toggled by profile-form.js, which already listens for

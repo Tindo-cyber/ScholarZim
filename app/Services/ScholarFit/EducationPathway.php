@@ -35,7 +35,8 @@ use App\Support\EducationLevel;
 final class EducationPathway
 {
     /**
-     * currentLevel => the levels that usually follow it.
+     * finishedLevel => the next stages that follow it. The level on a profile is the
+     * one the applicant has completed, so the level itself is never listed.
      *
      * Read as "these are the ordinary next steps", not "these are the only
      * ones permitted". A progression absent from this table is unusual, and
@@ -56,44 +57,34 @@ final class EducationPathway
             EducationLevel::O_LEVEL,
         ],
         EducationLevel::O_LEVEL => [
-            EducationLevel::O_LEVEL,
             EducationLevel::A_LEVEL,
             EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
         ],
         EducationLevel::A_LEVEL => [
-            EducationLevel::A_LEVEL,
             EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
         ],
         EducationLevel::CERTIFICATE => [
-            EducationLevel::CERTIFICATE,
             EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
         ],
         EducationLevel::DIPLOMA => [
-            EducationLevel::DIPLOMA,
             EducationLevel::UNDERGRADUATE,
         ],
         EducationLevel::UNDERGRADUATE => [
-            EducationLevel::UNDERGRADUATE,
             EducationLevel::POSTGRADUATE,
             EducationLevel::MASTERS,
         ],
         EducationLevel::POSTGRADUATE => [
-            EducationLevel::POSTGRADUATE,
             EducationLevel::MASTERS,
-            EducationLevel::PHD,
         ],
         EducationLevel::MASTERS => [
-            EducationLevel::MASTERS,
             EducationLevel::PHD,
         ],
-        EducationLevel::PHD => [
-            EducationLevel::PHD,
-        ],
+        EducationLevel::PHD => [],
     ];
 
     private function __construct()

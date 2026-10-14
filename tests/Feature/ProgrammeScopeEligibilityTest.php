@@ -104,7 +104,11 @@ class ProgrammeScopeEligibilityTest extends TestCase
             'provider_name' => 'Scope Provider',
             'title' => 'A Bursary',
             'description' => 'A listing used to exercise programme scope.',
-            'education_level' => EducationLevel::UNDERGRADUATE,
+            // The student's next stage: the level on a profile is the one finished, so a graduate's
+            // award is a Master's and a school-leaver's is a degree.
+            'education_level' => $this->profile()->education_level === EducationLevel::UNDERGRADUATE
+                ? EducationLevel::MASTERS
+                : EducationLevel::UNDERGRADUATE,
             'funding_type' => 'Full Scholarship',
             'country' => 'Zimbabwe', 'target_country' => 'Zimbabwe',
             'deadline' => Carbon::today()->addDays(30),

@@ -232,15 +232,21 @@ class ApplicantProfileService
             ]);
         }
 
-        // The form only offers qualifications at or below the applicant's own
-        // level, and the server holds the same line: a Primary applicant
-        // posting an O-Level result is stating something they cannot have.
+        // The form only offers the results of the level the applicant has completed (and an
+        // earlier level's only when a scholarship asks for them), and the server holds the same
+        // line - see ApplicantProfile::selectableQualifications().
         if (! in_array((int) $qualification->id, $allowedQualificationIds, true)) {
+            $above = \App\Services\ScholarFit\Taxonomy\EducationLadder::rung($qualification->education_level)
+                > \App\Services\ScholarFit\Taxonomy\EducationLadder::rung($profile->education_level);
+
             throw ValidationException::withMessages([
-                "academic_subject_results.$index.qualification_id" => $qualification->name
-                    .' is above your current education level ('
-                    .\App\Support\EducationLevel::label($profile->education_level)
-                    .'). Update your education level first if you have sat it.',
+                "academic_subject_results.$index.qualification_id" => $above
+                    ? $qualification->name.' is above the highest level you have completed ('
+                        .\App\Support\EducationLevel::label($profile->education_level)
+                        .'). Update your level first if you have finished it.'
+                    : $qualification->name.' results are not needed for your level ('
+                        .\App\Support\EducationLevel::label($profile->education_level)
+                        .'). Record the results of the level you have completed; earlier results are asked for only when a scholarship needs them.',
             ]);
         }
 

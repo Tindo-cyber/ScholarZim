@@ -24,12 +24,12 @@
     <form method="POST" action="{{ route('applicant.profile.programmes') }}" class="card mb-4" id="programme-card" novalidate>
         @csrf
         <div class="card-header">
-            <h2 class="h6 fw-semibold mb-0">{{ $mode === 'current' ? 'Your programme' : 'What you hope to study' }}</h2>
+            <h2 class="h6 fw-semibold mb-0">{{ $mode === 'current' ? 'The programme you completed' : 'What you hope to study' }}</h2>
         </div>
         <div class="card-body">
             @if($mode === 'current')
                 <p class="small text-secondary">
-                    Choose the programme you are studying, so scholarships for your programme or field can find you.
+                    Choose the programme you completed, so scholarships for your field can find you.
                     This is at {{ \App\Support\EducationLevel::label($profile->education_level) }} level, matching your level above
                     (change your level first, and save it, if that is not right).
                 </p>
@@ -49,7 +49,7 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label" for="current_institution_id">Where you study (optional)</label>
+                    <label class="form-label" for="current_institution_id">Where you studied (optional)</label>
                     <select class="form-select @error('current_institution_id') is-invalid @enderror" id="current_institution_id" name="current_institution_id">
                         <option value="">Not chosen</option>
                         @foreach($catalogue['institutions']->groupBy('type') as $type => $institutions)

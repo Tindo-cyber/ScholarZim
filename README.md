@@ -205,12 +205,16 @@ provider accepts or rejects, by hand, with a reason. There is no score or match
 percentage anywhere in it.
 
 `app/Services/ScholarFit/EligibilityEvaluator.php` is the authoritative rule set, checking
-every requirement a listing actually states: whether the applicant's current education
-level can reach what the listing targets at all
-(`app/Services/ScholarFit/LevelJump.php`: only jumps nobody makes are refused — a Primary
-pupil for a diploma, an O-Level student for a PhD, anyone but a Primary pupil for a Form 1
-award; an unusual step such as an Undergraduate for a Certificate is shown as a note, using
-the adjacency table in `EducationPathway.php`. There is no "Honours" level: a Zimbabwean
+every requirement a listing actually states: whether the listing's level is the next stage
+for the highest level the applicant has completed
+(`app/Services/ScholarFit/LevelJump.php`: the level on a profile is the one FINISHED, so
+an award for that same level or any lower one is refused - an O-Level leaver for O-Level
+funding, a graduate for a degree bursary - as is a jump nobody makes, such as a Primary
+pupil for a diploma; a PhD is entered from a Master's only, and O-Level straight to a degree
+only where the provider ticked "O-Level holders may apply". The next stages are listed in
+`EducationPathway.php`. Results are recorded for the completed level only; an earlier
+level's results are offered only when a scholarship the applicant could apply for asks for
+them. There is no "Honours" level: a Zimbabwean
 BSc / BCom Honours is Undergraduate, a one-year honours after a degree is Postgraduate, and
 the old value is read as Undergraduate), whether *this specific* listing has raised its
 own minimum qualifying level narrower than the general pathway

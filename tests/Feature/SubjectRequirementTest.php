@@ -43,6 +43,9 @@ class SubjectRequirementTest extends TestCase
 
         $this->provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
         $this->student = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
+        // These listings fund a degree and ask for A-Level subjects: the student is an A-Level leaver,
+        // whose next stage that is (the level on a profile is the one finished).
+        $this->student->applicantProfile->update(['education_level' => \App\Support\EducationLevel::A_LEVEL, 'degree_classification' => null, 'results_certificate_path' => 'profiles/demo/a-level-results.pdf']);
 
         $this->qual = AcademicQualification::where('qualification_key', 'zimsec-a-level')->firstOrFail();
 
