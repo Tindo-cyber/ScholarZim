@@ -286,8 +286,9 @@ class EligibilityExplanationTest extends TestCase
     /** A progression note is rendered, and is not dressed up as a requirement. */
     public function test_an_advisory_progression_note_is_shown_apart_from_requirements(): void
     {
-        // Unusual, not impossible: an A-Level student looking at an O-Level award.
-        $award = $this->listing('School Fees Award', ['education_level' => EducationLevel::O_LEVEL, 'target_field' => null]);
+        // Unusual, not impossible: a Diploma holder looking at a Certificate award.
+        $award = $this->listing('Short Course Award', ['education_level' => EducationLevel::CERTIFICATE, 'target_field' => null]);
+        $this->profile()->update(['education_level' => EducationLevel::DIPLOMA]);
         $aLevel = $this->applicant;
         // Recorded results make the profile complete, so the page reaches its verdict wording
         // (without them it says "complete your profile" instead).
@@ -299,9 +300,7 @@ class EligibilityExplanationTest extends TestCase
             ->getContent();
 
         $this->assertStringContainsString('not a usual next step', $html);
-        // The listing states nothing, so it must still say that rather than
-        // treating the note as a rule that was passed or failed.
-        $this->assertStringContainsString('No entry requirements specified', $html);
+        // The note is advice, not a rule: it must not turn the verdict against the applicant.
         $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
     }
 }

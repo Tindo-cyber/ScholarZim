@@ -23,7 +23,7 @@
   "applicant_order": ["A1", "A2", "A3", "A4", "A5", "A6", "A7", "A8", "A9", "A10", "A11", "A12"],
   "listings": {
     "L01": { "verdicts": "IIIEIIIIIINI", "why": { "A4": "The only Grade 7 pupil; everyone else is past Form 1." } },
-    "L02": { "verdicts": "EEEEIIIIIINI", "why": { "A1": "Back to O-Level is unusual but not refused (a note).", "A5": "Tertiary students are not looking for an O-Level award." } },
+    "L02": { "verdicts": "IIEEIIIIIINI", "why": { "A1": "Has finished A-Level, so is already past O-Level: refused.", "A5": "Tertiary students are not looking for an O-Level award." } },
     "L03": { "verdicts": "EEEIIIIIIINI", "why": { "A4": "A Grade 7 pupil cannot start A-Level." } },
     "L04": { "verdicts": "EEIIEEEEEENE", "why": { "A3": "O-Level to a degree award: the listing does not say it accepts O-Level holders, so refused (rule agreed 13 Oct 2026).", "A8": "A Masters student for an undergraduate bursary is unusual, a note only.", "A10": "No rule is stated, so there is nothing to be missing." } },
     "L05": { "verdicts": "EEIIIENNINNE", "why": { "A1": "A+B+B = 13.", "A5": "B+B+C = 11, short of 12.", "A6": "A+A+B = 14.", "A9": "C+C+C = 9.", "A3": "An O-Level student cannot have A-Level results yet, so the rule can never be met: refused.", "A7": "Has reached A-Level or beyond but has recorded no A-Level results: ask, do not refuse.", "A8": "Same.", "A10": "Same.", "A11": "No education level recorded at all: ask.", "A12": "Mathematics B + Accounting A + Business Studies B = 13." } },
@@ -51,7 +51,7 @@
   "order": {
     "A1": {
       "about": "Best fit first, no score: own programme, then narrow field, then broad field, then the rest; within those: usual level step, stated rules, place, deadline.",
-      "expected": ["L18", "L11", "L12", "L08", "L05", "L06", "L07", "L20", "L03", "L24", "L04", "L25", "L02"]
+      "expected": ["L18", "L11", "L12", "L08", "L05", "L06", "L07", "L20", "L03", "L24", "L04", "L25"]
     },
     "A5": {
       "about": "Narrow-field fits first (ICT): the German ICT Masters and the ICT degree award by deadline, then the ICT diploma award (an unusual step down); then the Harare rule (a place match), then the dated rules by deadline, then the listings with no rules by deadline, and the unusual step (PhD) last.",

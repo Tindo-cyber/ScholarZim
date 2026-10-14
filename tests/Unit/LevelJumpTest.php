@@ -56,7 +56,7 @@ class LevelJumpTest extends TestCase
         return [
             EducationLevel::PRIMARY => 'PPFFFFFFF',
             EducationLevel::O_LEVEL => 'FPPPPPFFF',
-            EducationLevel::A_LEVEL => 'FNPPPPFFF',
+            EducationLevel::A_LEVEL => 'FFPPPPFFF',
             EducationLevel::CERTIFICATE => 'FFFPPPFFF',
             EducationLevel::DIPLOMA => 'FFFNPPFFF',
             EducationLevel::UNDERGRADUATE => 'FFFNNPPPN',
@@ -216,6 +216,16 @@ class LevelJumpTest extends TestCase
 
         $this->assertStringContainsString('below', $below->message);
         $this->assertStringContainsString('beyond', $beyond->message);
+    }
+
+    public function test_an_a_level_leaver_is_not_eligible_for_an_o_level_award(): void
+    {
+        $fit = $this->fit(EducationLevel::A_LEVEL, EducationLevel::O_LEVEL);
+        $outcome = $this->find($fit, RequirementOutcome::TYPE_PROGRESSION);
+
+        $this->assertTrue($fit->isIneligible());
+        $this->assertFalse($outcome->advisory, 'a rule, not a note');
+        $this->assertStringContainsString('beyond', $outcome->message);
     }
 
     public function test_a_form_1_award_says_it_is_for_primary_school_leavers(): void

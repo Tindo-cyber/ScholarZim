@@ -1,6 +1,6 @@
 ﻿Listing,Applicant,"Answer in the key",Why
 L01,A4,eligible,"The only Grade 7 pupil; everyone else is past Form 1."
-L02,A1,eligible,"Back to O-Level is unusual but not refused (a note)."
+L02,A1,ineligible,"Has finished A-Level, so is already past O-Level: refused."
 L02,A5,ineligible,"Tertiary students are not looking for an O-Level award."
 L03,A4,ineligible,"A Grade 7 pupil cannot start A-Level."
 L04,A3,ineligible,"O-Level to a degree award: the listing does not say it accepts O-Level holders, so refused (rule agreed 13 Oct 2026)."

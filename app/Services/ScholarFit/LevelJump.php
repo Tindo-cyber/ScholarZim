@@ -89,6 +89,12 @@ final class LevelJump
             return true;
         }
 
+        // The level on a profile is the one the applicant has finished, so someone who has done
+        // A-Level is past O-Level: an O-Level award is not for them.
+        if ($applicant === EducationLevel::A_LEVEL && $target === EducationLevel::O_LEVEL) {
+            return true;
+        }
+
         if (EducationLevel::tier($applicant) === EducationLevel::TIER_SECONDARY) {
             return in_array($target, [EducationLevel::POSTGRADUATE, EducationLevel::MASTERS, EducationLevel::PHD], true);
         }

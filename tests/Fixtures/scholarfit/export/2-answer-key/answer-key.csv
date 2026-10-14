@@ -1,7 +1,7 @@
 ﻿"E = eligible, I = ineligible, N = needs information. Open reasons.csv only after you have marked the worksheet."
 Listing,Title,A1,A2,A3,A4,A5,A6,A7,A8,A9,A10,A11,A12
 L01,"Form 1 Transition Bursary",I,I,I,E,I,I,I,I,I,I,N,I
-L02,"O-Level Fees Support",E,E,E,E,I,I,I,I,I,I,N,I
+L02,"O-Level Fees Support",I,I,E,E,I,I,I,I,I,I,N,I
 L03,"A-Level Continuation Bursary",E,E,E,I,I,I,I,I,I,I,N,I
 L04,"National Merit Undergraduate Bursary",E,E,I,I,E,E,E,E,E,E,N,E
 L05,"Undergraduate Bursary with 12 A-Level points",E,E,I,I,I,E,N,N,I,N,N,E
@@ -27,5 +27,5 @@ L24,"Open Degree Award",E,E,I,I,E,E,E,E,E,E,N,E
 L25,"Degree Award open to O-Level holders",E,E,E,I,E,E,E,E,E,E,N,E
 
 "Order, best first (no score)"
-A1,"L18 > L11 > L12 > L08 > L05 > L06 > L07 > L20 > L03 > L24 > L04 > L25 > L02"
+A1,"L18 > L11 > L12 > L08 > L05 > L06 > L07 > L20 > L03 > L24 > L04 > L25"
 A5,"L23 > L12 > L22 > L08 > L06 > L07 > L20 > L15 > L24 > L04 > L25 > L21"

@@ -120,10 +120,10 @@ class EducationPathwayTest extends TestCase
     public function test_a_stated_requirement_is_what_refuses(): void
     {
         // An unusual (not impossible) step, with a stated minimum the applicant does not hold.
-        $profile = new ApplicantProfile(['education_level' => EducationLevel::A_LEVEL]);
+        $profile = new ApplicantProfile(['education_level' => EducationLevel::DIPLOMA]);
         $opportunity = new Opportunity([
-            'education_level' => EducationLevel::O_LEVEL,
-            'minimum_education_level' => EducationLevel::DIPLOMA,
+            'education_level' => EducationLevel::CERTIFICATE,
+            'minimum_education_level' => EducationLevel::UNDERGRADUATE,
         ]);
 
         $unmet = app(EligibilityEvaluator::class)->unmetReasons(
@@ -133,8 +133,8 @@ class EducationPathwayTest extends TestCase
         );
 
         $this->assertCount(1, $unmet);
-        $this->assertStringContainsString('Diploma required', $unmet[0]);
-        $this->assertStringContainsString('A Level', $unmet[0]);
+        $this->assertStringContainsString(EducationLevel::label(EducationLevel::UNDERGRADUATE).' required', $unmet[0]);
+        $this->assertStringContainsString('Diploma', $unmet[0]);
     }
 
     /**
@@ -146,7 +146,7 @@ class EducationPathwayTest extends TestCase
     public function test_a_recognised_progression_is_marked_differently_from_an_unusual_one(): void
     {
         $note = function (string $target): RequirementOutcome {
-            $profile = new ApplicantProfile(['education_level' => EducationLevel::A_LEVEL, 'province' => 'Harare']);
+            $profile = new ApplicantProfile(['education_level' => EducationLevel::DIPLOMA, 'province' => 'Harare']);
             $opportunity = new Opportunity(['education_level' => $target]);
 
             $notes = RequirementOutcome::notes(
@@ -156,11 +156,11 @@ class EducationPathwayTest extends TestCase
             return $notes[0];
         };
 
-        $diploma = $note(EducationLevel::DIPLOMA);
-        $oLevel = $note(EducationLevel::O_LEVEL);
+        $degree = $note(EducationLevel::UNDERGRADUATE);
+        $certificate = $note(EducationLevel::CERTIFICATE);
 
-        $this->assertTrue($diploma->passed, 'a recognised route is not flagged unusual');
-        $this->assertFalse($oLevel->passed, 'going back to O-Level is unusual, and flagged as such');
+        $this->assertTrue($degree->passed, 'a recognised route is not flagged unusual');
+        $this->assertFalse($certificate->passed, 'a Diploma holder going back to a Certificate is unusual, and flagged as such');
     }
 
     /** A genuinely eligible applicant has no unmet requirements. */
