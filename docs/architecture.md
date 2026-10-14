@@ -84,13 +84,23 @@ sequenceDiagram
     participant App as ScholarZim
     participant Admin as Admin
     participant Disk as Upload store
-    P->>App: Register with PDF certificate
-    App->>Disk: Store certificate
-    App->>App: User status PENDING_APPROVAL
-    Admin->>App: Review pending list
+    P->>App: Register (country of registration, number or explanation, document)
+    App->>Disk: Store document privately
+    App->>App: User status PENDING
+    Admin->>App: Review pending list and /admin/providers/{id}
+    opt More evidence needed
+        Admin->>App: Request more information (still PENDING)
+        P->>App: Update details / replace document
+    end
     Admin->>App: Approve or reject
     App->>App: User status ACTIVE or REJECTED
 ```
+
+The same flow applies to organisations registered in any country. `provider_profiles.registration_country`
+(ISO 3166-1 alpha-2, list in `App\Support\Countries`) records where the organisation is registered; it is a
+separate column from a listing's study destination (`opportunities.country`) and is read by nothing in
+publishing, search or ScholarFit. Verification state is derived by `App\Support\ProviderVerificationStatus`.
+See `docs/international-providers.md`.
 
 ### Applicant results certificate and apply gate
 

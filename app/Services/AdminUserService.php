@@ -7,9 +7,12 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\AccountStatus;
 use App\Support\AuditAction;
+use App\Support\Countries;
 use App\Support\NotificationType;
+use App\Support\ProviderRegistrationDetails;
 use App\Support\RoleNames;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use RuntimeException;
 
@@ -88,6 +91,14 @@ class AdminUserService
     {
         $user = $this->requireProvider($userId);
 
+        // Verifying an organisation means checking its document against where it
+        // says it is registered. An account from before that was asked has no
+        // country on record; it is recorded first (from the review page), never
+        // assumed. Any country is acceptable - only an unknown one is not.
+        if ($user->providerProfile !== null && ! $user->providerProfile->hasRegistrationCountry()) {
+            throw new RuntimeException('Record the country ' . $user->displayName() . ' is registered in before verifying it.');
+        }
+
         $user->update(['account_status' => AccountStatus::ACTIVE]);
         $user->providerProfile?->update([
             'reviewed_at' => Carbon::now(),
@@ -106,7 +117,7 @@ class AdminUserService
             AuditAction::APPROVE_PROVIDER,
             'USER',
             $user->user_id,
-            'Approved provider ' . $user->email
+            'Approved provider ' . $user->email . $this->countryNote($user)
         );
 
         $this->notificationService->notifyUser(
@@ -136,7 +147,7 @@ class AdminUserService
             AuditAction::REJECT_PROVIDER,
             'USER',
             $user->user_id,
-            'Rejected provider ' . $user->email . ': ' . $reason
+            'Rejected provider ' . $user->email . $this->countryNote($user) . ': ' . $reason
         );
 
         $this->notificationService->notifyUser(
@@ -148,6 +159,83 @@ class AdminUserService
         );
 
         return $user;
+    }
+
+    /**
+     * Asking an organisation for more evidence before deciding. The account stays
+     * PENDING and cannot publish; the organisation sees the note on its dashboard,
+     * answers by updating its details or document, and returns to the queue.
+     */
+    public function requestProviderInformation(int $userId, User $admin, string $note): User
+    {
+        $user = $this->requireProvider($userId);
+        $profile = $user->providerProfile;
+
+        if ($profile === null || $profile->isReviewed()) {
+            throw new RuntimeException('More information can only be requested from an organisation that is still awaiting verification.');
+        }
+
+        $profile->update([
+            'info_requested_at' => Carbon::now(),
+            'info_requested_by' => $admin->email,
+            'info_request_note' => $note,
+        ]);
+
+        $this->auditService->log(
+            $admin->email,
+            AuditAction::REQUEST_PROVIDER_INFO,
+            'USER',
+            $user->user_id,
+            'Requested more information from provider ' . $user->email . $this->countryNote($user) . ': ' . $note
+        );
+
+        $this->notificationService->notifyUser(
+            $user,
+            NotificationType::PROVIDER_INFO_REQUESTED,
+            'We need more information to verify your organisation: ' . $note,
+            '/provider/dashboard#registration-details',
+            $user->user_id
+        );
+
+        return $user;
+    }
+
+    /**
+     * An administrator recording or correcting an organisation's registration
+     * details - chiefly the country of an account registered before it was asked.
+     * Changes nothing about the account's status, listings or applications.
+     */
+    public function updateProviderRegistration(int $userId, User $admin, array $data): User
+    {
+        $user = $this->requireProvider($userId);
+        $profile = $user->providerProfile;
+
+        if ($profile === null) {
+            throw new RuntimeException('This provider has no organisation profile to update.');
+        }
+
+        $new = ProviderRegistrationDetails::attributesFrom($data);
+        $old = $profile->only(array_keys($new));
+
+        if ($old == $new) {
+            return $user;
+        }
+
+        DB::transaction(function () use ($admin, $user, $profile, $old, $new) {
+            $profile->update($new);
+
+            $this->auditService->logOrFail(
+                $admin->email,
+                AuditAction::UPDATE_PROVIDER_REGISTRATION,
+                'USER',
+                $user->user_id,
+                'Updated registration details for ' . $user->email . ': registered in '
+                    . (Countries::name($new['registration_country']) ?? 'not recorded'),
+                ['old' => $old, 'new' => $new]
+            );
+        });
+
+        return $user->fresh('providerProfile');
     }
 
     public function suspend(int $userId, User $admin): User
@@ -222,6 +310,26 @@ class AdminUserService
 
         if ($user->roleName() !== RoleNames::PROVIDER) {
             throw new RuntimeException('Only a provider account can be verified this way.');
+        }
+
+        return $user;
+    }
+
+    /** " (registered in Kenya)", so the audit trail names the country a decision was made on. */
+    private function countryNote(User $user): string
+    {
+        $country = $user->providerProfile?->registrationCountryName();
+
+        return ' (registered in ' . ($country ?? 'a country not recorded') . ')';
+    }
+
+    /** One organisation's full record, for its review page. */
+    public function providerForReview(int $userId): User
+    {
+        $user = User::with('providerProfile', 'role')->findOrFail($userId);
+
+        if ($user->roleName() !== RoleNames::PROVIDER || $user->providerProfile === null) {
+            abort(404);
         }
 
         return $user;

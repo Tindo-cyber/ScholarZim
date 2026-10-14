@@ -8,11 +8,11 @@
     <ul class="list-unstyled d-grid gap-3 mb-0">
         <li class="d-flex gap-3">
             <span class="sz-auth-tick">1</span>
-            <span>Register your organisation and contact details.</span>
+            <span>Register your organisation and contact details. Organisations registered in any country are welcome.</span>
         </li>
         <li class="d-flex gap-3">
             <span class="sz-auth-tick">2</span>
-            <span>Our team verifies your registration certificate.</span>
+            <span>Our team verifies your registration document.</span>
         </li>
         <li class="d-flex gap-3">
             <span class="sz-auth-tick">3</span>
@@ -22,7 +22,10 @@
 @endsection
 
 @php
-    $step1Fields = ['full_name', 'email', 'phone', 'organisation_type', 'website', 'certificate'];
+    $step1Fields = [
+        'full_name', 'registration_country', 'organisation_type', 'registration_number', 'registration_number_note',
+        'website', 'certificate', 'contact_name', 'contact_role', 'email', 'phone',
+    ];
     $step2Fields = ['password', 'password_confirmation', 'authorised'];
     $initialStep = collect($step1Fields)->contains(fn ($field) => $errors->has($field))
         ? 1
@@ -32,8 +35,8 @@
 @section('content')
     <h1 class="h3 fw-bold mb-1">Register as a provider</h1>
     <p class="text-secondary mb-4">
-        Takes about five minutes. We verify every organisation before its listings go live, so
-        have your registration certificate ready.
+        Takes about five minutes. We verify every organisation before it can publish, wherever it
+        is registered, so have your registration certificate or equivalent document ready.
     </p>
 
     <form method="POST" action="{{ route('register.provider') }}" enctype="multipart/form-data" novalidate
@@ -53,15 +56,12 @@
         </div>
 
         <div data-step="1">
-            <h2 class="h6 fw-semibold text-uppercase text-secondary mb-3">Contact person</h2>
+            <h2 class="h6 fw-semibold text-uppercase text-secondary mb-3">Organisation</h2>
 
-            <x-form.input name="full_name" label="Organisation or contact name" required autocomplete="organization" autofocus />
-            <x-form.input name="email" label="Work email address" type="email" required autocomplete="email" />
-            <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
-                          inputmode="tel" maxlength="30"
-                          hint="Optional. Mobile or landline, with or without a country code, e.g. 0771234567, 024 2700000 or +263 242 700000. An extension is allowed (x123)." />
+            <x-form.input name="full_name" label="Organisation's registered name" required autocomplete="organization" autofocus
+                          hint="The legal name on your registration document. Students see it on your scholarships." />
 
-            <h2 class="h6 fw-semibold text-uppercase text-secondary mt-4 mb-3">Organisation</h2>
+            @include('providers.partials.registration-fields', ['countries' => $countries, 'profile' => null])
 
             <x-form.select name="organisation_type" label="Organisation type" :options="$orgTypes"
                            placeholder="Select a type" required />
@@ -72,7 +72,7 @@
 
             <div class="mb-4">
                 <label class="form-label" for="certificate">
-                    Registration certificate <span class="text-danger" aria-hidden="true">*</span>
+                    Registration certificate or equivalent document <span class="text-danger" aria-hidden="true">*</span>
                 </label>
 
                 <label class="sz-file-drop d-block mb-0" for="certificate">
@@ -81,14 +81,32 @@
                     <div class="form-text mb-0">PDF, Word, JPG, or PNG. Maximum 5 MB.</div>
                     <input class="@error('certificate') is-invalid @enderror" type="file"
                            id="certificate" name="certificate" required
+                           aria-describedby="certificate-hint"
                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" data-file-preview>
                 </label>
+                <div class="form-text" id="certificate-hint">
+                    The official document that registers or establishes your organisation in its country - for example a
+                    certificate of incorporation, charity or NPO registration, trust deed, or the act or charter that
+                    created a public body. If it is not in English, include an English translation in the same file.
+                </div>
                 <div class="small fw-semibold mt-2 d-none" data-file-preview-for="certificate"></div>
 
                 @error('certificate')
                     <div class="invalid-feedback d-block">{{ $message }}</div>
                 @enderror
             </div>
+
+            <h2 class="h6 fw-semibold text-uppercase text-secondary mt-4 mb-3">Contact person</h2>
+
+            <x-form.input name="contact_name" label="Your full name" required autocomplete="name" maxlength="255" />
+            <x-form.input name="contact_role" label="Your position in the organisation" required autocomplete="organization-title"
+                          maxlength="150" placeholder="e.g. Scholarships Officer, Director"
+                          hint="So we can see you are able to act for the organisation." />
+            <x-form.input name="email" label="Work email address" type="email" required autocomplete="email"
+                          hint="Preferably an address at your organisation's own domain. You sign in with it and must verify it." />
+            <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
+                          inputmode="tel" maxlength="30"
+                          hint="Optional. Mobile or landline. Outside Zimbabwe, start with your country code, e.g. +44 20 7946 0000 or +27 11 555 0100. Zimbabwean numbers may be written locally, e.g. 0771234567. An extension is allowed (x123)." />
 
             <button class="btn btn-primary btn-lg w-100 mb-3" type="button" data-step-next>Continue</button>
         </div>
@@ -102,7 +120,7 @@
                           autocomplete="new-password" />
 
             <x-form.checkbox name="authorised" id="authorised" required wrapper-class="mb-4"
-                             label="I confirm this organisation is registered and I am authorised to act for it." />
+                             label="I confirm this organisation is registered as stated and I am authorised to act for it." />
 
             <div class="d-flex gap-2 mb-3">
                 <button class="btn btn-outline-secondary btn-lg" type="button" data-step-back>Back</button>

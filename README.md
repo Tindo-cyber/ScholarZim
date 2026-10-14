@@ -136,6 +136,11 @@ database compatibility only and appear nowhere in the UI or in new business logi
 - **Provider accounts start inactive.** A provider can sign in and see their dashboard
   while verification is pending, but the publishing routes require an active account
   (`account.active` middleware).
+- **Organisations from any country use the same workflow.** Registration records the
+  organisation's country of registration (`provider_profiles.registration_country`, ISO
+  3166-1) and its registration number or the reason it has none. That country is reviewed by
+  an administrator against the uploaded document and is never used as a listing's study
+  destination, which the provider chooses per listing. See `docs/international-providers.md`.
 - **Decisions need a reason.** Accepting or rejecting an application requires written
   feedback; it is shown to the applicant verbatim, in the notification and on their
   application page.
@@ -537,6 +542,11 @@ is faster.
 - `ApplicationLifecycleTest` covers withdrawal and re-application after it.
 - `ScholarshipDiscoveryTest` covers Objective 1: browsing, keyword search, filtering by
   field and level, and saving/unsaving a scholarship.
+- `InternationalProviderRegistrationTest` and `InternationalProviderPublishingTest` cover
+  organisations registered outside Zimbabwe: registration and its validation, the shared
+  verification queue and review page, requests for more information, older accounts with no
+  country on record, and publishing for destinations independent of the registration country.
+  `ProviderRegistrationDetailsMigrationTest` checks the migration leaves existing data untouched.
 - `TransactionalEmailTest` asserts at the mailer that the provider is emailed when a student
   applies, the student is emailed on acceptance and rejection, administrators are emailed
   when a provider registers, and that no mail credential is hard-coded.

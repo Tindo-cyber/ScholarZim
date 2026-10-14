@@ -111,6 +111,12 @@
                                 <x-status-badge :label="$trust['trusted'] ? 'Trusted' : 'Standard'"
                                                 :tone="$trust['trusted'] ? 'success' : 'secondary'" />
                                 <span class="d-block small text-secondary mt-1">{{ implode(' ', $trust['reasons']) }}</span>
+                                <span class="d-block small mt-1">
+                                    Registered in
+                                    {{ $user->providerProfile->registrationCountryName() ?? 'a country not recorded' }}
+                                    &middot;
+                                    <a class="text-decoration-none" href="{{ route('admin.providers.show', $user->user_id) }}">Verification record</a>
+                                </span>
                                 {{-- The website the provider gave, and whether an administrator has confirmed it. --}}
                                 @if($user->providerProfile->website)
                                     <div class="small mt-2">

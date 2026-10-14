@@ -61,6 +61,8 @@ final class NotificationType
     public const PROVIDER_APPLICATION = 'PROVIDER_APPLICATION';
     public const PROVIDER_APPROVED = 'PROVIDER_APPROVED';
     public const PROVIDER_REJECTED = 'PROVIDER_REJECTED';
+    /** To an organisation awaiting verification: an administrator needs more evidence before deciding. */
+    public const PROVIDER_INFO_REQUESTED = 'PROVIDER_INFO_REQUESTED';
 
     // The SCHOLARSHIP_ prefix is load-bearing: NotificationPresentation::category()
     // routes any type starting with it into the "Scholarships" category, which is
@@ -98,6 +100,7 @@ final class NotificationType
         self::PROVIDER_APPLICATION,
         self::PROVIDER_APPROVED,
         self::PROVIDER_REJECTED,
+        self::PROVIDER_INFO_REQUESTED,
         self::SCHOLARSHIP_PENDING_REVIEW,
         self::SCHOLARSHIP_APPROVED,
         self::SCHOLARSHIP_REJECTED,

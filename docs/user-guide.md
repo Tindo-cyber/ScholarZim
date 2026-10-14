@@ -88,9 +88,22 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ### Registration
 
+Organisations registered in **any country** use the same form and the same verification.
+
 1. Register at `/register/provider`.
-2. Provide the organisation type and **registration certificate (PDF)**, and confirm you are authorised to act for the organisation.
-3. Wait for admin approval — you cannot publish active scholarships while `PENDING_APPROVAL`.
+2. Give the organisation's registered name, its **country of registration** (where it is legally registered —
+   not where your scholarships are held), its type, its **official registration number** in whatever format your
+   country uses (or, if it has none, an explanation of why), your name and position, a work email, and upload the
+   **registration certificate or equivalent document** (PDF, Word, JPG or PNG, up to 5 MB; include an English
+   translation if it is not in English). Confirm you are authorised to act for the organisation.
+3. Verify your email address, then wait for an administrator to verify the organisation. Until then your account
+   is pending and cannot publish.
+4. If the administrator asks for more information, the request appears on your dashboard under **Registration
+   details**; update your details or upload a clearer document there and it returns to the review queue.
+
+Each scholarship's **study destination** is chosen on the listing form (Zimbabwe, another country, "Any country"
+or "Online / distance"), independently of where your organisation is registered. See
+`docs/international-providers.md`.
 
 ### After approval
 
@@ -172,9 +185,16 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 ### Provider verification
 
-1. Open pending providers list.
-2. Review registration details and download certificate.
-3. **Approve** to activate account, or **Reject** with a reason.
+1. Open **Providers awaiting verification** on the dashboard; the **Registered in** column shows each
+   organisation's country of registration (or *Not recorded* for accounts registered before it was asked).
+2. Choose **Review** to see the full record — name, country, type, registration number or the reason there is
+   none, contact person and position, email, phone, website, submission date and review history — and open the
+   registration document (each opening is audited).
+3. **Approve** to activate the account, **Reject** with a reason, or **Request more information** (the account
+   stays pending and the organisation is told what you need). Apply the same checks whatever the country: the
+   document should name the organisation and support the country and number given.
+4. For an older account with no country on record, record it under **Registration details** on the review page
+   (it must be recorded before a pending account can be approved; it changes nothing else about the account).
 
 ### User management
 

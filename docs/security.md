@@ -26,12 +26,14 @@ Enforced by route middleware groups (`auth`, `role:ROLE_*`, and `account.active`
 
 ## File access
 
-- Uploaded files are stored on the private `local` filesystem disk
-  (`App\Services\FileStorageService::DISK`), outside the web root and never
-  under `public/`. The disk's root is `storage/app` by default, or wherever
-  `FILESYSTEM_ROOT` points in an environment that sets it (a mounted
-  persistent disk in production) — see `config/filesystems.php` and
-  `docs/DEPLOYMENT.md`. Nginx additionally denies any request under `/storage/`.
+- Uploaded files are stored on the disk named by `filesystems.default`
+  (`FILESYSTEM_DISK`; `FileStorageService::diskName()`), never under `public/`.
+  That is the private `local` disk (root `storage/app`, or `FILESYSTEM_ROOT`)
+  unless the environment sets another: `render.yaml` and `.env.prod.example`
+  set `FILESYSTEM_DISK=s3`, intended for a private Cloudflare R2 bucket - see
+  `config/filesystems.php` and `docs/DEPLOYMENT.md`. Either way files are only
+  read back through the controllers below. Nginx additionally denies any request
+  under `/storage/`.
 - Downloads use authenticated endpoints with access checks, one route per
   document relationship rather than one generic "give me this path" endpoint:
   - `/applications/{id}/document` — the applicant who submitted it, or the
@@ -41,11 +43,22 @@ Enforced by route middleware groups (`auth`, `role:ROLE_*`, and `account.active`
   - `/provider/applications/{id}/results-certificate` and `/transcript` — the
     provider reviewing that specific application only, audited
     (`VIEW_APPLICANT_RESULTS` / `VIEW_APPLICANT_TRANSCRIPT`)
-  - `/providers/{userId}/certificate` — admin only, audited (`VIEW_PROVIDER_CERTIFICATE`)
+  - `/admin/providers/{userId}/certificate` — admin only (route group and
+    `DocumentPolicy::viewProviderCertificate`), audited (`VIEW_PROVIDER_CERTIFICATE`).
+    The same route serves every organisation's registration document whatever
+    its country; an organisation replacing its document while awaiting
+    verification goes through the same upload checks, and the replaced file is deleted.
 
 Stored filenames are server-generated UUIDs, so a client-supplied name never reaches the filesystem. The one user-controlled path segment, `/my-documents/{documentType}`, is resolved through the `ApplicantProfile::DOCUMENT_TYPES` whitelist rather than used directly. A file flagged by the (optional) malware scanner is refused to every caller regardless of ownership — see `DocumentScanner` and `FileStorageService::respond()`.
 
 ## Input validation
+
+- Provider registration: the country of registration must be one of the ISO 3166-1 codes in
+  `App\Support\Countries` (the browser's value is never trusted as-is); the registration number
+  accepts any country's format but only letters, digits and `. / - ( ) # : & ,`; a number or an
+  explanation is required. Choosing a country is a statement, not proof — every organisation,
+  wherever registered, stays `PENDING` until an administrator verifies its document, and
+  publishing routes keep requiring `account.active`.
 
 - Uploads are content-sniffed in `FileStorageService::guard()` — `UploadedFile::getMimeType()` inspects the actual file bytes via finfo rather than trusting the client-supplied `Content-Type` header, and size is capped at 5 MB. Accepted types: PDF, Word, JPEG, PNG.
 - Laravel form-request validation on registration and profile forms, with a second `mimes`/`max` check at the controller boundary.
@@ -79,6 +92,9 @@ Security-relevant events written to `audit_log`:
 | PASSWORD_RESET_COMPLETE | Password changed via token |
 | EMAIL_DELIVERY_FAILED | Email could not be sent after retries |
 | VIEW_PROVIDER_CERTIFICATE | Admin downloads provider cert |
+| APPROVE_PROVIDER / REJECT_PROVIDER | Organisation verified or refused; the entry names its country of registration |
+| REQUEST_PROVIDER_INFO | Admin asked an organisation for more evidence (account stays pending) |
+| UPDATE_PROVIDER_REGISTRATION | Registration details recorded by an admin (old and new values) or updated by a pending organisation |
 | VIEW_APPLICANT_RESULTS | Provider/admin views results PDF |
 | APPLY, STATUS_UPDATE, admin user ops | Business workflows |
 | TWO_FACTOR_ENABLED / TWO_FACTOR_DISABLED | Second factor turned on or off |

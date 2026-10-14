@@ -16,6 +16,7 @@ use App\Support\Academic\AcademicCatalogue;
 use App\Support\AccountStatus;
 use App\Support\ApplicationStatus;
 use App\Support\AuditAction;
+use App\Support\Countries;
 use App\Support\EducationLevel;
 use App\Support\FormOptions;
 use App\Support\Gender;
@@ -144,6 +145,11 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $provider->user_id],
             [
                 'organisation_type' => ProviderOrgType::FOUNDATION,
+                // Demo data: a fictional registration, so the review screens have something to show.
+                'registration_country' => Countries::ZIMBABWE,
+                'registration_number' => 'MA 1234/2015',
+                'contact_name' => 'Rudo Moyo',
+                'contact_role' => 'Programme Director',
                 'certificate_path' => 'provider-certificates/demo-certificate.pdf',
                 'certificate_filename' => 'registration-certificate.pdf',
                 'submitted_at' => Carbon::now()->subMonths(6),
@@ -178,6 +184,10 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $provider->user_id],
             [
                 'organisation_type' => ProviderOrgType::NGO,
+                'registration_country' => Countries::ZIMBABWE,
+                'registration_number' => 'PVO 45/2021',
+                'contact_name' => 'Tendai Ncube',
+                'contact_role' => 'Coordinator',
                 'certificate_path' => 'provider-certificates/demo-new-certificate.pdf',
                 'certificate_filename' => 'registration-certificate.pdf',
                 'submitted_at' => Carbon::now()->subDays(10),
@@ -215,6 +225,10 @@ class DatabaseSeeder extends Seeder
             ['user_id' => $provider->user_id],
             [
                 'organisation_type' => ProviderOrgType::NGO,
+                'registration_country' => Countries::ZIMBABWE,
+                'registration_number' => 'PVO 112/2019',
+                'contact_name' => 'Nyasha Dube',
+                'contact_role' => 'Trust Secretary',
                 'certificate_path' => 'provider-certificates/demo-pending-certificate.pdf',
                 'certificate_filename' => 'registration-certificate.pdf',
                 'submitted_at' => Carbon::now()->subDays(2),

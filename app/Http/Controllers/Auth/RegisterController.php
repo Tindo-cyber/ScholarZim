@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Rules\InternationalPhoneNumber;
 use App\Services\RegistrationService;
+use App\Support\Countries;
 use App\Support\FormOptions;
 use App\Support\ProviderOrgType;
+use App\Support\ProviderRegistrationDetails;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
@@ -44,6 +46,7 @@ class RegisterController extends Controller
     {
         return view('auth.register-provider', [
             'orgTypes' => ProviderOrgType::options(),
+            'countries' => Countries::options(),
         ]);
     }
 
@@ -51,19 +54,30 @@ class RegisterController extends Controller
     {
         // "kariba-trust.org" and "https://kariba-trust.org" are the same answer; accept both.
         $request->merge(['website' => \App\Support\WebsiteAddress::normalise($request->input('website'))]);
+        $request->merge(ProviderRegistrationDetails::prepare($request->all()));
 
         $data = $request->validate([
             // Not FormOptions::NAME_PATTERN: this is an organisation or
             // contact name ("Chikafu Education Trust"), free text for the
             // same reason institution_name is - see FormOptions::NAME_PATTERN's
             // own docblock.
+            // The organisation's registered name: it is what users.full_name holds
+            // for a provider, and what students see on its listings.
             'full_name' => ['required', 'string', 'max:255'],
+            // The person registering, and their position - what an administrator
+            // reads to judge whether they may act for the organisation.
+            'contact_name' => ['required', 'string', 'max:255'],
+            'contact_role' => ['required', 'string', 'max:150'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             // Not FormOptions::PHONE_PATTERN: a provider's own work/organisation
             // number is international and may be a landline, a switchboard, or
             // carry an extension - see InternationalPhoneNumber's own docblock.
             'phone' => ['nullable', 'string', new InternationalPhoneNumber()],
             'organisation_type' => ['required', Rule::in(ProviderOrgType::ALL)],
+            // Country of registration, and the registration number or the reason
+            // there is none. Where the organisation is registered says nothing
+            // about where the scholarships it posts are held.
+            ...ProviderRegistrationDetails::rules(),
             // Optional, and unconfirmed until an administrator says it is theirs.
             'website' => \App\Support\WebsiteAddress::rules(),
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
@@ -72,6 +86,13 @@ class RegisterController extends Controller
             // person may act for it. Not terms of use: the admin still verifies
             // the uploaded certificate, this is the applicant's own statement.
             'authorised' => ['accepted'],
+        ], ProviderRegistrationDetails::messages() + [
+            'full_name.required' => 'Enter your organisation\'s registered name.',
+        ], ProviderRegistrationDetails::attributes() + [
+            'full_name' => 'organisation name',
+            'contact_name' => 'contact person\'s name',
+            'contact_role' => 'position or role',
+            'certificate' => 'registration document',
         ]);
 
         $this->registrationService->registerProvider($data, $request->file('certificate'));
