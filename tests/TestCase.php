@@ -11,6 +11,45 @@ abstract class TestCase extends BaseTestCase
 {
     use CreatesApplication;
 
+    /**
+     * Whether listing forms posted by this test get the broadest "who is it open to?" answer filled in.
+     *
+     * That answer became required at Certificate level and above (ListingScopes::decisionProblems). The many
+     * tests written before it are about something else - a deadline, a subject row, a trust tier - and post
+     * a form without it. Rather than repeat the same two keys in each of them, a listing form that does not
+     * answer the question is sent answering it as broadly as possible: "all programmes", "any institution".
+     * Only where the form has not already answered it, and never over a list of programmes, fields or
+     * institutions it chose itself. Tests about the rule itself switch this off with withoutOpenToAnswer().
+     */
+    private bool $fillOpenToAnswer = true;
+
+    protected function withoutOpenToAnswer(): static
+    {
+        $this->fillOpenToAnswer = false;
+
+        return $this;
+    }
+
+    /** @param  array<string, mixed>  $parameters */
+    public function call($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
+    {
+        if ($this->fillOpenToAnswer && in_array(strtoupper($method), ['POST', 'PUT'], true)
+            && preg_match('#/opportunities/(create|preview|\d+|\d+/edit-impact)/?$#', (string) parse_url((string) $uri, PHP_URL_PATH))
+            && is_array($parameters)) {
+            $chose = static fn (string $key) => ! empty($parameters[$key]);
+
+            if (! array_key_exists('open_to', $parameters) && ! $chose('scope_programmes') && ! $chose('scope_fields') && ! $chose('programme_suggestion')) {
+                $parameters['open_to'] = \App\Services\Catalogue\ListingScopes::OPEN_ALL;
+            }
+
+            if (! array_key_exists('institutions_open_to', $parameters) && ! $chose('scope_institutions')) {
+                $parameters['institutions_open_to'] = \App\Services\Catalogue\ListingScopes::INSTITUTIONS_ANY;
+            }
+        }
+
+        return parent::call($method, $uri, $parameters, $cookies, $files, $server, $content);
+    }
+
     /** For the few tests about the real shipped catalogue (call it after parent::setUp()). */
     protected function useFullCatalogue(): void
     {

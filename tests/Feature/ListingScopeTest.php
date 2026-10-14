@@ -219,6 +219,11 @@ class ListingScopeTest extends TestCase
         $listing = $this->listing();
         $listing->forceFill(['moderation_status' => OpportunityModerationStatus::APPROVED, 'reviewed_at' => now(), 'reviewed_by' => 'admin@scholarzim.co.zw'])->save();
 
+        // Rows added by hand stand for a listing that chose them: "only these", not "all programmes".
+        if (array_intersect(array_keys($scopes), ['programme_id', 'field_id']) !== []) {
+            $listing->forceFill(['open_to_all_programmes' => false])->save();
+        }
+
         foreach ($scopes as $key => $id) {
             OpportunityScope::create(['opportunity_id' => $listing->opportunity_id, $key => $id]);
         }
@@ -283,7 +288,9 @@ class ListingScopeTest extends TestCase
         }
 
         $this->assertStringContainsString('name="programme_suggestion"', $html);
-        $this->assertStringContainsStringIgnoringCase('leave empty for any field', $html);
+        $this->assertStringContainsString('All programmes at this level', $html);
+        $this->assertStringContainsString('name="open_to"', $html);
+        $this->assertStringContainsString('name="institutions_open_to"', $html);
     }
 
     public function test_programmes_can_be_found_by_synonym_and_carry_their_level(): void

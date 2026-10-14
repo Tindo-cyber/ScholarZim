@@ -47,7 +47,8 @@ class ListingCountryTest extends TestCase
         $this->listing('Berlin Engineering Award', 'Germany');
         $this->listing('Harare Engineering Award', 'Zimbabwe');
 
-        $this->get('/scholarships')
+        // Narrowed by keyword only, so the seeded listings cannot push these two onto a second page.
+        $this->get('/scholarships?keyword=Engineering+Award')
             ->assertSee('Berlin Engineering Award')
             ->assertSee('Harare Engineering Award');
     }

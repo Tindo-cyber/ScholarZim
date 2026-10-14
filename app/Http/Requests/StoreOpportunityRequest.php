@@ -108,6 +108,12 @@ class StoreOpportunityRequest extends FormRequest
             'scope_institutions' => ['nullable', 'array'],
             'programme_suggestion' => ['nullable', 'string', 'max:200'],
             'programme_suggestion_field' => ['nullable', 'integer'],
+            // The answer to "who is this open to?" - required at Certificate level and above, checked in checkScope().
+            'open_to' => ['nullable', Rule::in([ListingScopes::OPEN_CHOSEN, ListingScopes::OPEN_ALL])],
+            'institutions_open_to' => ['nullable', Rule::in([ListingScopes::INSTITUTIONS_CHOSEN, ListingScopes::INSTITUTIONS_ANY])],
+            'accepts_o_level' => ['nullable', 'boolean'],
+            'host_institutions' => ['nullable', 'string', 'max:500'],
+            'other_conditions' => ['nullable', 'string', 'max:3000'],
         ];
     }
 
@@ -266,6 +272,16 @@ class StoreOpportunityRequest extends FormRequest
 
         foreach (app(ListingScopes::class)->problems($this->all(), $this->targetLevel($errors), $this->user()) as $key => $message) {
             $errors->add($key, $message);
+        }
+
+        if ($errors->has('education_level') || $errors->has('country')) {
+            return;
+        }
+
+        foreach (app(ListingScopes::class)->decisionProblems($this->all(), $this->targetLevel($errors), $this->input('country')) as $key => $message) {
+            if (! $errors->has($key)) {
+                $errors->add($key, $message);
+            }
         }
     }
 

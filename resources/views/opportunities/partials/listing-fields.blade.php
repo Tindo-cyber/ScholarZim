@@ -41,6 +41,17 @@
 
 <div class="card mb-4">
     <div class="card-header">
+        <h2 class="h6 fw-semibold mb-0">Other conditions (optional)</h2>
+    </div>
+    <div class="card-body">
+        <x-form.textarea name="other_conditions" label="Conditions students must check for themselves" :rows="3"
+                         :value="$opportunity?->other_conditions"
+                         hint="One a line, for example: IELTS 6.5 or higher / Two years of work experience / Return to Zimbabwe after studying. Students see these under their ScholarFit result as &quot;Also check yourself&quot;; they are never counted as met or not met." />
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
         <h2 class="h6 fw-semibold mb-0">The offer</h2>
     </div>
     <div class="card-body">

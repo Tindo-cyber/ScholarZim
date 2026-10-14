@@ -116,10 +116,26 @@ class ApplicationGateTest extends TestCase
     /** The general pathway allows O-Level -> Undergraduate; without an explicit
      * minimum floor the applicant is eligible. A separate listing-level minimum
      * can still turn them away. */
-    public function test_an_o_level_applicant_can_apply_to_an_undergraduate_award_without_a_minimum(): void
+    public function test_an_o_level_applicant_cannot_apply_to_a_degree_award_that_does_not_take_o_level_holders(): void
     {
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+        $opportunity->forceFill(['accepts_o_level' => false])->save();
+
+        $this->actingAs($farai)->post('/apply/' . $opportunity->opportunity_id . '/quick');
+
+        $this->assertDatabaseMissing('applications', [
+            'user_id' => $farai->user_id,
+            'opportunity_id' => $opportunity->opportunity_id,
+        ]);
+    }
+
+    /** The provider ticked "O-Level holders may apply": then an O-Level student is judged on the rest. */
+    public function test_an_o_level_applicant_can_apply_to_a_degree_award_that_takes_o_level_holders(): void
+    {
+        $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+        $opportunity->forceFill(['accepts_o_level' => true])->save();
 
         $this->actingAs($farai)
             ->post('/apply/' . $opportunity->opportunity_id . '/quick')
@@ -235,6 +251,7 @@ class ApplicationGateTest extends TestCase
     {
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+        $opportunity->forceFill(['accepts_o_level' => true])->save();
 
         $response = $this->actingAs($farai)->get('/apply/' . $opportunity->opportunity_id);
 

@@ -218,12 +218,14 @@ class ListingDraftService
             $lose('Country', 'It was replaced by ' . FormOptions::DEFAULT_COUNTRY . ', the default, which you can change.');
         }
 
-        return [
+        $levelForDecision = $option('education_level', 'Level of study', EducationLevel::TARGET_LEVELS, 'levels');
+
+        return $this->scopes->decision($input, $levelForDecision, $country ?? FormOptions::DEFAULT_COUNTRY) + [
             'title' => $text('title', 'Scholarship title', 255),
             'description' => $text('description', 'Full description', 65000),
             'provider_name' => $own,
             'on_behalf_of' => ($behalf !== null && strcasecmp($behalf, $own) !== 0) ? $behalf : null,
-            'education_level' => $option('education_level', 'Level of study', EducationLevel::TARGET_LEVELS, 'levels'),
+            'education_level' => $levelForDecision,
             'minimum_education_level' => $option('minimum_education_level', 'Minimum qualifying level', EducationLevel::APPLICANT_LEVELS, 'levels'),
             'target_field' => $text('target_field', 'Field of study', 255),
             'funding_type' => $option('funding_type', 'Funding type', FormOptions::FUNDING_TYPES, 'funding types'),

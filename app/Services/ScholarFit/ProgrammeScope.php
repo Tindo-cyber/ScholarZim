@@ -64,19 +64,30 @@ class ProgrammeScope
     private function outcomes(ApplicantProfile $profile, Opportunity $listing): array
     {
         [$scopes, $origin] = $this->scopeOf($listing, $profile);
+        $applicant = $this->applicant($profile);
+        $outcomes = [];
 
-        if ($scopes->isEmpty()) {
-            return [];
+        // A school-leaver said which level they want to study at by the programmes they chose. A listing at
+        // another level is not for them, whatever it is open to - checked even when it is open to all programmes.
+        $level = $this->intendedLevelOutcome($listing, $applicant);
+
+        if ($level !== null) {
+            $outcomes[] = $level;
         }
 
-        $applicant = $this->applicant($profile);
+        if ($scopes->isEmpty()) {
+            return $outcomes;
+        }
+
+        $applicant = $this->atListingLevel($listing, $applicant);
         $describer = app(ListingScopes::class);
-        $outcomes = [];
 
         $what = $scopes->filter(fn (OpportunityScope $s) => $s->programme_id !== null || $s->field_id !== null)->values();
         $where = $scopes->filter(fn (OpportunityScope $s) => $s->institution_id !== null)->values();
 
-        if ($what->isNotEmpty()) {
+        // The level rule has already said this listing is not for them; saying again that their programmes are
+        // not its programmes would be the same refusal twice.
+        if ($what->isNotEmpty() && $level === null) {
             $outcomes[] = $this->programmeOutcome($what, $applicant, $describer->describeProgrammes($what), $origin);
         }
 
@@ -126,6 +137,15 @@ class ProgrammeScope
         }
     }
 
+    /**
+     * Whether the provider chose "All programmes at this level" on purpose. Then no programme or field rule
+     * applies - not even one read out of the listing's own words, which a deliberate answer outranks.
+     */
+    public static function isOpenToAll(Opportunity $listing): bool
+    {
+        return $listing->open_to_all_programmes === true;
+    }
+
     // ----------------------------------------------------------- the listing --
 
     /**
@@ -139,6 +159,10 @@ class ProgrammeScope
                 : $listing->scopes()->with(['programme.field.parent', 'field.parent', 'institution'])->get();
 
             return [$scopes, null];
+        }
+
+        if (self::isOpenToAll($listing)) {
+            return [collect(), null];
         }
 
         // The words. Programmes named in them always apply; fields named in them apply here only for
@@ -206,6 +230,18 @@ class ProgrammeScope
             }
         }
 
+        // Fields an enrolled student or graduate wants to study next (a Masters in Data Science after a BCom):
+        // matched against a listing's fields as well as their own programme.
+        $targets = collect();
+
+        if ($profile->exists && $mode === ApplicantProgrammes::CURRENT) {
+            $rows = $profile->relationLoaded('targetFields')
+                ? $profile->targetFields
+                : $profile->targetFields()->with('field.parent')->get();
+
+            $targets = $rows->map(fn ($t) => $t->field)->filter()->values();
+        }
+
         // An older free-text field of study, only until a programme is chosen.
         $legacy = collect();
 
@@ -215,7 +251,7 @@ class ProgrammeScope
         }
 
         return [
-            'mode' => $mode, 'programmes' => $programmes, 'legacy' => $legacy, 'institutions' => $institutions, 'institutionNames' => $names,
+            'mode' => $mode, 'programmes' => $programmes, 'targets' => $targets, 'legacy' => $legacy, 'institutions' => $institutions, 'institutionNames' => $names,
             'levelKnown' => EducationLevel::canonical($profile->education_level) !== null,
         ];
     }
@@ -262,6 +298,19 @@ class ProgrammeScope
         }
 
         $legacyMatch = false;
+        $targetMatch = false;
+
+        if ($best === null) {
+            foreach ($applicant['targets'] as $field) {
+                $rank = $this->rankField($field, $fields);
+
+                if ($rank !== null && ($best === null || $rank < $best)) {
+                    $best = $rank;
+                    $matched = $field->label();
+                    $targetMatch = true;
+                }
+            }
+        }
 
         if ($best === null) {
             foreach ($applicant['legacy'] as $field) {
@@ -278,23 +327,39 @@ class ProgrammeScope
         if ($best !== null) {
             return RequirementOutcome::pass(
                 RequirementOutcome::TYPE_PROGRAMME_SCOPE,
-                $prefix . 'Programme: open to ' . $open . '; ' . ($legacyMatch ? 'your field, ' : 'your programme, ') . $matched . ', fits.',
+                $prefix . 'Programme: open to ' . $open . '; ' . match (true) {
+                    $targetMatch => 'the field you want to study next, ',
+                    $legacyMatch => 'your field, ',
+                    default => 'your programme, ',
+                } . $matched . ', fits.',
                 required: $open,
                 actual: $matched,
                 fit: [RequirementOutcome::FIT_PROGRAMME, RequirementOutcome::FIT_NARROW_FIELD, RequirementOutcome::FIT_BROAD_FIELD][$best],
             );
         }
 
-        $have = $applicant['programmes']->isNotEmpty() || $applicant['legacy']->isNotEmpty();
+        $have = $applicant['programmes']->isNotEmpty() || $applicant['targets']->isNotEmpty() || $applicant['legacy']->isNotEmpty();
         $hasProgrammeRows = $programmeIds !== [];
 
-        // Only an older field to go on, and the listing names programmes: a field cannot say which one.
-        $onlyLegacy = $applicant['programmes']->isEmpty() && $applicant['legacy']->isNotEmpty();
+        // Only fields to go on (an older field, or fields wanted next), and the listing names programmes:
+        // a field cannot say which programme, so this asks for the programme rather than refusing.
+        $onlyFields = $applicant['programmes']->isEmpty() && ($applicant['legacy']->isNotEmpty() || $applicant['targets']->isNotEmpty());
 
-        if ($have && ! ($onlyLegacy && $hasProgrammeRows)) {
-            $yours = $applicant['programmes']->isNotEmpty()
-                ? ($applicant['programmes']->count() === 1 ? 'your programme is ' : 'your programmes are ') . $applicant['programmes']->pluck('name')->implode(', ')
-                : 'your field is ' . $applicant['legacy']->map->label()->implode(', ');
+        if ($have && ! ($onlyFields && $hasProgrammeRows)) {
+            $parts = [];
+
+            if ($applicant['programmes']->isNotEmpty()) {
+                $parts[] = ($applicant['programmes']->count() === 1 ? 'your programme is ' : 'your programmes are ') . $applicant['programmes']->pluck('name')->implode(', ');
+            } elseif ($applicant['legacy']->isNotEmpty()) {
+                $parts[] = 'your field is ' . $applicant['legacy']->map->label()->implode(', ');
+            }
+
+            if ($applicant['targets']->isNotEmpty()) {
+                $parts[] = ($applicant['targets']->count() === 1 ? 'the field you want to study next is ' : 'the fields you want to study next are ')
+                    . $applicant['targets']->map->label()->implode(', ');
+            }
+
+            $yours = implode(', and ', $parts);
 
             return RequirementOutcome::fail(
                 RequirementOutcome::TYPE_PROGRAMME_SCOPE,
@@ -329,6 +394,52 @@ class ProgrammeScope
             ScholarFitFieldNames::PROGRAMME,
             required: $open,
         );
+    }
+
+    /**
+     * A school-leaver whose chosen programmes are all at another level than the listing's.
+     *
+     * Their programmes say what they want to study next. An A-Level student who chose only diplomas has said
+     * they are looking for a diploma, so a degree award - even in the same field, even open to all programmes -
+     * is not for them; adding a degree programme to their choices is how they say otherwise. Nothing to judge
+     * when they have chosen nothing yet (that is "needs information", elsewhere), or when the listing is not
+     * for a level a school-leaver chooses programmes at.
+     */
+    private function intendedLevelOutcome(Opportunity $listing, array $applicant): ?RequirementOutcome
+    {
+        $level = EducationLevel::canonical($listing->education_level);
+
+        if ($applicant['mode'] !== ApplicantProgrammes::INTENDED || $applicant['programmes']->isEmpty()
+            || ! in_array($level, ApplicantProgrammes::LEAVER_LEVELS, true)) {
+            return null;
+        }
+
+        if ($applicant['programmes']->contains(fn (Programme $p) => $p->education_level === $level)) {
+            return null;
+        }
+
+        $levels = $applicant['programmes']->map(fn (Programme $p) => EducationLevel::label($p->education_level))->unique()->implode(' and ');
+
+        return RequirementOutcome::fail(
+            RequirementOutcome::TYPE_PROGRAMME_SCOPE,
+            'Programme: this scholarship funds ' . EducationLevel::label($level) . ' study, but the programmes you chose are at '
+                . $levels . ' level (' . $applicant['programmes']->pluck('name')->implode(', ') . '). Add a '
+                . EducationLevel::label($level) . ' programme to your choices if you are also looking for this kind of award.',
+            required: EducationLevel::label($level),
+            actual: $applicant['programmes']->pluck('name')->implode(', '),
+        );
+    }
+
+    /** The applicant with only their chosen programmes at the listing's level, for a school-leaver; anyone else as they are. */
+    private function atListingLevel(Opportunity $listing, array $applicant): array
+    {
+        $level = EducationLevel::canonical($listing->education_level);
+
+        if ($applicant['mode'] === ApplicantProgrammes::INTENDED && in_array($level, ApplicantProgrammes::LEAVER_LEVELS, true)) {
+            $applicant['programmes'] = $applicant['programmes']->filter(fn (Programme $p) => $p->education_level === $level)->values();
+        }
+
+        return $applicant;
     }
 
     /** 0 = the programme itself, 1 = a narrow field it is in, 2 = a broad field it is in; null = none. */

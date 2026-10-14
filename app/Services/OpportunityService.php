@@ -158,7 +158,7 @@ class OpportunityService
                 'moderation_status' => OpportunityModerationStatus::PENDING,
                 'submitted_at' => Carbon::now(),
                 'created_at' => Carbon::now(),
-            ] + $identity + $award + ['risk_flags' => $flags ?: null];
+            ] + $identity + $award + $this->scopes->decision($data, $data['education_level'] ?? null, $country) + ['risk_flags' => $flags ?: null];
 
             if ($draft !== null) {
                 // Submitting a draft turns that row into the listing rather than making a
@@ -423,7 +423,8 @@ class OpportunityService
             'country' => $country,
             'target_country' => $country,
             'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
-        ] + $this->identityAttributes($data, $provider) + $this->awardAttributes($data);
+        ] + $this->identityAttributes($data, $provider) + $this->awardAttributes($data)
+            + $this->scopes->decision($data, $data['education_level'] ?? null, $country);
 
         // Recomputed from what is being saved now - a provider who removes the wording
         // that tripped a flag should lose the flag - but the flags that come from

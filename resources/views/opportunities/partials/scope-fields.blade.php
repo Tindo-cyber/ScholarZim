@@ -4,11 +4,15 @@
     /**
      * "Open to": which programmes, fields and institutions this scholarship is for.
      *
-     * Plain multiple <select>s, so the form works with JavaScript off. resources/js/catalogue-filter.js
-     * only adds a search box above each list and hides programmes of another level than the one
-     * chosen above; the server checks the same things (ListingScopes::problems).
+     * At Certificate level and above this is a decision the provider must make, because ScholarFit uses it to
+     * tell each student whether they qualify (ListingScopes::decisionProblems): either the programmes or
+     * fields it is for, or "All programmes at this level" on purpose; and, for study in Zimbabwe, either the
+     * institutions it pays for or "Any institution". For study abroad the Zimbabwean programme and institution
+     * lists do not apply - the award is open to fields, and its host universities are written in words.
      *
-     * Leave everything empty and the award is open to any programme.
+     * Plain radios and multiple <select>s, so the form works with JavaScript off. resources/js/catalogue-filter.js
+     * adds a search box over each list and resources/js/open-to.js hides what the answers make irrelevant; the
+     * server checks the same things and drops anything an answer overrides.
      */
     $scopes = $opportunity?->scopes ?? collect();
     $chosen = [
@@ -16,21 +20,57 @@
         'fields' => array_map('intval', (array) old('scope_fields', $scopes->pluck('field_id')->filter()->all())),
         'institutions' => array_map('intval', (array) old('scope_institutions', $scopes->pluck('institution_id')->filter()->all())),
     ];
+    $openTo = old('open_to', match (true) {
+        $opportunity?->open_to_all_programmes === true => \App\Services\Catalogue\ListingScopes::OPEN_ALL,
+        $opportunity?->open_to_all_programmes === false, $chosen['programmes'] !== [] || $chosen['fields'] !== [] => \App\Services\Catalogue\ListingScopes::OPEN_CHOSEN,
+        default => null,
+    });
+    $institutionsOpenTo = old('institutions_open_to', match (true) {
+        $opportunity?->any_institution === true => \App\Services\Catalogue\ListingScopes::INSTITUTIONS_ANY,
+        $opportunity?->any_institution === false, $chosen['institutions'] !== [] => \App\Services\Catalogue\ListingScopes::INSTITUTIONS_CHOSEN,
+        default => null,
+    });
+    $abroad = \App\Services\Catalogue\ListingScopes::isAbroad(old('country', $opportunity?->country));
+    // A list that has to be cleared before saving stays in view, so its error can be read and acted on.
+    $hideProgrammes = $abroad && ! $errors->has('scope_programmes') && ! $errors->has('programme_suggestion');
+    $hideInstitutions = $abroad && ! $errors->has('scope_institutions');
     $typeLabels = \App\Models\Institution::TYPE_LABELS;
 @endphp
 
-<div class="card mb-4" data-level-needs="programmes" id="scope-card">
+<div class="card mb-4" data-level-needs="programmes" id="scope-card" data-open-to>
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">Open to (optional)</h2>
+        <h2 class="h6 fw-semibold mb-0">Who is it open to?</h2>
     </div>
     <div class="card-body">
         <p class="small text-secondary">
-            Leave this empty and any student at the level above can be matched. To narrow it, choose programmes,
-            a whole field (such as Engineering), or institutions. A student must fit the programmes <em>or</em> fields
-            you choose, <em>and</em> be at one of the institutions you choose, if you choose any.
+            ScholarFit uses your answer to tell each student whether they qualify, so it is required for Certificate,
+            Diploma, degree and postgraduate awards. A student must fit the programmes <em>or</em> fields you choose,
+            <em>and</em> study at one of the institutions you choose, if you choose any.
         </p>
 
-        <div class="mb-3" data-catalogue-filter>
+        <fieldset class="mb-3">
+            <legend class="form-label fs-6 mb-1">Programmes</legend>
+            <div class="form-check">
+                <input class="form-check-input @error('open_to') is-invalid @enderror" type="radio" name="open_to" id="open-to-chosen"
+                       value="{{ \App\Services\Catalogue\ListingScopes::OPEN_CHOSEN }}" @checked($openTo === \App\Services\Catalogue\ListingScopes::OPEN_CHOSEN)>
+                <label class="form-check-label" for="open-to-chosen">Only the programmes or fields I choose below</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input @error('open_to') is-invalid @enderror" type="radio" name="open_to" id="open-to-all"
+                       value="{{ \App\Services\Catalogue\ListingScopes::OPEN_ALL }}" @checked($openTo === \App\Services\Catalogue\ListingScopes::OPEN_ALL)>
+                <label class="form-check-label" for="open-to-all">All programmes at this level (for example, a top-achievers award)</label>
+            </div>
+            @error('open_to')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+        </fieldset>
+
+        <div class="alert alert-info small" data-abroad-only role="note" @unless($abroad) hidden @endunless>
+            This award is for study outside Zimbabwe. Our programme and institution lists hold Zimbabwean ones only, so
+            choose the <strong>fields</strong> it is open to (for example ICT), and write the universities under
+            "Host universities". A student's own programme is matched to these fields.
+        </div>
+
+        <div data-open-chosen @if($openTo === \App\Services\Catalogue\ListingScopes::OPEN_ALL) hidden @endif>
+<div class="mb-3" data-catalogue-filter data-home-only @if($hideProgrammes) hidden @endif>
             <label class="form-label" for="scope-programmes">Programmes</label>
             <select class="form-select @error('scope_programmes') is-invalid @enderror" id="scope-programmes"
                     name="scope_programmes[]" multiple size="8" aria-describedby="scope-programmes-help" data-filter-level="field-education_level">
@@ -68,7 +108,7 @@
             </select>
             <div class="form-text" id="scope-fields-help">
                 Choose a field to open the award to every programme in it, so you do not have to tick them one by one.
-                Leave empty for any field.
+                Abroad, this is how students are matched.
             </div>
             {{--
                 Civil engineering is filed under Architecture and construction and mining under Manufacturing, so the
@@ -92,24 +132,7 @@
             @foreach($errors->get('scope_fields.*') as $messages)<div class="invalid-feedback d-block">{{ $messages[0] }}</div>@endforeach
         </div>
 
-        <div class="mb-3" data-catalogue-filter>
-            <label class="form-label" for="scope-institutions">Institutions</label>
-            <select class="form-select @error('scope_institutions') is-invalid @enderror" id="scope-institutions"
-                    name="scope_institutions[]" multiple size="6">
-                @foreach($catalogue['institutions']->groupBy('type') as $type => $institutions)
-                    <optgroup label="{{ $typeLabels[$type] ?? $type }}">
-                        @foreach($institutions as $institution)
-                            <option value="{{ $institution->id }}" data-search="{{ strtolower($institution->name . ' ' . $institution->code) }}"
-                                    @selected(in_array($institution->id, $chosen['institutions'], true))>{{ $institution->name }}</option>
-                        @endforeach
-                    </optgroup>
-                @endforeach
-            </select>
-            <div class="form-text">Only for students at these institutions. Leave empty for any institution.</div>
-            @error('scope_institutions')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-        </div>
-
-        <details @if(old('programme_suggestion')) open @endif>
+        <details data-home-only @if(old('programme_suggestion')) open @endif @if($hideProgrammes) hidden @endif>
             <summary class="small">My programme isn't listed</summary>
             <div class="row g-2 mt-1">
                 <div class="col-md-7">
@@ -138,5 +161,52 @@
                 either added to the catalogue or matched to the programme it really is.
             </p>
         </details>
+        </div>
+
+        <fieldset class="mb-3" data-home-only @if($hideInstitutions) hidden @endif>
+            <legend class="form-label fs-6 mb-1">Institutions</legend>
+            <div class="form-check">
+                <input class="form-check-input @error('institutions_open_to') is-invalid @enderror" type="radio" name="institutions_open_to" id="institutions-any"
+                       value="{{ \App\Services\Catalogue\ListingScopes::INSTITUTIONS_ANY }}" @checked($institutionsOpenTo === \App\Services\Catalogue\ListingScopes::INSTITUTIONS_ANY)>
+                <label class="form-check-label" for="institutions-any">Any institution</label>
+            </div>
+            <div class="form-check">
+                <input class="form-check-input @error('institutions_open_to') is-invalid @enderror" type="radio" name="institutions_open_to" id="institutions-chosen"
+                       value="{{ \App\Services\Catalogue\ListingScopes::INSTITUTIONS_CHOSEN }}" @checked($institutionsOpenTo === \App\Services\Catalogue\ListingScopes::INSTITUTIONS_CHOSEN)>
+                <label class="form-check-label" for="institutions-chosen">Only students at the institutions I choose</label>
+            </div>
+            @error('institutions_open_to')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+
+<div class="mt-2" data-catalogue-filter data-institutions-chosen @if($institutionsOpenTo === \App\Services\Catalogue\ListingScopes::INSTITUTIONS_ANY) hidden @endif>
+            <label class="form-label" for="scope-institutions">Institutions</label>
+            <select class="form-select @error('scope_institutions') is-invalid @enderror" id="scope-institutions"
+                    name="scope_institutions[]" multiple size="6">
+                @foreach($catalogue['institutions']->groupBy('type') as $type => $institutions)
+                    <optgroup label="{{ $typeLabels[$type] ?? $type }}">
+                        @foreach($institutions as $institution)
+                            <option value="{{ $institution->id }}" data-search="{{ strtolower($institution->name . ' ' . $institution->code) }}"
+                                    @selected(in_array($institution->id, $chosen['institutions'], true))>{{ $institution->name }}</option>
+                        @endforeach
+                    </optgroup>
+                @endforeach
+            </select>
+            <div class="form-text">The institutions this scholarship pays for.</div>
+            @error('scope_institutions')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+        </div>
+        </fieldset>
+
+        <div class="mb-3" data-abroad-only @unless($abroad) hidden @endunless>
+            <x-form.input name="host_institutions" label="Host universities (optional)"
+                          :value="$opportunity?->host_institutions"
+                          hint="Where students will study, for example: University of Edinburgh, UCL. Shown to students; ScholarFit does not check it." />
+        </div>
+
+        <div class="mb-3" data-level-needs="olevel">
+            <x-form.checkbox name="accepts_o_level" wrapper-class="mb-0"
+                             label="O-Level holders may apply"
+                             hint="Leave unticked if students need A-Level, or a Certificate or Diploma, first. ScholarFit then tells O-Level students this degree award is not for them yet."
+                             :checked="(bool) ($opportunity?->accepts_o_level ?? false)" />
+        </div>
+
     </div>
 </div>

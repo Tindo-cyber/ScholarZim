@@ -25,6 +25,15 @@ class DashboardController extends Controller
             'recentApplications' => $this->providerService->recentApplications($user, 8),
             'upcomingDeadlines' => $this->providerService->upcomingDeadlines($user, 5),
             'providerProfile' => $user->providerProfile,
+            // Listings posted before "Who is it open to?" was required, still to be answered.
+            'unansweredOpenTo' => \App\Models\Opportunity::with('scopes')
+                ->where('provider_user_id', $user->user_id)
+                ->whereNull('open_to_all_programmes')
+                ->where('status', \App\Support\OpportunityStatus::ACTIVE)
+                ->orderBy('title')
+                ->get()
+                ->filter(fn (\App\Models\Opportunity $o) => ! $o->isDraft() && $o->needsOpenToAnswer())
+                ->values(),
         ]);
     }
 }

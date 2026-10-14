@@ -59,6 +59,11 @@ class Opportunity extends Model
         'target_settlement_type',
         'requires_results_certificate',
         'view_count',
+        'open_to_all_programmes',
+        'any_institution',
+        'accepts_o_level',
+        'host_institutions',
+        'other_conditions',
     ];
 
     protected $casts = [
@@ -73,6 +78,9 @@ class Opportunity extends Model
         'min_academic_points' => 'integer',
         'max_age' => 'integer',
         'requires_results_certificate' => 'boolean',
+        'open_to_all_programmes' => 'boolean',
+        'any_institution' => 'boolean',
+        'accepts_o_level' => 'boolean',
         'risk_flags' => 'array',
         'auto_approved' => 'boolean',
         'post_reviewed_at' => 'datetime',
@@ -95,6 +103,29 @@ class Opportunity extends Model
     }
 
     /** What this listing is open to (programmes, fields, institutions). None = anyone. */
+    /**
+     * Whether this listing was posted before "Who is it open to?" became required and still has not answered it.
+     *
+     * It keeps working as it always did (an empty choice means anyone; its words are read), but ScholarFit cannot
+     * be as exact for it, so its provider is asked to answer. Only at Certificate level and above, where the
+     * question is asked; the institution half only for study in Zimbabwe.
+     */
+    public function needsOpenToAnswer(): bool
+    {
+        if (! \App\Services\Catalogue\ListingScopes::requiresDecision($this->education_level)) {
+            return false;
+        }
+
+        $hasRows = $this->relationLoaded('scopes') ? $this->scopes->isNotEmpty() : $this->scopes()->exists();
+
+        if ($this->open_to_all_programmes === null && ! $hasRows) {
+            return true;
+        }
+
+        return $this->any_institution === null && ! \App\Services\Catalogue\ListingScopes::isAbroad($this->country)
+            && ! ($this->relationLoaded('scopes') ? $this->scopes->whereNotNull('institution_id')->isNotEmpty() : $this->scopes()->whereNotNull('institution_id')->exists());
+    }
+
     public function scopes(): HasMany
     {
         return $this->hasMany(OpportunityScope::class, 'opportunity_id', 'opportunity_id');

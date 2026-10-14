@@ -62,6 +62,29 @@
                     </select>
                     @error('current_institution_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
+
+                <div class="mb-3" data-catalogue-filter>
+                    <label class="form-label" for="target_field_ids">Fields you want to study next (optional, up to 3)</label>
+                    <select class="form-select @error('target_field_ids') is-invalid @enderror" id="target_field_ids"
+                            name="target_field_ids[]" multiple size="6" aria-describedby="target-fields-help">
+                        @foreach($catalogue['fields'] as $broad)
+                            <optgroup label="{{ $broad->label() }}">
+                                <option value="{{ $broad->id }}" data-search="{{ strtolower($broad->label() . ' ' . $broad->name) }}"
+                                        @selected(in_array($broad->id, array_map('intval', (array) old('target_field_ids', $targetFieldIds ?? [])), true))>All of {{ $broad->label() }}</option>
+                                @foreach($broad->children as $narrow)
+                                    <option value="{{ $narrow->id }}" data-search="{{ strtolower($narrow->label() . ' ' . $narrow->name . ' ' . $broad->label()) }}"
+                                            @selected(in_array($narrow->id, array_map('intval', (array) old('target_field_ids', $targetFieldIds ?? [])), true))>{{ $narrow->label() }}</option>
+                                @endforeach
+                            </optgroup>
+                        @endforeach
+                    </select>
+                    <div class="form-text" id="target-fields-help">
+                        For your next qualification, if it is in a different field from your programme - for example a
+                        Masters in Data Science after a BCom. Scholarships open to these fields will match you too, including
+                        scholarships to study abroad.
+                    </div>
+                    @error('target_field_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                </div>
             @else
                 <p class="small text-secondary">
                     You have not started a programme yet. Choose up to 3 you hope to study, and you will be matched to a

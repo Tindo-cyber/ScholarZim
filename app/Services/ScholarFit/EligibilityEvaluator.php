@@ -88,7 +88,7 @@ final class EligibilityEvaluator
     {
         return array_values(array_filter(array_merge(
             [
-                $this->progression($profile, $opportunity),
+                $this->progression($profile, $opportunity, $record),
                 $this->minimumLevel($profile, $opportunity, $record),
                 $this->points($profile, $opportunity, $record),
             ],
@@ -103,6 +103,7 @@ final class EligibilityEvaluator
             ],
             $this->programmeScope->evaluate($profile, $opportunity),
             $this->descriptionConditions($profile, $opportunity, $record),
+            $this->otherConditions($opportunity),
         )));
     }
 
@@ -142,7 +143,7 @@ final class EligibilityEvaluator
      * So this is an advisory note. An unusual progression is worth flagging;
      * it is not a refusal, and `RequirementOutcome::failures()` skips it.
      */
-    private function progression(ApplicantProfile $profile, Opportunity $opportunity): ?RequirementOutcome
+    private function progression(ApplicantProfile $profile, Opportunity $opportunity, ?AcademicRecord $record = null): ?RequirementOutcome
     {
         if (blank($opportunity->education_level)) {
             return null;
@@ -165,6 +166,22 @@ final class EligibilityEvaluator
             return RequirementOutcome::fail(
                 RequirementOutcome::TYPE_PROGRESSION,
                 LevelJump::failureMessage($profile->education_level, $opportunity->education_level),
+                required: EducationLevel::label($opportunity->education_level),
+                actual: EducationLevel::label($profile->education_level),
+            );
+        }
+
+        // A degree award is entered from A-Level (or a Certificate or Diploma), not from O-Level, unless the
+        // provider has said it takes O-Level holders. Someone whose level still reads O-Level but who has
+        // recorded A-Level results has finished A-Level, and is judged on that - see minimumLevel().
+        if (EducationLevel::canonical($profile->education_level) === EducationLevel::O_LEVEL
+            && EducationLevel::canonical($opportunity->education_level) === EducationLevel::UNDERGRADUATE
+            && ! $opportunity->accepts_o_level
+            && ! ($record?->holdsQualificationAtOrAbove(EducationLevel::A_LEVEL) ?? false)) {
+            return RequirementOutcome::fail(
+                RequirementOutcome::TYPE_PROGRESSION,
+                'Level: this degree scholarship has not said it accepts O-Level holders. It is for students who have finished '
+                    .'A-Level, or a Certificate or Diploma, and your profile states O-Level.',
                 required: EducationLevel::label($opportunity->education_level),
                 actual: EducationLevel::label($profile->education_level),
             );
@@ -796,7 +813,8 @@ final class EligibilityEvaluator
                 // different statement (what must already be held) and no longer silences it.
                 DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->education_level),
                 DescriptionEligibility::ENTRY_QUALIFICATION => blank($opportunity->minimum_education_level),
-                DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field) && ! ProgrammeScope::hasChosenScope($opportunity),
+                DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field) && ! ProgrammeScope::hasChosenScope($opportunity)
+                    && ! ProgrammeScope::isOpenToAll($opportunity),
                 default => true,
             };
         }));
@@ -1213,6 +1231,28 @@ final class EligibilityEvaluator
             'Scholarship description states: '.$requiredField.' required, your profile states '.$profile->field_of_study.'.',
             required: $requiredField,
             actual: $profile->field_of_study,
+        );
+    }
+
+    /**
+     * What the provider listed under "Other conditions": IELTS, work experience, a promise to return home.
+     *
+     * The profile holds nothing to check these against, so each is an advisory note - "Also check yourself" -
+     * never a pass and never a failure. Saying Eligible only about what was actually checked, and naming the
+     * rest, is what lets a student trust the word.
+     *
+     * @return array<int, RequirementOutcome>
+     */
+    private function otherConditions(Opportunity $opportunity): array
+    {
+        return array_map(
+            static fn (string $condition) => RequirementOutcome::note(
+                RequirementOutcome::TYPE_PROVIDER_CONDITION,
+                false,
+                'Also check yourself: '.$condition,
+                required: $condition,
+            ),
+            \App\Services\Catalogue\ListingScopes::conditionLines($opportunity->other_conditions),
         );
     }
 

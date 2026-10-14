@@ -439,7 +439,7 @@
                 </div>
             </form>
 
-            @include('applicant.partials.programme-card', ['profile' => $profile, 'catalogue' => $catalogue, 'programmeChoices' => $programmeChoices, 'appliedInstitutionIds' => $appliedInstitutionIds])
+            @include('applicant.partials.programme-card', ['profile' => $profile, 'catalogue' => $catalogue, 'programmeChoices' => $programmeChoices, 'appliedInstitutionIds' => $appliedInstitutionIds, 'targetFieldIds' => $targetFieldIds ?? []])
         </div>
 
         <div class="col-xl-4">

@@ -196,6 +196,8 @@ class ScholarFitEligibilityTest extends TestCase
             $profile,
             $this->opportunity([
                 'education_level' => EducationLevel::UNDERGRADUATE,
+                // Takes O-Level holders, so the level itself is not one of the reasons: the three stated rules are.
+                'accepts_o_level' => true,
                 'minimum_education_level' => EducationLevel::A_LEVEL,
                 'min_academic_points' => 12,
                 'required_province' => 'Harare',
@@ -281,24 +283,54 @@ class ScholarFitEligibilityTest extends TestCase
      * The preserved rule, restated: an O-Level applicant reaches an
      * undergraduate award unless that award explicitly asks for A-Level.
      */
-    public function test_an_o_level_applicant_reaches_an_undergraduate_award_that_asks_for_nothing(): void
+    public function test_an_o_level_applicant_reaches_a_degree_award_only_when_it_takes_o_level_holders(): void
     {
         $profile = $this->profileWithAcademicResults(
             [AcademicCatalogue::ZIMSEC_O_LEVEL => ['Mathematics' => 'B', 'English Language' => 'C']],
             ['education_level' => EducationLevel::O_LEVEL, 'province' => 'Harare', 'transcript_path' => 'c.pdf']
         );
 
-        $undergraduate = $this->opportunity(['education_level' => EducationLevel::UNDERGRADUATE]);
+        // Not ticked: a degree is entered from A-Level, a Certificate or a Diploma.
+        $fit = $this->evaluate($profile, $this->opportunity(['education_level' => EducationLevel::UNDERGRADUATE]));
+        $this->assertFalse($fit->meetsRequirements());
+        $this->assertStringContainsString('has not said it accepts O-Level holders', implode(' ', $fit->failureMessages()));
 
-        $this->assertTrue($this->evaluate($profile, $undergraduate)->meetsRequirements());
+        // Ticked: judged on what else it states, which here is nothing.
+        $this->assertTrue($this->evaluate($profile, $this->opportunity([
+            'education_level' => EducationLevel::UNDERGRADUATE,
+            'accepts_o_level' => true,
+        ]))->meetsRequirements());
 
-        // The same listing, once it states the requirement.
+        // Ticked, but the listing's own floor is A-Level: still refused.
         $this->assertFalse(
             $this->evaluate($profile, $this->opportunity([
                 'education_level' => EducationLevel::UNDERGRADUATE,
+                'accepts_o_level' => true,
                 'minimum_education_level' => EducationLevel::A_LEVEL,
             ]))->meetsRequirements()
         );
+    }
+
+    /** A level that still reads O-Level beside recorded A-Level results is someone who has finished A-Level. */
+    public function test_recorded_a_level_results_lift_the_o_level_rule(): void
+    {
+        $profile = $this->profileWithAcademicResults(
+            [AcademicCatalogue::ZIMSEC_A_LEVEL => ['Mathematics' => 'B', 'Physics' => 'C', 'Chemistry' => 'C']],
+            ['education_level' => EducationLevel::O_LEVEL, 'province' => 'Harare', 'transcript_path' => 'c.pdf']
+        );
+
+        $this->assertTrue($this->evaluate($profile, $this->opportunity(['education_level' => EducationLevel::UNDERGRADUATE]))->meetsRequirements());
+    }
+
+    /** O-Level to a diploma or certificate is an ordinary step and needs no tick. */
+    public function test_o_level_to_a_diploma_needs_no_tick(): void
+    {
+        $profile = $this->profileWithAcademicResults(
+            [AcademicCatalogue::ZIMSEC_O_LEVEL => ['Mathematics' => 'B', 'English Language' => 'C']],
+            ['education_level' => EducationLevel::O_LEVEL, 'province' => 'Harare', 'transcript_path' => 'c.pdf']
+        );
+
+        $this->assertTrue($this->evaluate($profile, $this->opportunity(['education_level' => EducationLevel::DIPLOMA]))->meetsRequirements());
     }
 
     /**

@@ -95,6 +95,16 @@ final class ListingReading
 
         if ($scopes->isNotEmpty()) {
             $add('Open to: ' . app(ListingScopes::class)->describe($scopes));
+        } elseif ($listing->open_to_all_programmes === true) {
+            $add('Open to: all programmes at this level');
+        }
+
+        if ($listing->accepts_o_level && EducationLevel::canonical($listing->education_level) === EducationLevel::UNDERGRADUATE) {
+            $add('O-Level holders may apply');
+        }
+
+        foreach (ListingScopes::conditionLines($listing->other_conditions) as $condition) {
+            $add('Students check for themselves (never counted as met or not met): ' . $condition);
         }
 
         // Programmes the wording names, when nothing was chosen above. (Fields named in the wording are
