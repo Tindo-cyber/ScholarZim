@@ -46,6 +46,14 @@ SCHOLARZIM_DEMO_SEED=true
 
 Migrations run automatically on container start (`docker/entrypoint.sh`). Set `SCHOLARZIM_RUN_MIGRATIONS=false` to suppress that if you prefer to migrate by hand.
 
+`2025_01_01_000020_add_registration_details_to_provider_profiles` (country of registration and
+related verification fields for provider organisations) is additive: nullable columns and one index,
+no rows rewritten and nothing backfilled, so it is safe to run against existing data and needs no
+new environment variables. Existing providers keep working; their country shows as *Not recorded*
+until an administrator records it from `/admin/providers/{id}` - see `docs/international-providers.md`.
+Rolling it back (`php artisan migrate:rollback --step=1`) drops only those columns, and with them any
+countries recorded since.
+
 The health check is `/` — the public landing page. Laravel exposes no dedicated actuator-style endpoint.
 
 ### Aiven MySQL (recommended with Render)

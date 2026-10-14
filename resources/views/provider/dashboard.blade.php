@@ -53,8 +53,12 @@
             <p class="mb-0">
                 @if($providerProfile?->rejection_reason)
                     {{ $providerProfile->rejection_reason }}
+                @elseif($providerProfile?->isAwaitingInformation())
+                    An administrator needs more information before verifying your organisation:
+                    <span class="d-block fw-semibold mt-1" style="white-space: pre-line">{{ $providerProfile->info_request_note }}</span>
+                    <a class="d-inline-block mt-2" href="#registration-details">Update your registration details</a>
                 @else
-                    An administrator is reviewing your registration certificate. You can publish scholarships
+                    An administrator is reviewing your registration document. You can publish scholarships
                     as soon as your organisation is verified.
                 @endif
             </p>
@@ -368,6 +372,65 @@
                 provider to wonder why a link of theirs was flagged.
             --}}
             @php($profile = auth()->user()->providerProfile)
+            {{--
+                Where the organisation is registered and how. Editable only while
+                it waits for verification (and so to answer a request for more
+                information); once an administrator has checked it against the
+                document, it is shown, not changed from here.
+            --}}
+            @if($profile)
+                <div class="card mb-4" id="registration-details">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Registration details</h2>
+                    </div>
+                    <div class="card-body">
+                        @if(! $profile->isReviewed() && strcasecmp((string) auth()->user()->account_status, \App\Support\AccountStatus::PENDING) === 0)
+                            <form method="POST" action="{{ route('provider.registration.update') }}" enctype="multipart/form-data">
+                                @csrf
+                                @include('providers.partials.registration-fields', [
+                                    'countries' => \App\Support\Countries::options(),
+                                    'profile' => $profile,
+                                    'bag' => 'registration',
+                                    'idPrefix' => 'provider-reg',
+                                ])
+                                <x-form.input name="contact_name" id="provider-reg-contact-name" label="Contact person" required
+                                              :value="$profile->contact_name" bag="registration" maxlength="255" />
+                                <x-form.input name="contact_role" id="provider-reg-contact-role" label="Their position" required
+                                              :value="$profile->contact_role" bag="registration" maxlength="150" />
+                                <div class="mb-3">
+                                    <label class="form-label" for="provider-reg-certificate">Replace registration document (optional)</label>
+                                    <input class="form-control @error('certificate', 'registration') is-invalid @enderror" type="file"
+                                           id="provider-reg-certificate" name="certificate" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                           aria-describedby="provider-reg-certificate-hint">
+                                    <div class="form-text" id="provider-reg-certificate-hint">
+                                        On file: {{ $profile->certificate_filename }}. PDF, Word, JPG, or PNG, up to 5 MB.
+                                    </div>
+                                    @error('certificate', 'registration')
+                                        <div class="invalid-feedback d-block">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <x-submit-button label="Update and send for review" size="sm" tone="outline-primary" busy-label="Saving..." />
+                            </form>
+                        @else
+                            <dl class="row small mb-0">
+                                <dt class="col-6">Registered in</dt>
+                                <dd class="col-6">{{ $profile->registrationCountryName() ?? 'Not recorded' }}</dd>
+                                <dt class="col-6">Registration number</dt>
+                                <dd class="col-6">{{ $profile->registration_number ?? ($profile->registration_number_note ? 'None (explained)' : 'Not recorded') }}</dd>
+                                <dt class="col-6">Organisation type</dt>
+                                <dd class="col-6">{{ $profile->organisationTypeLabel() }}</dd>
+                            </dl>
+                            @unless($profile->hasRegistrationCountry())
+                                <p class="small text-secondary mb-0 mt-2">
+                                    Your account was registered before we asked where organisations are registered.
+                                    An administrator will record it from your registration document; you do not need to
+                                    do anything, and your listings are unaffected.
+                                </p>
+                            @endunless
+                        @endif
+                    </div>
+                </div>
+            @endif
             <div class="card mb-4" id="organisation-website">
                 <div class="card-header">
                     <h2 class="h6 fw-semibold mb-0">Organisation website</h2>

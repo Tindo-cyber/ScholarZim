@@ -4,6 +4,8 @@
 
 ScholarZim is a scholarship and academic opportunity management platform for Zimbabwean students and verified providers. It supports applicant registration, verified provider onboarding, scholarship applications, ScholarFit matching, and administrative oversight.
 
+Providers may be registered in any country: registration records the organisation's country of registration separately from each scholarship's study destination, and every organisation goes through the same administrator verification before it can publish (see `docs/international-providers.md`).
+
 ## Quick demo (viva)
 
 ```bash

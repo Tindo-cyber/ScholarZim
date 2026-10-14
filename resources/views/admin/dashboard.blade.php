@@ -133,6 +133,7 @@
 
         <x-data-table :columns="[
                           'Organisation',
+                          'Registered in',
                           'Type',
                           'Submitted',
                           'Status',
@@ -147,7 +148,13 @@
             @foreach($pendingProviders as $profile)
                 <tr>
                     <x-data-table.cell label="Organisation">
-                        <span class="fw-semibold d-block">{{ $profile->user?->displayName() }}</span>
+                        <a class="fw-semibold d-block text-decoration-none"
+                           href="{{ route('admin.providers.show', $profile->user_id) }}">{{ $profile->user?->displayName() }}</a>
+                        @if($profile->registration_number)
+                            <span class="small text-secondary d-block">Reg. no. {{ $profile->registration_number }}</span>
+                        @elseif($profile->registration_number_note)
+                            <span class="small text-secondary d-block">No registration number - explanation given</span>
+                        @endif
                         @if($profile->website)
                             <a class="small text-decoration-none d-block mt-1" href="{{ $profile->website }}"
                                target="_blank" rel="noopener noreferrer">{{ $profile->website }}</a>
@@ -161,6 +168,15 @@
                         @endif
                     </x-data-table.cell>
 
+                    {{-- Where the organisation is registered, never where its scholarships are held. --}}
+                    <x-data-table.cell label="Registered in" class="small">
+                        @if($profile->hasRegistrationCountry())
+                            {{ $profile->registrationCountryName() }}
+                        @else
+                            <span class="text-warning-emphasis">Not recorded</span>
+                        @endif
+                    </x-data-table.cell>
+
                     <x-data-table.cell label="Type" class="small">{{ $profile->organisationTypeLabel() }}</x-data-table.cell>
 
                     <x-data-table.cell label="Submitted" class="small text-secondary">
@@ -171,11 +187,18 @@
                     </x-data-table.cell>
 
                     <x-data-table.cell label="Status">
-                        <x-status-badge label="Awaiting review" tone="warning" />
+                        @php($verification = $profile->verificationStatus())
+                        <x-status-badge :label="\App\Support\ProviderVerificationStatus::label($verification)"
+                                        :tone="\App\Support\ProviderVerificationStatus::tone($verification)" />
+                        @if($profile->info_provided_at && ! $profile->isAwaitingInformation())
+                            <span class="small text-secondary d-block mt-1">Details updated {{ $profile->info_provided_at->diffForHumans() }}</span>
+                        @endif
                     </x-data-table.cell>
 
                     <x-data-table.cell label="Decision" align="end">
                         <div class="d-inline-flex flex-wrap gap-2 justify-content-end">
+                            <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.providers.show', $profile->user_id) }}">Review</a>
+                            @if($profile->hasRegistrationCountry())
                             {{--
                                 Approving hands an outside organisation the right
                                 to publish on the platform, and tells them so by
@@ -188,7 +211,7 @@
                                               trigger-class="btn btn-sm btn-success"
                                               confirm-label="Verify provider"
                                               tone="success"
-                                              message="They can publish scholarships from that moment, and every listing they post still comes here for review before it goes public. Check the registration certificate first.">
+                                              :message="'Registered in ' . $profile->registrationCountryName() . '. They can publish scholarships from that moment, under the same review and trust rules as every provider. Check the registration document against that country and the details given first.'">
                                 @if($profile->website)
                                     <div class="form-check mt-3">
                                         <input class="form-check-input" type="checkbox" name="website_checked" value="1"
@@ -211,6 +234,7 @@
                                 <x-form.textarea name="reason" :id="'provider-reason-' . $profile->user_id"
                                                  label="Reason (sent to the organisation)" :rows="4" required />
                             </x-confirm-dialog>
+                            @endif
                         </div>
                     </x-data-table.cell>
                 </tr>

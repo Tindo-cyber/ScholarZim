@@ -181,6 +181,7 @@ class EmailService
             'NEW_APPLICATION' => 'You received a new application',
             'PROVIDER_APPROVED' => 'Your provider account was approved',
             'PROVIDER_REJECTED' => 'Update on your provider account',
+            'PROVIDER_INFO_REQUESTED' => 'We need more information to verify your organisation',
             'SCHOLARSHIP_APPROVED' => 'Your scholarship post is now live',
             'SCHOLARSHIP_REJECTED' => 'Your scholarship post needs changes',
             'SCHOLARSHIP_PENDING_REVIEW' => 'A scholarship is awaiting review',

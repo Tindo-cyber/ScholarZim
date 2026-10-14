@@ -52,8 +52,19 @@ something that was deliberately removed, not a regression.
 
 ## Provider verification
 
-- [ ] Provider registration requires a certificate PDF, organisation type, and registration
-      number
+- [ ] Provider registration requires the organisation name, a country of registration (nothing
+      pre-selected; the filter box narrows the list), organisation type, a registration number
+      **or** an explanation, a contact name and position, and a registration document
+- [ ] Register organisations in Zimbabwe, the United Kingdom and South Africa: each lands in the
+      same **Providers awaiting verification** queue with its country in **Registered in**
+- [ ] **Review** shows country (with code), number or explanation, contact, website, document,
+      submission date and history; opening the document adds a `VIEW_PROVIDER_CERTIFICATE` entry
+- [ ] **Request more information**: the organisation stays pending, sees the note on its dashboard,
+      updates its details or document, and returns to *Awaiting review*
+- [ ] An older provider with no country shows *Not recorded* (never Zimbabwe); a pending one cannot
+      be approved until an admin records the country under **Registration details**
+- [ ] An approved foreign provider can post listings for Zimbabwe, another country and *Online /
+      distance*; the destination is never filled in from its country of registration
 - [ ] A pending provider can sign in and see their dashboard, but cannot publish a listing
 - [ ] Admin can approve or reject a pending provider; the certificate can be viewed either way
 - [ ] A non-admin cannot reach the provider-certificate route directly by URL

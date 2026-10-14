@@ -15,9 +15,14 @@ use Tests\TestCase;
 /**
  * What registration does and does not ask for.
  *
- * Retired: the provider "registration number" (the certificate is what an
- * administrator actually verifies) and the applicant "terms of use and privacy
- * policy" checkbox (there is no terms or privacy page for it to point at).
+ * Retired: the applicant "terms of use and privacy policy" checkbox (there is
+ * no terms or privacy page for it to point at).
+ *
+ * Restored: the provider registration number. It was retired when every
+ * provider was assumed to be Zimbabwean and the certificate alone was checked.
+ * With organisations registering from any country it is asked again - any
+ * format accepted - and an organisation without one explains why instead, so
+ * the administrator has something to check the document against either way.
  *
  * Kept: a provider still confirms they are registered and authorised to act for
  * the organisation. That is an attestation, not terms of use, and it is now
@@ -55,8 +60,12 @@ class RegistrationFieldsTest extends TestCase
 
         return array_merge([
             'full_name' => 'Chikafu Education Trust',
+            'contact_name' => 'Rumbi Chikafu',
+            'contact_role' => 'Trustee',
             'email' => "trust{$this->sequence}@example.test",
             'organisation_type' => ProviderOrgType::ALL[0],
+            'registration_country' => 'ZW',
+            'registration_number' => 'MA 1234/2015',
             'certificate' => UploadedFile::fake()->create('registration.pdf', 40, 'application/pdf'),
             'password' => 'ChangeMe123',
             'password_confirmation' => 'ChangeMe123',
@@ -95,28 +104,42 @@ class RegistrationFieldsTest extends TestCase
 
     // ------------------------------------------------------- provider ---------
 
-    public function test_the_provider_form_has_no_registration_number_or_terms(): void
+    public function test_the_provider_form_asks_for_a_registration_number_but_no_terms(): void
     {
         $html = $this->get('/register/provider')->assertOk()->getContent();
 
-        $this->assertStringNotContainsString('name="registration_number"', $html);
-        $this->assertStringNotContainsStringIgnoringCase('Registration number', $html);
+        $this->assertStringContainsString('name="registration_number"', $html);
+        $this->assertStringContainsString('name="registration_number_note"', $html);
         $this->assertStringNotContainsString('name="terms"', $html);
         // The certificate upload and the authorisation confirmation remain.
         $this->assertStringContainsString('name="certificate"', $html);
         $this->assertStringContainsString('name="authorised"', $html);
     }
 
-    public function test_a_provider_can_register_without_a_registration_number(): void
+    public function test_a_provider_without_a_registration_number_can_register_by_explaining_why(): void
     {
-        $this->post('/register/provider', $this->providerPayload(['email' => 'no-number@example.test']))
-            ->assertSessionHasNoErrors();
+        $this->post('/register/provider', $this->providerPayload([
+            'email' => 'no-number@example.test',
+            'registration_number' => '',
+            'registration_number_note' => 'A public university established by an Act of Parliament; the Act is attached.',
+        ]))->assertSessionHasNoErrors();
 
         $user = User::where('email', 'no-number@example.test')->firstOrFail();
         $profile = ProviderProfile::where('user_id', $user->user_id)->firstOrFail();
 
-        $this->assertNull($profile->getAttributes()['registration_number'] ?? null);
+        $this->assertNull($profile->registration_number);
+        $this->assertStringContainsString('Act of Parliament', $profile->registration_number_note);
         $this->assertNotEmpty($profile->certificate_path, 'the certificate is still required and stored');
+    }
+
+    public function test_a_provider_with_neither_a_number_nor_an_explanation_is_refused(): void
+    {
+        $this->post('/register/provider', $this->providerPayload([
+            'email' => 'neither@example.test',
+            'registration_number' => '',
+        ]))->assertSessionHasErrors(['registration_number', 'registration_number_note']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'neither@example.test']);
     }
 
     public function test_a_provider_must_still_confirm_they_are_authorised(): void
@@ -137,58 +160,46 @@ class RegistrationFieldsTest extends TestCase
         $this->post('/register/provider', $payload)->assertSessionHasErrors('certificate');
     }
 
-    /** A client still sending the old number is not refused, and it is not stored. */
-    public function test_a_stale_registration_number_is_ignored_and_not_stored(): void
+    public function test_a_registration_number_in_any_format_is_stored(): void
     {
-        $this->post('/register/provider', $this->providerPayload([
-            'email' => 'stale-number@example.test',
-            'registration_number' => 'PVO 99/2026',
-        ]))->assertSessionHasNoErrors();
+        foreach (['PVO 99/2026', '2019/123456/08', 'CH-020.3.912.345-6', '12345678', 'NPO 123-456'] as $i => $number) {
+            $this->post('/register/provider', $this->providerPayload([
+                'email' => "number{$i}@example.test",
+                'registration_number' => $number,
+            ]))->assertSessionHasNoErrors();
 
-        $user = User::where('email', 'stale-number@example.test')->firstOrFail();
-
-        $this->assertDatabaseMissing('provider_profiles', ['user_id' => $user->user_id, 'registration_number' => 'PVO 99/2026']);
+            $user = User::where('email', "number{$i}@example.test")->firstOrFail();
+            $this->assertDatabaseHas('provider_profiles', ['user_id' => $user->user_id, 'registration_number' => $number]);
+        }
     }
 
-    public function test_the_admin_review_list_no_longer_shows_a_registration_number(): void
+    public function test_a_registration_number_with_markup_or_symbols_is_refused(): void
+    {
+        $this->post('/register/provider', $this->providerPayload([
+            'email' => 'markup@example.test',
+            'registration_number' => '<script>1</script>',
+        ]))->assertSessionHasErrors('registration_number');
+    }
+
+    public function test_the_admin_review_list_shows_the_registration_number(): void
     {
         $admin = User::where('email', 'admin@scholarzim.co.zw')->firstOrFail();
 
         $html = $this->actingAs($admin)->get('/admin/dashboard')->assertOk()->getContent();
 
-        // The seeded pending provider's row is on the page, so the absence below means something.
         $pending = ProviderProfile::whereHas('user', fn ($q) => $q->where('email', 'trust@scholarzim.co.zw'))->firstOrFail();
         $this->assertStringContainsString(e($pending->user->displayName()), $html);
-
-        $this->assertDoesNotMatchRegularExpression('/>\s*Reg\.\s/', $html);
+        $this->assertStringContainsString('Reg. no. ' . e($pending->registration_number), $html);
     }
 
     // ------------------------------------------------------ database ----------
 
-    /** Existing numbers are kept on record, but a new provider needs none. */
+    /** Existing numbers are kept on record, and an organisation without one may leave it blank. */
     public function test_the_registration_number_column_is_nullable_not_dropped(): void
     {
         $column = collect(Schema::getColumns('provider_profiles'))->firstWhere('name', 'registration_number');
 
         $this->assertNotNull($column, 'the column is kept so existing data is not destroyed');
         $this->assertTrue($column['nullable'], 'the column must accept a profile registered without a number');
-    }
-
-    public function test_nothing_in_the_application_code_reads_the_registration_number(): void
-    {
-        $offenders = [];
-
-        foreach ([app_path(), resource_path('views'), base_path('routes')] as $dir) {
-            $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS));
-
-            foreach ($files as $file) {
-                if (preg_match('/\.(php|js)$/', $file->getFilename())
-                    && str_contains(file_get_contents($file->getPathname()), 'registration_number')) {
-                    $offenders[] = $file->getPathname();
-                }
-            }
-        }
-
-        $this->assertSame([], $offenders, 'registration_number must not be read or written by the application');
     }
 }

@@ -240,6 +240,10 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
     // The organisation's website, which an administrator then confirms.
     Route::post('/provider/website', [Provider\WebsiteController::class, 'update'])->name('provider.website.update');
 
+    // Registration details, while still awaiting verification (e.g. answering a request for more information).
+    Route::post('/provider/registration', [Provider\RegistrationDetailsController::class, 'update'])
+        ->name('provider.registration.update');
+
     Route::get('/provider/applications', [Provider\ApplicationReviewController::class, 'index'])
         ->name('provider.applications');
     Route::get('/provider/applications/{id}', [Provider\ApplicationReviewController::class, 'show'])
@@ -345,6 +349,15 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
     Route::post('/users/providers/{id}/trust', [Admin\ProviderTrustController::class, 'update'])
         ->whereNumber('id')
         ->name('providers.trust');
+    Route::get('/providers/{userId}', [Admin\ProviderReviewController::class, 'show'])
+        ->whereNumber('userId')
+        ->name('providers.show');
+    Route::post('/users/providers/{id}/request-information', [Admin\ProviderReviewController::class, 'requestInformation'])
+        ->whereNumber('id')
+        ->name('providers.requestInformation');
+    Route::post('/users/providers/{id}/registration', [Admin\ProviderReviewController::class, 'updateRegistration'])
+        ->whereNumber('id')
+        ->name('providers.registration');
     Route::post('/users/providers/{id}/reject', [Admin\UserController::class, 'rejectProvider'])
         ->whereNumber('id')
         ->name('providers.reject');
