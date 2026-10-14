@@ -56,7 +56,7 @@ class ApplicationGateTest extends TestCase
     public function test_a_primary_pupil_cannot_apply_to_an_undergraduate_award(): void
     {
         $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'National Merit Undergraduate Bursary')->firstOrFail();
 
         $this->assertNull($opportunity->minimum_education_level, 'fixture must state no minimum');
 
@@ -74,7 +74,7 @@ class ApplicationGateTest extends TestCase
     public function test_a_primary_pupil_is_refused_once_the_listing_requires_a_level(): void
     {
         $kudzai = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'National Merit Undergraduate Bursary')->firstOrFail();
         $opportunity->forceFill(['minimum_education_level' => \App\Support\EducationLevel::A_LEVEL])->save();
 
         $this->actingAs($kudzai)->post('/apply/' . $opportunity->opportunity_id . '/quick');
@@ -134,7 +134,7 @@ class ApplicationGateTest extends TestCase
     public function test_an_o_level_applicant_can_apply_to_a_degree_award_that_takes_o_level_holders(): void
     {
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'National Merit Undergraduate Bursary')->firstOrFail();
         $opportunity->forceFill(['accepts_o_level' => true])->save();
 
         $this->actingAs($farai)
@@ -250,7 +250,7 @@ class ApplicationGateTest extends TestCase
     public function test_the_wizard_asks_an_o_level_applicant_for_the_recommendation_letter_the_matrix_now_requires(): void
     {
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
-        $opportunity = Opportunity::where('title', 'Zimbabwe Tech Futures Bursary')->firstOrFail();
+        $opportunity = Opportunity::where('title', 'National Merit Undergraduate Bursary')->firstOrFail();
         $opportunity->forceFill(['accepts_o_level' => true])->save();
 
         $response = $this->actingAs($farai)->get('/apply/' . $opportunity->opportunity_id);

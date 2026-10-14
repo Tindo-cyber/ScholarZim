@@ -286,20 +286,20 @@ class EligibilityExplanationTest extends TestCase
     /** A progression note is rendered, and is not dressed up as a requirement. */
     public function test_an_advisory_progression_note_is_shown_apart_from_requirements(): void
     {
-        // Unusual, not impossible: a graduate looking at a PhD award, skipping the Master's.
-        $award = $this->listing('Doctoral Award', ['education_level' => EducationLevel::PHD, 'target_field' => null]);
+        // A graduate looking at a Master's award: their next stage, reported as a note.
+        $award = $this->listing('Masters Award', ['education_level' => EducationLevel::MASTERS, 'target_field' => null]);
         $this->profile()->update(['education_level' => EducationLevel::UNDERGRADUATE]);
-        $aLevel = $this->applicant;
+        $graduate = $this->applicant;
         // Recorded results make the profile complete, so the page reaches its verdict wording
         // (without them it says "complete your profile" instead).
         $this->giveResults(['Mathematics' => 'A']);
 
-        $html = $this->actingAs($aLevel)
+        $html = $this->actingAs($graduate)
             ->get('/scholarships/'.$award->opportunity_id)
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('not a usual next step', $html);
+        $this->assertStringContainsString('a recognised next step from', $html);
         // The note is advice, not a rule: it must not turn the verdict against the applicant.
         $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
     }

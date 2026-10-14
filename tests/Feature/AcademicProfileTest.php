@@ -66,6 +66,12 @@ class AcademicProfileTest extends TestCase
         return ApplicantProfile::where('user_id', $this->student->user_id)->firstOrFail();
     }
 
+    /** IGCSE is an O-Level qualification: the results of the level an O-Level leaver has completed. */
+    private function asOLevelLeaver(): void
+    {
+        $this->profile()->forceFill(['education_level' => EducationLevel::O_LEVEL])->save();
+    }
+
     /** The non-academic half of the profile form, as the page posts it. */
     private function baseFields(array $overrides = []): array
     {
@@ -344,10 +350,12 @@ class AcademicProfileTest extends TestCase
 
     public function test_an_applicant_can_record_a_nine_to_one_igcse_result(): void
     {
+        $this->asOLevelLeaver();
+
         $igcse = AcademicQualification::findByKey(AcademicCatalogue::CAMBRIDGE_IGCSE);
 
         $this->actingAs($this->student)
-            ->post('/applicant/profile', $this->baseFields() + $this->academicFields([
+            ->post('/applicant/profile', $this->baseFields(['education_level' => EducationLevel::O_LEVEL]) + $this->academicFields([
                 ['qualification' => $igcse, 'subject' => 'Mathematics (9-1)', 'result' => '8'],
                 ['qualification' => $igcse, 'subject' => 'Biology', 'result' => 'A'],
             ]))
@@ -368,10 +376,12 @@ class AcademicProfileTest extends TestCase
 
     public function test_a_letter_grade_is_refused_on_a_nine_to_one_syllabus(): void
     {
+        $this->asOLevelLeaver();
+
         $igcse = AcademicQualification::findByKey(AcademicCatalogue::CAMBRIDGE_IGCSE);
 
         $this->actingAs($this->student)
-            ->post('/applicant/profile', $this->baseFields() + $this->academicFields([
+            ->post('/applicant/profile', $this->baseFields(['education_level' => EducationLevel::O_LEVEL]) + $this->academicFields([
                 ['qualification' => $igcse, 'subject' => 'Mathematics (9-1)', 'result' => 'B'],
             ]))
             ->assertSessionHasErrors('academic_subject_results.0.result');
@@ -381,10 +391,12 @@ class AcademicProfileTest extends TestCase
 
     public function test_a_numeral_is_refused_on_an_a_star_to_g_syllabus(): void
     {
+        $this->asOLevelLeaver();
+
         $igcse = AcademicQualification::findByKey(AcademicCatalogue::CAMBRIDGE_IGCSE);
 
         $this->actingAs($this->student)
-            ->post('/applicant/profile', $this->baseFields() + $this->academicFields([
+            ->post('/applicant/profile', $this->baseFields(['education_level' => EducationLevel::O_LEVEL]) + $this->academicFields([
                 // 0580 Mathematics is graded A*-G; a 7 is not a grade it awards.
                 ['qualification' => $igcse, 'subject' => 'Mathematics', 'result' => '7'],
             ]))
@@ -396,6 +408,8 @@ class AcademicProfileTest extends TestCase
     /** The picker offers each syllabus only its own scale. */
     public function test_the_form_offers_each_igcse_syllabus_only_its_own_grades(): void
     {
+        $this->asOLevelLeaver();
+
         $html = $this->actingAs($this->student)->get('/applicant/profile')->assertOk()->getContent();
 
         $igcse = AcademicQualification::findByKey(AcademicCatalogue::CAMBRIDGE_IGCSE);
@@ -546,17 +560,48 @@ class AcademicProfileTest extends TestCase
      * Levels at or below are offered, because holding O-Level results is the
      * ordinary case for an A-Level applicant rather than an exception.
      */
-    public function test_an_a_level_applicant_is_offered_o_level_and_a_level_but_not_grade_7(): void
+    public function test_an_a_level_leaver_is_offered_a_level_results_only(): void
     {
         $offered = $this->profile()->selectableQualifications()->pluck('qualification_key')->all();
 
-        $this->assertContains(AcademicCatalogue::ZIMSEC_O_LEVEL, $offered);
         $this->assertContains(AcademicCatalogue::ZIMSEC_A_LEVEL, $offered);
         $this->assertContains(AcademicCatalogue::CAMBRIDGE_A_LEVEL, $offered);
+        $this->assertNotContains(AcademicCatalogue::ZIMSEC_O_LEVEL, $offered, 'no scholarship has asked for O-Level results');
         $this->assertNotContains(AcademicCatalogue::ZIMBABWE_PRIMARY, $offered, 'Grade 7 results are for Primary applicants only');
+        $this->assertNotContains(AcademicCatalogue::TERTIARY, $offered, 'a degree is above them');
+    }
 
-        // A degree is above them, so it is not offered.
-        $this->assertNotContains(AcademicCatalogue::TERTIARY, $offered);
+    public function test_o_level_results_are_offered_to_an_a_level_leaver_when_a_scholarship_asks_for_them(): void
+    {
+        $oLevel = AcademicQualification::findByKey(AcademicCatalogue::ZIMSEC_O_LEVEL);
+        $listing = \App\Models\Opportunity::where('title', 'National Merit Undergraduate Bursary')->firstOrFail();
+        \App\Models\OpportunitySubjectRequirement::create([
+            'opportunity_id' => $listing->opportunity_id,
+            'qualification_id' => $oLevel->id,
+            'subject_id' => $this->subject($oLevel, 'English Language')->id,
+            'minimum_grade' => 'C',
+        ]);
+
+        $offered = $this->profile()->selectableQualifications()->pluck('qualification_key')->all();
+        $this->assertContains(AcademicCatalogue::ZIMSEC_O_LEVEL, $offered);
+        $this->assertContains(AcademicCatalogue::CAMBRIDGE_O_LEVEL, $offered, 'any O-Level board, not only the one named');
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields() + $this->academicFields([
+            ['qualification' => $oLevel, 'subject' => 'English Language', 'result' => 'B'],
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertSame(1, $this->profile()->academicResults()->count());
+    }
+
+    public function test_o_level_results_are_refused_for_an_a_level_leaver_when_nothing_asks_for_them(): void
+    {
+        $oLevel = AcademicQualification::findByKey(AcademicCatalogue::ZIMSEC_O_LEVEL);
+
+        $this->actingAs($this->student)->post('/applicant/profile', $this->baseFields() + $this->academicFields([
+            ['qualification' => $oLevel, 'subject' => 'English Language', 'result' => 'B'],
+        ]))->assertSessionHasErrors('academic_subject_results.0.qualification_id');
+
+        $this->assertSame(0, $this->profile()->academicResults()->count());
     }
 
     /**
@@ -609,7 +654,6 @@ class AcademicProfileTest extends TestCase
         $offered = $profile->fresh()->selectableQualifications()->pluck('qualification_key')->all();
 
         $this->assertNotContains(AcademicCatalogue::ZIMBABWE_PRIMARY, $offered);
-        $this->assertNotEmpty($offered, 'the other qualifications are still offered');
     }
 
     public function test_the_profile_page_does_not_offer_grade_7_to_a_student_above_primary(): void
@@ -618,7 +662,7 @@ class AcademicProfileTest extends TestCase
 
         // Not in the new-row template, and not as a row choice.
         $this->assertStringNotContainsString('Zimbabwe Primary (Grade 7)', $html);
-        $this->assertStringContainsString('ZIMSEC Ordinary Level', $html);
+        $this->assertStringContainsString('ZIMSEC Advanced Level', $html);
     }
 
     public function test_the_page_marks_grade_7_so_the_form_can_hide_it_the_moment_the_level_changes(): void

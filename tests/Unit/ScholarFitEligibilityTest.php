@@ -45,12 +45,13 @@ class ScholarFitEligibilityTest extends TestCase
                 'Chemistry' => 'A',
             ]],
             array_merge([
-                'education_level' => EducationLevel::UNDERGRADUATE,
+                // An A-Level leaver: the level on a profile is the one finished, and the default
+                // listing below is a degree award, their next stage.
+                'education_level' => EducationLevel::A_LEVEL,
                 'field_of_study' => 'Computer Science',
                 'province' => 'Harare',
                 'date_of_birth' => now()->subYears(21)->toDateString(),
-                // Undergraduate's academic evidence is a transcript, not an
-                // O/A-Level results certificate.
+                'results_certificate_path' => 'certs/results.pdf',
                 'transcript_path' => 'certs/transcript.pdf',
             ], $attributes)
         );
@@ -124,7 +125,7 @@ class ScholarFitEligibilityTest extends TestCase
     public function test_a_required_certificate_is_a_gate(): void
     {
         $fit = $this->evaluate(
-            $this->profile(['transcript_path' => null]),
+            $this->profile(['results_certificate_path' => null, 'transcript_path' => null]),
             $this->opportunity(['requires_results_certificate' => true])
         );
 
@@ -135,13 +136,13 @@ class ScholarFitEligibilityTest extends TestCase
     public function test_a_missing_document_is_needs_information_not_ineligible(): void
     {
         $fit = $this->evaluate(
-            $this->profile(['transcript_path' => null]),
+            $this->profile(['results_certificate_path' => null, 'transcript_path' => null]),
             $this->opportunity(['requires_results_certificate' => true])
         );
 
         $this->assertTrue($fit->needsInformation());
         $this->assertFalse($fit->isIneligible());
-        $this->assertStringContainsString('transcript', implode(' ', $fit->missingFields()));
+        $this->assertStringContainsString('results', implode(' ', $fit->missingFields()));
     }
 
     /** ...and a certain failure elsewhere outweighs it: there is no point asking for a document when the answer is already no. */
@@ -442,10 +443,10 @@ class ScholarFitEligibilityTest extends TestCase
     public function test_the_legacy_academic_results_text_field_is_never_used_as_evidence(): void
     {
         $profile = new ApplicantProfile([
-            'education_level' => EducationLevel::UNDERGRADUATE,
+            'education_level' => EducationLevel::A_LEVEL,
             'field_of_study' => 'Computer Science',
             'province' => 'Harare',
-            'transcript_path' => 'certs/transcript.pdf',
+            'results_certificate_path' => 'certs/results.pdf',
         ]);
         $profile->profile_id = 1;
         $profile->forceFill(['academic_results' => '18 points at A-Level (Mathematics A, Physics A, Chemistry A)']);
@@ -457,7 +458,7 @@ class ScholarFitEligibilityTest extends TestCase
             $fit->meetsRequirements(),
             'the legacy text claims a strong record, but no structured result exists to back it'
         );
-        // Not a refusal - an undergraduate may well have A-Level results, they are just not recorded - but
+        // Not a refusal - an A-Level leaver has A-Level results, they are just not recorded - but
         // the person is told exactly what to add.
         $this->assertFalse($fit->isIneligible());
         $this->assertTrue($fit->needsInformation());
@@ -558,7 +559,7 @@ class ScholarFitEligibilityTest extends TestCase
     public function test_an_unsupported_skill_condition_is_reported_but_never_blocks_eligibility(): void
     {
         $fit = $this->evaluate(
-            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
+            $this->profile(['education_level' => EducationLevel::A_LEVEL, 'field_of_study' => 'Computer Science & IT']),
             $this->opportunity(['target_field' => null, 'description' => 'This scholarship is intended for students with PHP programming skills.'])
         );
 
@@ -600,8 +601,9 @@ class ScholarFitEligibilityTest extends TestCase
     {
         $fit = $this->evaluate(
             $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
-            $this->opportunity(['target_field' => null, 
+            $this->opportunity(['target_field' => null,
                 'title' => "Master's Scholarship",
+                'education_level' => EducationLevel::MASTERS,
                 'minimum_education_level' => EducationLevel::UNDERGRADUATE,
             ])
         );
@@ -962,7 +964,7 @@ class ScholarFitEligibilityTest extends TestCase
     public function test_multiple_allowed_levels_are_satisfied_by_the_lower_one(): void
     {
         $fit = $this->evaluate(
-            $this->profile(['education_level' => EducationLevel::UNDERGRADUATE, 'field_of_study' => 'Computer Science & IT']),
+            $this->profile(['education_level' => EducationLevel::A_LEVEL, 'field_of_study' => 'Computer Science & IT']),
             $this->opportunity(['target_field' => null, 'title' => "Undergraduate and Master's Scholarship"])
         );
 

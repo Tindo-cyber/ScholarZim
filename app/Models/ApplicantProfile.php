@@ -184,20 +184,19 @@ class ApplicantProfile extends Model
     /**
      * The qualifications this applicant may record results under.
      *
-     * Bounded by the level they are at: a Grade 7 pupil has not sat O-Level, so
-     * offering them O-Level subjects invites a record that cannot be true. The
-     * editor previously listed all eight qualifications to everybody, which is
-     * what this fixes.
+     * The results of the level they have finished, and only those: an O-Level leaver records
+     * O-Level results, an A-Level leaver A-Level results. Results from a lower level are offered
+     * only when a provider asks for them - when a scholarship that is a next stage for this
+     * applicant states a subject requirement under that level, or (for A-Level) a points
+     * minimum. A Diploma holder looking at a degree bursary that asks for 12 A-Level points can
+     * then add their A-Level results; nobody is asked to fill in results no scholarship checks.
      *
-     * Anything at or below their level is offered, so an A-Level applicant can
-     * still record the O-Level results they hold - that is the ordinary case,
-     * not an exception. A qualification they already have results under is
-     * always included even if it now sits above their level, because an
-     * applicant who edits their level downwards must not find existing results
+     * A qualification they already have results under is always included, because an applicant
+     * whose level or the scholarships on offer change must not find existing results
      * unselectable and silently lose them on the next save.
      *
-     * An applicant who has not stated a level yet is filtered on nothing: there
-     * is no claim to contradict.
+     * An applicant who has not stated a level yet is filtered on nothing: there is no claim to
+     * contradict.
      */
     public function selectableQualifications(): \Illuminate\Database\Eloquent\Collection
     {
@@ -217,27 +216,61 @@ class ApplicantProfile extends Model
             ? $this->academicResults->pluck('qualification_id')->unique()->all()
             : $this->academicResults()->distinct()->pluck('qualification_id')->all();
 
-        $isPrimary = EducationLevel::isPrimary($this->education_level);
+        $askedFor = $this->levelsProvidersAskFor();
 
-        return $active->filter(function (AcademicQualification $qualification) use ($rung, $alreadyHeld, $isPrimary) {
+        return $active->filter(function (AcademicQualification $qualification) use ($rung, $alreadyHeld, $askedFor) {
             if (in_array((int) $qualification->id, array_map('intval', $alreadyHeld), true)) {
                 return true;
             }
 
-            // Grade 7 results belong to a Primary applicant. Anyone who has moved on is not asked for them
-            // (unless they already hold some, handled above so nothing is silently lost).
-            if ($qualification->isPrimaryEducation() && ! $isPrimary) {
-                return false;
-            }
-
-            $qualificationRung = EducationLadder::rung(
-                EducationLevel::canonical($qualification->education_level)
-            );
+            $level = EducationLevel::canonical($qualification->education_level);
+            $qualificationRung = EducationLadder::rung($level);
 
             // A qualification with no placeable level is left offered rather
             // than hidden - unknown is not a reason to take a choice away.
-            return $qualificationRung === null || $qualificationRung <= $rung;
+            if ($qualificationRung === null) {
+                return true;
+            }
+
+            return $qualificationRung === $rung
+                || ($qualificationRung < $rung && in_array($level, $askedFor, true));
         })->values();
+    }
+
+    /**
+     * The levels below this applicant's whose results a provider asks for, on an open scholarship
+     * that is a next stage for them. @return array<int, string>
+     */
+    public function levelsProvidersAskFor(): array
+    {
+        $levels = [];
+
+        $listings = Opportunity::query()
+            ->publiclyVisible()
+            ->where(fn ($q) => $q->whereNotNull('min_academic_points')->orWhereHas('subjectRequirements'))
+            ->with('subjectRequirements.qualification')
+            ->get();
+
+        foreach ($listings as $listing) {
+            if ($listing->education_level !== null
+                && \App\Services\ScholarFit\LevelJump::verdict($this->education_level, $listing->education_level) === \App\Services\ScholarFit\LevelJump::FAIL) {
+                continue;
+            }
+
+            if ($listing->min_academic_points !== null) {
+                $levels[EducationLevel::A_LEVEL] = true;
+            }
+
+            foreach ($listing->subjectRequirements as $requirement) {
+                $level = EducationLevel::canonical($requirement->qualification?->education_level);
+
+                if ($level !== null) {
+                    $levels[$level] = true;
+                }
+            }
+        }
+
+        return array_keys($levels);
     }
 
     /** Whether this applicant may record a result under a given qualification. */

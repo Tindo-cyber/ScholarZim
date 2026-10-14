@@ -278,7 +278,7 @@ class ScholarFitOpenToTest extends TestCase
     {
         $this->graduate('BSc Computer Science');
 
-        $listing = $this->listing(['description' => 'This bursary is open to Law students only.']);
+        $listing = $this->listing(['education_level' => EducationLevel::MASTERS, 'description' => 'This bursary is open to Law students only.']);
 
         $this->assertTrue($this->fit($listing)->meetsRequirements(), $this->messages($this->fit($listing)));
         $this->assertNull($this->programmeOutcome($this->fit($listing)));
@@ -288,7 +288,7 @@ class ScholarFitOpenToTest extends TestCase
     {
         $this->graduate('BSc Computer Science');
 
-        $listing = $this->listing(['description' => 'This bursary is open to Law students only.']);
+        $listing = $this->listing(['education_level' => EducationLevel::MASTERS, 'description' => 'This bursary is open to Law students only.']);
         $listing->forceFill(['open_to_all_programmes' => null, 'any_institution' => null])->save();
 
         $this->assertFalse($this->fit($listing->fresh())->meetsRequirements());

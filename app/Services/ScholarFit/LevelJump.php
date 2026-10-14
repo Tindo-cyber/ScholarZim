@@ -6,35 +6,22 @@ use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\EducationLevel;
 
 /**
- * Whether the level a listing is for is reachable from the level an applicant is at.
+ * Whether the level a listing is for is the next stage for the level an applicant has finished.
  *
- * Three answers, and only one of them refuses anybody:
+ * The level on a profile is the highest level the applicant has COMPLETED, and a scholarship
+ * is for the next stage of study. So an applicant is refused (FAIL) for:
  *
- *   FAIL        impossible: a Grade 7 pupil cannot start a diploma, an O-Level
- *               student cannot hold a PhD, a Master's graduate is not a Form 1
- *               pupil. Shown as a failed requirement.
- *   RECOGNISED  a usual next step (EducationPathway says so).
- *   UNUSUAL     neither impossible nor usual - going back a rung within tertiary,
- *               an Undergraduate for a Certificate. Reported as a note and left
- *               to the listing's own stated requirements to accept or refuse.
+ *   - the level they have already finished, or anything below it: an O-Level leaver is not
+ *     looking for O-Level funding, a Diploma holder is not looking for a Certificate;
+ *   - a Form 1 award unless they have finished Primary (it is a Grade 7 transition bursary);
+ *   - anything beyond O-Level for someone who has finished Primary;
+ *   - a postgraduate award (Postgraduate, Masters, PhD) without a degree;
+ *   - a PhD without a Master's - a degree or postgraduate diploma alone is not the way in.
  *
- * The line for FAIL is deliberately narrow. EducationPathway used to refuse
- * anything off its table of usual steps, which made a level imply its destinations
- * and turned away people no listing had turned away. Only a jump no one actually
- * makes is a failure here:
- *
- *   - a Form 1 award is a Grade 7 transition bursary: only a Primary pupil is in it;
- *   - a Primary pupil can enter Form 1 and O-Level and nothing above;
- *   - a secondary student cannot hold a postgraduate award (Postgraduate, Masters,
- *     PhD);
- *   - a Certificate or Diploma student cannot hold a postgraduate award either: those
- *     are entered from a degree, so it is no more reachable than for a school student;
- *   - anyone at tertiary level or above is not looking for an O-Level or A-Level
- *     award. Rare enough that the provider can handle it, and better than showing
- *     it as a match.
- *
- * What stays a note: an Undergraduate for a PhD (a degree holder going straight to doctoral
- * study happens), and a Masters student for an undergraduate award.
+ * Everything else is a RECOGNISED next step. O-Level straight to a degree is one, but
+ * EligibilityEvaluator refuses it unless the provider has said the award accepts O-Level
+ * holders. UNUSUAL is kept for levels EducationPathway does not list, which the rules above
+ * leave none of.
  *
  * HONOURS is not a level here. A Zimbabwean BSc / BCom Honours is a bachelor's degree
  * (Undergraduate) and the one-year South African honours is Postgraduate; the word is
@@ -90,13 +77,14 @@ final class LevelJump
             return true;
         }
 
-        // Never backwards. An award for a level below the applicant's is for someone they have
-        // already passed: an A-Level student for an O-Level award, a Diploma holder for a
-        // Certificate one, a graduate for a Diploma one, a Master's graduate for a postgraduate
-        // diploma. The same level stays open - a second-year student still needs funding for the
-        // degree they are in.
-        if (EducationLadder::rung($target) < EducationLadder::rung($applicant)) {
+        // Never the level already finished, and never below it: the scholarship is for the next stage.
+        if (EducationLadder::rung($target) <= EducationLadder::rung($applicant)) {
             return true;
+        }
+
+        // A PhD is entered from a Master's.
+        if ($target === EducationLevel::PHD) {
+            return $applicant !== EducationLevel::MASTERS;
         }
 
         if (EducationLevel::tier($applicant) === EducationLevel::TIER_SECONDARY) {
@@ -117,10 +105,20 @@ final class LevelJump
             return 'Level: this is a Form 1 transition award for Primary school leavers, and your profile states ' . $held . '.';
         }
 
+        $funds = 'Level: this scholarship funds ' . EducationLevel::label($targetLevel) . ' study, but ';
+
+        if (EducationLadder::rung($targetLevel) === EducationLadder::rung($applicantLevel)) {
+            return $funds . 'your profile says you have already finished ' . $held . '. Scholarships here are for the next stage of study.';
+        }
+
+        if ($target === EducationLevel::PHD && EducationLadder::rung($applicantLevel) < EducationLadder::rung(EducationLevel::MASTERS)) {
+            return $funds . 'a PhD is entered from a Master\'s degree, and your profile states ' . $held . '.';
+        }
+
         $below = (\App\Support\OpportunityLevelRules::position($applicantLevel) ?? 0)
             < (\App\Support\OpportunityLevelRules::position($targetLevel) ?? 0);
 
-        return 'Level: this scholarship funds ' . EducationLevel::label($targetLevel) . ' study, but your profile states '
+        return $funds . 'your profile states '
             . $held . ', which is ' . ($below ? 'below it - it cannot lead straight into it' : 'beyond it - you have already passed it') . '.';
     }
 }

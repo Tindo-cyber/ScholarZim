@@ -302,6 +302,8 @@ class LegacyFieldBackfillTest extends TestCase
         // The detail of this is tested in ProgrammeScopeEligibilityTest; here, end to end through the backfill.
         $profile = $this->student();
         $listing = $this->listing('Computer Science & IT');
+        // A graduate's next stage is a Master's (the level on a profile is the one finished).
+        $listing->forceFill(['education_level' => EducationLevel::MASTERS])->save();
         $this->backfill->run();
 
         $fit = app(\App\Services\RecommendationService::class)->evaluateOne($profile->user, $listing->fresh());

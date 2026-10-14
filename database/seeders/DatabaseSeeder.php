@@ -228,7 +228,8 @@ class DatabaseSeeder extends Seeder
     }
 
     /**
-     * The primary demo student: Undergraduate, with the full document set a
+     * The primary demo student: a degree graduate (Undergraduate is the highest level he has
+     * completed, so scholarships for a Master's are his next stage), with the full document set a
      * tertiary applicant is actually asked for - a transcript, not a results
      * certificate, which is the O/A-Level document. See
      * ApplicantProfile::hasRequiredAcademicEvidence().
@@ -254,12 +255,11 @@ class DatabaseSeeder extends Seeder
                 'gender' => Gender::MALE,
                 'institution_name' => 'University of Zimbabwe (UZ)',
                 'field_of_study' => 'Computer Science & IT',
-                'year_of_study' => 2,
                 'country' => FormOptions::DEFAULT_COUNTRY,
                 'province' => 'Harare',
-                'date_of_birth' => Carbon::today()->subYears(21)->toDateString(),
+                'date_of_birth' => Carbon::today()->subYears(23)->toDateString(),
                 'citizenship' => 'Zimbabwean',
-                'biography' => 'Second-year computing student building civic-tech projects for rural schools.',
+                'biography' => 'Computer Science graduate building civic-tech projects for rural schools.',
                 // Deliberately no results_certificate_path: Tendai is
                 // Undergraduate, so his academic evidence is a transcript, not
                 // an O/A-Level results certificate.
@@ -484,7 +484,8 @@ class DatabaseSeeder extends Seeder
         ApplicantProfile::updateOrCreate(
             ['user_id' => $applicant->user_id],
             [
-                'education_level' => EducationLevel::MASTERS,
+                // Studying a Master's now, so the highest level she has completed is her degree.
+                'education_level' => EducationLevel::UNDERGRADUATE,
                 'gender' => Gender::FEMALE,
                 'institution_name' => 'University of Zimbabwe (UZ)',
                 'field_of_study' => 'Medicine & Health Sciences',
@@ -596,7 +597,9 @@ class DatabaseSeeder extends Seeder
     private function opportunities(User $provider): void
     {
         $listings = [
-            ['Zimbabwe Tech Futures Bursary', 'Computer Science & IT', EducationLevel::UNDERGRADUATE, 'Full Scholarship', 45],
+            // For computing graduates moving on to a Master's: the level on a profile is the one the applicant has
+            // finished, so the demo student (a BSc Computer Science graduate) is matched to the next stage.
+            ['Zimbabwe Tech Futures Bursary', 'Computer Science & IT', EducationLevel::MASTERS, 'Full Scholarship', 45],
             ['Midlands Engineering Excellence Award', 'Engineering', EducationLevel::UNDERGRADUATE, 'Tuition Only', 12],
             ['Harare Health Sciences Postgraduate Grant', 'Medicine & Health Sciences', EducationLevel::MASTERS, 'Tuition + Accommodation', 90],
             ['Rural Schools A-Level Support Fund', 'General Secondary', EducationLevel::A_LEVEL, 'Partial Scholarship', 30],

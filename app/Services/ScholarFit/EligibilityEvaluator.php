@@ -171,17 +171,17 @@ final class EligibilityEvaluator
             );
         }
 
-        // Never backwards, judged on recorded results too: a profile still set to O-Level with A-Level
-        // results on it belongs to someone who has finished A-Level, and an O-Level award is not for them.
+        // The next stage only, judged on recorded results too: a profile still set to O-Level with A-Level
+        // results on it belongs to someone who has finished A-Level, and an O-Level or A-Level award is not for them.
         $passed = $this->highestLevelRecorded($record);
 
         if ($passed !== null
             && EducationLadder::rung($opportunity->education_level) !== null
-            && EducationLadder::rung($opportunity->education_level) < EducationLadder::rung($passed)) {
+            && EducationLadder::rung($opportunity->education_level) <= EducationLadder::rung($passed)) {
             return RequirementOutcome::fail(
                 RequirementOutcome::TYPE_PROGRESSION,
                 'Level: this scholarship funds '.EducationLevel::label($opportunity->education_level).' study, but your results show you have '
-                    .'finished '.EducationLevel::label($passed).', which is beyond it - you have already passed it.',
+                    .'already finished '.EducationLevel::label($passed).'. Scholarships here are for the next stage of study.',
                 required: EducationLevel::label($opportunity->education_level),
                 actual: EducationLevel::label($passed),
             );
