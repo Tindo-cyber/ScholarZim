@@ -2,6 +2,7 @@
 
 namespace App\Services\ScholarFit;
 
+use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\EducationLevel;
 
 /**
@@ -89,9 +90,12 @@ final class LevelJump
             return true;
         }
 
-        // The level on a profile is the one the applicant has finished, so someone who has done
-        // A-Level is past O-Level: an O-Level award is not for them.
-        if ($applicant === EducationLevel::A_LEVEL && $target === EducationLevel::O_LEVEL) {
+        // Never backwards. An award for a level below the applicant's is for someone they have
+        // already passed: an A-Level student for an O-Level award, a Diploma holder for a
+        // Certificate one, a graduate for a Diploma one, a Master's graduate for a postgraduate
+        // diploma. The same level stays open - a second-year student still needs funding for the
+        // degree they are in.
+        if (EducationLadder::rung($target) < EducationLadder::rung($applicant)) {
             return true;
         }
 

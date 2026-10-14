@@ -286,9 +286,9 @@ class EligibilityExplanationTest extends TestCase
     /** A progression note is rendered, and is not dressed up as a requirement. */
     public function test_an_advisory_progression_note_is_shown_apart_from_requirements(): void
     {
-        // Unusual, not impossible: a Diploma holder looking at a Certificate award.
-        $award = $this->listing('Short Course Award', ['education_level' => EducationLevel::CERTIFICATE, 'target_field' => null]);
-        $this->profile()->update(['education_level' => EducationLevel::DIPLOMA]);
+        // Unusual, not impossible: a graduate looking at a PhD award, skipping the Master's.
+        $award = $this->listing('Doctoral Award', ['education_level' => EducationLevel::PHD, 'target_field' => null]);
+        $this->profile()->update(['education_level' => EducationLevel::UNDERGRADUATE]);
         $aLevel = $this->applicant;
         // Recorded results make the profile complete, so the page reaches its verdict wording
         // (without them it says "complete your profile" instead).

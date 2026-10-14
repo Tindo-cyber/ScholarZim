@@ -58,11 +58,11 @@ class LevelJumpTest extends TestCase
             EducationLevel::O_LEVEL => 'FPPPPPFFF',
             EducationLevel::A_LEVEL => 'FFPPPPFFF',
             EducationLevel::CERTIFICATE => 'FFFPPPFFF',
-            EducationLevel::DIPLOMA => 'FFFNPPFFF',
-            EducationLevel::UNDERGRADUATE => 'FFFNNPPPN',
-            EducationLevel::POSTGRADUATE => 'FFFNNNPPP',
-            EducationLevel::MASTERS => 'FFFNNNNPP',
-            EducationLevel::PHD => 'FFFNNNNNP',
+            EducationLevel::DIPLOMA => 'FFFFPPFFF',
+            EducationLevel::UNDERGRADUATE => 'FFFFFPPPN',
+            EducationLevel::POSTGRADUATE => 'FFFFFFPPP',
+            EducationLevel::MASTERS => 'FFFFFFFPP',
+            EducationLevel::PHD => 'FFFFFFFFP',
         ];
     }
 
@@ -162,11 +162,21 @@ class LevelJumpTest extends TestCase
         }
     }
 
-    public function test_above_target_within_tertiary_is_only_a_note(): void
+    public function test_an_award_below_the_applicants_level_is_refused_at_every_level(): void
     {
-        $this->assertSame(LevelJump::UNUSUAL, LevelJump::verdict(EducationLevel::UNDERGRADUATE, EducationLevel::CERTIFICATE));
-        $this->assertSame(LevelJump::UNUSUAL, LevelJump::verdict(EducationLevel::DIPLOMA, EducationLevel::CERTIFICATE));
-        $this->assertSame(LevelJump::UNUSUAL, LevelJump::verdict(EducationLevel::MASTERS, EducationLevel::UNDERGRADUATE));
+        $this->assertSame(LevelJump::FAIL, LevelJump::verdict(EducationLevel::UNDERGRADUATE, EducationLevel::CERTIFICATE));
+        $this->assertSame(LevelJump::FAIL, LevelJump::verdict(EducationLevel::DIPLOMA, EducationLevel::CERTIFICATE));
+        $this->assertSame(LevelJump::FAIL, LevelJump::verdict(EducationLevel::MASTERS, EducationLevel::UNDERGRADUATE));
+        $this->assertSame(LevelJump::FAIL, LevelJump::verdict(EducationLevel::MASTERS, EducationLevel::POSTGRADUATE));
+        $this->assertSame(LevelJump::FAIL, LevelJump::verdict(EducationLevel::PHD, EducationLevel::MASTERS));
+    }
+
+    public function test_the_same_level_stays_open_for_students_still_in_it(): void
+    {
+        foreach ([EducationLevel::O_LEVEL, EducationLevel::A_LEVEL, EducationLevel::CERTIFICATE, EducationLevel::DIPLOMA,
+                     EducationLevel::UNDERGRADUATE, EducationLevel::POSTGRADUATE, EducationLevel::MASTERS, EducationLevel::PHD] as $level) {
+            $this->assertSame(LevelJump::RECOGNISED, LevelJump::verdict($level, $level), $level);
+        }
     }
 
     public function test_an_unknown_level_on_either_side_gives_no_verdict(): void
@@ -228,6 +238,16 @@ class LevelJumpTest extends TestCase
         $this->assertStringContainsString('beyond', $outcome->message);
     }
 
+    public function test_recorded_results_count_as_well_as_the_stated_level(): void
+    {
+        // The profile still says O-Level, but A-Level results are recorded: they have finished A-Level.
+        $fit = $this->fit(EducationLevel::O_LEVEL, EducationLevel::O_LEVEL);
+        $outcome = $this->find($fit, RequirementOutcome::TYPE_PROGRESSION);
+
+        $this->assertTrue($fit->isIneligible());
+        $this->assertStringContainsString('your results show you have finished A Level', $outcome->message);
+    }
+
     public function test_a_form_1_award_says_it_is_for_primary_school_leavers(): void
     {
         $outcome = $this->find($this->fit(EducationLevel::O_LEVEL, EducationLevel::FORM_1), RequirementOutcome::TYPE_PROGRESSION);
@@ -238,7 +258,8 @@ class LevelJumpTest extends TestCase
 
     public function test_an_unusual_step_stays_an_advisory_note(): void
     {
-        $fit = $this->fit(EducationLevel::UNDERGRADUATE, EducationLevel::CERTIFICATE);
+        // A graduate going straight to a PhD, skipping the Master's: unusual, not impossible.
+        $fit = $this->fit(EducationLevel::UNDERGRADUATE, EducationLevel::PHD);
 
         $outcome = $this->find($fit, RequirementOutcome::TYPE_PROGRESSION);
 
@@ -271,11 +292,11 @@ class LevelJumpTest extends TestCase
 
     public function test_the_structured_level_wins_even_when_the_description_would_have_refused(): void
     {
-        // The words say Primary; the setting says Undergraduate. A Masters applicant is judged on the setting.
-        $fit = $this->fit(EducationLevel::MASTERS, EducationLevel::UNDERGRADUATE, 'This award is for primary school students.');
+        // The words say Primary; the setting says PhD. A Masters applicant is judged on the setting.
+        $fit = $this->fit(EducationLevel::MASTERS, EducationLevel::PHD, 'This award is for primary school students.');
 
         $this->assertNull($this->find($fit, RequirementOutcome::TYPE_DESCRIPTION_EDUCATION_LEVEL));
-        $this->assertFalse($fit->isIneligible(), 'above target within tertiary and postgraduate is a note');
+        $this->assertFalse($fit->isIneligible(), 'the structured level decides, not the description');
     }
 
     public function test_a_blank_structured_level_still_lets_the_description_speak(): void

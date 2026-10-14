@@ -4,7 +4,7 @@ L02,A1,ineligible,"Has finished A-Level, so is already past O-Level: refused."
 L02,A5,ineligible,"Tertiary students are not looking for an O-Level award."
 L03,A4,ineligible,"A Grade 7 pupil cannot start A-Level."
 L04,A3,ineligible,"O-Level to a degree award: the listing does not say it accepts O-Level holders, so refused (rule agreed 13 Oct 2026)."
-L04,A8,eligible,"A Masters student for an undergraduate bursary is unusual, a note only."
+L04,A8,ineligible,"A Masters graduate is past undergraduate level: refused."
 L04,A10,eligible,"No rule is stated, so there is nothing to be missing."
 L05,A1,eligible,"A+B+B = 13."
 L05,A5,ineligible,"B+B+C = 11, short of 12."
@@ -12,7 +12,7 @@ L05,A6,eligible,"A+A+B = 14."
 L05,A9,ineligible,"C+C+C = 9."
 L05,A3,ineligible,"An O-Level student cannot have A-Level results yet, so the rule can never be met: refused."
 L05,A7,"needs information","Has reached A-Level or beyond but has recorded no A-Level results: ask, do not refuse."
-L05,A8,"needs information",Same.
+L05,A8,ineligible,Same.
 L05,A10,"needs information",Same.
 L05,A11,"needs information","No education level recorded at all: ask."
 L05,A12,eligible,"Mathematics B + Accounting A + Business Studies B = 13."
@@ -21,7 +21,7 @@ L06,A9,ineligible,"Mathematics C is below B."
 L06,A2,ineligible,"Sat A-Level but not Mathematics: refused."
 L06,A3,ineligible,"An O-Level student has no A-Level subjects yet: refused."
 L06,A7,"needs information","No A-Level results recorded: ask."
-L06,A8,"needs information",Same.
+L06,A8,ineligible,Same.
 L06,A10,"needs information",Same.
 L06,A11,"needs information","No education level recorded: ask."
 L07,A3,ineligible,"O-Level to a degree award: the listing does not say it accepts O-Level holders, so refused (rule agreed 13 Oct 2026)."
@@ -30,7 +30,7 @@ L07,A6,ineligible,"24 on the deadline."
 L07,A7,ineligible,"22 on the deadline."
 L07,A10,"needs information","No date of birth recorded."
 L07,A12,ineligible,"Born 2003: over 20 by March 2027."
-L08,A8,eligible,Harare.
+L08,A8,ineligible,Harare.
 L08,A10,"needs information","No province recorded."
 L09,A1,ineligible,Urban.
 L09,A2,eligible,Rural.
@@ -96,10 +96,10 @@ L22,A1,ineligible,"Chose only a degree (BSc Computer Science): a diploma award i
 L22,A2,ineligible,"Chose only degrees: refused for the level."
 L22,A3,"needs information","O-Level to a diploma is an ordinary step; has chosen no programme yet: ask."
 L22,A4,ineligible,"A Grade 7 pupil cannot start a diploma."
-L22,A5,eligible,"Information Systems is in ICT; an undergraduate for a diploma is unusual, a note only."
+L22,A5,ineligible,"An undergraduate is past Diploma level: refused, although Information Systems is in ICT."
 L22,A7,ineligible,"Accountancy is not ICT."
-L22,A9,eligible,"Old field of study Computer Science & IT reads as ICT."
-L22,A12,eligible,"Wants ICT next."
+L22,A9,ineligible,"Old field of study Computer Science & IT reads as ICT."
+L22,A12,ineligible,"Wants ICT next."
 L23,A1,ineligible,"A school student cannot hold a Masters award."
 L23,A5,eligible,"Her programme is in ICT; the German Masters is matched through the field, not a programme."
 L23,A6,ineligible,"Civil engineering is not ICT."

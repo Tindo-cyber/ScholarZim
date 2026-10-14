@@ -171,6 +171,22 @@ final class EligibilityEvaluator
             );
         }
 
+        // Never backwards, judged on recorded results too: a profile still set to O-Level with A-Level
+        // results on it belongs to someone who has finished A-Level, and an O-Level award is not for them.
+        $passed = $this->highestLevelRecorded($record);
+
+        if ($passed !== null
+            && EducationLadder::rung($opportunity->education_level) !== null
+            && EducationLadder::rung($opportunity->education_level) < EducationLadder::rung($passed)) {
+            return RequirementOutcome::fail(
+                RequirementOutcome::TYPE_PROGRESSION,
+                'Level: this scholarship funds '.EducationLevel::label($opportunity->education_level).' study, but your results show you have '
+                    .'finished '.EducationLevel::label($passed).', which is beyond it - you have already passed it.',
+                required: EducationLevel::label($opportunity->education_level),
+                actual: EducationLevel::label($passed),
+            );
+        }
+
         // A degree award is entered from A-Level (or a Certificate or Diploma), not from O-Level, unless the
         // provider has said it takes O-Level holders. Someone whose level still reads O-Level but who has
         // recorded A-Level results has finished A-Level, and is judged on that - see minimumLevel().
@@ -194,6 +210,21 @@ final class EligibilityEvaluator
             required: EducationLevel::label($opportunity->education_level),
             actual: EducationLevel::label($profile->education_level),
         );
+    }
+
+    /** The highest level the applicant's recorded results show they have finished, or null when none are recorded. */
+    private function highestLevelRecorded(?AcademicRecord $record): ?string
+    {
+        $highest = null;
+
+        foreach ($record?->levelsHeld() ?? [] as $level) {
+            if (EducationLadder::rung($level) !== null
+                && ($highest === null || EducationLadder::rung($level) > EducationLadder::rung($highest))) {
+                $highest = $level;
+            }
+        }
+
+        return $highest;
     }
 
     /**
