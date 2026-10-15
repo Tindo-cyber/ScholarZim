@@ -27,24 +27,6 @@
         </div>
     @endif
 
-    @if(($unansweredOpenTo ?? collect())->isNotEmpty())
-        {{-- Listings from before "Who is it open to?" was required. They still work; ScholarFit is more exact once answered. --}}
-        <div class="alert alert-info" role="status" id="open-to-prompt">
-            <h2 class="h6 fw-semibold mb-1">Say who {{ $unansweredOpenTo->count() === 1 ? 'this scholarship is' : 'these scholarships are' }} open to</h2>
-            <p class="small mb-2">
-                ScholarFit now uses each scholarship's programmes, fields and institutions to tell students whether they
-                qualify. {{ $unansweredOpenTo->count() === 1 ? 'This one was' : 'These were' }} posted before that question was
-                required. Open {{ $unansweredOpenTo->count() === 1 ? 'it' : 'each one' }} and answer "Who is it open to?" - choosing
-                "All programmes" and "Any institution" is fine if that is what you mean.
-            </p>
-            <ul class="small mb-0">
-                @foreach($unansweredOpenTo as $listing)
-                    <li><a href="{{ route('opportunities.edit', $listing->opportunity_id) }}#scope-card">{{ $listing->title }}</a></li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
     @unless(auth()->user()->isActive())
         <div class="alert alert-warning">
             <h2 class="h6 fw-semibold mb-1">
