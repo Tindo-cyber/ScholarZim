@@ -395,23 +395,14 @@ class ListingFormLayoutTest extends TestCase
         $this->assertStringNotContainsString('>Honours Degree<', $html);
     }
 
-    public function test_the_provider_form_says_where_each_kind_of_honours_belongs(): void
+    public function test_the_level_options_carry_no_honours_explanation(): void
     {
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
-        // (The apostrophe in "bachelor's" is HTML-escaped in the page, so match around it.)
-        $this->assertStringContainsString('including BSc / BCom Honours at Zimbabwean universities)', $html);
-        $this->assertStringContainsString('Postgraduate (including a one-year Honours after a degree, e.g. in South Africa)', $html);
-        // The long explanation under the level dropdown was removed; the option labels carry the wording.
+        $this->assertStringNotContainsString('Zimbabwean universities', $html);
+        $this->assertStringNotContainsString('one-year Honours', $html);
         $this->assertStringNotContainsString('This decides which of the questions below apply', $html);
         $this->assertStringNotContainsString('transition award for pupils finishing Primary school', $html);
-    }
-
-    public function test_the_minimum_level_options_carry_the_same_wording(): void
-    {
-        $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
-
-        $this->assertSame(2, substr_count($html, 'Postgraduate (including a one-year Honours after a degree, e.g. in South Africa)'), 'in both the target and the minimum level lists');
     }
 
     public function test_nothing_new_can_be_saved_as_honours(): void
