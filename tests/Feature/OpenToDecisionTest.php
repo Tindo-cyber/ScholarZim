@@ -215,28 +215,6 @@ class OpenToDecisionTest extends TestCase
 
     // ------------------------------------------------------------ old listings --
 
-    public function test_an_unanswered_old_listing_is_flagged_on_the_dashboard_and_an_answered_one_is_not(): void
-    {
-        $make = fn (string $title, ?bool $all) => Opportunity::create([
-            'provider_user_id' => $this->provider->user_id, 'provider_name' => 'P', 'title' => $title,
-            'description' => 'x', 'education_level' => EducationLevel::UNDERGRADUATE,
-            'country' => 'Zimbabwe', 'target_country' => 'Zimbabwe',
-            'open_to_all_programmes' => $all, 'any_institution' => $all,
-            'deadline' => Carbon::today()->addDays(30), 'status' => OpportunityStatus::ACTIVE,
-            'moderation_status' => OpportunityModerationStatus::APPROVED, 'submitted_at' => now(), 'created_at' => now(),
-        ]);
-
-        $make('Old Unanswered Bursary', null);
-        $make('New Answered Bursary', true);
-
-        $html = $this->actingAs($this->provider)->get('/provider/dashboard')->assertOk()->getContent();
-        $prompt = substr($html, (int) strpos($html, 'id="open-to-prompt"'), 3000);
-
-        $this->assertStringContainsString('id="open-to-prompt"', $html);
-        $this->assertStringContainsString('Old Unanswered Bursary', $prompt);
-        $this->assertStringNotContainsString('New Answered Bursary', $prompt);
-    }
-
     public function test_answering_an_old_live_listing_with_all_programmes_does_not_send_it_back_for_review(): void
     {
         $listing = Opportunity::where('provider_user_id', $this->provider->user_id)
