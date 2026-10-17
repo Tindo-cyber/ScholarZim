@@ -14,7 +14,6 @@ flowchart TB
     end
     subgraph app [ScholarZim Laravel]
         MVC[Blade controllers]
-        API[REST API]
         Security[Auth + role middleware]
         Services[Service layer]
         Repos[Eloquent models]
@@ -27,9 +26,7 @@ flowchart TB
     Applicant --> MVC
     Provider --> MVC
     Admin --> MVC
-    Applicant --> API
     MVC --> Security --> Services --> Repos --> MySQL
-    API --> Security
     Services --> Uploads
 ```
 
@@ -64,15 +61,16 @@ worker delivers — which also means **nothing is delivered without a worker run
 ## Layered design
 
 ```
-Controller / API  →  Service  →  Eloquent model  →  MySQL
+Controller  →  Service  →  Eloquent model  →  MySQL
 ```
 
 - **Controllers** (`app/Http/Controllers`) — server-rendered pages, form handling, redirects.
-- **API** (`app/Http/Controllers/Api`) — JSON endpoints for public catalog and applicant features.
 - **Services** (`app/Services`) — business rules, audit logging, file storage, reports.
 - **Models** (`app/Models`) — `User`, `Role`, `Opportunity`, `Application`, `ApplicantProfile`, `ProviderProfile`, `Notification`, `AuditLog`, etc.
-- **Console commands** (`app/Console/Commands`) — the scheduled deadline and profile reminder jobs.
+- **Console commands** (`app/Console/Commands`) — the two scheduled jobs (deadline reminders, archiving expired listings) and the admin tools for importing the programme catalogue, migrating old free-text fields onto it, checking mail configuration and generating the app icons.
 - **Support** (`app/Support`) — status/type constants shared across the layers.
+
+There is no JSON API: every page is server-rendered Blade behind the `web` middleware group. A public API was removed when the project was narrowed to its five objectives (see `docs/security.md`).
 
 ## Core domain flows
 

@@ -662,9 +662,7 @@ for the documentation index.
   is required and untouched.
 - `/health` is a cheap liveness probe — one database round trip — so the platform's health
   check is not the heaviest request on the box.
-- `composer audit` currently reports **no advisories**. The `audit.block-insecure=false`
-  setting in `composer.json` is a leftover from when the project sat on Laravel 10, whose
-  every release carried an unfixable advisory. On a supported Laravel that escape hatch is
-  no longer earning its place and can be dropped whenever someone is next in that file.
+- `composer audit` currently reports **no advisories**, and an insecure dependency now blocks
+  `composer install` (the Laravel 10-era `audit.block-insecure=false` setting was removed).
 - Analytics month bucketing is driver-aware (MySQL / SQLite / Postgres); MySQL is the
   production target.
