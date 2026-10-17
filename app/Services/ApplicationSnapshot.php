@@ -49,7 +49,7 @@ class ApplicationSnapshot
 
     /**
      * The verdict and its reasons as plain data, so they can be kept and shown later exactly as they were.
-     * Verdict is one of eligible, not_eligible, needs_information, insufficient, no_requirements.
+     * Verdict is one of eligible, not_eligible, needs_information, no_requirements ("insufficient" appears only in snapshots saved before that state was retired).
      *
      * @return array{verdict: string, rules: array<int, array{status: string, message: string}>, notes: array<int, string>}
      */
@@ -59,7 +59,6 @@ class ApplicationSnapshot
 
         return [
             'verdict' => match (true) {
-                $fit->hasInsufficientInformation() => 'insufficient',
                 $rules === [] => 'no_requirements',
                 $fit->meetsRequirements() => 'eligible',
                 $fit->needsInformation() => 'needs_information',

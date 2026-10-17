@@ -27,14 +27,10 @@ class RecommendationService
      * is worse than noise. notEligibleForUser() shows those separately, with
      * the reason.
      *
-     * Also dropped: a listing with no stated requirements at all, shown to
-     * an applicant whose profile is not yet complete enough to say anything
-     * about. meetsRequirements() is vacuously true there (nothing was
-     * checked, so nothing failed), which used to be enough on its own to
-     * call it a match - showing a student with an empty profile "matches"
-     * against scholarships nobody has actually compared them to. A listing
-     * with no requirements and a *complete* profile is untouched by this:
-     * it is genuinely open to everyone, and stays a match.
+     * A listing with no stated requirements is a match for every student, whatever their profile holds:
+     * with nothing asked there is nothing to fail, and it is open (the candidates are publicly visible
+     * listings only). It is never presented as a requirement met - see EligibilityResult::NO_REQUIREMENTS_MESSAGE
+     * - and MatchOrder ranks it after listings the student was actually compared against.
      *
      * @return array<int, EligibilityResult>
      */
@@ -42,7 +38,7 @@ class RecommendationService
     {
         $eligible = array_values(array_filter(
             $this->evaluatedCandidates($user),
-            static fn (EligibilityResult $r) => $r->meetsRequirements() && ! $r->hasInsufficientInformation()
+            static fn (EligibilityResult $r) => $r->meetsRequirements()
         ));
 
         $eligible = MatchOrder::sort($eligible);

@@ -19,8 +19,9 @@ final class EligibilityResult
     /**
      * @param  array<int, RequirementOutcome>  $outcomes  every stated requirement, as evaluated
      * @param  bool  $profileComplete  whether ApplicantProfile::isComplete() was true for the
-     *                                 profile this was evaluated against - see
-     *                                 hasInsufficientInformation() for what this is used for.
+     *                                 profile this was evaluated against. It never changes the verdict;
+     *                                 the screens use it to say a profile must be completed before an
+     *                                 application can be submitted (the application's own gate).
      */
     public function __construct(
         public readonly Opportunity $opportunity,
@@ -69,25 +70,33 @@ final class EligibilityResult
     }
 
     /**
-     * True when this listing states no stated requirement at all and the
-     * applicant's profile is not complete enough to say anything more than
-     * that nothing was checked.
-     *
-     * A listing with no stated requirements and a complete profile is
-     * genuinely open to everyone and stays ELIGIBLE - meetsRequirements()
-     * is vacuously true and that is correct. The gap this closes is
-     * narrower: zero stated requirements plus a profile ScholarFit cannot
-     * yet read anything from is not evidence of a match, and must not be
-     * presented as one. See RecommendationService::forUser(), which is the
-     * one place this actually changes anything - a listing with stated
-     * requirements that fail because data is missing (no date of birth, no
-     * field of study, ...) already correctly reports those as ordinary
-     * failures with a clear "add X" remediation message, which is the
-     * right behaviour and is untouched here.
+     * What a student is told about a listing whose provider stated no requirement. It says what was not
+     * provided and that eligibility rests on the information available; it never says a requirement was met.
      */
-    public function hasInsufficientInformation(): bool
+    public const NO_REQUIREMENTS_MESSAGE = 'No specific eligibility requirements have been provided by the scholarship provider. '
+        . 'You appear eligible to apply based on the available information.';
+
+    /** Whether the listing can still take applications: active, approved and not past its deadline. */
+    public function listingIsOpen(): bool
     {
-        return ! $this->hasStatedRequirements() && ! $this->profileComplete;
+        return $this->opportunity->acceptsApplications();
+    }
+
+    /**
+     * A listing that states no requirement, and is open: nothing stands between any student and applying,
+     * so each is eligible to apply.
+     *
+     * "No requirements" is a fact about the listing, not about the student, so how much the student's profile
+     * holds does not change it - there is nothing to check the profile against. It is not the same as meeting
+     * requirements: no tick is ever shown for one nobody set (see the eligibility-summary component). A closed
+     * listing is not eligible-to-apply for anyone, whatever it states.
+     *
+     * Completing the profile is still needed before an application can be SUBMITTED; that is the application's
+     * own gate (ApplicationService::submit), not an eligibility requirement.
+     */
+    public function isEligibleWithoutRequirements(): bool
+    {
+        return ! $this->hasStatedRequirements() && $this->listingIsOpen();
     }
 
     /** @return array<int, RequirementOutcome> */
@@ -129,10 +138,10 @@ final class EligibilityResult
      */
     public function explanationLines(): array
     {
-        $insufficient = $this->hasInsufficientInformation();
+        $bare = ! $this->hasStatedRequirements();
         $eligible = $this->meetsRequirements();
         $lines = [match (true) {
-            $insufficient => 'INSUFFICIENT INFORMATION',
+            $bare && ! $this->listingIsOpen() => 'NOT OPEN FOR APPLICATIONS',
             $eligible => 'ELIGIBLE',
             $this->needsInformation() => 'NEEDS INFORMATION',
             default => 'NOT ELIGIBLE',
@@ -155,11 +164,9 @@ final class EligibilityResult
 
         if ($rules === []) {
             $lines[] = '';
-            $lines[] = $insufficient
-                ? 'This scholarship states no entry requirements, and your profile does not yet '
-                    . 'have enough information recorded to say more than that. Complete your profile '
-                    . 'to determine eligibility.'
-                : 'This scholarship states no entry requirements.';
+            $lines[] = $this->listingIsOpen()
+                ? self::NO_REQUIREMENTS_MESSAGE
+                : 'This scholarship states no entry requirements, but it is no longer open for applications.';
         }
 
         return $lines;

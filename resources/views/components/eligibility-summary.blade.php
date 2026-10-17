@@ -7,6 +7,11 @@
      *           for a card in a list of many.
      */
     'variant' => 'full',
+    /**
+     * 'student'  the person the result is about: a listing with no requirements reads "Eligible".
+     * 'provider' someone reviewing an application: there it is only a fact about the listing, "no stated requirements".
+     */
+    'audience' => 'student',
 ])
 
 @php
@@ -21,10 +26,11 @@
      *   - the listing states no requirements at all
      *
      * The third is not the first. "Nothing was asked of you" and "you meet what
-     * was asked" are different facts, and an applicant reading a bare listing
-     * was previously shown neither - only a score, with the absence of a
-     * requirements block as the sole hint. This never renders a tick for a
-     * requirement nobody set.
+     * was asked" are different facts. A student is told they are eligible to
+     * apply - nothing stands in the way, and the listing is open - together with
+     * the plain statement that the provider gave no requirements; this never
+     * renders a tick or "you meet" for a requirement nobody set. What the student's
+     * profile holds does not change that. A closed listing is not called eligible.
      *
      * Every sentence comes from the RequirementOutcome objects the evaluator
      * produced, so what an applicant is told here is what the gate will say
@@ -39,7 +45,8 @@
     $rules = \App\Services\ScholarFit\RequirementOutcome::rules($fit->outcomes);
     $notes = $fit->advisoryNotes();
     $eligible = $fit->meetsRequirements();
-    $insufficient = $fit->hasInsufficientInformation();
+    $open = $fit->listingIsOpen();
+    $forProvider = $audience === 'provider';
     // A rule the profile cannot answer is neither met nor unmet: it is its own state,
     // shown as a question with what to add, never as a tick or a cross.
     $pending = $fit->needsInformation();
@@ -51,15 +58,18 @@
 
 @if($variant === 'compact')
     <div {{ $attributes->merge(['class' => 'd-flex flex-wrap align-items-center gap-2']) }}>
-        @if($insufficient)
-            <x-status-badge label="Complete your profile" tone="secondary" icon="shield" />
-            <span class="small text-secondary">Not enough information yet to check this one.</span>
-        @elseif($pending)
+        @if($pending)
             <x-status-badge label="Needs information" tone="warning" icon="shield" />
             <span class="small text-secondary">Add your {{ implode(' and ', $missing) }} to check this one.</span>
-        @elseif(! $stated)
+        @elseif(! $stated && $forProvider)
             <x-status-badge label="No stated requirements" tone="secondary" icon="shield" />
             <span class="small text-secondary">The provider decides who is awarded.</span>
+        @elseif(! $stated && ! $open)
+            <x-status-badge label="Not open" tone="secondary" icon="shield" />
+            <span class="small text-secondary">This scholarship is no longer open for applications.</span>
+        @elseif(! $stated)
+            <x-status-badge label="Eligible" tone="success" />
+            <span class="small text-secondary">No specific requirements were provided. You appear eligible to apply.</span>
         @elseif($eligible)
             <x-status-badge label="Eligible" tone="success" />
             <span class="small text-secondary">
@@ -156,46 +166,46 @@
             </div>
         </div>
     </div>
-@elseif($insufficient)
-    {{--
-        Distinct from the plain "no requirements" case below: here the gap is
-        on the applicant's side, not just the provider's. Deliberately still
-        not a verdict - ELIGIBLE would be inventing a match ScholarFit never
-        checked, and NOT ELIGIBLE would blame the applicant for failing
-        requirements that were never actually tested. See
-        EligibilityResult::hasInsufficientInformation().
-    --}}
-    <div {{ $attributes->merge(['class' => 'alert alert-secondary mb-3']) }} role="note">
-        <div class="d-flex gap-2 align-items-start">
-            <x-icon name="shield" :size="20" class="flex-shrink-0 mt-1" />
-            <div>
-                <div class="fw-semibold mb-1">Complete your profile to determine eligibility</div>
-                <p class="small mb-2">
-                    This scholarship does not specify entry requirements, and your profile does not
-                    yet have enough information recorded for ScholarZim to say more than that.
-                </p>
-                <p class="small mb-0">
-                    <a href="{{ route('applicant.profile') }}">Complete your profile</a>
-                    so we can check what applies to you.
-                </p>
-            </div>
-        </div>
-    </div>
-@else
-    {{--
-        Informational, deliberately not a verdict. It says what the provider did
-        not state; it does not say the applicant passed anything, because
-        nothing was asked of them.
-    --}}
+@elseif($forProvider)
+    {{-- A reviewer's view of a listing that set no requirement: a fact about the listing, not a verdict. --}}
     <div {{ $attributes->merge(['class' => 'alert alert-secondary mb-3']) }} role="note">
         <div class="d-flex gap-2 align-items-start">
             <x-icon name="shield" :size="20" class="flex-shrink-0 mt-1" />
             <div>
                 <div class="fw-semibold mb-1">No entry requirements specified</div>
-                <p class="small mb-0">
-                    This scholarship does not specify entry requirements, so there is nothing for
-                    ScholarZim to check your profile against. The provider decides who is awarded.
-                </p>
+                <p class="small mb-0">This scholarship does not specify entry requirements. The provider decides who is awarded.</p>
+            </div>
+        </div>
+    </div>
+@elseif(! $open)
+    {{-- No requirements, but nothing can be applied for: say so rather than call anyone eligible. --}}
+    <div {{ $attributes->merge(['class' => 'alert alert-secondary mb-3']) }} role="note">
+        <div class="d-flex gap-2 align-items-start">
+            <x-icon name="shield" :size="20" class="flex-shrink-0 mt-1" />
+            <div>
+                <div class="fw-semibold mb-1">Not open for applications</div>
+                <p class="small mb-0">This scholarship states no entry requirements, but it is no longer open for applications.</p>
+            </div>
+        </div>
+    </div>
+@else
+    {{--
+        Eligible to apply, and honestly so: nothing was asked, so nothing is ticked and
+        nothing is said to be met. The profile does not change this (there is nothing to
+        check it against); it is only needed to submit, which is the application's own gate.
+    --}}
+    <div {{ $attributes->merge(['class' => 'alert mb-3 alert-success']) }} role="alert">
+        <div class="d-flex gap-2 align-items-start">
+            <x-icon name="check-circle" :size="20" class="flex-shrink-0 mt-1" />
+            <div>
+                <div class="fw-semibold mb-1">ELIGIBLE</div>
+                <p class="small mb-0">{{ \App\Services\ScholarFit\EligibilityResult::NO_REQUIREMENTS_MESSAGE }}</p>
+                @unless($fit->profileComplete)
+                    <p class="small mb-0 mt-2">
+                        <a href="{{ route('applicant.profile') }}">Complete your profile</a>
+                        before you submit: an application needs it, whatever the scholarship asks.
+                    </p>
+                @endunless
             </div>
         </div>
     </div>

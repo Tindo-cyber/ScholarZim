@@ -186,7 +186,7 @@ final class ListingReading
                         $profile->isComplete(),
                     );
 
-                    if ($result->meetsRequirements() && ! $result->hasInsufficientInformation()) {
+                    if ($result->meetsRequirements()) {
                         $count++;
                     }
                 }
