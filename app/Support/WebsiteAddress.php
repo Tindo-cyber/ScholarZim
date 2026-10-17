@@ -32,7 +32,7 @@ final class WebsiteAddress
 
         if (! preg_match('~^[a-z][a-z0-9+.\-]*://~i', $trimmed)) {
             // Only a plausible host gets a scheme; "not a website" must still fail.
-            if (! preg_match('~^[a-z0-9]([a-z0-9\-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9\-]*[a-z0-9])?)+(:\d+)?(/.*)?$~i', $trimmed)) {
+            if (! preg_match('~^[\p{L}\p{N}]([\p{L}\p{N}\-]*[\p{L}\p{N}])?(\.[\p{L}\p{N}]([\p{L}\p{N}\-]*[\p{L}\p{N}])?)+(:\d+)?(/.*)?$~iu', $trimmed)) {
                 return $trimmed;
             }
 
@@ -56,6 +56,35 @@ final class WebsiteAddress
         }
 
         return preg_replace('/^www\./', '', strtolower($host));
+    }
+
+    /**
+     * The address as a link that is safe to show to the public, or null when there is nothing safe to show.
+     *
+     * Checked again at display time because the stored value may predate the validation rules or have been
+     * edited in the database. Only http(s) with a real host passes, and a login embedded in the address
+     * ("https://trusted.org@evil.example") is refused, since it disguises where the link goes. Unicode host
+     * names (internationalised domains) are allowed, which PHP's FILTER_VALIDATE_URL would wrongly reject.
+     */
+    public static function publicLink(?string $address): ?string
+    {
+        $address = self::normalise($address);
+
+        if ($address === null || preg_match('/[\s\x00-\x1F\x7F<>"\\\\]/u', $address)) {
+            return null;
+        }
+
+        $parts = parse_url($address);
+
+        if (! is_array($parts)
+            || ! in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)
+            || ! filled($parts['host'] ?? null)
+            || isset($parts['user']) || isset($parts['pass'])
+            || ! str_contains($parts['host'], '.')) {
+            return null;
+        }
+
+        return $address;
     }
 
     /** Validation rules for a website field: optional, an http(s) address. */

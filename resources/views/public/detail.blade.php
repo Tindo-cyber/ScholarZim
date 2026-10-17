@@ -149,7 +149,20 @@
                         </div>
 
                         <h1 class="h3 fw-bold mb-2">{{ $opportunity->title }}</h1>
-                        <p class="text-secondary mb-4">Awarded by {{ $opportunity->awardingBodyLine() }}</p>
+                        <p class="text-secondary {{ $opportunity->organisationWebsite() ? 'mb-1' : 'mb-4' }}">Awarded by {{ $opportunity->awardingBodyLine() }}</p>
+                        @if($organisationWebsite = $opportunity->organisationWebsite())
+                            <p class="mb-4" id="organisation-website">
+                                <a href="{{ $organisationWebsite }}" target="_blank" rel="noopener noreferrer nofollow"
+                                   aria-label="Visit organisation website ({{ $opportunity->awardingBody() }}, opens in a new tab)">
+                                    <x-icon name="external" :size="16" />
+                                    Visit organisation website
+                                </a>
+                                <span class="small text-secondary ms-1">{{ \App\Support\WebsiteAddress::host($organisationWebsite) }}</span>
+                                @if($opportunity->organisationWebsiteConfirmed())
+                                    <span class="small text-success ms-1">&middot; confirmed by ScholarZim</span>
+                                @endif
+                            </p>
+                        @endif
 
                         <div class="row g-3 mb-4">
                             @foreach([

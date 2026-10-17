@@ -125,9 +125,9 @@
                                     nothing selected and silently blank itself out on the next
                                     save, for any reason - see ApplicantProfileService::update().
                                 --}}
-                                <x-form.input name="field_of_study" label="Field of study / programme"
+                                <x-form.input name="field_of_study" label="Your field, in your own words"
                                               :value="$profile->field_of_study" maxlength="255"
-                                              hint="Type your field, e.g. Information Systems, Mining Engineering, Nursing." />
+                                              hint="For example Information Systems, Mining Engineering or Nursing. Your programme itself is chosen from the list further down this page." />
                             </div>
                             <div class="col-md-4">
                                 {{-- A degree class is one fact about a person, not a score per

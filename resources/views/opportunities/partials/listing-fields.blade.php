@@ -61,10 +61,10 @@
 
         <div class="row">
             <div class="col-md-6" data-level-needs="field">
-                <x-form.input name="target_field" label="Field of study"
+                <x-form.input name="target_field" label="Field shown on the listing"
                               :value="$opportunity?->target_field"
                               list="field-list"
-                              hint="Leave blank to accept any field." />
+                              hint="A short phrase students see and can search on, for example Mining Engineering. Who the award is open to is chosen under &quot;Who is it open to?&quot;. Leave blank to accept any field." />
                 <datalist id="field-list">
                     @foreach(array_unique(array_merge($fields, $targetFieldSuggestions)) as $field)
                         <option value="{{ $field }}"></option>
