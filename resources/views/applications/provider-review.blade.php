@@ -209,7 +209,7 @@
                                 <p class="small text-warning-emphasis mt-2 mb-0">The applicant's profile has changed since they applied.</p>
                             @endif
                         @else
-                            <x-eligibility-summary :fit="$fit" variant="compact" class="mb-0" />
+                            <x-eligibility-summary :fit="$fit" variant="compact" audience="provider" class="mb-0" />
                         @endif
 
                         <p class="small text-secondary mt-3 mb-0">

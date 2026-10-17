@@ -154,6 +154,11 @@ class ApplicantProgrammes
         }
 
         DB::transaction(function () use ($profile, $chosen, $institutionId, $applied, $targets, $mode): void {
+            // Two saves at once (a double click, a second tab, a script) would each delete and re-create, and
+            // could interleave into more than the limit. Holding the profile row makes the second wait, then
+            // replace the first, so what is stored is always exactly one submission.
+            ApplicantProfile::whereKey($profile->profile_id)->lockForUpdate()->first();
+
             ApplicantProgramme::where('profile_id', $profile->profile_id)->delete();
             \App\Models\ApplicantInstitution::where('profile_id', $profile->profile_id)->delete();
             \App\Models\ApplicantTargetField::where('profile_id', $profile->profile_id)->delete();

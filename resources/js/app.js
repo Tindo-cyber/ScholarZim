@@ -20,6 +20,7 @@ import './subject-requirements';
 import './edit-impact';
 import './level-form';
 import './catalogue-filter';
+import './limited-choice';
 import './searchable-select';
 import './open-to';
 import './reopen-modal';

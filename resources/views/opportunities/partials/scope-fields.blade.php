@@ -49,7 +49,7 @@
         </p>
 
         <fieldset class="mb-3">
-            <legend class="form-label fs-6 mb-1">Programmes</legend>
+            <legend class="form-label fs-6 mb-1">What it is open to</legend>
             <div class="form-check">
                 <input class="form-check-input @error('open_to') is-invalid @enderror" type="radio" name="open_to" id="open-to-chosen"
                        value="{{ \App\Services\Catalogue\ListingScopes::OPEN_CHOSEN }}" @checked($openTo === \App\Services\Catalogue\ListingScopes::OPEN_CHOSEN)>
@@ -93,15 +93,14 @@
             <label class="form-label" for="scope-fields">Fields</label>
             <select class="form-select @error('scope_fields') is-invalid @enderror" id="scope-fields"
                     name="scope_fields[]" multiple size="6" aria-describedby="scope-fields-help">
-                @foreach($catalogue['fields'] as $broad)
-                    <optgroup label="{{ $broad->label() }}">
-                        <option value="{{ $broad->id }}" data-search="{{ strtolower($broad->label() . ' ' . $broad->name) }}"
-                                @if($broad->code === \App\Support\FormOptions::ENGINEERING_BROAD) data-covers="engineering" @endif
-                                @selected(in_array($broad->id, $chosen['fields'], true))>All of {{ $broad->label() }}</option>
-                        @foreach($broad->children as $narrow)
-                            <option value="{{ $narrow->id }}" data-search="{{ strtolower($narrow->label() . ' ' . $narrow->name . ' ' . $broad->label()) }}"
-                                    @if($narrow->code === \App\Support\FormOptions::ENGINEERING_NARROW) data-hint="engineering" @endif
-                                    @selected(in_array($narrow->id, $chosen['fields'], true))>{{ $narrow->label() }}</option>
+                {{-- A broad field with one narrow field of the same name is listed once: see Field::pickerGroups. --}}
+                @foreach(\App\Models\Field::pickerGroups($catalogue['fields'], $chosen['fields']) as $group)
+                    <optgroup label="{{ $group['label'] }}">
+                        @foreach($group['options'] as $option)
+                            <option value="{{ $option['id'] }}" data-search="{{ $option['search'] }}"
+                                    @if($option['code'] === \App\Support\FormOptions::ENGINEERING_BROAD) data-covers="engineering" @endif
+                                    @if($option['code'] === \App\Support\FormOptions::ENGINEERING_NARROW) data-hint="engineering" @endif
+                                    @selected($option['selected'])>{{ $option['label'] }}</option>
                         @endforeach
                     </optgroup>
                 @endforeach

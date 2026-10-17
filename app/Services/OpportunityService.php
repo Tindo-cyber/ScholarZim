@@ -743,6 +743,8 @@ class OpportunityService
     {
         return Opportunity::with([
             'provider',
+            // Only the website columns: the rest of a registration is private to the provider and administrators.
+            'provider.providerProfile:profile_id,user_id,website,website_verified_at',
             'subjectRequirements.subject',
             'subjectRequirements.qualification',
         ])->publiclyVisible()->find($id);

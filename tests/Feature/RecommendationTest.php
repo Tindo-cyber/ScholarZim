@@ -90,14 +90,13 @@ class RecommendationTest extends TestCase
     }
 
     /**
-     * The gap Issue 9 closes: a listing with no stated requirements evaluates
-     * to zero failures for anybody, including an applicant ScholarFit has
-     * almost nothing recorded about - meetsRequirements() is vacuously true
-     * there, which used to be read as a match on its own. An empty profile is
-     * not evidence of a fit; it is an absence of evidence, and must not
-     * appear as one.
+     * Issue 9 hid a listing with no stated requirements from a profile with almost nothing on it, on the reasoning
+     * that an empty profile is no evidence of a fit. The rule is now the other way round: the provider asked for
+     * nothing, so nothing can fail and the student is eligible to apply. It is recommended - after listings the
+     * student was actually compared against (MatchOrder) - and is never shown as a requirement met. Submitting
+     * still needs a complete profile; that is the application's gate, not an eligibility rule.
      */
-    public function test_a_bare_listing_is_not_recommended_to_an_incomplete_profile(): void
+    public function test_a_bare_listing_is_recommended_to_an_incomplete_profile(): void
     {
         $stranger = User::create([
             'role_id' => $this->student->role_id,
@@ -121,10 +120,9 @@ class RecommendationTest extends TestCase
             app(RecommendationService::class)->forUser($stranger, 20)
         );
 
-        $this->assertNotContains($bare->opportunity_id, $ids);
+        $this->assertContains($bare->opportunity_id, $ids);
 
-        // Not "not eligible" either - nothing was actually checked, so it
-        // must not read as a failure any more than as a match.
+        // And it is certainly not a refusal.
         $notEligibleIds = array_map(
             fn ($scored) => (int) $scored->opportunity->opportunity_id,
             app(RecommendationService::class)->notEligibleForUser($stranger, 20)

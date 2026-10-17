@@ -4,8 +4,10 @@
      * school-leaver hopes to study. Its own form (not part of the profile form above), saved on
      * its own, and shown only where a programme means something - never for a Primary pupil.
      *
-     * Plain <select>s, so it works with JavaScript off; resources/js/catalogue-filter.js adds a
-     * search box over each list.
+     * The current-programme and institution pickers are plain <select>s; the pick-up-to-three lists are
+     * checkboxes (x-limited-choice), because a multiple <select> needs Ctrl-click and nobody finds that out.
+     * Both work with JavaScript off; resources/js adds a search box over each list and, on the checkbox
+     * lists, a running count that stops a fourth being ticked. The server refuses a fourth regardless.
      */
     $mode = \App\Services\Catalogue\ApplicantProgrammes::modeFor($profile);
     $levels = \App\Services\Catalogue\ApplicantProgrammes::levelsFor($profile);
@@ -63,67 +65,41 @@
                     @error('current_institution_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
                 </div>
 
-                <div class="mb-3" data-catalogue-filter>
-                    <label class="form-label" for="target_field_ids">Fields you want to study next (optional, up to 3)</label>
-                    <select class="form-select @error('target_field_ids') is-invalid @enderror" id="target_field_ids"
-                            name="target_field_ids[]" multiple size="6" aria-describedby="target-fields-help">
-                        @foreach($catalogue['fields'] as $broad)
-                            <optgroup label="{{ $broad->label() }}">
-                                <option value="{{ $broad->id }}" data-search="{{ strtolower($broad->label() . ' ' . $broad->name) }}"
-                                        @selected(in_array($broad->id, array_map('intval', (array) old('target_field_ids', $targetFieldIds ?? [])), true))>All of {{ $broad->label() }}</option>
-                                @foreach($broad->children as $narrow)
-                                    <option value="{{ $narrow->id }}" data-search="{{ strtolower($narrow->label() . ' ' . $narrow->name . ' ' . $broad->label()) }}"
-                                            @selected(in_array($narrow->id, array_map('intval', (array) old('target_field_ids', $targetFieldIds ?? [])), true))>{{ $narrow->label() }}</option>
-                                @endforeach
-                            </optgroup>
-                        @endforeach
-                    </select>
-                    <div class="form-text" id="target-fields-help">
-                        For your next qualification, if it is in a different field from your programme - for example a
-                        Masters in Data Science after a BCom. Scholarships open to these fields will match you too, including
-                        scholarships to study abroad.
-                    </div>
-                    @error('target_field_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                </div>
+                <x-limited-choice name="target_field_ids" id="target_field_ids" label="Fields you want to study next (optional)"
+                                  :max="\App\Models\ApplicantTargetField::MAX" noun="fields"
+                                  :groups="\App\Models\Field::pickerGroups($catalogue['fields'], array_map('intval', (array) old('target_field_ids', $targetFieldIds ?? [])))"
+                                  hint="For your next qualification, if it is in a different field from your programme - for example a Masters in Data Science after a BCom. Scholarships open to these fields will match you too, including scholarships to study abroad." />
             @else
                 <p class="small text-secondary">
                     You have not started a programme yet. Choose up to 3 you hope to study, and you will be matched to a
                     scholarship if any one of them fits.
                 </p>
 
-                <div class="mb-3" data-catalogue-filter>
-                    <label class="form-label" for="intended_programme_ids">Programmes (up to 3)</label>
-                    <select class="form-select @error('intended_programme_ids') is-invalid @enderror" id="intended_programme_ids"
-                            name="intended_programme_ids[]" multiple size="8">
-                        @foreach($options as $level => $programmes)
-                            <optgroup label="{{ \App\Support\EducationLevel::label($level) }}">
-                                @foreach($programmes as $programme)
-                                    <option value="{{ $programme->id }}" @selected(in_array($programme->id, array_map('intval', (array) $intendedIds), true))
-                                            data-search="{{ strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ')) }}">{{ $programme->name }}@if($programme->isPending()) (waiting for approval)@endif</option>
-                                @endforeach
-                            </optgroup>
-                        @endforeach
-                    </select>
-                    <div class="form-text">Hold Ctrl (or Cmd) to choose several. You can search by name or abbreviation.</div>
-                    @error('intended_programme_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                </div>
+                <x-limited-choice name="intended_programme_ids" id="intended_programme_ids" label="Programmes you hope to study"
+                                  :max="\App\Models\ApplicantProgramme::MAX_INTENDED" noun="programmes"
+                                  :groups="$options->map(fn ($programmes, $level) => [
+                                      'label' => \App\Support\EducationLevel::label($level),
+                                      'options' => $programmes->map(fn ($programme) => [
+                                          'id' => $programme->id,
+                                          'label' => $programme->name . ($programme->isPending() ? ' (waiting for approval)' : ''),
+                                          'search' => strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ')),
+                                          'selected' => in_array($programme->id, array_map('intval', (array) $intendedIds), true),
+                                      ])->all(),
+                                  ])->values()->all()" />
 
-                <div class="mb-3" data-catalogue-filter>
-                    <label class="form-label" for="applied_institution_ids">Institutions you have applied to or have an offer from (optional, up to 3)</label>
-                    <select class="form-select @error('applied_institution_ids') is-invalid @enderror" id="applied_institution_ids"
-                            name="applied_institution_ids[]" multiple size="6">
-                        @foreach($catalogue['institutions']->groupBy('type') as $type => $institutions)
-                            <optgroup label="{{ \App\Models\Institution::TYPE_LABELS[$type] ?? $type }}">
-                                @foreach($institutions as $institution)
-                                    <option value="{{ $institution->id }}" data-search="{{ strtolower($institution->name . ' ' . $institution->code) }}"
-                                            @selected(in_array($institution->id, array_map('intval', (array) old('applied_institution_ids', $appliedInstitutionIds)), true))>{{ $institution->name }}</option>
-                                @endforeach
-                            </optgroup>
-                        @endforeach
-                    </select>
-                    <div class="form-text">Some scholarships are only for students at certain institutions. This lets us tell you which ones you can apply for.</div>
-                    @error('applied_institution_ids')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
-                </div>
+                <x-limited-choice name="applied_institution_ids" id="applied_institution_ids"
+                                  label="Institutions you have applied to or have an offer from (optional)"
+                                  :max="\App\Models\ApplicantInstitution::MAX" noun="institutions"
+                                  :groups="$catalogue['institutions']->groupBy('type')->map(fn ($institutions, $type) => [
+                                      'label' => \App\Models\Institution::TYPE_LABELS[$type] ?? $type,
+                                      'options' => $institutions->map(fn ($institution) => [
+                                          'id' => $institution->id,
+                                          'label' => $institution->name,
+                                          'search' => strtolower($institution->name . ' ' . $institution->code),
+                                          'selected' => in_array($institution->id, array_map('intval', (array) old('applied_institution_ids', $appliedInstitutionIds)), true),
+                                      ])->all(),
+                                  ])->values()->all()"
+                                  hint="Some scholarships are only for students at certain institutions. This lets us tell you which ones you can apply for." />
             @endif
 
             <details class="mb-3" @if(old('programme_suggestion')) open @endif>

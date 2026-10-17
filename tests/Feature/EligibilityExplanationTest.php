@@ -138,8 +138,10 @@ class EligibilityExplanationTest extends TestCase
 
         $html = $this->detail($bare);
 
-        $this->assertStringContainsString('No entry requirements specified', $html);
-        $this->assertStringContainsString('does not specify entry requirements', $html);
+        // Nothing stands in the way of an open listing, so the student is eligible to apply - and told why.
+        $this->assertStringContainsString('ELIGIBLE', $html);
+        $this->assertStringContainsString('No specific eligibility requirements have been provided by the scholarship provider.', $html);
+        $this->assertStringContainsString('You appear eligible to apply based on the available information.', $html);
     }
 
     /**
@@ -152,10 +154,10 @@ class EligibilityExplanationTest extends TestCase
         $this->giveResults(['Mathematics' => 'A']);
 
         foreach ([$this->detail($bare), $this->wizard($bare)] as $html) {
-            $this->assertStringContainsString('No entry requirements specified', $html);
+            $this->assertStringContainsString('No specific eligibility requirements have been provided', $html);
             $this->assertStringNotContainsString('You meet every requirement', $html);
-            $this->assertStringNotContainsString('ELIGIBLE', $html);
             $this->assertStringNotContainsString('required, you have', $html);
+            $this->assertStringNotContainsString('Why you qualify', $html);
         }
     }
 
@@ -169,13 +171,12 @@ class EligibilityExplanationTest extends TestCase
     }
 
     /**
-     * The third state Issue 9 asks for, shown on the one page an applicant
-     * explicitly asks "am I eligible for this": a bare listing plus a
-     * profile ScholarFit cannot yet read anything from is neither ELIGIBLE
-     * (nothing was checked) nor NOT ELIGIBLE (nothing failed) - it is an
-     * honest "not enough information yet", with a way to fix that.
+     * Issue 9 used to call this "not enough information yet" and hide the listing. A listing that asks for nothing
+     * has nothing to check a profile against, so the student is eligible to apply however little their profile holds;
+     * what an incomplete profile still needs is completing before an application can be submitted, which is said
+     * separately (the application's own gate, not an eligibility requirement).
      */
-    public function test_a_bare_listing_tells_an_incomplete_profile_to_finish_it_first(): void
+    public function test_a_bare_listing_is_eligible_for_an_incomplete_profile_which_must_still_be_completed_to_submit(): void
     {
         // Genuinely bare: no level and no field either, or a profile with no level would be asked about those.
         $bare = $this->listing('Open Community Bursary', ['education_level' => null, 'target_field' => null]);
@@ -195,9 +196,11 @@ class EligibilityExplanationTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('Complete your profile to determine eligibility', $html);
-        $this->assertStringNotContainsString('No entry requirements specified', $html);
-        $this->assertStringNotContainsString('ELIGIBLE', $html);
+        $this->assertStringContainsString('ELIGIBLE', $html);
+        $this->assertStringContainsString('You appear eligible to apply based on the available information.', $html);
+        $this->assertStringContainsString('Complete your profile', $html);
+        $this->assertStringContainsString('before you submit', $html);
+        $this->assertStringNotContainsString('Complete your profile to determine eligibility', $html);
     }
 
     // -------------------------------------- B. eligible gated scholarship --

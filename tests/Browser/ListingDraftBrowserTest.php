@@ -50,6 +50,10 @@ class ListingDraftBrowserTest extends DuskTestCase
                 ->visit('/opportunities/' . $draft->opportunity_id . '/edit')
                 ->waitFor('#field-description', self::WAIT)
                 ->type('#field-description', 'Covers tuition fees and books.')
+                // Who it is open to is required from Certificate level up (ListingScopes::decisionProblems); a draft
+                // may leave it blank, a submission may not. The HTTP tests answer it for you, a real provider must.
+                ->script("document.getElementById('open-to-all').click(); document.getElementById('institutions-any').click();");
+            $browser
                 ->press('Submit for review')
                 ->waitForText('Scholarship submitted for review', self::WAIT);
         });

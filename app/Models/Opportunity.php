@@ -384,6 +384,23 @@ class Opportunity extends Model
     }
 
     /**
+     * The publishing organisation's website, safe to link to, or null when it has none worth showing.
+     *
+     * Read through the provider's profile rather than copied onto the listing, so a provider who corrects
+     * their website corrects it on every listing. Only the address itself is exposed here.
+     */
+    public function organisationWebsite(): ?string
+    {
+        return \App\Support\WebsiteAddress::publicLink($this->provider?->providerProfile?->website);
+    }
+
+    /** Whether an administrator has confirmed the website above as the organisation's own. */
+    public function organisationWebsiteConfirmed(): bool
+    {
+        return $this->organisationWebsite() !== null && $this->provider?->providerProfile?->hasConfirmedWebsite() === true;
+    }
+
+    /**
      * The awarding body as an applicant should read it: the publisher, and - when
      * they posted for someone else - who they posted for, so that nobody mistakes
      * an agent's listing for the awarder's own.

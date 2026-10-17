@@ -109,8 +109,18 @@ final class AcademicRecord
         }
 
         // A degree classification is evidence of an undergraduate qualification
-        // just as much as a set of subject results is evidence of an A-Level.
-        if (filled($profile->degree_classification)) {
+        // just as much as a set of subject results is evidence of an A-Level -
+        // for someone whose stated level is a degree or higher.
+        //
+        // The profile form offers the one classification scale (First Class ... Pass) from Certificate upward,
+        // so a Certificate or Diploma holder can fill it in. That is the classification of what they hold, not
+        // proof of a degree: reading it as one refused them every Undergraduate award as "already finished".
+        // A profile that states no level keeps the older reading, as nothing else says otherwise. The value
+        // itself is untouched - it still counts towards a complete profile and is shown to providers.
+        $statedRung = EducationLadder::rung($profile->education_level);
+
+        if (filled($profile->degree_classification)
+            && ($statedRung === null || $statedRung >= EducationLadder::rung(EducationLevel::UNDERGRADUATE))) {
             $levelsHeld[EducationLevel::UNDERGRADUATE] ??= 'your degree classification';
         }
 
