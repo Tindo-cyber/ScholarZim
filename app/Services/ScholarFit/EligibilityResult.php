@@ -57,6 +57,50 @@ final class EligibilityResult
         return ! $this->isIneligible() && RequirementOutcome::pending($this->outcomes) !== [];
     }
 
+    /**
+     * Whether a requirement about the applicant's education level or qualification is among those certainly not met.
+     * The screens say so in one plain sentence ahead of the specific reasons, so an education-level refusal reads as
+     * what it is whatever wording the rule that failed carries.
+     */
+    public function failsEducationRequirement(): bool
+    {
+        foreach (RequirementOutcome::failures($this->outcomes) as $outcome) {
+            if (in_array($outcome->type, [
+                RequirementOutcome::TYPE_PROGRESSION,
+                RequirementOutcome::TYPE_EDUCATION_LEVEL,
+                RequirementOutcome::TYPE_DESCRIPTION_EDUCATION_LEVEL,
+                RequirementOutcome::TYPE_DESCRIPTION_ENTRY_QUALIFICATION,
+            ], true)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** What the screens say first when an education requirement is the reason. */
+    public const EDUCATION_NOT_MET = "Your current education level does not meet this scholarship's education requirements.";
+
+    /**
+     * Something the applicant's own profile could settle is still missing. This - not needsInformation() - is what holds
+     * an application back: a listing whose wording could not be read is not the applicant's to fix.
+     */
+    public function needsProfileInformation(): bool
+    {
+        return ! $this->isIneligible() && RequirementOutcome::blockingPending($this->outcomes) !== [];
+    }
+
+    /**
+     * Nothing is certainly failed and nothing in the profile is missing, but the listing's own wording could not be
+     * read as a requirement. Not eligible-confirmed, not refused, and the applicant may still apply.
+     */
+    public function needsReview(): bool
+    {
+        return ! $this->isIneligible()
+            && RequirementOutcome::blockingPending($this->outcomes) === []
+            && RequirementOutcome::pending($this->outcomes) !== [];
+    }
+
     /** @return array<int, RequirementOutcome> */
     public function pendingInformation(): array
     {
@@ -143,6 +187,7 @@ final class EligibilityResult
         $lines = [match (true) {
             $bare && ! $this->listingIsOpen() => 'NOT OPEN FOR APPLICATIONS',
             $eligible => 'ELIGIBLE',
+            $this->needsReview() => 'NEEDS REVIEW',
             $this->needsInformation() => 'NEEDS INFORMATION',
             default => 'NOT ELIGIBLE',
         }];

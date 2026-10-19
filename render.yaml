@@ -28,6 +28,9 @@ services:
         value: warning
       - key: SESSION_SECURE_COOKIE
         value: "true"
+      # Closing the browser ends the session: the cookie is a session cookie, not one that lives for the lifetime.
+      - key: SESSION_EXPIRE_ON_CLOSE
+        value: "true"
       # Sessions live in the database, not on the container's disk.
       #
       # The default file driver stores them under storage/framework/sessions,

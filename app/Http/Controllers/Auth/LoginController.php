@@ -28,9 +28,7 @@ class LoginController extends Controller
         // Arriving here with a live session - in practice the browser's Back
         // button from a signed-in page - ends that session. Going Forward
         // again then meets the auth middleware and is sent back here for
-        // credentials, instead of quietly resuming the old sign-in. The
-        // remember-me token is cycled by logout() too, so a recaller cookie
-        // cannot sign them straight back in.
+        // credentials, instead of quietly resuming the old sign-in.
         if (Auth::check()) {
             $this->endSession($request);
         }
@@ -58,14 +56,17 @@ class LoginController extends Controller
         // submission here can arrive from someone already signed in -
         // possibly as a different account. Submitting the form is a request
         // for a new session, so the old one is ended first, completely:
-        // nothing the previous sign-in put in the session (or its remember-me
-        // cookie) carries over to whoever authenticates next, and a failed
-        // attempt leaves a guest rather than the previous account.
+        // nothing the previous sign-in put in the session carries over to
+        // whoever authenticates next, and a failed attempt leaves a guest
+        // rather than the previous account.
         if (Auth::check()) {
             $this->endSession($request);
         }
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        // Never "remember": the second argument stays false whatever the request carries. A sign-in lasts for the browser
+        // session (SESSION_EXPIRE_ON_CLOSE) and a person who returns after closing the browser signs in again. There is
+        // deliberately no way to ask for more, so no persistent login cookie is ever issued.
+        if (! Auth::attempt($credentials, false)) {
             RateLimiter::hit($throttleKey, self::DECAY_SECONDS);
             $this->auditService->log($credentials['email'], AuditAction::LOGIN_FAILURE, 'USER');
 

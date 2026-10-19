@@ -399,8 +399,8 @@ class AuthenticationTest extends TestCase
         $this->get('/applicant/dashboard')->assertRedirect(route('login'));
     }
 
-    /** Remember-me still issues its cookie on a sign-in that replaces a live session. */
-    public function test_remember_me_still_works_when_signing_in_from_a_live_session(): void
+    /** There is no remember-me: not even a sign-in that replaces a live session can issue a persistent cookie. */
+    public function test_a_sign_in_from_a_live_session_still_issues_no_remember_me_cookie(): void
     {
         $this->post('/login', ['email' => 'student@scholarzim.co.zw', 'password' => self::PASSWORD]);
 
@@ -411,10 +411,8 @@ class AuthenticationTest extends TestCase
         ]);
 
         $recaller = Auth::guard('web')->getRecallerName();
-        $cookie = collect($response->headers->getCookies())->first(fn ($c) => $c->getName() === $recaller);
-
-        $this->assertNotNull($cookie, 'a remember-me cookie must be issued');
-        $this->assertNotEmpty($cookie->getValue(), 'the issued remember-me cookie must not be the forget cookie');
+        $this->assertNull(collect($response->headers->getCookies())->first(fn ($c) => $c->getName() === $recaller));
+        $this->assertAuthenticated();
     }
 
     public function test_sign_out_lands_on_the_sign_in_page_with_its_message(): void

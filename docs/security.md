@@ -8,6 +8,7 @@
 - **Password reset:** UUID token, 1-hour expiry, single use. Delivered through Laravel Mail: the **Mailgun HTTP API** in production, **MailHog** under local Docker (SMTP `:1025`, UI `:8025`), `log` for a local clone without Docker. Failed delivery writes `EMAIL_DELIVERY_FAILED` to the audit log.
 - **Email verification:** UUID token, single use, retired when a new one is issued. Delivered by the same path.
 - **No second factor.** TOTP was removed as outside the project's objectives. The `two_factor_*` columns remain on `users` as unused legacy columns and stay in the model's `$hidden` list so a legacy row can never be serialised into a response.
+- **Closing the browser ends the session.** `SESSION_EXPIRE_ON_CLOSE` defaults to `true`, so the session cookie has no expiry date and the browser discards it when the browser session ends; the next visit must sign in. There is **no remember-me**: the sign-in form has no "keep me signed in" option, the login controller always signs in without a remember token, and migration `2025_01_01_000022` cleared the remember tokens that existed so any old remember-me cookie is refused. No persistent authentication cookie is ever issued. `SESSION_LIFETIME` remains the server-side idle limit. **Limits:** a server cannot observe a browser closing, and the ScholarZim pages do not rely on `unload`/`beforeunload`. The guarantee is that the cookie is not kept. Browsers that restore the previous session on start-up (Chrome or Edge with "Continue where you left off", Firefox "Restore previous session", mobile browsers that keep tabs) restore session cookies too, so the person may still be signed in there; that is a browser setting ScholarZim cannot override. An installed PWA window follows the same cookie rules. Session ids are regenerated on sign-in, and the session is invalidated and the CSRF token regenerated on sign-out.
 - **Session management.** `AuthenticateSession` is in the `web` middleware group, so "sign out all other sessions" on the account security page genuinely ends every other session on every device. It works by rotating the password hash the sessions carry, which is why it asks for the current password first.
 ## Authorization
 
@@ -38,11 +39,22 @@ Enforced by route middleware groups (`auth`, `role:ROLE_*`, and `account.active`
   document relationship rather than one generic "give me this path" endpoint:
   - `/applications/{id}/document` — the applicant who submitted it, or the
     provider reviewing that application
+  - `POST /apply/{id}/details` — saves the details and documents an application still
+    needs to the signed-in applicant's own profile. What it accepts is decided on the server
+    from the applicant's own readiness for that listing, never from what is posted: a field the
+    profile already holds is not overwritten, and no documents are taken for an award the
+    applicant cannot be considered for.
   - `/my-documents/{documentType}` — always the signed-in user's own profile
     document; there is no path by which one account can name another's
-  - `/provider/applications/{id}/results-certificate` and `/transcript` — the
+  - `/provider/applications/{id}/results-certificate`, `/grade-7-results-slip`,
+    `/transcript`, `/cv`, `/id-or-passport` and `/recommendation-letter` — the
     provider reviewing that specific application only, audited
-    (`VIEW_APPLICANT_RESULTS` / `VIEW_APPLICANT_TRANSCRIPT`)
+    (`VIEW_APPLICANT_RESULTS` for results and the Grade 7 slip,
+    `VIEW_APPLICANT_TRANSCRIPT`, `VIEW_APPLICANT_DOCUMENT` for the other three).
+    Each serves the file the application was **submitted with** (recorded in
+    `application_documents` at submission), never whatever the profile holds later;
+    an application older than the records shows the newer three as not provided.
+    No storage path is ever rendered.
   - `/admin/providers/{userId}/certificate` — admin only (route group and
     `DocumentPolicy::viewProviderCertificate`), audited (`VIEW_PROVIDER_CERTIFICATE`).
     The same route serves every organisation's registration document whatever
@@ -136,7 +148,7 @@ Set by `app/Http/Middleware/SecurityHeaders.php`, applied to the whole `web` mid
 
 `SecurityHeadersTest` asserts the headers are present and that `script-src` has not been relaxed.
 
-Production: set `SESSION_SECURE_COOKIE=true` so session cookies are only sent over HTTPS.
+Production: set `SESSION_SECURE_COOKIE=true` so session cookies are only sent over HTTPS, and keep `SESSION_EXPIRE_ON_CLOSE=true` so they are discarded when the browser session ends.
 
 ## Demo vs production
 

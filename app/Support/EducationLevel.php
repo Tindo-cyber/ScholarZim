@@ -255,6 +255,18 @@ final class EducationLevel
         return $level === self::O_LEVEL || $level === self::A_LEVEL;
     }
 
+    /**
+     * A Certificate or a Diploma is evidenced by the documents the applicant uploads: there is no degree classification to
+     * state and no academic results the profile has to hold. The results editor stays available for the scholarships that
+     * ask for earlier results, but nothing here is required of the person.
+     */
+    public static function needsNoAcademicDetail(?string $value): bool
+    {
+        $level = self::canonical($value);
+
+        return $level === self::CERTIFICATE || $level === self::DIPLOMA;
+    }
+
     public static function usesTranscript(?string $value): bool
     {
         $tier = self::tier($value);
@@ -332,7 +344,7 @@ final class EducationLevel
         }
 
         $clean = strtolower(trim($value));
-        $clean = str_replace(['(', ')', '-', '/', '&', ',', '.', '—'], ' ', $clean);
+        $clean = str_replace(['(', ')', '-', '_', '/', '&', ',', '.', '—'], ' ', $clean);
         $clean = (string) preg_replace('/\s+/', ' ', $clean);
         $clean = trim($clean);
 

@@ -12,22 +12,24 @@ use App\Exceptions\InvalidApplicationTransition;
  *
  *     PENDING --> ACCEPTED   (provider, with a reason)
  *     PENDING --> REJECTED   (provider, with a reason)
+ *     ACCEPTED --> PENDING   (provider withdraws the decision, with a reason)
+ *     REJECTED --> PENDING   (provider withdraws the decision, with a reason)
  *     PENDING --> WITHDRAWN  (applicant)
  *     WITHDRAWN --> PENDING  (applicant applies again)
  *
- * ACCEPTED and REJECTED are final. There is no award step after acceptance -
- * accepting *is* granting the scholarship - and neither decision can be flipped
- * into the other afterwards.
+ * There is no award step after acceptance - accepting *is* granting the
+ * scholarship. A decision is not flipped in place: a provider who got it wrong
+ * withdraws it (back to PENDING, with a reason, and the applicant is told) and
+ * then decides again. That keeps a correction an explicit, recorded act rather
+ * than an overwrite, and "provider withdraws a decision" is a different event
+ * from WITHDRAWN, which is the applicant stepping back and carries the
+ * re-apply rules.
  *
- * The matrix is factored in two parts because the two questions are independent:
- *
- *   1. TRANSITIONS - is this move part of the lifecycle at all?
- *   2. SETTABLE_BY - is this actor allowed to make that move?
- *
- * Answering them separately is what keeps "the applicant withdraws" and "the
- * provider decides" in one lifecycle without either reaching into the other's
- * half of it. An applicant can never set ACCEPTED or REJECTED, whatever they
- * post.
+ * The moves are listed per actor rather than as one shared table plus a list of
+ * what each actor may set. The two PENDING moves above must not leak into each
+ * other: a provider may return a *decided* application to PENDING and nothing
+ * else, and an applicant may return only a *withdrawn* one - never a decision.
+ * A union table cannot say that.
  */
 final class ApplicationStateMachine
 {
@@ -36,18 +38,21 @@ final class ApplicationStateMachine
     public const ACTOR_PROVIDER = 'provider';
 
     /**
-     * Which statuses each actor may set, whatever the matrix says.
+     * The moves each actor may make, by the status they start from.
      *
-     * The provider gets the two decisions and nothing else: they cannot withdraw
-     * an application on the applicant's behalf, and they cannot put a decided one
-     * back to pending. The applicant gets withdrawal and the resubmission that
-     * re-applying performs, and can never reach a decision.
+     * The provider decides a pending application and may withdraw a decision (back to PENDING); they cannot
+     * withdraw an application on the applicant's behalf or touch a withdrawn one. The applicant withdraws a pending
+     * application and re-applies from a withdrawn one, and can never reach, or undo, a decision.
      */
-    private const SETTABLE_BY = [
-        self::ACTOR_PROVIDER => ApplicationStatus::DECISIONS,
+    private const MOVES = [
+        self::ACTOR_PROVIDER => [
+            ApplicationStatus::PENDING => [ApplicationStatus::ACCEPTED, ApplicationStatus::REJECTED],
+            ApplicationStatus::ACCEPTED => [ApplicationStatus::PENDING],
+            ApplicationStatus::REJECTED => [ApplicationStatus::PENDING],
+        ],
         self::ACTOR_APPLICANT => [
-            ApplicationStatus::WITHDRAWN,
-            ApplicationStatus::PENDING,
+            ApplicationStatus::PENDING => [ApplicationStatus::WITHDRAWN],
+            ApplicationStatus::WITHDRAWN => [ApplicationStatus::PENDING],
         ],
     ];
 
@@ -56,29 +61,20 @@ final class ApplicationStateMachine
     }
 
     /**
-     * Every status the lifecycle allows an application to move to next, before
-     * actor permissions narrow it further.
+     * Every status any actor could move an application to next.
      *
      * @return array<int, string>
      */
     public static function transitionsFrom(?string $status): array
     {
-        return match (ApplicationStatus::canonical($status)) {
-            // Still open: the provider decides, or the applicant walks away.
-            ApplicationStatus::PENDING => [
-                ApplicationStatus::ACCEPTED,
-                ApplicationStatus::REJECTED,
-                ApplicationStatus::WITHDRAWN,
-            ],
+        $status = ApplicationStatus::canonical($status);
+        $all = [];
 
-            // The applicant changed their mind twice. Re-applying reuses the same
-            // row - (user_id, opportunity_id) is unique - so it is a transition
-            // back to PENDING rather than a second application.
-            ApplicationStatus::WITHDRAWN => [ApplicationStatus::PENDING],
+        foreach (self::MOVES as $moves) {
+            $all = array_merge($all, $moves[$status] ?? []);
+        }
 
-            // Accepted and rejected are the end of the matter.
-            default => [],
-        };
+        return array_values(array_unique($all));
     }
 
     /**
@@ -90,10 +86,7 @@ final class ApplicationStateMachine
      */
     public static function allowedFor(?string $status, string $actor): array
     {
-        return array_values(array_intersect(
-            self::transitionsFrom($status),
-            self::SETTABLE_BY[$actor] ?? []
-        ));
+        return self::MOVES[$actor][ApplicationStatus::canonical($status)] ?? [];
     }
 
     /** Whether $actor may move an application from $from to $to. */
@@ -116,10 +109,19 @@ final class ApplicationStateMachine
         }
 
         if (ApplicationStatus::isDecision($from)) {
-            throw InvalidApplicationTransition::terminal($from);
+            // A provider is told how to change a decision; nobody else may touch one.
+            if ($actor !== self::ACTOR_PROVIDER) {
+                throw InvalidApplicationTransition::terminal($from);
+            }
+
+            throw InvalidApplicationTransition::alreadyDecided($from);
         }
 
-        if (! in_array($to, self::SETTABLE_BY[$actor] ?? [], true)) {
+        if ($actor === self::ACTOR_PROVIDER && $to === ApplicationStatus::PENDING) {
+            throw InvalidApplicationTransition::nothingToReopen($from);
+        }
+
+        if (! in_array($to, self::settableBy($actor), true)) {
             throw InvalidApplicationTransition::notPermittedFor($actor, $to);
         }
 
@@ -155,6 +157,24 @@ final class ApplicationStateMachine
     /** Whether the provider still has a decision to make on this application. */
     public static function canDecide(?string $status): bool
     {
-        return self::allowedFor($status, self::ACTOR_PROVIDER) !== [];
+        return array_intersect(self::allowedFor($status, self::ACTOR_PROVIDER), ApplicationStatus::DECISIONS) !== [];
+    }
+
+    /** Whether the provider may withdraw the decision already made and reopen the application. */
+    public static function canReopen(?string $status): bool
+    {
+        return self::canTransition($status, ApplicationStatus::PENDING, self::ACTOR_PROVIDER);
+    }
+
+    /** Every status this actor can ever set, from any starting point. @return array<int, string> */
+    private static function settableBy(string $actor): array
+    {
+        $all = [];
+
+        foreach (self::MOVES[$actor] ?? [] as $targets) {
+            $all = array_merge($all, $targets);
+        }
+
+        return array_values(array_unique($all));
     }
 }

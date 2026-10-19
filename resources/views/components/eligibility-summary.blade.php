@@ -50,6 +50,8 @@
     // A rule the profile cannot answer is neither met nor unmet: it is its own state,
     // shown as a question with what to add, never as a tick or a cross.
     $pending = $fit->needsInformation();
+    // Nothing missing from the profile, but the listing's own wording could not be read: a review, not a question.
+    $review = $fit->needsReview();
     $missing = $fit->missingFields();
     $stated = $rules !== [];
     $met = count(array_filter($rules, static fn ($o) => $o->passed && ! $o->needsInformation));
@@ -58,7 +60,10 @@
 
 @if($variant === 'compact')
     <div {{ $attributes->merge(['class' => 'd-flex flex-wrap align-items-center gap-2']) }}>
-        @if($pending)
+        @if($review)
+            <x-status-badge label="Needs review" tone="warning" icon="shield" />
+            <span class="small text-secondary">The listing's education wording could not be read with confidence. Check it with the provider.</span>
+        @elseif($pending)
             <x-status-badge label="Needs information" tone="warning" icon="shield" />
             <span class="small text-secondary">Add your {{ implode(' and ', $missing) }} to check this one.</span>
         @elseif(! $stated && $forProvider)
@@ -78,7 +83,7 @@
         @else
             <x-status-badge label="Not eligible" tone="danger" />
             <span class="small text-secondary">
-                {{ $unmet }} {{ \Illuminate\Support\Str::plural('requirement', $unmet) }} not met.
+                {{ $fit->failsEducationRequirement() ? \App\Services\ScholarFit\EligibilityResult::EDUCATION_NOT_MET : $unmet . ' ' . \Illuminate\Support\Str::plural('requirement', $unmet) . ' not met.' }}
             </span>
         @endif
 
@@ -98,6 +103,36 @@
                 </ul>
             </details>
         @endif
+    </div>
+@elseif($review)
+    {{-- The listing says something about education that ScholarZim cannot read reliably. It is neither called open to
+         everyone nor used to refuse anyone: the reader is told exactly what was found and who can settle it. --}}
+    <div {{ $attributes->merge(['class' => 'alert mb-3 alert-warning']) }} role="alert">
+        <div class="d-flex gap-2 align-items-start">
+            <x-icon name="shield" :size="20" class="flex-shrink-0 mt-1" />
+            <div class="w-100">
+                <div class="fw-semibold mb-1">NEEDS REVIEW</div>
+
+                <p class="small mb-2">
+                    We cannot confirm whether you qualify: part of this listing's wording describes who it is for, and ScholarZim could not read it reliably.
+                </p>
+
+                <ul class="list-unstyled d-grid gap-1 mb-0 small">
+                    @foreach(\App\Services\ScholarFit\RequirementOutcome::pending($fit->outcomes) as $outcome)
+                        <li class="d-flex gap-2 align-items-start">
+                            <x-icon name="circle" :size="14" class="flex-shrink-0 mt-1 text-warning" />
+                            <span>{{ $outcome->message }}</span>
+                        </li>
+                    @endforeach
+                    @foreach(\App\Services\ScholarFit\RequirementOutcome::passes($fit->outcomes) as $outcome)
+                        <li class="d-flex gap-2 align-items-start">
+                            <x-icon name="check-circle" :size="14" class="flex-shrink-0 mt-1 text-success" />
+                            <span class="text-secondary">{{ $outcome->message }}</span>
+                        </li>
+                    @endforeach
+                </ul>
+            </div>
+        </div>
     </div>
 @elseif($pending)
     <div {{ $attributes->merge(['class' => 'alert mb-3 alert-warning']) }} role="alert">
@@ -139,6 +174,9 @@
                     {{ $eligible
                         ? 'You meet every requirement this scholarship states.'
                         : 'This scholarship states requirements your profile does not meet.' }}
+                    @if(! $eligible && $fit->failsEducationRequirement())
+                        {{ \App\Services\ScholarFit\EligibilityResult::EDUCATION_NOT_MET }}
+                    @endif
                 </p>
 
                 <div class="small fw-semibold mb-1">{{ $eligible ? 'Why you qualify' : 'Why you do not qualify' }}</div>

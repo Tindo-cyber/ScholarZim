@@ -213,6 +213,9 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT, 'cache.headers:no_sto
     Route::get('/apply/{opportunityId}', [ApplicationController::class, 'showWizard'])
         ->whereNumber('opportunityId')
         ->name('applications.wizard');
+    Route::post('/apply/{opportunityId}/details', [ApplicationController::class, 'saveDetails'])
+        ->whereNumber('opportunityId')
+        ->name('applications.details');
     Route::post('/apply/{opportunityId}', [ApplicationController::class, 'submit'])
         ->whereNumber('opportunityId')
         ->name('applications.submit');
@@ -252,6 +255,9 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
     Route::post('/provider/applications/{id}/review', [Provider\ApplicationReviewController::class, 'review'])
         ->whereNumber('id')
         ->name('provider.applications.review');
+    Route::post('/provider/applications/{id}/reopen', [Provider\ApplicationReviewController::class, 'reopen'])
+        ->whereNumber('id')
+        ->name('provider.applications.reopen');
     Route::get('/provider/applications/{applicationId}/results-certificate', [FileDownloadController::class, 'applicantResults'])
         ->whereNumber('applicationId')
         ->name('files.applicantResults');
@@ -261,6 +267,15 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
     Route::get('/provider/applications/{applicationId}/transcript', [FileDownloadController::class, 'applicantTranscript'])
         ->whereNumber('applicationId')
         ->name('files.applicantTranscript');
+    Route::get('/provider/applications/{applicationId}/cv', [FileDownloadController::class, 'applicantCv'])
+        ->whereNumber('applicationId')
+        ->name('files.applicantCv');
+    Route::get('/provider/applications/{applicationId}/id-or-passport', [FileDownloadController::class, 'applicantPassport'])
+        ->whereNumber('applicationId')
+        ->name('files.applicantPassport');
+    Route::get('/provider/applications/{applicationId}/recommendation-letter', [FileDownloadController::class, 'applicantRecommendation'])
+        ->whereNumber('applicationId')
+        ->name('files.applicantRecommendation');
 
     Route::middleware('account.active')->group(function () {
         Route::get('/opportunities/create', [OpportunityController::class, 'create'])->name('opportunities.create');

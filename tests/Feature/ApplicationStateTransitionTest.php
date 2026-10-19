@@ -36,7 +36,7 @@ class ApplicationStateTransitionTest extends TestCase
         $this->provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
     }
 
-    // ------------------------------------------------------ terminal states --
+    // ------------------------------- a decision is changed by withdrawing it, not in place --
 
     #[DataProvider('decidedStatuses')]
     public function test_a_decided_application_cannot_be_re_decided(string $from, string $to): void

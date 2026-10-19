@@ -164,15 +164,17 @@ class ScholarFitNeedsInformationTest extends TestCase
         $this->assertStringNotContainsString('>ELIGIBLE<', $html);
     }
 
-    public function test_the_application_page_offers_no_form_until_the_missing_field_is_added(): void
+    public function test_the_application_page_asks_for_the_missing_field_and_offers_no_form_until_it_is_added(): void
     {
         $listing = $this->listing('Gweru Town Bursary', ['target_locality' => 'Gweru']);
 
         $html = $this->actingAs($this->student)->get(route('applications.wizard', $listing->opportunity_id))->assertOk()->getContent();
 
-        $this->assertStringContainsString('NEEDS INFORMATION', $html);
-        $this->assertStringContainsString('Update my profile', $html);
-        $this->assertStringNotContainsString(route('applications.submit', $listing->opportunity_id), $html, 'a submit button that cannot succeed is worse than none');
+        // The missing town is asked for right here and saved to the profile; the submit form waits until it is.
+        $this->assertStringContainsString('A few details are still needed', $html);
+        $this->assertStringContainsString('name="profile[locality]"', $html);
+        $this->assertStringContainsString(route('applications.details', $listing->opportunity_id), $html);
+        $this->assertStringNotContainsString('action="' . route('applications.submit', $listing->opportunity_id) . '"', $html, 'a submit button that cannot succeed is worse than none');
     }
 
     // ------------------------------------------------------------- the gate --

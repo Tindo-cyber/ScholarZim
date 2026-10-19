@@ -90,10 +90,76 @@ something that was deliberately removed, not a regression.
 
 - [ ] One student cannot submit a second application to the same listing
 - [ ] A provider decision (Accept or Reject) is refused without a written reason
-- [ ] Accepted and Rejected are both final — neither can later become the other
+- [ ] An Accepted application cannot be turned straight into Rejected (or the reverse): the
+      page offers only **Withdraw decision and reopen**, and a direct request is refused
+- [ ] **Withdraw decision and reopen** asks for a reason and a confirmation; with the reason
+      empty nothing changes and the dialog opens again with the error
+- [ ] Withdrawing a **Rejection** returns the application to Pending; the provider can then
+      Accept it, or Reject it again with a new reason
+- [ ] Withdrawing an **Acceptance** shows the warning that it reverses the award; the applicant
+      is notified that the acceptance no longer stands and is not guaranteed
+- [ ] With a one-slot listing: after accepting, a second applicant cannot be accepted; after
+      withdrawing the first acceptance the second can, and the listing reopens if it had
+      closed itself
+- [ ] The applicant receives a notification at each step (decision, withdrawal, new decision)
+      and sees the withdrawal and its reason on their application page
+- [ ] **Decision history** on the review page lists each decision and withdrawal, oldest first,
+      and the audit log keeps the original decision and its reason
+- [ ] A different provider, an applicant and an administrator cannot withdraw the decision
+- [ ] A reopened application still blocks a second application from the same student, and the
+      applicant can still withdraw it
 - [ ] Withdrawing a Pending application notifies the provider and frees the listing for a
       fresh application from the same student
-- [ ] An Accepted or Rejected application cannot be withdrawn
+- [ ] An Accepted or Rejected application cannot be withdrawn by the applicant
+
+## Applying: reuse and documents
+
+- [ ] The profile's **Documents** card shows one count ("N documents are required for your
+      education level") and a matching progress line; the optional CV is listed but not counted
+- [ ] The card's instruction reads "Upload the required documents listed below." with the hint
+      "Upload clear, readable copies. Existing documents will be reused when they meet the
+      requirements." and no mention of ScholarFit
+- [ ] Changing the education level and saving changes the required count and the labels
+- [ ] Choosing **Certificate** or **Diploma** hides the degree classification at once (and clears one saved earlier); the profile is
+      complete with its documents and no academic results; choosing a degree brings the classification back
+- [ ] **Apply** with everything on file goes straight to the statement: no profile field and no
+      document is asked for again
+- [ ] **Apply** with a detail missing (for example no province on a province-restricted award)
+      shows **A few details are still needed** asking only for that; saving it returns to the
+      application and the detail is on the profile
+- [ ] A minor is asked for guardian details in the same place; after saving, the application continues
+- [ ] A missing required document is uploaded on that page and saved to the profile; a file of the
+      wrong type is refused
+- [ ] Results or a programme are a link to the profile with **Back to my application**
+- [ ] One-click **Apply** on a listing card refuses (and opens the apply page) while a required
+      document is missing; it works once they are all on file
+- [ ] An award the applicant is not eligible for says **NOT ELIGIBLE** and collects no documents
+- [ ] A school-leaver applying to an award limited to named institutions is asked where they have
+      applied (nothing ticked) and it is not on the profile page; the answer is reused by the next such award
+- [ ] With a saved list that does not include the award's institution, the page says **NOT ELIGIBLE** and shows the
+      saved list ticked with **Save and check again**; adding the institution makes the statement appear, and a list
+      that still does not fit stays NOT ELIGIBLE. An invalid choice (a fourth, none) saves nothing
+- [ ] A direct submission by someone who is not eligible, or for a listing that is closed, is refused and leaves no
+      new document on the profile
+- [ ] The personal statement is still required (100 to 5,000 characters)
+- [ ] After submitting, the application is in **Application tracker** with its number, date and
+      status, and there is nothing to type to record it
+- [ ] Editing the profile afterwards does not change what the provider sees on that application
+
+## Provider documents
+
+- [ ] On an application's review page every document it was submitted with has a **View** link:
+      the attachment, results certificate, academic certificate / proof of study, Grade 7
+      slip where applicable, CV, ID or passport, and recommendation letter
+- [ ] A document the applicant's level asks for and did not send says **Not provided**, with no
+      link; one that is recorded but whose file cannot be found says **File unavailable**
+- [ ] "Not provided" follows the level the applicant had when they applied, not the one on their profile today; an
+      older application with no record of that level lists only the documents it has
+- [ ] Replacing a document on the applicant's profile after applying does not change what the
+      provider opens (the application keeps what it was submitted with)
+- [ ] A provider who does not own the listing gets a forbidden response for every document link,
+      and an administrator has no route to an applicant's documents
+- [ ] Each document opened by a provider appears in the audit log
 
 ## Security and ops
 
@@ -101,6 +167,13 @@ something that was deliberately removed, not a regression.
       an authenticated route
 - [ ] Dark mode: dashboards and auth screens remain readable
 - [ ] "Sign out all other sessions" ends a session open in a second browser
+- [ ] The sign-in form has no "Keep me signed in" option
+- [ ] Sign in, close the whole browser, open it again and visit the site: the landing page offers
+      **Sign in** (not "Go to dashboard") and a dashboard URL redirects to the sign-in page. (If the
+      browser is set to "continue where you left off" / restore the previous session it may restore
+      the session cookie; that is the browser's setting, not ScholarZim's - check with it off.)
+- [ ] The browser's cookies for the site show only a session cookie (no expiry date) after signing
+      in, and no `remember_web_...` cookie
 - [ ] Account deletion refuses without the typed confirmation, and refuses for a provider with
       live listings
 - [ ] `/health` returns 200

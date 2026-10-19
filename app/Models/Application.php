@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Support\ApplicationStateMachine;
 use App\Support\ApplicationStatus;
+use App\Support\AuditAction;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -41,6 +42,11 @@ class Application extends Model
         // that added it for why this does not touch application_status.
         'viewed_by_provider_at',
         'submitted_snapshot',
+        // What the screens show while a reopened application waits for its new decision; the withdrawn decision itself
+        // is kept in the audit log. Written only by ApplicationService::reopen() and cleared by decide() / re-applying.
+        'reopened_at',
+        'reopen_reason',
+        'reopened_from',
     ];
 
     protected $casts = [
@@ -48,6 +54,7 @@ class Application extends Model
         'decided_at' => 'datetime',
         'withdrawn_at' => 'datetime',
         'viewed_by_provider_at' => 'datetime',
+        'reopened_at' => 'datetime',
         'submitted_snapshot' => 'array',
     ];
 
@@ -111,6 +118,14 @@ class Application extends Model
         return is_array($this->submitted_snapshot) ? ($this->submitted_snapshot['eligibility'] ?? null) : null;
     }
 
+    /** The education level the applicant was at when this was sent; null for one made before the snapshot was kept. */
+    public function submittedLevel(): ?string
+    {
+        $level = is_array($this->submitted_snapshot) ? ($this->submitted_snapshot['profile']['education_level'] ?? null) : null;
+
+        return filled($level) ? (string) $level : null;
+    }
+
     public function documentFor(string $type): ?array
     {
         $recorded = $this->relationLoaded('documents')
@@ -122,16 +137,27 @@ class Application extends Model
         }
 
         // Any record at all means it was taken, and this type simply was not there.
-        if ($this->documents()->exists() || ! isset(ApplicationDocument::TYPES[$type])) {
+        if ($this->documents()->exists() || ! in_array($type, ApplicationDocument::PROFILE_FALLBACK_TYPES, true)) {
             return null;
         }
 
         $profile = $this->user?->applicantProfile;
-        [$path, $filename] = ApplicationDocument::TYPES[$type];
+        [$path, $filename, $uploadedAt] = ApplicationDocument::TYPES[$type];
 
-        return $profile !== null && filled($profile->{$path})
-            ? ['path' => $profile->{$path}, 'filename' => $profile->{$filename}]
-            : null;
+        if ($profile === null || blank($profile->{$path})) {
+            return null;
+        }
+
+        // An application made before documents were recorded has only the applicant's profile to go on. A file put on
+        // the profile AFTER the application was sent was not part of it, and is not shown as though it were. (A file
+        // with no upload time predates the time being kept, so nothing says it came later.)
+        $at = $profile->{$uploadedAt};
+
+        if ($at !== null && $this->submitted_at !== null && \Illuminate\Support\Carbon::parse($at)->gt($this->submitted_at)) {
+            return null;
+        }
+
+        return ['path' => $profile->{$path}, 'filename' => $profile->{$filename}];
     }
 
     public function user(): BelongsTo
@@ -246,5 +272,46 @@ class Application extends Model
     public function awaitsDecision(): bool
     {
         return ApplicationStateMachine::canDecide($this->application_status);
+    }
+
+    /** Whether the provider may withdraw the decision already made and reopen it. */
+    public function canBeReopened(): bool
+    {
+        return ApplicationStateMachine::canReopen($this->application_status);
+    }
+
+    /** Pending again because a provider withdrew an earlier decision, and not yet decided a second time. */
+    public function isReopened(): bool
+    {
+        return $this->isPending() && $this->reopened_at !== null;
+    }
+
+    /**
+     * What has been decided about this application, oldest first: each decision and each withdrawal of one, from
+     * the audit log (the row itself only holds the current decision).
+     *
+     * @return \Illuminate\Support\Collection<int, array{kind: string, at: \Illuminate\Support\Carbon|null, by: ?string, reason: ?string, from: ?string}>
+     */
+    public function decisionHistory(): \Illuminate\Support\Collection
+    {
+        return AuditLog::where('entity_type', 'APPLICATION')
+            ->where('entity_id', $this->application_id)
+            ->whereIn('action', [AuditAction::STATUS_UPDATE, AuditAction::REOPEN_APPLICATION])
+            ->orderBy('audit_id')
+            ->get()
+            ->map(function (AuditLog $entry) {
+                $reopened = $entry->action === AuditAction::REOPEN_APPLICATION;
+
+                return [
+                    'kind' => $reopened
+                        ? 'reopened'
+                        : strtolower(ApplicationStatus::displayLabel($entry->new_values['application_status'] ?? null)),
+                    'at' => $entry->created_at,
+                    'by' => $entry->actor_email,
+                    'reason' => $entry->reason,
+                    'from' => $reopened ? strtolower(ApplicationStatus::displayLabel($entry->old_values['application_status'] ?? null)) : null,
+                ];
+            })
+            ->values();
     }
 }

@@ -17,9 +17,12 @@ use Illuminate\Validation\ValidationException;
  *
  *   enrolled (Certificate and above)   one current programme, at their own level, and where
  *   school-leaver (O-Level, A-Level)   up to three programmes they hope to study next, at the
- *                                      levels a school-leaver enters, and optionally up to three
- *                                      institutions they have applied to or hold an offer from
+ *                                      levels a school-leaver enters
  *   Primary or no level yet            none
+ *
+ * Where a school-leaver has applied or holds an offer is NOT kept up on the profile. ScholarFit needs it only to check a
+ * scholarship the provider limited to named institutions (a school-leaver has no current institution to check), so it is
+ * asked for on the application that needs it and saved by saveAppliedInstitutions(). Saving programmes never touches it.
  *
  * A programme is chosen from the catalogue. One that is not listed is suggested (and waits for
  * an administrator) but can be used by the person who suggested it straight away.
@@ -64,7 +67,7 @@ class ApplicantProgrammes
     /**
      * Replace the applicant's programmes with what the form said.
      *
-     * @param  array<string, mixed>  $input  current_programme_id, current_institution_id,
+     * @param  array<string, mixed>  $input  current_programme_id, current_institution_id, target_field_ids[],
      *                                       intended_programme_ids[], programme_suggestion, ..._field, ..._level
      * @throws ValidationException
      */
@@ -75,16 +78,9 @@ class ApplicantProgrammes
         $institutionId = filled($input['current_institution_id'] ?? null) ? (int) $input['current_institution_id'] : null;
         $intended = array_values(array_unique(array_map('intval', array_filter((array) ($input['intended_programme_ids'] ?? []), 'is_scalar'))));
         $suggestion = trim((string) ($input['programme_suggestion'] ?? ''));
-        $applied = array_values(array_unique(array_map('intval', array_filter((array) ($input['applied_institution_ids'] ?? []), 'is_scalar'))));
         $targets = array_values(array_unique(array_map('intval', array_filter((array) ($input['target_field_ids'] ?? []), 'is_scalar'))));
 
         $errors = [];
-
-        if ($applied && $mode !== self::INTENDED) {
-            $errors['applied_institution_ids'] = $mode === self::CURRENT
-                ? 'Say where you study with your current programme above. This list is for school-leavers.'
-                : 'Institutions you have applied to only apply once you are at O-Level or A-Level.';
-        }
 
         if ($mode === self::NONE && ($currentId || $intended || $suggestion !== '')) {
             $errors['intended_programme_ids'] = 'Programmes do not apply at your current level. Set your level first, then choose a programme.';
@@ -127,14 +123,6 @@ class ApplicantProgrammes
 
         $chosen['intended'] = collect($chosen['intended'])->unique('id')->values()->all();
 
-        if ($applied && ! isset($errors['applied_institution_ids'])) {
-            if (count($applied) > \App\Models\ApplicantInstitution::MAX) {
-                $errors['applied_institution_ids'] = 'Choose up to ' . \App\Models\ApplicantInstitution::MAX . ' institutions - the ones you have applied to or hold an offer from.';
-            } elseif (Institution::active()->whereIn('id', $applied)->count() !== count($applied)) {
-                $errors['applied_institution_ids'] = 'Choose institutions from the list.';
-            }
-        }
-
         if ($targets !== []) {
             if ($mode !== self::CURRENT) {
                 $errors['target_field_ids'] = 'Fields to study next are for students already on a programme or holding a qualification. Choose the programmes you hope to study instead.';
@@ -153,24 +141,19 @@ class ApplicantProgrammes
             throw ValidationException::withMessages($errors);
         }
 
-        DB::transaction(function () use ($profile, $chosen, $institutionId, $applied, $targets, $mode): void {
+        DB::transaction(function () use ($profile, $chosen, $institutionId, $targets, $mode): void {
             // Two saves at once (a double click, a second tab, a script) would each delete and re-create, and
             // could interleave into more than the limit. Holding the profile row makes the second wait, then
             // replace the first, so what is stored is always exactly one submission.
             ApplicantProfile::whereKey($profile->profile_id)->lockForUpdate()->first();
 
             ApplicantProgramme::where('profile_id', $profile->profile_id)->delete();
-            \App\Models\ApplicantInstitution::where('profile_id', $profile->profile_id)->delete();
             \App\Models\ApplicantTargetField::where('profile_id', $profile->profile_id)->delete();
 
             if ($mode === self::CURRENT) {
                 foreach ($targets as $id) {
                     \App\Models\ApplicantTargetField::create(['profile_id' => $profile->profile_id, 'field_id' => $id]);
                 }
-            }
-
-            foreach ($applied as $id) {
-                \App\Models\ApplicantInstitution::create(['profile_id' => $profile->profile_id, 'institution_id' => $id]);
             }
 
             if ($chosen['current'] !== null) {
@@ -184,6 +167,61 @@ class ApplicantProgrammes
                 ApplicantProgramme::create(['profile_id' => $profile->profile_id, 'programme_id' => $programme->id, 'kind' => self::INTENDED]);
             }
         });
+    }
+
+    /**
+     * Replace the institutions a school-leaver has applied to or holds an offer from.
+     *
+     * Asked for on an application that is limited to named institutions, never kept up on the profile. Only a
+     * school-leaver has a list (an enrolled student's institution is where they study, set with their programme),
+     * at most three, each an institution that is switched on. Whatever is already saved stays until this replaces it.
+     *
+     * @param  array<int, mixed>  $ids
+     * @throws ValidationException
+     */
+    public function saveAppliedInstitutions(ApplicantProfile $profile, array $ids): void
+    {
+        $ids = $this->validateAppliedInstitutions($profile, $ids);
+
+        DB::transaction(function () use ($profile, $ids): void {
+            \App\Models\ApplicantInstitution::where('profile_id', $profile->profile_id)->delete();
+
+            foreach ($ids as $id) {
+                \App\Models\ApplicantInstitution::create(['profile_id' => $profile->profile_id, 'institution_id' => $id]);
+            }
+        });
+    }
+
+    /**
+     * Check an answer to "which institutions have you applied to" without saving anything, so a caller can settle
+     * every other part of a request before it writes any of it.
+     *
+     * @param  array<int, mixed>  $ids
+     * @return array<int, int> the distinct, validated institution ids
+     * @throws ValidationException
+     */
+    public function validateAppliedInstitutions(ApplicantProfile $profile, array $ids): array
+    {
+        $ids = array_values(array_unique(array_map('intval', array_filter($ids, 'is_scalar'))));
+        $key = 'applied_institution_ids';
+
+        if (self::modeFor($profile) !== self::INTENDED) {
+            throw ValidationException::withMessages([$key => 'Where you have applied is asked of school-leavers. If you are studying, say where with your programme.']);
+        }
+
+        if ($ids === []) {
+            throw ValidationException::withMessages([$key => 'Choose at least one institution, or go back if you have not applied anywhere yet.']);
+        }
+
+        if (count($ids) > \App\Models\ApplicantInstitution::MAX) {
+            throw ValidationException::withMessages([$key => 'Choose up to ' . \App\Models\ApplicantInstitution::MAX . ' institutions - the ones you have applied to or hold an offer from.']);
+        }
+
+        if (Institution::active()->whereIn('id', $ids)->count() !== count($ids)) {
+            throw ValidationException::withMessages([$key => 'Choose institutions from the list.']);
+        }
+
+        return $ids;
     }
 
     /** A programme the person may choose at one of these levels, or null with the reason recorded. */

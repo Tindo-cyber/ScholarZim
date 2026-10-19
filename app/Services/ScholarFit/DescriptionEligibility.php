@@ -64,6 +64,14 @@ final class DescriptionEligibility
     public const UNSUPPORTED = 'unsupported';
 
     /**
+     * Wording that sounds like a restriction on who the award is for - a school year, "school leavers" -
+     * but that cannot be read reliably as either a level the award funds or a qualification already held. Never a pass
+     * and never a failure: EligibilityEvaluator turns it into a "needs review" outcome, so the listing is neither
+     * called open to everyone nor used to turn anyone away. See unmarkedConditions() and yearTermConditions().
+     */
+    public const UNRESOLVED_LEVEL = 'unresolved_level';
+
+    /**
      * Regex fragments, each already word-bounded, that state a strict
      * prerequisite - "you must already hold this" - rather than describing
      * who the award is generally for. A sentence matching one of these
@@ -174,9 +182,17 @@ final class DescriptionEligibility
         // normalise() only folds hyphens to spaces, it does not expand "O"/
         // "A" into "ordinary"/"advanced".
         'o level' => EducationLevel::O_LEVEL,
+        'o levels' => EducationLevel::O_LEVEL,
+        'olevel' => EducationLevel::O_LEVEL,
+        'olevels' => EducationLevel::O_LEVEL,
         'ordinary level' => EducationLevel::O_LEVEL,
+        'ordinary levels' => EducationLevel::O_LEVEL,
         'a level' => EducationLevel::A_LEVEL,
+        'a levels' => EducationLevel::A_LEVEL,
+        'alevel' => EducationLevel::A_LEVEL,
+        'alevels' => EducationLevel::A_LEVEL,
         'advanced level' => EducationLevel::A_LEVEL,
+        'advanced levels' => EducationLevel::A_LEVEL,
 
         'undergraduate degree' => EducationLevel::UNDERGRADUATE,
         'undergraduate student' => EducationLevel::UNDERGRADUATE,
@@ -269,6 +285,69 @@ final class DescriptionEligibility
         'polytechnic' => EducationLevel::DIPLOMA,
     ];
 
+
+    /**
+     * Years of school that are named by number or by the old sixth-form words, with the level they belong to. Form 5
+     * and Form 6 (Lower and Upper Sixth) are the two years of A-Level study; Forms 2-4 are the years of the O-Level
+     * course. Form 1 is its own entry level and is in EDUCATION_LEVEL_PHRASES.
+     *
+     * These are matched on their own rather than as phrases because the same words turn up in places that are not
+     * about a level at all ("submit Form 5", "Form 5 results are attached"), and because whether one means "the year
+     * the award is for" or "a year you must already have finished" depends on the sentence - see yearTermKind().
+     */
+    private const YEAR_TERM_PATTERNS = [
+        EducationLevel::A_LEVEL => [
+            '/\bforms?\s+(?:5|6|five|six)\b/',
+            '/\b(?:lower|upper)\s+(?:sixth|6)\b/',
+            '/\bsixth\s+form(?:ers?)?\b/',
+        ],
+        EducationLevel::O_LEVEL => [
+            '/\bforms?\s+(?:2|3|4|two|three|four)\b/',
+        ],
+    ];
+
+    /** A sentence about paperwork that happens to say "Form 5": not a statement about education at all. */
+    private const PAPERWORK_PATTERNS = [
+        '/\b(?:submit|submitting|fill(?:ed)?\s+(?:in|out)|attach(?:ed)?|download|upload|return(?:ed)?|enclose[d]?|sign(?:ed)?|application|registration|consent)\s+(?:the\s+|a\s+|your\s+)?forms?\s+\d/',
+        '/\bforms?\s+\d+\s+(?:application|document|template|attached|below|enclosed|must\s+be\s+(?:signed|submitted|completed|attached))\b/',
+    ];
+
+    /** Words that say a level has been FINISHED, so the wording is about what the applicant already holds. */
+    private const ACHIEVED_CUE = '/\b(?:complet(?:ed|ion|ing)|finish(?:ed|ing)?|passes?|passed|obtain(?:ed)?|achiev(?:ed|ing)|graduat(?:ed|es|ing)|graduates?|leavers?|alumni|holders?|holding|holds?|after)\b/';
+
+    /** Words that say the applicant is IN, or moving into, the level - who the award is for. */
+    private const CURRENT_CUE = '/\b(?:in|attending|enrolled|enrolling|currently|studying|entering|progressing|proceeding|moving|going|starting|admitted|will\s+be|about\s+to|taking|sitting|doing|learners?|pupils?|students?)\b/';
+
+    /** "for Form 5 and 6": a plain statement of audience even with no "students" after it. */
+    private const DIRECT_AUDIENCE = '/\b(?:for|to|into)\s+(?:the\s+)?(?:forms?|lower|upper|sixth|fifth)\b/';
+
+    /** The year that ends a course: finishing it IS holding the qualification. */
+    private const COURSE_ENDING_YEAR = '/\bforms?\s+(?:\w+\s+){0,3}?(?:6|six)\b|\bupper\s+(?:sixth|6)\b/';
+
+    /**
+     * Wording that is about who an award is for whatever the sentence around it says. Read even without one of the
+     * markers above, and as UNRESOLVED_LEVEL - the level it means is not one this system can name with confidence.
+     */
+    private const STRONG_AUDIENCE_HINTS = [
+        '/\b(?:matric|matriculants?)\b/',
+        '/\b(?:senior|junior)\s+secondary\b/',
+        '/\bschool\s+leavers?\b/',
+    ];
+
+    /**
+     * Wording that names a kind of student the level table has no word for. Read only in a description sentence that
+     * also carries a marker, never in a title (a provider's own name very plausibly contains "College").
+     */
+    private const WEAK_AUDIENCE_HINTS = [
+        '/\bcolleges?\s+(?:students?|learners?|leavers?|level|programmes?)\b/',
+        '/\btertiary\b/',
+        '/\bhigher\s+education\b/',
+        '/\bigcse\b/',
+        '/\bas\s+levels?\b/',
+        '/\bfoundation\s+(?:year|programmes?|programs?)\b/',
+        '/\bpre\s+university\b/',
+    ];
+
     /**
      * Phrase => the canonical FormOptions::FIELDS_OF_STUDY value it names.
      * "Education" is deliberately absent: it collides with "education
@@ -344,6 +423,15 @@ final class DescriptionEligibility
 
                 $found[] = new DescriptionCondition(self::EDUCATION_LEVEL, $level, $phrase, DescriptionCondition::SOURCE_TITLE);
             }
+
+            // A school year or sixth-form word in a title states its audience the same way a level name does, unless it
+            // says the level was finished ("Form 6 Leavers").
+            $yearTerms = self::yearTermConditions($normalisedTitle, null, DescriptionCondition::SOURCE_TITLE, false, false);
+            $found = array_merge($found, $yearTerms);
+
+            if ($yearTerms === [] && ! self::titleNamesALevel($found)) {
+                $found = array_merge($found, self::hintConditions($normalisedTitle, null, DescriptionCondition::SOURCE_TITLE, false));
+            }
         }
 
         if (blank($description)) {
@@ -361,13 +449,24 @@ final class DescriptionEligibility
             // stricter reading is the more specific, and therefore more
             // informative, one. A sentence matching neither carries no
             // condition at all, same as before this distinction existed.
+            $entryMarker = self::matchesAny($normalised, self::ENTRY_REQUIREMENT_MARKER_PATTERNS);
+            $targetMarker = self::matchesAny($normalised, self::TARGET_MARKER_PATTERNS);
+
             $educationLevelKind = match (true) {
-                self::matchesAny($normalised, self::ENTRY_REQUIREMENT_MARKER_PATTERNS) => self::ENTRY_QUALIFICATION,
-                self::matchesAny($normalised, self::TARGET_MARKER_PATTERNS) => self::EDUCATION_LEVEL,
+                $entryMarker => self::ENTRY_QUALIFICATION,
+                $targetMarker => self::EDUCATION_LEVEL,
                 default => null,
             };
 
             if ($educationLevelKind === null) {
+                // No marker, so ordinary level words are left alone ("undergraduate research experience is an
+                // advantage"). Wording that can only be about who an award is for is still read - and when it cannot be
+                // read reliably it is kept as UNRESOLVED_LEVEL rather than dropped, so a listing that says "for school
+                // leavers" is not quietly treated as open to everyone.
+                foreach (self::unmarkedConditions($normalised) as $condition) {
+                    $found[] = $condition;
+                }
+
                 continue;
             }
 
@@ -391,6 +490,15 @@ final class DescriptionEligibility
                 $found[] = new DescriptionCondition($educationLevelKind, $level, $phrase, DescriptionCondition::SOURCE_DESCRIPTION);
             }
 
+            $yearTerms = self::yearTermConditions($normalised, $clauses, DescriptionCondition::SOURCE_DESCRIPTION, $entryMarker, $targetMarker);
+            $found = array_merge($found, $yearTerms);
+
+            // Nothing in this sentence could be read as a level: if it still talks about a kind of student the table has
+            // no word for, say so instead of saying nothing.
+            if ($levelMatches === [] && $yearTerms === []) {
+                $found = array_merge($found, self::hintConditions($normalised, $clauses, DescriptionCondition::SOURCE_DESCRIPTION, true));
+            }
+
             foreach (self::outsideNegation($clauses, self::matches($normalised, self::FIELD_OF_STUDY_PHRASES)) as [$phrase, $field]) {
                 $found[] = self::once($seen, self::FIELD_OF_STUDY, $field, $phrase);
             }
@@ -403,6 +511,140 @@ final class DescriptionEligibility
         }
 
         return array_values(array_filter($found));
+    }
+
+
+    /**
+     * A sentence with no "requires" or "for ... students" in it. Only wording that is about the award's audience on its
+     * own is read: "for Form 5 and 6", "school leavers". Anything else here is left alone, as before.
+     *
+     * @return array<int, DescriptionCondition>
+     */
+    private static function unmarkedConditions(string $normalisedSentence): array
+    {
+        if (self::isNegated($normalisedSentence)) {
+            return [];
+        }
+
+        $clauses = self::clauses($normalisedSentence);
+        $yearTerms = self::yearTermConditions($normalisedSentence, $clauses, DescriptionCondition::SOURCE_DESCRIPTION, false, false);
+
+        return $yearTerms !== []
+            ? $yearTerms
+            : self::hintConditions($normalisedSentence, $clauses, DescriptionCondition::SOURCE_DESCRIPTION, false);
+    }
+
+    /**
+     * The school years (Form 5, Lower Sixth ...) a text names, each as the kind of condition its wording supports.
+     *
+     * @param  array<int, string>|null  $clauses  null for a title
+     * @return array<int, DescriptionCondition>
+     */
+    private static function yearTermConditions(string $text, ?array $clauses, string $source, bool $entryMarker, bool $targetMarker): array
+    {
+        if (self::matchesAny($text, self::PAPERWORK_PATTERNS)) {
+            return [];
+        }
+
+        $isTitle = $source === DescriptionCondition::SOURCE_TITLE;
+        $found = [];
+        $seen = [];
+
+        foreach (self::YEAR_TERM_PATTERNS as $level => $patterns) {
+            foreach ($patterns as $pattern) {
+                if (preg_match($pattern, $text, $match) !== 1) {
+                    continue;
+                }
+
+                $phrase = $match[0];
+
+                if ($isTitle ? self::negatedInTitle($text, $phrase) : self::phraseIsNegated($clauses ?? [], $phrase)) {
+                    continue;
+                }
+
+                $kind = self::yearTermKind($text, $level, $isTitle, $entryMarker, $targetMarker);
+                $value = $kind === self::UNRESOLVED_LEVEL ? $phrase : $level;
+
+                if (isset($seen[$kind . ':' . $value])) {
+                    continue;
+                }
+
+                $seen[$kind . ':' . $value] = true;
+                $found[] = new DescriptionCondition($kind, $value, $phrase, $source);
+            }
+        }
+
+        return $found;
+    }
+
+    /**
+     * Whether a school year in this text says who the award is FOR (EDUCATION_LEVEL), a level already FINISHED
+     * (ENTRY_QUALIFICATION), or something that cannot be told (UNRESOLVED_LEVEL).
+     *
+     *   - "Form 5 and 6 bursary", "open to Lower Sixth students", "must be in Form 5", "for Form 5 and 6": who it is for.
+     *   - "must have completed Form 6", "Upper Sixth leavers": a qualification already held - but only the year that
+     *     ends the course is a qualification; having finished Form 5 is not an A-Level, so that is not guessed at.
+     *   - "requires Form 5", "Form 5 results are needed": could be either, and is left to be reviewed.
+     */
+    private static function yearTermKind(string $text, string $level, bool $isTitle, bool $entryMarker, bool $targetMarker): string
+    {
+        if (preg_match(self::ACHIEVED_CUE, $text) === 1) {
+            return $level === EducationLevel::A_LEVEL && preg_match(self::COURSE_ENDING_YEAR, $text) === 1
+                ? self::ENTRY_QUALIFICATION
+                : self::UNRESOLVED_LEVEL;
+        }
+
+        if ($isTitle || ($targetMarker && ! $entryMarker)) {
+            return self::EDUCATION_LEVEL;
+        }
+
+        if ($entryMarker) {
+            return preg_match(self::CURRENT_CUE, $text) === 1 ? self::EDUCATION_LEVEL : self::UNRESOLVED_LEVEL;
+        }
+
+        return preg_match(self::DIRECT_AUDIENCE, $text) === 1 ? self::EDUCATION_LEVEL : self::UNRESOLVED_LEVEL;
+    }
+
+    /**
+     * Wording about a kind of student that the level table has no word for - "school leavers",
+     * and (in a description sentence that carries a marker) "tertiary", "IGCSE".
+     *
+     * @param  array<int, string>|null  $clauses  null for a title
+     * @return array<int, DescriptionCondition>
+     */
+    private static function hintConditions(string $text, ?array $clauses, string $source, bool $withWeak): array
+    {
+        $isTitle = $source === DescriptionCondition::SOURCE_TITLE;
+        $patterns = $withWeak ? array_merge(self::STRONG_AUDIENCE_HINTS, self::WEAK_AUDIENCE_HINTS) : self::STRONG_AUDIENCE_HINTS;
+        $found = [];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $text, $match) !== 1) {
+                continue;
+            }
+
+            $phrase = $match[0];
+
+            if ($isTitle ? self::negatedInTitle($text, $phrase) : self::phraseIsNegated($clauses ?? [], $phrase)) {
+                continue;
+            }
+
+            $found[] = new DescriptionCondition(self::UNRESOLVED_LEVEL, $phrase, $phrase, $source);
+        }
+
+        return $found;
+    }
+
+    /** @param  array<int, DescriptionCondition>  $found */
+    private static function titleNamesALevel(array $found): bool
+    {
+        foreach ($found as $condition) {
+            if ($condition->source === DescriptionCondition::SOURCE_TITLE) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

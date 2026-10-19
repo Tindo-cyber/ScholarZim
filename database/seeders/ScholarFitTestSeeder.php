@@ -247,6 +247,8 @@ class ScholarFitTestSeeder extends Seeder
             'biography' => $p['biography'] ?? null,
             'results_certificate_path' => null, 'results_certificate_filename' => null, 'results_uploaded_at' => null,
             'transcript_path' => null, 'transcript_filename' => null, 'transcript_uploaded_at' => null,
+            'passport_path' => null, 'passport_filename' => null, 'passport_uploaded_at' => null,
+            'recommendation_letter_path' => null, 'recommendation_letter_filename' => null, 'recommendation_letter_uploaded_at' => null,
             'guardian_name' => null, 'guardian_phone' => null, 'guardian_relationship' => null, 'guardian_confirmed_at' => null,
         ];
 
@@ -258,6 +260,19 @@ class ScholarFitTestSeeder extends Seeder
             $attributes['transcript_path'] = 'profiles/demo/fit-transcript.pdf';
             $attributes['transcript_filename'] = 'transcript.pdf';
             $attributes['transcript_uploaded_at'] = Carbon::now()->subMonths(2);
+            // Above school level an ID or passport is asked for as well.
+            $attributes['passport_path'] = 'profiles/demo/fit-id.pdf';
+            $attributes['passport_filename'] = 'id.pdf';
+            $attributes['passport_uploaded_at'] = Carbon::now()->subMonths(2);
+        }
+
+        // Everyone who has an academic certificate on file also has the recommendation letter every level above Primary
+        // is asked for, so these applicants are ready to apply as far as documents go. Tariro, who has none, shows the
+        // apply page asking for what is missing.
+        if (($p['certificate'] ?? null) !== null) {
+            $attributes['recommendation_letter_path'] = 'profiles/demo/fit-recommendation.pdf';
+            $attributes['recommendation_letter_filename'] = 'recommendation.pdf';
+            $attributes['recommendation_letter_uploaded_at'] = Carbon::now()->subMonths(2);
         }
 
         if (isset($p['guardian'])) {

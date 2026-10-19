@@ -6,6 +6,8 @@
     'groups',
     'hint' => null,
     'noun' => 'choices',
+    // The validation key when it is not the posted name (a field posted as profile[x][] is invalid as profile.x).
+    'errorKey' => null,
 ])
 
 {{--
@@ -40,5 +42,5 @@
             </div>
         @endforeach
     </div>
-    @error($name)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+    @error($errorKey ?? $name)<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 </fieldset>

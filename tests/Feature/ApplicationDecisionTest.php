@@ -22,7 +22,8 @@ use Tests\TestCase;
  *
  * There is deliberately no award step: accepting an application grants the
  * scholarship, so the tests here assert that nothing further is asked of either
- * side and that neither decision can later become the other.
+ * side and that a decision cannot be flipped into the other directly. (Withdrawing
+ * a decision and deciding again is ApplicationReopenTest.)
  */
 class ApplicationDecisionTest extends TestCase
 {

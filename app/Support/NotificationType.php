@@ -22,6 +22,12 @@ final class NotificationType
     public const APPLICATION_WITHDRAWN = 'APPLICATION_WITHDRAWN';
 
     /**
+     * To the applicant: the provider withdrew their accepted or rejected decision and the application is pending
+     * again. A second decision notification follows when the provider decides.
+     */
+    public const APPLICATION_REOPENED = 'APPLICATION_REOPENED';
+
+    /**
      * A provider has opened a still-pending application for the first time.
      * Not a status - application_status stays PENDING throughout; see
      * ApplicationService::markViewedByProvider(). Distinct from
@@ -93,6 +99,7 @@ final class NotificationType
         self::APPLICATION_ACCEPTED,
         self::APPLICATION_REJECTED,
         self::APPLICATION_WITHDRAWN,
+        self::APPLICATION_REOPENED,
         self::NEW_APPLICATION,
         self::DEADLINE_REMINDER,
         self::NEW_OPPORTUNITY,

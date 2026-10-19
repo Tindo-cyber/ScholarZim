@@ -6,9 +6,11 @@ namespace App\Support;
  * The three states an application can be in, plus the applicant's own way out.
  *
  * A student applies, the application is PENDING, and the provider either
- * ACCEPTS or REJECTS it with a written reason. That is the whole lifecycle:
- * "accepted" means the provider has granted the scholarship, so there is no
- * second step after it and nothing for the student to confirm.
+ * ACCEPTS or REJECTS it with a written reason. "Accepted" means the provider has
+ * granted the scholarship, so there is no second step after it and nothing for
+ * the student to confirm. A provider who got a decision wrong withdraws it, which
+ * returns the application to PENDING (ApplicationService::reopen()) so it can be
+ * decided again.
  *
  * WITHDRAWN is kept because pulling out is the applicant's decision and the
  * columns and screens for it already exist, but it is not a provider decision
@@ -56,7 +58,7 @@ final class ApplicationStatus
 
     public const LEGACY_AWARDED = 'AWARDED';
 
-    /** The provider's two decisions. Both are final and both need a reason. */
+    /** The provider's two decisions. Both need a reason; either can be withdrawn, which reopens the application. */
     public const DECISIONS = [
         self::ACCEPTED,
         self::REJECTED,
@@ -147,7 +149,7 @@ final class ApplicationStatus
         )));
     }
 
-    /** True once the provider has decided, or the applicant has pulled out. */
+    /** True once the provider has decided, or the applicant has pulled out. A decision can still be withdrawn. */
     public static function isTerminal(?string $status): bool
     {
         return self::canonical($status) !== self::PENDING;

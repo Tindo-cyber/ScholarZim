@@ -328,25 +328,45 @@ class ApplicantProgrammesTest extends TestCase
         return \App\Models\ApplicantInstitution::where('profile_id', $this->profile()->profile_id)->pluck('institution_id')->all();
     }
 
+    /** Where a school-leaver has applied is asked on the application that needs it (saveAppliedInstitutions), not on the profile. */
+    private function saveApplied(array $ids): void
+    {
+        app(\App\Services\Catalogue\ApplicantProgrammes::class)->saveAppliedInstitutions($this->profile(), $ids);
+    }
+
+    private function assertAppliedRefused(array $ids): void
+    {
+        $this->expectException(\Illuminate\Validation\ValidationException::class);
+
+        try {
+            $this->saveApplied($ids);
+        } finally {
+            $this->assertNotNull(true);
+        }
+    }
+
     public function test_a_school_leaver_can_record_up_to_three_institutions_they_applied_to(): void
     {
         $this->level(EducationLevel::A_LEVEL);
 
-        $this->save(['applied_institution_ids' => [$this->institution('UZ'), $this->institution('MSU'), $this->institution('NUST')]])
-            ->assertSessionHasNoErrors();
+        $this->saveApplied([$this->institution('UZ'), $this->institution('MSU'), $this->institution('NUST')]);
 
         $this->assertEqualsCanonicalizing([$this->institution('UZ'), $this->institution('MSU'), $this->institution('NUST')], $this->applied());
     }
 
-    public function test_four_institutions_is_too_many(): void
+    public function test_four_institutions_is_too_many_and_saves_nothing(): void
     {
         $this->level(EducationLevel::A_LEVEL);
+        $this->saveApplied([$this->institution('UZ')]);
 
-        $this->save(['applied_institution_ids' => [
-            $this->institution('UZ'), $this->institution('MSU'), $this->institution('NUST'), $this->institution('CUT'),
-        ]])->assertSessionHasErrors('applied_institution_ids');
+        try {
+            $this->saveApplied([$this->institution('UZ'), $this->institution('MSU'), $this->institution('NUST'), $this->institution('CUT')]);
+            $this->fail('four is too many');
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            $this->assertArrayHasKey('applied_institution_ids', $e->errors());
+        }
 
-        $this->assertSame([], $this->applied());
+        $this->assertSame([$this->institution('UZ')], $this->applied(), 'what was saved is untouched');
     }
 
     public function test_an_unknown_or_switched_off_institution_is_refused(): void
@@ -354,20 +374,33 @@ class ApplicantProgrammesTest extends TestCase
         $this->level(EducationLevel::A_LEVEL);
         Institution::where('code', 'CUT')->update(['is_active' => false]);
 
-        $this->save(['applied_institution_ids' => [999999]])->assertSessionHasErrors('applied_institution_ids');
-        $this->save(['applied_institution_ids' => [$this->institution('CUT')]])->assertSessionHasErrors('applied_institution_ids');
+        foreach ([[999999], [$this->institution('CUT')]] as $ids) {
+            try {
+                $this->saveApplied($ids);
+                $this->fail('refused');
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                $this->assertArrayHasKey('applied_institution_ids', $e->errors());
+            }
+        }
+
+        $this->assertSame([], $this->applied());
     }
 
-    public function test_saving_replaces_the_list_and_saving_none_clears_it(): void
+    public function test_saving_replaces_the_list_and_an_empty_list_is_refused_rather_than_clearing_it(): void
     {
         $this->level(EducationLevel::O_LEVEL);
-        $this->save(['applied_institution_ids' => [$this->institution('UZ'), $this->institution('MSU')]]);
+        $this->saveApplied([$this->institution('UZ'), $this->institution('MSU')]);
 
-        $this->save(['applied_institution_ids' => [$this->institution('NUST')]]);
+        $this->saveApplied([$this->institution('NUST')]);
         $this->assertSame([$this->institution('NUST')], $this->applied());
 
-        $this->save([]);
-        $this->assertSame([], $this->applied());
+        try {
+            $this->saveApplied([]);
+            $this->fail('an empty answer is not an answer');
+        } catch (\Illuminate\Validation\ValidationException) {
+            $this->addToAssertionCount(1);
+        }
+        $this->assertSame([$this->institution('NUST')], $this->applied());
     }
 
     public function test_the_same_institution_twice_counts_once(): void
@@ -375,7 +408,7 @@ class ApplicantProgrammesTest extends TestCase
         $this->level(EducationLevel::A_LEVEL);
         $id = $this->institution('UZ');
 
-        $this->save(['applied_institution_ids' => [$id, $id]])->assertSessionHasNoErrors();
+        $this->saveApplied([$id, $id]);
 
         $this->assertSame([$id], $this->applied());
     }
@@ -384,25 +417,43 @@ class ApplicantProgrammesTest extends TestCase
     {
         $this->level(EducationLevel::UNDERGRADUATE);
 
-        $this->save(['applied_institution_ids' => [$this->institution('UZ')]])->assertSessionHasErrors('applied_institution_ids');
+        $this->assertAppliedRefused([$this->institution('UZ')]);
     }
 
-    public function test_the_school_leavers_page_asks_for_them_and_an_enrolled_students_does_not(): void
+    public function test_the_profile_page_no_longer_asks_where_anyone_has_applied(): void
     {
-        $this->level(EducationLevel::A_LEVEL);
-        $this->assertStringContainsString('applied_institution_ids[]', $this->actingAs($this->student)->get('/applicant/profile')->getContent());
+        foreach ([EducationLevel::A_LEVEL, EducationLevel::O_LEVEL, EducationLevel::UNDERGRADUATE] as $level) {
+            $this->level($level);
+            $html = $this->actingAs($this->student)->get('/applicant/profile')->assertOk()->getContent();
 
-        $this->level(EducationLevel::UNDERGRADUATE);
-        $this->assertStringNotContainsString('applied_institution_ids[]', $this->actingAs($this->student)->get('/applicant/profile')->getContent());
+            $this->assertStringNotContainsString('applied_institution_ids', $html, $level);
+            $this->assertStringNotContainsString('Institutions you have applied to', $html, $level);
+        }
     }
 
-    public function test_programmes_and_institutions_are_saved_together(): void
+    public function test_saving_programmes_leaves_the_institutions_already_saved_alone(): void
     {
         $this->level(EducationLevel::A_LEVEL);
-        $this->save(['applied_institution_ids' => [$this->institution('UZ')], 'intended_programme_ids' => [$this->programme('BSc Computer Science')]]);
+        $this->saveApplied([$this->institution('UZ'), $this->institution('MSU')]);
+        $before = $this->applied();
 
+        // The profile form no longer carries the list, so saving programmes must not clear it...
+        $this->save(['intended_programme_ids' => [$this->programme('BSc Computer Science')]])->assertSessionHasNoErrors();
+        $this->assertEqualsCanonicalizing($before, $this->applied());
         $this->assertCount(1, $this->rows('intended'));
-        $this->assertCount(1, $this->applied());
+
+        // ...nor can the programme endpoint be used to change it.
+        $this->save(['intended_programme_ids' => [$this->programme('BSc Computer Science')], 'applied_institution_ids' => [$this->institution('NUST')]])->assertSessionHasNoErrors();
+        $this->assertEqualsCanonicalizing($before, $this->applied());
+    }
+
+    public function test_institutions_saved_earlier_are_still_used_by_scholarfit(): void
+    {
+        $this->level(EducationLevel::A_LEVEL);
+        $this->saveApplied([$this->institution('MSU')]);
+
+        $this->assertSame([$this->institution('MSU')], $this->applied());
+        $this->assertTrue($this->profile()->appliedInstitutions()->whereHas('institution', fn ($q) => $q->where('code', 'MSU'))->exists());
     }
 
 }

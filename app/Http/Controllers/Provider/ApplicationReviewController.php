@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers\Provider;
 
+use App\Exceptions\AwardsFilled;
 use App\Exceptions\InvalidApplicationTransition;
 use App\Http\Controllers\Controller;
+use App\Models\ApplicantProfile;
+use App\Models\Application;
 use App\Services\ApplicationService;
+use App\Services\FileStorageService;
 use App\Services\RecommendationService;
 use App\Support\ApplicationStatus;
 use Illuminate\Http\Request;
@@ -15,6 +19,7 @@ class ApplicationReviewController extends Controller
     public function __construct(
         private readonly ApplicationService $applicationService,
         private readonly RecommendationService $recommendationService,
+        private readonly FileStorageService $fileStorage,
     ) {
     }
 
@@ -45,7 +50,7 @@ class ApplicationReviewController extends Controller
         $sentEligibility = $application->submittedEligibility();
         // Only said when the live check now gives a different answer from the one saved at submission.
         $profileChanged = $sentEligibility !== null && $fit !== null
-            && \App\Services\ApplicationSnapshot::eligibility($fit) !== $sentEligibility;
+            && ! \App\Services\ApplicationSnapshot::sameVerdict(\App\Services\ApplicationSnapshot::eligibility($fit), $sentEligibility);
 
         return view('applications.provider-review', [
             'application' => $application,
@@ -60,14 +65,73 @@ class ApplicationReviewController extends Controller
             // the decision form - offering buttons whose every outcome would be
             // refused on save is worse than offering none.
             'canDecide' => $application->awaitsDecision(),
+            'canReopen' => $application->canBeReopened(),
+            'decisionHistory' => $application->decisionHistory(),
+            'documents' => $this->documentRows($application),
             'timeline' => ApplicationStatus::timeline($application->application_status, $application->viewed_by_provider_at),
         ]);
     }
 
     /**
+     * Every document this provider may open for this application, as the page lists it.
+     *
+     * One row for each document the application was submitted with, plus a "Not provided" row for any the
+     * applicant's level asks for and did not supply, so "they did not send it" is told apart from "I cannot open
+     * it". A document that was recorded but whose file cannot be found is shown as unavailable rather than offered
+     * as a link that would 404, and no storage path is ever put in the row.
+     *
+     * @return array<int, array{label: string, state: string, route: ?string}>  state: available, unavailable, missing
+     */
+    private function documentRows(Application $application): array
+    {
+        $routes = [
+            'results' => 'files.applicantResults',
+            'grade7_slip' => 'files.applicantGrade7Slip',
+            'transcript' => 'files.applicantTranscript',
+            'recommendation' => 'files.applicantRecommendation',
+            'cv' => 'files.applicantCv',
+            'passport' => 'files.applicantPassport',
+        ];
+
+        // What was asked of this applicant is judged at the level they were at when they applied - not the level their
+        // profile holds now. An application with no record of that level says nothing about what was asked: it shows
+        // the documents it has and no "Not provided" row it cannot stand behind.
+        $level = $application->submittedLevel();
+        $asked = $level !== null ? array_keys(ApplicantProfile::documentRequirementsAt($level, $application->opportunity)) : [];
+        $rows = [];
+
+        // The file the applicant attached to the application itself.
+        $rows[] = [
+            'label' => $application->document_filename ?: 'Application attachment',
+            'state' => blank($application->document_path)
+                ? 'missing'
+                : ($this->fileStorage->exists($application->document_path) ? 'available' : 'unavailable'),
+            'route' => 'files.applicationDocument',
+        ];
+
+        foreach ($routes as $type => $route) {
+            $document = $application->documentFor($type);
+
+            // Nothing sent and nothing asked of this applicant: not worth a row.
+            if ($document === null && ! in_array($type, $asked, true)) {
+                continue;
+            }
+
+            $rows[] = [
+                'label' => ApplicantProfile::DOCUMENT_LABELS[$type],
+                'state' => $document === null ? 'missing' : ($this->fileStorage->exists($document['path']) ? 'available' : 'unavailable'),
+                'route' => $route,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
      * The provider's decision: accept or reject, with a reason the applicant
      * reads verbatim. There is nothing to do afterwards - accepting an
-     * application is granting the scholarship.
+     * application is granting the scholarship. A decision that turns out to be
+     * wrong is withdrawn with reopen() and made again.
      */
     public function review(Request $request, int $id)
     {
@@ -83,15 +147,45 @@ class ApplicationReviewController extends Controller
                 $data['reason'],
                 $request->user()
             );
-        } catch (InvalidApplicationTransition $e) {
+        } catch (InvalidApplicationTransition|AwardsFilled $e) {
             // A refused move is a business answer, not a crash: the provider is
             // told which rule stopped them and the page keeps their input.
-            return back()->withInput()->with('errorMessage', $e->getMessage());
+            $hint = $e instanceof AwardsFilled
+                ? ' To accept this applicant, first withdraw one of the existing acceptances on this scholarship.'
+                : '';
+
+            return back()->withInput()->with('errorMessage', $e->getMessage() . $hint);
         }
 
         return redirect()
             ->route('provider.applications.show', $id)
             ->with('successMessage', 'Application ' . strtolower(ApplicationStatus::displayLabel($data['status']))
                 . '. The applicant has been notified.');
+    }
+
+    /**
+     * The provider withdraws a decision and reopens the application for review.
+     *
+     * A reason is required and the applicant is told it. The dialog on the review page posts here, and its errors
+     * come back in the "reopen-decision" bag so the dialog opens again with them showing.
+     */
+    public function reopen(Request $request, int $id)
+    {
+        $data = $request->validateWithBag('reopen-decision', [
+            'reason' => ['required', 'string', 'max:500'],
+        ], [
+            'reason.required' => 'A reason is required to withdraw a decision - the applicant is told it.',
+        ]);
+
+        try {
+            $application = $this->applicationService->reopen($id, $data['reason'], $request->user());
+        } catch (InvalidApplicationTransition $e) {
+            return redirect()->route('provider.applications.show', $id)->with('errorMessage', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('provider.applications.show', $id)
+            ->with('successMessage', 'Your decision was withdrawn and the application is pending again. The applicant has been told.'
+                . ($application->getAttribute('listing_reopened') ? ' The scholarship was reopened because an award slot was released.' : ''));
     }
 }

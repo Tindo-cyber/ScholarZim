@@ -502,8 +502,9 @@ class ProgrammeScope
             return RequirementOutcome::needsInfo(
                 RequirementOutcome::TYPE_INSTITUTION_SCOPE,
                 $prefix . 'Institution: for students at ' . $open . ' - '
-                    . ($applicant['mode'] === ApplicantProgrammes::CURRENT ? 'add where you study' : 'add the institutions you have applied to or hold an offer from')
-                    . ' to your profile so we can check it.',
+                    . ($applicant['mode'] === ApplicantProgrammes::CURRENT
+                        ? 'add where you study to your profile so we can check it.'
+                        : 'say which institutions you have applied to or hold an offer from when you apply, so we can check it.'),
                 ScholarFitFieldNames::INSTITUTION,
                 required: $open,
             );

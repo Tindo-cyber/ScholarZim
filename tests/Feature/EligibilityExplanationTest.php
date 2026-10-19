@@ -16,6 +16,7 @@ use App\Support\OpportunityStatus;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Support\GivesRequiredDocuments;
 use Tests\TestCase;
 
 /**
@@ -33,6 +34,7 @@ use Tests\TestCase;
 class EligibilityExplanationTest extends TestCase
 {
     use RefreshDatabase;
+    use GivesRequiredDocuments;
 
     private User $provider;
 
@@ -50,6 +52,8 @@ class EligibilityExplanationTest extends TestCase
         $this->aLevel = AcademicQualification::findByKey(AcademicCatalogue::ZIMSEC_A_LEVEL);
 
         $this->profile()->academicResults()->delete();
+        // Ready to apply as far as documents go, so these tests are about eligibility and not about uploads.
+        $this->giveRequiredDocuments($this->applicant);
     }
 
     private function profile(): ApplicantProfile

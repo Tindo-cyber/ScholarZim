@@ -137,7 +137,7 @@ class ProfileCompletenessGateTest extends TestCase
         ]);
     }
 
-    /** The wizard itself shows the same refusal before the form, not just after submitting it. */
+    /** The wizard itself says what is missing before the form, not just after submitting it - and asks only for that. */
     public function test_the_wizard_shows_a_profile_incomplete_card_instead_of_the_form(): void
     {
         $applicant = $this->newApplicant('wizard-card@example.test');
@@ -146,7 +146,7 @@ class ProfileCompletenessGateTest extends TestCase
         $response = $this->actingAs($applicant)->get('/apply/' . $opportunity->opportunity_id);
 
         $response->assertOk();
-        $response->assertSee('COMPLETE YOUR PROFILE FIRST');
+        $response->assertSee('A few details are still needed');
         $response->assertSee('Education level');
         $response->assertDontSee('Submit application');
     }

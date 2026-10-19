@@ -8,6 +8,15 @@
                    subtitle="Everything ScholarFit checks against a scholarship's requirements."
                    eyebrow="Student" />
 
+    @if(($returnTo = request()->integer('apply')) > 0)
+        {{-- Sent here from an application that needs something only the profile can hold (results, a programme).
+             The way back is one click, and nothing is lost: what was saved here is read when the application reopens. --}}
+        <div class="alert alert-info small d-flex flex-wrap align-items-center gap-2" role="note" id="return-to-application">
+            <span>Add what is missing, save, then go back to your application.</span>
+            <a class="btn btn-sm btn-primary ms-auto" href="{{ route('applications.wizard', $returnTo) }}">Back to my application</a>
+        </div>
+    @endif
+
     <x-profile-quality :profile="$profile" class="mb-4" />
 
     <div class="row g-4">
@@ -50,7 +59,7 @@
                                     <legend class="form-label mb-2">Gender<span class="text-danger" aria-hidden="true">*</span></legend>
                                     @foreach($genders as $genderValue => $genderLabel)
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio"
+                                            <input class="form-check-input @error('gender') is-invalid @enderror" type="radio"
                                                    id="field-gender-{{ $genderValue }}"
                                                    name="gender" value="{{ $genderValue }}" required
                                                    @checked(old('gender', $profile->gender) === $genderValue)>
@@ -60,7 +69,7 @@
                                         </div>
                                     @endforeach
                                     @error('gender')
-                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                        <div class="invalid-feedback d-block mt-1" id="gender-error">{{ $message }}</div>
                                     @enderror
                                     <div class="form-text">
                                         Required. Shown to providers reviewing your application; it does not
@@ -129,7 +138,9 @@
                                               :value="$profile->field_of_study" maxlength="255"
                                               hint="For example Information Systems, Mining Engineering or Nursing. Your programme itself is chosen from the list further down this page." />
                             </div>
-                            <div class="col-md-4">
+                            @php $documentsOnly = \App\Support\EducationLevel::needsNoAcademicDetail($profile->education_level); @endphp
+                            {{-- Not for a Certificate or Diploma: those are shown by the documents uploaded, with no classification. --}}
+                            <div class="col-md-4" data-sz-level-hide="CERTIFICATE,DIPLOMA" @if($documentsOnly) hidden @endif>
                                 {{-- A degree class is one fact about a person, not a score per
                                      module, so it is held here rather than as subject results.
                                      That also keeps it out of any A-Level points total. --}}
@@ -228,6 +239,12 @@
                         --}}
                         <input type="hidden" name="academic_results_submitted" value="1">
 
+                        <p class="alert alert-info small" role="note" data-sz-level-show="CERTIFICATE,DIPLOMA"
+                           @unless(\App\Support\EducationLevel::needsNoAcademicDetail($profile->education_level)) hidden @endunless>
+                            Nothing here is needed for a Certificate or Diploma - your documents are your evidence. Add earlier school results
+                            only if a scholarship you want asks for them.
+                        </p>
+
                         @if($profile->needsAcademicResultsMigration())
                             {{--
                                 This applicant recorded their results before ScholarZim asked for them
@@ -279,12 +296,50 @@
                             to choose from the updated list.
                         </p>
 
+                        {{-- What is wrong with a row is said beside that row's own fields (and once in the summary at the top
+                             of the page), never as a second alert here. Only a problem with the list as a whole is said here. --}}
                         @error('academic_subject_results')
-                            <div class="alert alert-danger small">{{ $message }}</div>
+                            <div class="text-danger small mb-2">{{ $message }}</div>
                         @enderror
-                        @foreach($errors->get('academic_subject_results.*') as $messages)
-                            <div class="alert alert-danger small">{{ $messages[0] }}</div>
-                        @endforeach
+
+                        @php
+                            /*
+                             * The rows to draw. After a refused save they are the rows the person submitted, in the
+                             * order and with the numbers they had, so nothing they typed is lost and each message lands
+                             * on the row it is about; otherwise they are what is saved on the profile.
+                             */
+                            $submittedRows = old('academic_results_submitted') ? old('academic_subject_results') : null;
+
+                            if (is_array($submittedRows)) {
+                                $academicRows = collect($submittedRows)->filter(fn ($row) => is_array($row))->map(function (array $row) {
+                                    $qualification = filled($row['qualification_id'] ?? null)
+                                        ? \App\Models\AcademicQualification::with('activeSubjects')->find($row['qualification_id'])
+                                        : null;
+
+                                    return [
+                                        'qualification_id' => $row['qualification_id'] ?? null,
+                                        'subject_id' => $row['subject_id'] ?? null,
+                                        'result' => $row['result'] ?? null,
+                                        'year' => $row['year'] ?? null,
+                                        'qualification' => $qualification,
+                                        'subject' => $qualification?->activeSubjects->firstWhere('id', (int) ($row['subject_id'] ?? 0)),
+                                        'points' => null,
+                                    ];
+                                })->all();
+                            } else {
+                                $academicRows = $profile->academicResults->map(fn ($result) => [
+                                    'qualification_id' => $result->qualification_id,
+                                    'subject_id' => $result->subject_id,
+                                    'result' => $result->result,
+                                    'year' => $result->year,
+                                    'qualification' => $result->qualification,
+                                    'subject' => $result->subject,
+                                    'points' => $result->points(),
+                                ])->all();
+                            }
+
+                            $nextRowNumber = $academicRows === [] ? 0 : max(array_map('intval', array_keys($academicRows))) + 1;
+                        @endphp
 
                         <div class="table-responsive">
                             <table class="table table-sm align-middle mb-2 sz-table-stack" id="academic-results-table">
@@ -299,17 +354,28 @@
                                     </tr>
                                 </thead>
                                 <tbody id="academic-results-list">
-                                    @foreach($profile->academicResults as $idx => $result)
+                                    @foreach($academicRows as $idx => $row)
+                                        @php
+                                            $rowError = fn (string $field) => $errors->first("academic_subject_results.$idx.$field");
+                                            // "Row 2: please select a subject." is how the summary says it; beside the field it is just the sentence.
+                                            $rowMessage = function (string $field) use ($rowError) {
+                                                $message = $rowError($field);
+
+                                                return $message === '' ? null : ucfirst(preg_replace('/^Row \d+:\s*/', '', $message));
+                                            };
+                                        @endphp
                                         <tr class="academic-result-row">
                                             <td data-label="Qualification">
-                                                <select class="form-select form-select-sm qualification-select"
+                                                <select class="form-select form-select-sm qualification-select @if($rowMessage('qualification_id')) is-invalid @endif"
                                                         name="academic_subject_results[{{ $idx }}][qualification_id]"
-                                                        aria-label="Qualification">
+                                                        aria-label="Qualification" @if($rowMessage('qualification_id')) aria-invalid="true" @endif>
+                                                    <option value="">Select qualification</option>
                                                     @foreach($qualifications as $qual)
                                                         <option value="{{ $qual->id }}" @if($qual->isPrimaryEducation()) data-primary-only @endif
-                                                            @selected($qual->id == $result->qualification_id)>{{ $qual->name }}</option>
+                                                            @selected($qual->id == $row['qualification_id'])>{{ $qual->name }}</option>
                                                     @endforeach
                                                 </select>
+                                                @if($message = $rowMessage('qualification_id'))<div class="invalid-feedback d-block">{{ $message }}</div>@endif
                                             </td>
                                             {{--
                                                 Options are rendered server-side, already selected, so an
@@ -320,39 +386,42 @@
                                                 section was rebuilt to stop.
                                             --}}
                                             <td data-label="Subject">
-                                                <select class="form-select form-select-sm subject-select"
+                                                <select class="form-select form-select-sm subject-select @if($rowMessage('subject_id')) is-invalid @endif"
                                                         name="academic_subject_results[{{ $idx }}][subject_id]"
-                                                        data-selected="{{ $result->subject_id }}"
-                                                        aria-label="Subject">
+                                                        data-selected="{{ $row['subject_id'] }}"
+                                                        aria-label="Subject" @if($rowMessage('subject_id')) aria-invalid="true" @endif>
                                                     <option value="">Select subject</option>
-                                                    @foreach(($result->qualification?->activeSubjects ?? []) as $subject)
+                                                    @foreach(($row['qualification']?->activeSubjects ?? []) as $subject)
                                                         <option value="{{ $subject->id }}"
-                                                            @selected($subject->id == $result->subject_id)>{{ $subject->label() }}</option>
+                                                            @selected($subject->id == $row['subject_id'])>{{ $subject->label() }}</option>
                                                     @endforeach
                                                 </select>
+                                                @if($message = $rowMessage('subject_id'))<div class="invalid-feedback d-block">{{ $message }}</div>@endif
                                             </td>
                                             <td data-label="Result">
-                                                <select class="form-select form-select-sm grade-select"
+                                                <select class="form-select form-select-sm grade-select @if($rowMessage('result')) is-invalid @endif"
                                                         name="academic_subject_results[{{ $idx }}][result]"
-                                                        data-selected="{{ $result->result }}"
-                                                        aria-label="Result">
+                                                        data-selected="{{ $row['result'] }}"
+                                                        aria-label="Result" @if($rowMessage('result')) aria-invalid="true" @endif>
                                                     <option value="">Select result</option>
-                                                    @foreach(($result->subject?->grades() ?? $result->qualification?->grades() ?? []) as $grade)
+                                                    @foreach(($row['subject']?->grades() ?? $row['qualification']?->grades() ?? []) as $grade)
                                                         <option value="{{ $grade }}"
-                                                            @selected($grade === $result->result)>{{ $grade }}</option>
+                                                            @selected($grade === $row['result'])>{{ $grade }}</option>
                                                     @endforeach
                                                 </select>
+                                                @if($message = $rowMessage('result'))<div class="invalid-feedback d-block">{{ $message }}</div>@endif
                                             </td>
                                             <td data-label="Year">
-                                                <input type="number" class="form-control form-control-sm year-input"
+                                                <input type="number" class="form-control form-control-sm year-input @if($rowMessage('year')) is-invalid @endif"
                                                        name="academic_subject_results[{{ $idx }}][year]"
-                                                       value="{{ $result->year }}"
+                                                       value="{{ $row['year'] }}"
                                                        min="1950" max="{{ now()->year + 1 }}" step="1"
-                                                       aria-label="Year">
+                                                       aria-label="Year" @if($rowMessage('year')) aria-invalid="true" @endif>
+                                                @if($message = $rowMessage('year'))<div class="invalid-feedback d-block">{{ $message }}</div>@endif
                                             </td>
                                             {{-- Derived, never entered. There is no input here on purpose. --}}
                                             <td class="text-end derived-points font-monospace" data-label="Points">
-                                                {{ $result->points() !== null ? rtrim(rtrim(number_format($result->points(), 2), '0'), '.') : '—' }}
+                                                {{ $row['points'] !== null ? rtrim(rtrim(number_format($row['points'], 2), '0'), '.') : '—' }}
                                             </td>
                                             <td class="text-end" data-label="">
                                                 <button type="button" class="btn btn-sm btn-outline-danger remove-row">Remove</button>
@@ -444,7 +513,7 @@
                 </div>
             </form>
 
-            @include('applicant.partials.programme-card', ['profile' => $profile, 'catalogue' => $catalogue, 'programmeChoices' => $programmeChoices, 'appliedInstitutionIds' => $appliedInstitutionIds, 'targetFieldIds' => $targetFieldIds ?? []])
+            @include('applicant.partials.programme-card', ['profile' => $profile, 'catalogue' => $catalogue, 'programmeChoices' => $programmeChoices, 'targetFieldIds' => $targetFieldIds ?? []])
         </div>
 
         <div class="col-xl-4">
@@ -479,6 +548,17 @@
                         </div>
 
                         <p class="small text-secondary">
+                            Some Form 1 awards ask to see your Grade 7 results slip. A new upload replaces the current one.
+                        </p>
+
+                        @if($slipName)
+                                <x-status-badge label="Uploaded" tone="success" icon="check" />
+                            @else
+                                <x-status-badge label="Not uploaded" tone="secondary" />
+                            @endif
+                        </div>
+
+                        <p class="small text-secondary">
                             Some Form 1 awards ask to see your Grade 7 results slip. Upload a photo or scan of it here and it
                             will be used for any award that asks. Uploading again replaces it. It is private: only you, and
                             a provider you have applied to, can open it.
@@ -504,7 +584,7 @@
                         </form>
                         @error('document')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
 
-                        <p class="form-text mt-1 mb-0">PDF, Word, JPG or PNG.</p>
+                        <p class="form-text mt-1 mb-0">PDF, Word, JPG or PNG. Only you and providers you apply to can open it.</p>
                     </div>
                 </div>
             @endif
@@ -516,113 +596,50 @@
 
                 <div class="card-body d-grid gap-4">
                     @php
-                        // Counted from what is actually stored, not from whether the
-                        // last upload request succeeded.
-                        $required = $profile->requiredDocumentTypes();
-                        $requiredCount = count($required);
-                        $missingCount = count($profile->missingRequiredDocumentTypes());
-                        $uploadedCount = $requiredCount - $missingCount;
-                        $requiredSentence = $requiredCount . ' ' . \Illuminate\Support\Str::plural('document', $requiredCount)
-                            . ($requiredCount === 1 ? ' is' : ' are') . ' required for your education level.';
-                        $progressSentence = $missingCount === 0
-                            ? 'All required documents uploaded.'
-                            : $uploadedCount . ' of ' . $requiredCount . ' required documents uploaded - '
-                                . $missingCount . ' ' . \Illuminate\Support\Str::plural('document', $missingCount) . ' remaining.';
+                        // One list, read from what is actually stored: the same one the apply wizard and the
+                        // submission check use. Optional documents are listed below but never counted.
+                        $checklist = $profile->documentChecklist();
                     @endphp
 
-                    @if($requiredCount > 0)
-                        <div class="alert alert-{{ $missingCount === 0 ? 'success' : 'warning' }} small mb-0">
-                            <div class="fw-semibold">{{ $requiredSentence }}</div>
-                            <div>{{ $progressSentence }}</div>
+                    @if($checklist->requiredCount() > 0)
+                        <div class="alert alert-{{ $checklist->isComplete() ? 'success' : 'warning' }} small mb-0" id="document-summary">
+                            <div class="fw-semibold">{{ $checklist->requiredSentence() }}</div>
+                            <div>{{ $checklist->progressSentence() }}</div>
                         </div>
                     @endif
 
-                    <p class="small text-secondary mb-0">
-                        Uploading again replaces what is there. Your documents are private: only you,
-                        and a provider you have applied to, can open them.
-                    </p>
+                    <div id="document-instruction">
+                        <p class="mb-1">Upload the required documents listed below.</p>
+                        <p class="small text-secondary mb-0">Upload clear, readable copies. Existing documents will be reused when they meet the requirements.</p>
+                    </div>
 
-                    @foreach([
-                        'results' => ['The academic evidence providers and ScholarFit rely on up to O-Level/A-Level.'],
-                        'transcript' => ['The academic evidence providers and ScholarFit rely on above O-Level/A-Level.'],
-                        'cv' => ['Most providers expect one.'],
-                        'passport' => ['Used to confirm your identity and nationality.'],
-                        'recommendation' => ['Supporting reference from a teacher or employer.'],
-                    ] as $type => [$help])
-                        @php
-                            $label = \App\Models\ApplicantProfile::DOCUMENT_LABELS[$type];
-                            $filename = $profile->documentFilename($type);
-                            $uploadedAt = $profile->documentUploadedAt($type);
-                            $isRequired = in_array($type, $required, true);
-                            // A school-level profile never needs a transcript, and a
-                            // tertiary-or-above profile never needs a results
-                            // certificate - showing the one that does not apply to this
-                            // education level at all would just be another unrelated
-                            // field on the page.
-                            $appliesToThisLevel = in_array($type, ['cv', 'passport', 'recommendation'], true)
-                                || $isRequired;
-                        @endphp
+                    <section aria-labelledby="academic-documents-heading">
+                        <h3 class="h6 fw-semibold mb-3" id="academic-documents-heading">Academic certificates</h3>
 
-                        @if($appliesToThisLevel)
-                            <div>
-                                <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
-                                    <span class="fw-semibold small">{{ $label }}</span>
-                                    @if($filename)
-                                        <x-status-badge label="Uploaded" tone="success" icon="check" />
-                                    @elseif($isRequired)
-                                        <x-status-badge label="Required" tone="danger" />
-                                    @else
-                                        <x-status-badge label="Not uploaded" tone="secondary" />
-                                    @endif
-                                </div>
+                        <div class="d-grid gap-3">
+                            @foreach($checklist->group('academic') as $item)
+                                @include('applicant.partials.document-row', ['item' => $item])
+                            @endforeach
+                        </div>
+                    </section>
 
-                                <p class="small text-secondary mb-2">
-                                    {{ $isRequired ? 'Required before you can apply. ' : 'Optional, but recommended. ' }}{{ $help }}
-                                </p>
+                    @if($checklist->group('other') !== [])
+                        <section aria-labelledby="other-documents-heading">
+                            <h3 class="h6 fw-semibold mb-3" id="other-documents-heading">Other documents</h3>
 
-                                {{--
-                                    Context, not a new requirement: this uploader already maps to
-                                    exactly one education level via requiredDocumentTypes(), so a
-                                    reader can tell what this document is supposed to stand as
-                                    evidence for, rather than uploading an anonymous "certificate"
-                                    with no stated context next to it.
-                                --}}
-                                @if($type === 'transcript' && (filled($profile->field_of_study) || filled($profile->degree_classification)))
-                                    <p class="small text-secondary mb-2 fst-italic">
-                                        For your {{ \App\Support\EducationLevel::label($profile->education_level) }}
-                                        studies{{ $profile->field_of_study ? ' in ' . $profile->field_of_study : '' }}{{ $profile->degree_classification ? ' (' . $profile->degree_classification . ')' : '' }}.
-                                    </p>
-                                @endif
-
-                                @if($filename)
-                                    <p class="small mb-2">
-                                        <a class="text-decoration-none d-inline-flex align-items-center gap-1"
-                                           href="{{ route('files.myDocument', $type) }}"
-                                           target="_blank" rel="noopener">
-                                            <x-icon name="eye" :size="14" />{{ $filename }}
-                                        </a>
-                                        <span class="text-secondary d-block">
-                                            Uploaded {{ $uploadedAt?->diffForHumans() }}
-                                        </span>
-                                    </p>
-                                @endif
-
-                                <form method="POST" action="{{ route('applicant.profile.documents', $type) }}"
-                                      enctype="multipart/form-data" class="d-flex gap-2">
-                                    @csrf
-                                    <input class="form-control form-control-sm" type="file" name="document"
-                                           accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required
-                                           aria-label="Upload {{ $label }}">
-                                    <x-submit-button :label="$filename ? 'Replace' : 'Upload'"
-                                                     busy-label="Uploading..."
-                                                     tone="outline-primary" size="sm"
-                                                     class="flex-shrink-0" />
-                                </form>
-
-                                <p class="form-text mt-1 mb-0">PDF, Word, JPG or PNG.</p>
+                            <div class="d-grid gap-3">
+                                @foreach($checklist->group('other') as $item)
+                                    @include('applicant.partials.document-row', ['item' => $item])
+                                @endforeach
                             </div>
-                        @endif
-                    @endforeach
+                        </section>
+                    @endif
+
+                    @error('document')<div class="text-danger small">{{ $message }}</div>@enderror
+
+                    <p class="form-text mb-0">
+                        PDF, Word, JPG or PNG. A new upload replaces the current file. Only you and providers you apply to can open your documents.
+                    </p>
                 </div>
             </div>
         </div>

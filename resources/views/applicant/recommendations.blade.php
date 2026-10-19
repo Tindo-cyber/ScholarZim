@@ -128,7 +128,8 @@
         --}}
         <h2 class="h6 fw-bold mt-5 mb-3" id="needs-information">Complete your profile to check</h2>
         <p class="text-secondary small mb-3">
-            These scholarships ask something your profile does not answer yet, so we cannot say whether you qualify.
+            We cannot say yet whether you qualify for these: either they ask something your profile does not answer yet, or part of
+            the listing's wording could not be read reliably and is marked for review.
         </p>
 
         <div class="d-grid gap-3">
@@ -147,7 +148,12 @@
                                     <x-icon name="circle" :size="14" class="flex-shrink-0 mt-1 text-warning" />
                                     <span>
                                         {{ $outcome->message }}
-                                        @if($anchor = \App\Services\ScholarFit\ScholarFitFieldNames::anchor((string) $outcome->missing))
+                                        @if($outcome->type === \App\Services\ScholarFit\RequirementOutcome::TYPE_INSTITUTION_SCOPE
+                                            && $outcome->missing === \App\Services\ScholarFit\ScholarFitFieldNames::INSTITUTION
+                                            && \App\Services\Catalogue\ApplicantProgrammes::modeFor($profile) === \App\Services\Catalogue\ApplicantProgrammes::INTENDED)
+                                            {{-- Asked on the application itself, not kept up on the profile. --}}
+                                            <a href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Say where you applied</a>
+                                        @elseif($anchor = \App\Services\ScholarFit\ScholarFitFieldNames::anchor((string) $outcome->missing))
                                             <a href="{{ route('applicant.profile') }}#{{ $anchor }}">Add your {{ $outcome->missing }}</a>
                                         @endif
                                     </span>

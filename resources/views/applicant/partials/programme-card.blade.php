@@ -6,6 +6,7 @@
      *
      * The current-programme and institution pickers are plain <select>s; the pick-up-to-three lists are
      * checkboxes (x-limited-choice), because a multiple <select> needs Ctrl-click and nobody finds that out.
+     * There is no "institutions you have applied to" list: it is asked for on the application that needs it.
      * Both work with JavaScript off; resources/js adds a search box over each list and, on the checkbox
      * lists, a running count that stops a fourth being ticked. The server refuses a fourth regardless.
      */
@@ -86,20 +87,6 @@
                                           'selected' => in_array($programme->id, array_map('intval', (array) $intendedIds), true),
                                       ])->all(),
                                   ])->values()->all()" />
-
-                <x-limited-choice name="applied_institution_ids" id="applied_institution_ids"
-                                  label="Institutions you have applied to or have an offer from (optional)"
-                                  :max="\App\Models\ApplicantInstitution::MAX" noun="institutions"
-                                  :groups="$catalogue['institutions']->groupBy('type')->map(fn ($institutions, $type) => [
-                                      'label' => \App\Models\Institution::TYPE_LABELS[$type] ?? $type,
-                                      'options' => $institutions->map(fn ($institution) => [
-                                          'id' => $institution->id,
-                                          'label' => $institution->name,
-                                          'search' => strtolower($institution->name . ' ' . $institution->code),
-                                          'selected' => in_array($institution->id, array_map('intval', (array) old('applied_institution_ids', $appliedInstitutionIds)), true),
-                                      ])->all(),
-                                  ])->values()->all()"
-                                  hint="Some scholarships are only for students at certain institutions. This lets us tell you which ones you can apply for." />
             @endif
 
             <details class="mb-3" @if(old('programme_suggestion')) open @endif>

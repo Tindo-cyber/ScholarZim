@@ -121,12 +121,22 @@ class ApplicationDocumentSnapshotTest extends TestCase
         $this->assertArrayNotHasKey('results', $rows->all(), 'an undergraduate holds no results certificate here');
     }
 
-    public function test_only_the_documents_a_provider_may_open_are_recorded(): void
+    /**
+     * Every document the applicant holds goes in with the application - the CV, ID or passport and recommendation
+     * letter too. They used to be left out ("not part of what a provider is shown"), so a provider reviewing an
+     * application could never open three of the documents the applicant is asked to upload, although the profile
+     * page tells them a provider they apply to can open them.
+     */
+    public function test_every_document_the_applicant_holds_is_recorded_with_the_application(): void
     {
         $application = $this->applyWithDocuments();
+        $profile = $this->profile();
 
-        $this->assertEqualsCanonicalizing(['transcript'], ApplicationDocument::where('application_id', $application->application_id)->pluck('type')->all(),
-            'the passport and recommendation letter are not part of what a provider is shown');
+        $held = collect(ApplicationDocument::TYPES)->filter(fn ($columns) => filled($profile->{$columns[0]}))->keys()->all();
+
+        $this->assertContains('passport', $held);
+        $this->assertContains('recommendation', $held);
+        $this->assertEqualsCanonicalizing($held, ApplicationDocument::where('application_id', $application->application_id)->pluck('type')->all());
     }
 
     public function test_the_provider_opens_what_was_submitted(): void

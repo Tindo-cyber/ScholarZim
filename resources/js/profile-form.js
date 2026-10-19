@@ -35,6 +35,10 @@
 
         const showFor = document.querySelectorAll('[data-sz-tier]');
         const hideFor = document.querySelectorAll('[data-sz-tier-hide]');
+        // By level rather than tier: a Certificate and a Diploma share the tertiary tier with a degree but have no degree
+        // classification, and ask for no academic results (their documents are the evidence).
+        const levelHide = document.querySelectorAll('[data-sz-level-hide]');
+        const levelShow = document.querySelectorAll('[data-sz-level-show]');
         // The qualification choices in the academic-results table were
         // rendered server-side for whichever level this page loaded with
         // (see ApplicantProfile::selectableQualifications()) and do not
@@ -89,6 +93,14 @@
             hideFor.forEach((el) => {
                 const tiers = el.dataset.szTierHide.split(',');
                 el.hidden = tier !== null && tiers.includes(tier);
+            });
+
+            levelHide.forEach((el) => {
+                el.hidden = el.dataset.szLevelHide.split(',').includes(select.value);
+            });
+
+            levelShow.forEach((el) => {
+                el.hidden = !el.dataset.szLevelShow.split(',').includes(select.value);
             });
 
             minorFor.forEach((el) => {

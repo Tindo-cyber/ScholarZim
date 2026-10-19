@@ -127,8 +127,10 @@ the apply route is refused exactly the same way the UI already showed it would b
    already has one of each remaining outcome: **"Rural Schools A-Level Support Fund"** is
    **Accepted**, with the provider's written reason shown; **"Agribusiness Innovation Research
    Grant"** is **Rejected**, reason shown (an A-Level applicant on a PhD-targeted award — the same
-   pathway rule from Step 2, seen as history rather than live). Point out that both are final:
-   neither can be reopened, and reapplying is only possible after a **Withdrawal**.
+   pathway rule from Step 2, seen as history rather than live). Point out that a decision is
+   not changed in place: the provider **withdraws** it (with a reason, and the applicant is told),
+   which reopens the application as Pending so it can be decided again. Reapplying is only possible
+   after the applicant's own **Withdrawal**.
 
 ---
 

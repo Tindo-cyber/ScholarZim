@@ -106,12 +106,25 @@ The whole of it, in one line:
 There are three application statuses and no others: `PENDING`, `ACCEPTED`, `REJECTED`.
 **Accepting an application is granting the scholarship** — there is no separate award step
 afterwards, nothing further for the provider to click, and nothing for the student to
-confirm. Both decisions are final: an accepted application can never become rejected, and a
-rejected one can never become accepted.
+confirm. A decision is not flipped in place: an accepted application cannot become rejected
+directly, nor a rejected one accepted. A provider who got it wrong **withdraws the decision**
+(a written reason is required and the applicant is told), which returns the application to
+`PENDING`, and then decides again. Withdrawing an acceptance reverses the award: the slot it
+used is released, and a listing that had closed itself because its last slot filled opens again.
+The original decision, its reason and who made it stay in the audit history.
+
+Applying reuses the applicant's profile rather than collecting it again. `ApplicationReadiness`
+reads what a scholarship needs against what the profile already holds and asks only for what is
+missing - a detail, a guardian, a document - saving it to the profile through the same writer the
+profile form uses (`ApplicantProfileService`). The documents an applicant must upload come from one
+list, `ApplicantProfile::documentChecklist()`: the profile page's count, the apply page, the
+submission check (one-click Apply included) and the provider's review page all read it, so they
+cannot disagree. At submission the application records a snapshot of what was sent, so editing the
+profile later does not change an application already made.
 
 `WITHDRAWN` exists alongside those three, but it is the applicant's own action rather than
 a provider decision, and it is the only status that leaves the listing open to a fresh
-application.
+application. A provider withdrawing a *decision* is a different event and never sets it.
 
 | Who | Can set | From |
 |-----|---------|------|
@@ -535,8 +548,13 @@ is faster.
 - `WorkflowTest` covers the moderation gate, the apply-once rule, and provider decisions.
 - `ApplicationDecisionTest` covers the whole simplified workflow: applying, the pending
   start, the duplicate rule, accept and reject with a reason, that a reason is required,
-  that neither decision can become the other, that no second award step exists, the two
-  notifications, and what each side sees.
+  that a decision cannot be flipped directly, that no second award step exists, the two
+  notifications, and what each side sees. `ApplicationReopenTest` covers withdrawing a
+  decision: both corrections end to end, the reason, the audit history, the applicant's
+  notifications, authorisation, award capacity and what each page says. `DocumentRequirementsTest`
+  covers the single document list (each level, the counts, the profile page, the apply page and
+  the submission gate agreeing) and `ApplicationReuseTest` covers reuse of the profile, what is
+  saved from the apply page, application history and access control.
 - `ApplicationStateMachineTest` and `ApplicationStateTransitionTest` prove the transition
   rules and that the endpoints are actually behind them.
 - `ApplicationLifecycleTest` covers withdrawal and re-application after it.

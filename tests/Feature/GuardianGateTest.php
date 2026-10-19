@@ -202,12 +202,13 @@ class GuardianGateTest extends TestCase
 
         $html = html_entity_decode($this->actingAs($this->student)->get('/apply/' . $this->listing->opportunity_id)->assertOk()->getContent(), ENT_QUOTES);
 
-        $this->assertStringContainsString('A PARENT OR GUARDIAN IS NEEDED', $html);
+        $this->assertStringContainsString('Parent or guardian', $html);
         $this->assertStringContainsString('under 18', $html);
-        $this->assertStringContainsString('guardian\'s phone number', $html);
+        $this->assertStringContainsString('name="profile[guardian_phone]"', $html, 'the missing phone number is asked for in place');
+        $this->assertStringContainsString('name="profile[guardian_confirmed]"', $html);
         $this->assertStringContainsString('aware of and involved', $html);
-        $this->assertStringNotContainsString('guardian\'s full name', $html, 'only what is actually missing');
-        $this->assertStringContainsString(route('applicant.profile') . '#guardian', $html);
+        $this->assertStringNotContainsString('name="profile[guardian_name]"', $html, 'only what is actually missing');
+        $this->assertStringNotContainsString('name="profile[guardian_relationship]"', $html);
         $this->assertStringNotContainsString('name="personal_statement"', $html, 'no form that cannot succeed');
     }
 
@@ -216,7 +217,7 @@ class GuardianGateTest extends TestCase
         $this->asMinor($this->fullGuardian());
 
         $this->actingAs($this->student)->get('/apply/' . $this->listing->opportunity_id)->assertOk()
-            ->assertDontSee('A PARENT OR GUARDIAN IS NEEDED')
+            ->assertDontSee('Parent or guardian')
             ->assertSee('name="personal_statement"', false);
     }
 

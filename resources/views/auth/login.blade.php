@@ -14,8 +14,7 @@
         <x-form.input name="email" label="Email address" type="email" required autocomplete="email" autofocus />
         <x-form.input name="password" label="Password" type="password" required autocomplete="current-password" />
 
-        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-4">
-            <x-form.checkbox name="remember" id="remember" label="Keep me signed in" wrapper-class="" />
+        <div class="d-flex justify-content-end mb-4">
             <a class="small text-decoration-none" href="{{ route('password.request') }}">Forgot your password?</a>
         </div>
 

@@ -78,7 +78,8 @@ class ApplicantProfileService
             // A degree classification is the tertiary equivalent of a grade,
             // held once on the profile rather than as a subject result - which
             // is what keeps a First Class out of any A-Level points total.
-            'degree_classification' => $usesTranscript ? $preserve('degree_classification') : null,
+            // A Certificate or Diploma has none: its evidence is the documents uploaded, so a stale one is cleared.
+            'degree_classification' => ($usesTranscript && ! \App\Support\EducationLevel::needsNoAcademicDetail($newLevel)) ? $preserve('degree_classification') : null,
             'province' => $preserve('province'),
             'locality' => $preserve('locality'),
             'settlement_type' => $preserve('settlement_type'),

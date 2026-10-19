@@ -13,11 +13,15 @@ use PHPUnit\Framework\TestCase;
  *
  *     PENDING -> ACCEPTED   (provider)
  *     PENDING -> REJECTED   (provider)
+ *     ACCEPTED -> PENDING   (provider withdraws the decision)
+ *     REJECTED -> PENDING   (provider withdraws the decision)
  *     PENDING -> WITHDRAWN  (applicant)
  *     WITHDRAWN -> PENDING  (applicant re-applies)
  *
  * and nothing else. In particular there is no award step after acceptance, and
- * neither decision can become the other.
+ * a decision never becomes the other one directly: it is withdrawn (back to
+ * PENDING) and decided again. The two PENDING moves belong to different actors
+ * and must not leak into each other.
  */
 class ApplicationStateMachineTest extends TestCase
 {
@@ -50,15 +54,23 @@ class ApplicationStateMachineTest extends TestCase
         );
     }
 
-    /** The point of the whole simplification: acceptance is the last step. */
-    public function test_an_accepted_application_has_nowhere_left_to_go(): void
+    /** There is no award step after acceptance. The only way on is for the provider to withdraw the decision. */
+    public function test_an_accepted_application_can_only_be_withdrawn_back_to_pending(): void
     {
-        $this->assertSame([], ApplicationStateMachine::transitionsFrom(ApplicationStatus::ACCEPTED));
-        $this->assertSame([], ApplicationStateMachine::allowedFor(ApplicationStatus::ACCEPTED, self::PROVIDER));
-        $this->assertFalse(ApplicationStateMachine::canDecide(ApplicationStatus::ACCEPTED));
+        $this->assertSame([ApplicationStatus::PENDING], ApplicationStateMachine::transitionsFrom(ApplicationStatus::ACCEPTED));
+        $this->assertSame([ApplicationStatus::PENDING], ApplicationStateMachine::allowedFor(ApplicationStatus::ACCEPTED, self::PROVIDER));
+        $this->assertFalse(ApplicationStateMachine::canDecide(ApplicationStatus::ACCEPTED), 'there is nothing to decide');
+        $this->assertTrue(ApplicationStateMachine::canReopen(ApplicationStatus::ACCEPTED));
     }
 
-    public function test_an_accepted_application_cannot_become_rejected(): void
+    public function test_a_rejected_application_can_only_be_withdrawn_back_to_pending(): void
+    {
+        $this->assertSame([ApplicationStatus::PENDING], ApplicationStateMachine::allowedFor(ApplicationStatus::REJECTED, self::PROVIDER));
+        $this->assertFalse(ApplicationStateMachine::canDecide(ApplicationStatus::REJECTED));
+        $this->assertTrue(ApplicationStateMachine::canReopen(ApplicationStatus::REJECTED));
+    }
+
+    public function test_an_accepted_application_cannot_become_rejected_directly(): void
     {
         $this->assertFalse(ApplicationStateMachine::canTransition(
             ApplicationStatus::ACCEPTED,
@@ -67,7 +79,7 @@ class ApplicationStateMachineTest extends TestCase
         ));
     }
 
-    public function test_a_rejected_application_cannot_become_accepted(): void
+    public function test_a_rejected_application_cannot_become_accepted_directly(): void
     {
         $this->assertFalse(ApplicationStateMachine::canTransition(
             ApplicationStatus::REJECTED,
@@ -77,9 +89,32 @@ class ApplicationStateMachineTest extends TestCase
     }
 
     #[DataProvider('decisions')]
-    public function test_a_decided_application_offers_a_provider_nothing(string $status): void
+    public function test_a_decision_cannot_be_repeated(string $status): void
     {
-        $this->assertSame([], ApplicationStateMachine::allowedFor($status, self::PROVIDER));
+        $this->assertFalse(ApplicationStateMachine::canTransition($status, $status, self::PROVIDER));
+    }
+
+    #[DataProvider('decisions')]
+    public function test_a_decided_application_can_be_reopened_by_its_provider(string $status): void
+    {
+        $this->assertTrue(ApplicationStateMachine::canTransition($status, ApplicationStatus::PENDING, self::PROVIDER));
+    }
+
+    /** The reopened application can then take either decision again. */
+    public function test_a_reopened_application_can_be_decided_again(): void
+    {
+        $this->assertSame(
+            [ApplicationStatus::ACCEPTED, ApplicationStatus::REJECTED],
+            ApplicationStateMachine::allowedFor(ApplicationStatus::PENDING, self::PROVIDER)
+        );
+        $this->assertTrue(ApplicationStateMachine::canDecide(ApplicationStatus::PENDING));
+    }
+
+    public function test_there_is_no_decision_to_withdraw_on_a_pending_or_withdrawn_application(): void
+    {
+        $this->assertFalse(ApplicationStateMachine::canReopen(ApplicationStatus::PENDING));
+        $this->assertFalse(ApplicationStateMachine::canReopen(ApplicationStatus::WITHDRAWN));
+        $this->assertFalse(ApplicationStateMachine::canReopen(null));
     }
 
     public static function decisions(): array
@@ -111,13 +146,31 @@ class ApplicationStateMachineTest extends TestCase
         ));
     }
 
-    public function test_a_provider_cannot_reset_an_application_to_pending(): void
+    /** WITHDRAWN is the applicant stepping back; only the applicant can undo it, by applying again. */
+    public function test_a_provider_cannot_reset_a_withdrawn_application_to_pending(): void
     {
         $this->assertFalse(ApplicationStateMachine::canTransition(
             ApplicationStatus::WITHDRAWN,
             ApplicationStatus::PENDING,
             self::PROVIDER
         ));
+        $this->assertSame([], ApplicationStateMachine::allowedFor(ApplicationStatus::WITHDRAWN, self::PROVIDER));
+    }
+
+    /** The two PENDING moves must not leak: an applicant can never undo a decision. */
+    #[DataProvider('decisions')]
+    public function test_an_applicant_can_never_reopen_a_decision_or_withdraw_after_one(string $status): void
+    {
+        $this->assertFalse(ApplicationStateMachine::canTransition($status, ApplicationStatus::PENDING, self::APPLICANT));
+        $this->assertFalse(ApplicationStateMachine::canTransition($status, ApplicationStatus::WITHDRAWN, self::APPLICANT));
+        $this->assertSame([], ApplicationStateMachine::allowedFor($status, self::APPLICANT));
+    }
+
+    public function test_a_provider_cannot_decide_a_withdrawn_application(): void
+    {
+        foreach (ApplicationStatus::DECISIONS as $decision) {
+            $this->assertFalse(ApplicationStateMachine::canTransition(ApplicationStatus::WITHDRAWN, $decision, self::PROVIDER));
+        }
     }
 
     // ------------------------------------------------------------ withdrawal --
@@ -173,6 +226,29 @@ class ApplicationStateMachineTest extends TestCase
             $this->fail('A decided application must refuse a second decision.');
         } catch (InvalidApplicationTransition $e) {
             $this->assertStringContainsString('already accepted', $e->getMessage());
+            $this->assertStringContainsString('withdraw it first', $e->getMessage(), 'and says how to change it');
+        }
+
+        try {
+            ApplicationStateMachine::assertCanTransition(
+                ApplicationStatus::PENDING,
+                ApplicationStatus::PENDING,
+                self::PROVIDER
+            );
+            $this->fail('A pending application has no decision to withdraw.');
+        } catch (InvalidApplicationTransition $e) {
+            $this->assertStringContainsString('no decision to withdraw', $e->getMessage());
+        }
+
+        try {
+            ApplicationStateMachine::assertCanTransition(
+                ApplicationStatus::ACCEPTED,
+                ApplicationStatus::PENDING,
+                self::APPLICANT
+            );
+            $this->fail('An applicant must not be able to reopen a decision.');
+        } catch (InvalidApplicationTransition $e) {
+            $this->assertStringContainsString('can no longer be changed', $e->getMessage());
         }
 
         try {
@@ -185,6 +261,15 @@ class ApplicationStateMachineTest extends TestCase
         } catch (InvalidApplicationTransition $e) {
             $this->assertStringContainsString('applicant may not', $e->getMessage());
         }
+    }
+
+    public function test_withdrawing_a_decision_throws_nothing_for_the_provider(): void
+    {
+        foreach (ApplicationStatus::DECISIONS as $decision) {
+            ApplicationStateMachine::assertCanTransition($decision, ApplicationStatus::PENDING, self::PROVIDER);
+        }
+
+        $this->addToAssertionCount(2);
     }
 
     public function test_a_permitted_move_throws_nothing(): void
@@ -233,11 +318,12 @@ class ApplicationStateMachineTest extends TestCase
     }
 
     #[DataProvider('legacyAcceptedStatuses')]
-    public function test_a_legacy_approved_or_awarded_status_is_final(string $status): void
+    public function test_a_legacy_approved_or_awarded_status_reads_as_accepted(string $status): void
     {
         $this->assertFalse(ApplicationStateMachine::canDecide($status));
         $this->assertFalse(ApplicationStateMachine::canWithdraw($status));
         $this->assertFalse(ApplicationStateMachine::allowsReapplication($status));
+        $this->assertTrue(ApplicationStateMachine::canReopen($status), 'it is an acceptance, so it can be withdrawn like one');
     }
 
     public static function legacyAcceptedStatuses(): array

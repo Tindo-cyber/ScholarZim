@@ -18,6 +18,7 @@ use App\Support\OpportunityStatus;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Support\GivesRequiredDocuments;
 use Tests\TestCase;
 
 /**
@@ -28,6 +29,7 @@ use Tests\TestCase;
 class ScholarshipRequirementTest extends TestCase
 {
     use RefreshDatabase;
+    use GivesRequiredDocuments;
 
     private User $provider;
 
@@ -57,6 +59,9 @@ class ScholarshipRequirementTest extends TestCase
             'results_certificate_filename' => 'chipo-o-level-results.pdf',
             'results_uploaded_at' => now(),
         ]);
+
+        // And ready to apply as far as documents go: the apply gate asks for every document the level requires.
+        $this->giveRequiredDocuments($this->student);
     }
 
     private function studentProfile(): ApplicantProfile
