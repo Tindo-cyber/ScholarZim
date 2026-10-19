@@ -78,8 +78,9 @@ class ApplicantProfileService
             // A degree classification is the tertiary equivalent of a grade,
             // held once on the profile rather than as a subject result - which
             // is what keeps a First Class out of any A-Level points total.
-            // A Certificate or Diploma has none: its evidence is the documents uploaded, so a stale one is cleared.
-            'degree_classification' => ($usesTranscript && ! \App\Support\EducationLevel::needsNoAcademicDetail($newLevel)) ? $preserve('degree_classification') : null,
+            // No longer asked for on the form (the documents are the evidence), but one already on file is kept: it still tells
+            // ScholarFit that a degree is held.
+            'degree_classification' => $usesTranscript ? $preserve('degree_classification') : null,
             'province' => $preserve('province'),
             'locality' => $preserve('locality'),
             'settlement_type' => $preserve('settlement_type'),
@@ -110,6 +111,19 @@ class ApplicantProfileService
                 'full_name' => $data['full_name'] ?? null,
                 'phone' => $data['phone'] ?? null,
             ], static fn ($v) => $v !== null));
+        }
+
+        // The field of study is a programme chosen from the catalogue (Certificate and above). Judged on the profile as it
+        // now stands, so a level changed in the same save decides which programmes are on offer; a programme left as it
+        // was is not re-checked against a level the person has just moved on from.
+        if (array_key_exists('current_programme_id', $data)) {
+            $profile->refresh();
+            $posted = filled($data['current_programme_id']) ? (int) $data['current_programme_id'] : null;
+
+            if (\App\Services\Catalogue\ApplicantProgrammes::modeFor($profile) === \App\Services\Catalogue\ApplicantProgrammes::CURRENT
+                && $posted !== $profile->current_programme_id) {
+                app(\App\Services\Catalogue\ApplicantProgrammes::class)->setCurrent($profile, $user, $posted);
+            }
         }
 
         $this->auditService->log($user->email, AuditAction::PROFILE_UPDATE, 'APPLICANT_PROFILE', $profile->profile_id);

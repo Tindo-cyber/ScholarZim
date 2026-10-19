@@ -66,6 +66,16 @@ class AcademicProfileTest extends TestCase
         return ApplicantProfile::where('user_id', $this->student->user_id)->firstOrFail();
     }
 
+    /** The qualification names a person can pick in the results editor: those not marked hidden. @return array<int, string> */
+    private function pickable(string $html): array
+    {
+        // The new-row template carries every qualification, those that do not belong to the level marked hidden.
+        $html = explode('</template>', explode('<template id="academic-result-template">', $html)[1] ?? '')[0];
+        preg_match_all('/<option value="\d+" data-level="[A-Z_0-9]*"([^>]*)>([^<]+)<\/option>/', $html, $m, PREG_SET_ORDER);
+
+        return collect($m)->reject(fn ($o) => preg_match('/\bhidden\b/', $o[1]) === 1)->map(fn ($o) => html_entity_decode($o[2]))->unique()->values()->all();
+    }
+
     /** IGCSE is an O-Level qualification: the results of the level an O-Level leaver has completed. */
     private function asOLevelLeaver(): void
     {
@@ -457,10 +467,12 @@ class AcademicProfileTest extends TestCase
 
         $html = $this->actingAs($pupil)->get('/applicant/profile')->assertOk()->getContent();
 
-        $this->assertStringContainsString('Zimbabwe Primary (Grade 7)', $html);
-        $this->assertStringNotContainsString('ZIMSEC Ordinary Level', $html);
-        $this->assertStringNotContainsString('ZIMSEC Advanced Level', $html);
-        $this->assertStringNotContainsString('Cambridge International A Level', $html);
+        $offered = $this->pickable($html);
+
+        $this->assertContains('Zimbabwe Primary (Grade 7)', $offered);
+        $this->assertNotContains('ZIMSEC Ordinary Level', $offered);
+        $this->assertNotContains('ZIMSEC Advanced Level', $offered);
+        $this->assertNotContains('Cambridge International A Level', $offered);
     }
 
     /** And the server refuses it too, not merely the form. */
@@ -660,21 +672,23 @@ class AcademicProfileTest extends TestCase
     {
         $html = $this->actingAs($this->student)->get('/applicant/profile')->assertOk()->getContent();
 
-        // Not in the new-row template, and not as a row choice.
-        $this->assertStringNotContainsString('Zimbabwe Primary (Grade 7)', $html);
-        $this->assertStringContainsString('ZIMSEC Advanced Level', $html);
+        // Not as a choice a person can pick (it is on the page only so the form can switch levels without a save).
+        $offered = $this->pickable($html);
+
+        $this->assertNotContains('Zimbabwe Primary (Grade 7)', $offered);
+        $this->assertContains('ZIMSEC Advanced Level', $offered);
     }
 
     public function test_the_page_marks_grade_7_so_the_form_can_hide_it_the_moment_the_level_changes(): void
     {
-        // A Primary pupil sees it, marked as the Primary-only choice, so changing the level
-        // to anything else can hide it without waiting for a save.
+        // Every qualification is marked with its level, so changing the level in the form can show only that
+        // level's qualifications without waiting for a save.
         $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
         ApplicantProfile::where('user_id', $pupil->user_id)->firstOrFail()->academicResults()->delete();
 
         $html = $this->actingAs($pupil)->get('/applicant/profile')->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('/<option[^>]*data-primary-only[^>]*>\s*Zimbabwe Primary \(Grade 7\)/', $html);
+        $this->assertMatchesRegularExpression('/<option[^>]*data-level="PRIMARY"[^>]*>\s*Zimbabwe Primary \(Grade 7\)/', $html);
     }
 
     public function test_grade_7_results_already_recorded_stay_and_survive_a_save_above_primary(): void

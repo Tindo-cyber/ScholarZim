@@ -126,29 +126,34 @@
                         <div data-sz-tier="TERTIARY,POSTGRADUATE" class="row" id="sz-field-of-study-row">
                             <div class="col-md-8">
                                 {{--
-                                    Free text, not a select: a fixed list of broad categories
-                                    (FormOptions::FIELDS_OF_STUDY, still used for a provider's
-                                    target_field and for description-based matching) cannot
-                                    name every programme an applicant is actually enrolled in.
-                                    A saved value the list did not contain used to render with
-                                    nothing selected and silently blank itself out on the next
-                                    save, for any reason - see ApplicantProfileService::update().
+                                    The field of study IS the programme: chosen from the catalogue at the applicant's own level
+                                    (Certificate, Diploma, Undergraduate and so on), never typed. Saving writes the programme and its
+                                    name to the profile together (ApplicantProfileService::update), so there is no second place to
+                                    say it and no free-text answer the platform cannot match.
                                 --}}
-                                <x-form.input name="field_of_study" label="Your field, in your own words"
-                                              :value="$profile->field_of_study" maxlength="255"
-                                              hint="For example Information Systems, Mining Engineering or Nursing. Your programme itself is chosen from the list further down this page." />
-                            </div>
-                            @php $documentsOnly = \App\Support\EducationLevel::needsNoAcademicDetail($profile->education_level); @endphp
-                            {{-- Not for a Certificate or Diploma: those are shown by the documents uploaded, with no classification. --}}
-                            <div class="col-md-4" data-sz-level-hide="CERTIFICATE,DIPLOMA" @if($documentsOnly) hidden @endif>
-                                {{-- A degree class is one fact about a person, not a score per
-                                     module, so it is held here rather than as subject results.
-                                     That also keeps it out of any A-Level points total. --}}
-                                <x-form.select name="degree_classification" label="Degree classification"
-                                               :options="collect($degreeClassifications)->mapWithKeys(fn ($c) => [$c => $c])->all()"
-                                               :value="$profile->degree_classification"
-                                               placeholder="Not yet classified"
-                                               hint="Your award classification, if you have completed or been graded." />
+                                @php
+                                    $fieldLevels = \App\Services\Catalogue\ApplicantProgrammes::levelsFor($profile);
+                                    $fieldOptions = $catalogue['programmes']->filter(fn ($p) => in_array($p->education_level, $fieldLevels, true));
+                                    $fieldChosen = (int) old('current_programme_id', $profile->current_programme_id);
+                                @endphp
+                                <div class="mb-3" id="field_of_study" data-catalogue-filter>
+                                    <label class="form-label" for="current_programme_id">Field of study (your programme)</label>
+                                    <select class="form-select @error('current_programme_id') is-invalid @enderror" id="current_programme_id" name="current_programme_id">
+                                        <option value="">Not chosen</option>
+                                        @foreach($fieldOptions as $programme)
+                                            <option value="{{ $programme->id }}" @selected($fieldChosen === $programme->id)
+                                                    data-search="{{ strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ')) }}">{{ $programme->name }}@if($programme->isPending()) (waiting for approval)@endif</option>
+                                        @endforeach
+                                    </select>
+                                    @error('current_programme_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                                    <div class="form-text">
+                                        Choose your programme from the list for the level saved on your profile (change your level first, and save it, if that is not right).
+                                        If it is not listed, use "My programme isn't listed" in the programme section below.
+                                    </div>
+                                    @if(filled($profile->field_of_study) && $fieldChosen === 0)
+                                        <div class="form-text text-warning-emphasis">Earlier you wrote "{{ $profile->field_of_study }}". Please choose the matching programme.</div>
+                                    @endif
+                                </div>
                             </div>
                         </div>
 
@@ -224,7 +229,14 @@
                     </div>
                 </div>
 
-                <div class="card mb-4" id="academic-results">
+                @php
+                    // Certificate and above are shown by their documents: the results section appears only when a scholarship the
+                    // applicant could apply for asks for results (or they already hold some).
+                    $documentsOnly = \App\Support\EducationLevel::needsNoAcademicDetail($profile->education_level);
+                    $resultsAsked = $offeredQualificationIds !== [] || $profile->academicResults->isNotEmpty();
+                @endphp
+                <div class="card mb-4" id="academic-results" data-sz-level-hide="CERTIFICATE,DIPLOMA,UNDERGRADUATE,POSTGRADUATE,MASTERS,PHD"
+                     data-sz-keep="{{ $resultsAsked ? '1' : '0' }}" @if($documentsOnly && ! $resultsAsked) hidden @endif>
                     <div class="card-header">
                         <h2 class="h6 fw-semibold mb-0">Academic information</h2>
                     </div>
@@ -238,12 +250,6 @@
                             and the version before this one deleted everything on every save.
                         --}}
                         <input type="hidden" name="academic_results_submitted" value="1">
-
-                        <p class="alert alert-info small" role="note" data-sz-level-show="CERTIFICATE,DIPLOMA"
-                           @unless(\App\Support\EducationLevel::needsNoAcademicDetail($profile->education_level)) hidden @endunless>
-                            Nothing here is needed for a Certificate or Diploma - your documents are your evidence. Add earlier school results
-                            only if a scholarship you want asks for them.
-                        </p>
 
                         @if($profile->needsAcademicResultsMigration())
                             {{--
@@ -282,19 +288,6 @@
                             are listed only when a scholarship you could apply for asks for them.
                         </p>
 
-                        {{--
-                            The qualification choices below were rendered for the education level
-                            this page loaded with. Changing "Highest level you have completed" above does not
-                            re-fetch that list live - it still reflects your previous answer until you
-                            save - so this says so plainly rather than leaving a stale dropdown to
-                            speak for itself. Toggled by profile-form.js, which already listens for
-                            this same change event for section visibility.
-                        --}}
-                        <p class="alert alert-info small d-none" id="academic-level-stale-notice" role="note">
-                            The qualifications listed below still match your previous education level.
-                            Save your profile with the new level selected above, then reopen this page
-                            to choose from the updated list.
-                        </p>
 
                         {{-- What is wrong with a row is said beside that row's own fields (and once in the summary at the top
                              of the page), never as a second alert here. Only a problem with the list as a whole is said here. --}}
@@ -371,8 +364,14 @@
                                                         aria-label="Qualification" @if($rowMessage('qualification_id')) aria-invalid="true" @endif>
                                                     <option value="">Select qualification</option>
                                                     @foreach($qualifications as $qual)
-                                                        <option value="{{ $qual->id }}" @if($qual->isPrimaryEducation()) data-primary-only @endif
-                                                            @selected($qual->id == $row['qualification_id'])>{{ $qual->name }}</option>
+                                                        @php
+                                                            $isOffered = in_array((int) $qual->id, $offeredQualificationIds, true);
+                                                            $isChosen = $qual->id == $row['qualification_id'];
+                                                        @endphp
+                                                        <option value="{{ $qual->id }}" data-level="{{ \App\Support\EducationLevel::canonical($qual->education_level) }}"
+                                                            @if($isOffered) data-offered="1" @endif
+                                                            @unless($isOffered || $isChosen) hidden disabled @endunless
+                                                            @selected($isChosen)>{{ $qual->name }}</option>
                                                     @endforeach
                                                 </select>
                                                 @if($message = $rowMessage('qualification_id'))<div class="invalid-feedback d-block">{{ $message }}</div>@endif
@@ -439,7 +438,10 @@
                                             name="academic_subject_results[__IDX__][qualification_id]" aria-label="Qualification">
                                         <option value="">Select qualification</option>
                                         @foreach($qualifications as $qual)
-                                            <option value="{{ $qual->id }}" @if($qual->isPrimaryEducation()) data-primary-only @endif>{{ $qual->name }}</option>
+                                            @php $isOffered = in_array((int) $qual->id, $offeredQualificationIds, true); @endphp
+                                            <option value="{{ $qual->id }}" data-level="{{ \App\Support\EducationLevel::canonical($qual->education_level) }}"
+                                                @if($isOffered) data-offered="1" @endif
+                                                @unless($isOffered) hidden disabled @endunless>{{ $qual->name }}</option>
                                         @endforeach
                                     </select>
                                 </td>

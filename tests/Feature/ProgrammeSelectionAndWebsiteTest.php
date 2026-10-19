@@ -227,14 +227,16 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
         $this->assertSame(1, substr_count($provider, '>Programmes</label>'), 'one label, not a legend and a label saying the same');
     }
 
-    public function test_a_students_free_text_field_is_not_labelled_like_the_programme_list(): void
+    public function test_a_students_field_of_study_is_the_programme_list_not_a_free_text_box(): void
     {
         $this->level(EducationLevel::UNDERGRADUATE);
 
         $html = $this->actingAs($this->student)->get('/applicant/profile')->assertOk()->getContent();
 
-        $this->assertStringNotContainsString('Field of study / programme', $html);
-        $this->assertStringContainsString('Your field, in your own words', $html);
+        $this->assertStringContainsString('Field of study (your programme)', $html);
+        $this->assertStringNotContainsString('Your field, in your own words', $html);
+        $this->assertStringNotContainsString('name="field_of_study"', $html);
+        $this->assertStringContainsString('name="current_programme_id"', $html);
     }
 
     // ----------------------------------------------------- up to three, at once --

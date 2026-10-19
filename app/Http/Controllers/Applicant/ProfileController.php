@@ -36,6 +36,9 @@ class ProfileController extends Controller
         // which invites a record that cannot be true - see
         // ApplicantProfile::selectableQualifications().
         $qualifications = $profile->selectableQualifications();
+        // Every qualification is drawn (hidden unless it belongs to the level in the form), so choosing another level in the
+        // form changes what is offered straight away; the server still holds the line for the level it saves.
+        $allQualifications = AcademicQualification::query()->active()->with('activeSubjects')->orderBy('ordering')->get();
 
         return view('applicant.profile', [
             'profile' => $profile,
@@ -49,12 +52,13 @@ class ProfileController extends Controller
             'institutions' => FormOptions::INSTITUTIONS,
             'genders' => Gender::options(),
             'degreeClassifications' => AcademicCatalogue::scheme(AcademicCatalogue::TERTIARY)?->symbols() ?? [],
-            'qualifications' => $qualifications,
+            'qualifications' => $allQualifications,
+            'offeredQualificationIds' => $qualifications->pluck('id')->map(fn ($id) => (int) $id)->all(),
             // One payload the results editor drives itself from: which
             // subjects each qualification offers and which grades it awards.
             // Both come from the qualification rows themselves, so the form can
             // never offer a grade the server would then reject.
-            'academicCatalogue' => $qualifications->mapWithKeys(fn (AcademicQualification $q) => [
+            'academicCatalogue' => $allQualifications->mapWithKeys(fn (AcademicQualification $q) => [
                 $q->id => [
                     'name' => $q->name,
                     'awardsPoints' => $q->awardsPoints(),

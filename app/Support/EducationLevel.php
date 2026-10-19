@@ -256,15 +256,17 @@ final class EducationLevel
     }
 
     /**
-     * A Certificate or a Diploma is evidenced by the documents the applicant uploads: there is no degree classification to
-     * state and no academic results the profile has to hold. The results editor stays available for the scholarships that
-     * ask for earlier results, but nothing here is required of the person.
+     * From Certificate upward (Certificate, Diploma, Undergraduate, Postgraduate, Masters, PhD) an applicant is evidenced by the
+     * documents they upload. There is no degree classification to state and no academic results the profile has to hold:
+     * nothing is asked or required. Results are asked for only when a scholarship the applicant could apply for asks for an
+     * earlier level's results (see ApplicantProfile::selectableQualifications()). Primary, O-Level and A-Level are the levels
+     * that state their results.
      */
     public static function needsNoAcademicDetail(?string $value): bool
     {
-        $level = self::canonical($value);
+        $tier = self::tier($value);
 
-        return $level === self::CERTIFICATE || $level === self::DIPLOMA;
+        return $tier === self::TIER_TERTIARY || $tier === self::TIER_POSTGRADUATE;
     }
 
     public static function usesTranscript(?string $value): bool

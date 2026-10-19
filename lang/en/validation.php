@@ -179,6 +179,14 @@ return [
     */
 
     'custom' => [
+        'current_programme_id' => [
+            'required' => 'Please choose your programme from the list.',
+            'integer' => 'Please choose your programme from the list.',
+        ],
+        'profile.current_programme_id' => [
+            'required' => 'Please choose your programme from the list.',
+            'integer' => 'Please choose your programme from the list.',
+        ],
         'gender' => [
             'required' => 'Please select your gender.',
             'in' => 'Please select your gender.',
@@ -307,6 +315,7 @@ return [
         'intended_programme_ids' => 'the programmes you hope to study',
         'target_field_ids' => 'the fields you want to study next',
         'current_programme_id' => 'your programme',
+        'profile.current_programme_id' => 'your programme',
     ],
 
 ];

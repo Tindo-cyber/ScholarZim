@@ -21,7 +21,7 @@ final class ProfileDetailRules
 {
     /** The simple fields the wizard can collect in place; anything else is edited on the profile page. */
     public const INLINE = [
-        'institution_name', 'field_of_study', 'province', 'locality', 'settlement_type',
+        'institution_name', 'current_programme_id', 'province', 'locality', 'settlement_type',
         'date_of_birth', 'gender', 'biography',
         'guardian_name', 'guardian_phone', 'guardian_relationship', 'guardian_confirmed',
     ];
@@ -39,6 +39,8 @@ final class ProfileDetailRules
             // (FormOptions::INSTITUTIONS is suggestions only), and a Grade 7 pupil's primary school is exactly as valid
             // an answer here as a university's full name.
             'field_of_study' => ['nullable', 'string', 'max:255'],
+            // The field of study as a person gives it: a programme from the catalogue. field_of_study above is what is written from it.
+            'current_programme_id' => ['nullable', 'integer'],
             'province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), not a fixed list - Zimbabwe has far more towns and growth points than
             // any dropdown would sensibly enumerate, and this is the applicant's own claim about where they live.
