@@ -958,7 +958,7 @@ class AcademicProfileTest extends TestCase
 
         $this->assertMatchesRegularExpression('/<input[^>]*name="gender"[^>]*value="male"[^>]*required/', $html);
         $this->assertMatchesRegularExpression('/<input[^>]*name="gender"[^>]*value="female"[^>]*required/', $html);
-        $this->assertStringContainsString('Required. Shown to providers reviewing your application', $html);
+        $this->assertStringContainsString('Required. Shown to providers; it does not affect eligibility.', $html);
         $this->assertStringNotContainsString('Optional. Shown to providers', $html);
     }
 

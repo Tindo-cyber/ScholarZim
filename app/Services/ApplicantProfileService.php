@@ -126,6 +126,11 @@ class ApplicantProfileService
             }
         }
 
+        if (array_key_exists('institution_name', $data)
+            && \App\Services\Catalogue\ApplicantProgrammes::modeFor($profile->refresh()) === \App\Services\Catalogue\ApplicantProgrammes::CURRENT) {
+            app(\App\Services\Catalogue\ApplicantProgrammes::class)->syncInstitution($profile);
+        }
+
         $this->auditService->log($user->email, AuditAction::PROFILE_UPDATE, 'APPLICANT_PROFILE', $profile->profile_id);
 
         return $profile;

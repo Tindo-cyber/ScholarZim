@@ -388,8 +388,8 @@ class ScholarFitListingWordingTest extends TestCase
         $message = implode(' ', array_map(fn ($o) => $o->message, $this->fit($listing)->pendingInformation()));
 
         $this->assertStringContainsString('"school leavers"', $message);
-        $this->assertStringContainsString('cannot reliably read', $message);
-        $this->assertStringContainsString('check with the provider', $message);
+        $this->assertStringContainsString('cannot read as a requirement', $message);
+        $this->assertStringContainsString('Check with the provider', $message);
         $this->assertDoesNotMatchRegularExpression('/\b(O Level|A Level|Undergraduate|Primary) (required|is required)\b/', $message, 'no level is guessed');
         $this->assertStringNotContainsString('upload', strtolower($message));
     }
