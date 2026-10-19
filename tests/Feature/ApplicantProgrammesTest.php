@@ -268,7 +268,10 @@ class ApplicantProgrammesTest extends TestCase
 
         $this->assertStringContainsString('id="programme-card"', $html);
         $this->assertStringContainsString('BSc Information Systems', $html);
-        $this->assertStringNotContainsString('Diploma in Information Technology', $html);
+        // Another level's programmes are on the page so the form can switch level without a save, but cannot be picked.
+        $start = strpos($html, '<option value="' . $this->programme('Diploma in Information Technology') . '"');
+        $this->assertNotFalse($start);
+        $this->assertStringContainsString('hidden disabled', substr($html, $start, strpos($html, '</option>', $start) - $start));
         $this->assertMatchesRegularExpression('#data-search="[^"]*info systems#i', $html);
     }
 
@@ -278,9 +281,12 @@ class ApplicantProgrammesTest extends TestCase
 
         $html = $this->actingAs($this->student)->get('/applicant/profile')->assertOk()->getContent();
 
-        $this->assertStringContainsString('Diploma in Information Technology', $html);
-        $this->assertStringContainsString('BSc Information Systems', $html);
-        $this->assertStringNotContainsString('Master of Business Administration', $html);
+        // The programmes a school-leaver hopes to study are in the programme section.
+        $card = substr($html, (int) strpos($html, 'id="programme-card"'));
+
+        $this->assertStringContainsString('Diploma in Information Technology', $card);
+        $this->assertStringContainsString('BSc Information Systems', $card);
+        $this->assertStringNotContainsString('Master of Business Administration', $card);
         $this->assertStringContainsString('up to 3', $html);
     }
 

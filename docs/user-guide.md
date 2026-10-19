@@ -109,7 +109,8 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 - **Settings** → `/account/security` — password, email preferences, sessions, and account
   deletion.
-- **Signing in:** closing the browser signs you out, so the next visit asks for your password.
+- **Signing in:** closing the page (or the browser) signs you out, so opening it again asks for your password. If you open
+  another ScholarZim tab while one is still open, you stay signed in.
   There is no "keep me signed in" option. Some browsers can be set to restore your previous
   session when they reopen, which also restores your sign-in; sign out explicitly on a shared
   computer.

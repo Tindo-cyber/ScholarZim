@@ -91,8 +91,17 @@ class FieldOfStudyProgrammeTest extends TestCase
             $own = $this->programmeAt($level);
             $other = Programme::where('education_level', '!=', $level)->where('status', Programme::APPROVED)->where('is_active', true)->firstOrFail();
 
-            $this->assertMatchesRegularExpression('/<option value="' . $own->id . '"[^>]*>\s*' . preg_quote(e($own->name), '/') . '/', $html, "$level: its own programmes are offered");
-            $this->assertDoesNotMatchRegularExpression('/<option value="' . $other->id . '"[^>]*>\s*' . preg_quote(e($other->name), '/') . '/', $html, "$level: another level's are not");
+            // Every programme is on the page so the form can switch level without a save; only the level's own can be picked.
+            $tag = function (Programme $p) use ($html): string {
+                $start = strpos($html, '<option value="' . $p->id . '"');
+                $this->assertNotFalse($start, $p->name . ' is on the page');
+
+                return substr($html, $start, strpos($html, '</option>', $start) - $start);
+            };
+
+            $this->assertStringNotContainsString('hidden', $tag($own), "$level: its own programmes are offered");
+            $this->assertStringContainsString('data-level="' . $level . '"', $tag($own), $level);
+            $this->assertStringContainsString('hidden disabled', $tag($other), "$level: another level's are hidden");
         }
     }
 

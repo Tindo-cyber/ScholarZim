@@ -71,3 +71,10 @@
     have no toggle to show.
 --}}
 <script src="{{ asset('assets/js/theme-toggle.js') }}"></script>
+
+{{--
+    session-guard.js is outside the bundle for the same reason: it must run before first paint, so a signed-in page opened
+    after every ScholarZim page was closed is never drawn - it goes to the sign-in page and asks for the password. It reads
+    data-sz-auth / data-sz-login from <html>. See the file for how it tells a reopened page from a new tab.
+--}}
+<script src="{{ asset('assets/js/session-guard.js') }}"></script>

@@ -9,8 +9,8 @@ namespace App\Support;
  * This is the one list of the world's countries in the application. It answers
  * "where is this organisation registered?" (ProviderProfile::registration_country),
  * which is a different question from where a scholarship is held - that is
- * FormOptions::COUNTRIES, a short list of study destinations stored by name on
- * the listing. The two are deliberately not merged: a provider's country never
+ * FormOptions::countries(), the destinations stored by name on the listing (every country in this list, built from it,
+ * plus "Any country" and "Online"). The two are deliberately not merged: a provider's country never
  * restricts or pre-fills a listing's destination. The destination names that are
  * real countries are spelt as they are here (CountriesTest checks it), so the two
  * can be compared if that is ever needed.

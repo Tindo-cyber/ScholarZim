@@ -45,7 +45,7 @@ class CountriesTest extends TestCase
     {
         $names = array_values(Countries::options());
 
-        foreach (array_diff(FormOptions::COUNTRIES, FormOptions::FLEXIBLE_COUNTRIES) as $destination) {
+        foreach (array_diff(FormOptions::countries(), FormOptions::FLEXIBLE_COUNTRIES) as $destination) {
             $this->assertContains($destination, $names, $destination . ' is spelt differently in Countries');
         }
     }

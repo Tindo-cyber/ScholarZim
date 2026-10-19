@@ -74,7 +74,7 @@ class StoreOpportunityRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['required', 'string', 'max:10000'],
             'provider_display_name' => ['nullable', 'string', 'max:255'],
-            'country' => ['nullable', Rule::in(FormOptions::COUNTRIES)],
+            'country' => ['nullable', Rule::in(FormOptions::countries())],
             'education_level' => ['nullable', Rule::in(EducationLevel::TARGET_LEVELS)],
             // The floor a specific listing actually requires, separate from
             // the level it targets - see EligibilityEvaluator::minimumLevel().

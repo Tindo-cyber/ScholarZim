@@ -285,4 +285,40 @@ class SessionLifetimeTest extends TestCase
             $this->get($path)->assertRedirect(route('login'));
         }
     }
+
+    // ---------------------------------- a closed page: the browser side of "the session ends when you leave" --
+
+    public function test_every_page_tells_the_session_guard_whether_it_is_signed_in(): void
+    {
+        $guest = $this->get('/login')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/<html[^>]*data-sz-auth="0"[^>]*data-sz-login="[^"]*\/login"/', $guest);
+
+        $public = $this->get('/scholarships')->assertOk()->getContent();
+        $this->assertMatchesRegularExpression('/<html[^>]*data-sz-auth="0"/', $public);
+
+        $this->login();
+        $this->assertMatchesRegularExpression('/<html[^>]*data-sz-auth="1"[^>]*data-sz-login="[^"]*\/login"/', $this->get('/applicant/dashboard')->assertOk()->getContent());
+        $this->assertMatchesRegularExpression('/<html[^>]*data-sz-auth="1"/', $this->get('/scholarships')->assertOk()->getContent());
+    }
+
+    public function test_the_guard_runs_in_the_head_before_the_page_is_drawn_and_needs_no_inline_script(): void
+    {
+        $html = $this->get('/login')->assertOk()->getContent();
+
+        $head = explode('</head>', $html)[0];
+        $this->assertStringContainsString('assets/js/session-guard.js', $head, 'in the head, so it runs before first paint');
+        $this->assertStringNotContainsString('defer', substr($head, strpos($head, 'session-guard.js') - 80, 120));
+        $this->assertStringContainsString("script-src 'self'", (string) $this->get('/login')->headers->get('Content-Security-Policy'));
+        $this->assertFileExists(public_path('assets/js/session-guard.js'));
+    }
+
+    public function test_the_guard_is_served_and_asks_the_other_tabs_before_signing_out(): void
+    {
+        $script = (string) file_get_contents(public_path('assets/js/session-guard.js'));
+
+        $this->assertStringContainsString('BroadcastChannel', $script);
+        $this->assertStringContainsString('sessionStorage', $script);
+        $this->assertStringContainsString("data-sz-login", $script);
+        $this->assertStringContainsString("style.visibility = 'hidden'", $script, 'a protected page is not drawn while it asks');
+    }
 }

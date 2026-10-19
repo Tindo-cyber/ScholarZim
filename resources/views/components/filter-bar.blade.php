@@ -78,7 +78,7 @@
                     <label class="form-label" for="filter-country">Country</label>
                     <select class="form-select" id="filter-country" name="country">
                         <option value="">Any</option>
-                        @foreach(FormOptions::COUNTRIES as $country)
+                        @foreach(FormOptions::countries() as $country)
                             <option value="{{ $country }}" @selected(($filters['country'] ?? '') === $country)>{{ $country }}</option>
                         @endforeach
                     </select>

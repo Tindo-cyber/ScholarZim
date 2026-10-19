@@ -25,6 +25,20 @@ abstract class DuskTestCase extends BaseTestCase
     }
 
     /**
+     * Every browser starts as a tab that has already been used for ScholarZim. A page that is signed in at the very first
+     * request - which is what loginAs() gives a test - would otherwise look like one opened after every page was closed,
+     * and the session guard (public/assets/js/session-guard.js) would send it to the sign-in page. The sign-in page marks
+     * the tab, exactly as it does for a person.
+     */
+    protected function newBrowser($driver)
+    {
+        $browser = parent::newBrowser($driver);
+        $browser->visit('/login');
+
+        return $browser;
+    }
+
+    /**
      * Create the RemoteWebDriver instance.
      */
     protected function driver(): RemoteWebDriver

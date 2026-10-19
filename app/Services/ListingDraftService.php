@@ -212,7 +212,7 @@ class ListingDraftService
             }
         }
 
-        $country = $option('country', 'Country', FormOptions::COUNTRIES, 'countries');
+        $country = $option('country', 'Country', FormOptions::countries(), 'countries');
 
         if ($country === null && filled($input['country'] ?? null)) {
             $lose('Country', 'It was replaced by ' . FormOptions::DEFAULT_COUNTRY . ', the default, which you can change.');
