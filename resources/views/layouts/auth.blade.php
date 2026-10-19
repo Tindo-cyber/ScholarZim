@@ -1,6 +1,6 @@
 <!doctype html>
 {{-- data-sz-sensitive: see resources/js/history-guard.js - never restored from the bfcache. --}}
-<html lang="en" data-sz-sensitive>
+<html lang="en" data-sz-sensitive data-sz-auth="{{ auth()->check() ? '1' : '0' }}" data-sz-login="{{ route('login') }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">

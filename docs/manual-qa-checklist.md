@@ -120,6 +120,10 @@ something that was deliberately removed, not a regression.
       "Upload clear, readable copies. Existing documents will be reused when they meet the
       requirements." and no mention of ScholarFit
 - [ ] Changing the education level and saving changes the required count and the labels
+- [ ] Choosing a level in the form (before saving) fills the **Field of study** list with that level's programmes, and the search box
+      narrows it
+- [ ] A provider's listing form offers every country (Zimbabwe and the common destinations first), plus Any country and Online
+- [ ] Close the page without signing out, open it again: the password is asked for; a second tab beside an open one stays signed in
 - [ ] **Field of study** is a list of the programmes at your level (never a text box); choosing one sets your programme, and the
       programme section below does not ask for it again; the apply page asks for it the same way when it is missing
 - [ ] From **Certificate** upward there is no degree classification and no Academic information section; the profile is complete

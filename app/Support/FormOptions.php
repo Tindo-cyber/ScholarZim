@@ -54,35 +54,39 @@ final class FormOptions
     public const COUNTRY_ONLINE = 'Online / distance';
 
     /**
-     * Where a scholarship is held. Zimbabwe first because it is the default and
-     * most listings; the two flexible entries come last. Country is not an
-     * eligibility rule - ScholarFit never reads it - it is what the listing says
-     * and what search can filter on.
+     * The destinations a provider is most likely to name, in the order they are listed first. Every one is spelt as the full
+     * country list (Countries) spells it, so a listing saved with one of these keeps matching.
      */
-    public const COUNTRIES = [
-        'Zimbabwe',
-        'South Africa',
-        'Botswana',
-        'Namibia',
-        'Zambia',
-        'Mauritius',
-        'Kenya',
-        'United Kingdom',
-        'United States',
-        'Canada',
-        'Australia',
-        'China',
-        'India',
-        'Russia',
-        'Hungary',
-        'Germany',
-        'Turkey',
-        'Malaysia',
-        'Egypt',
-        'Japan',
-        self::COUNTRY_ANY,
-        self::COUNTRY_ONLINE,
+    private const COMMON_COUNTRIES = [
+        'Zimbabwe', 'South Africa', 'Botswana', 'Namibia', 'Zambia', 'Mauritius', 'Kenya',
+        'United Kingdom', 'United States', 'Canada', 'Australia', 'China', 'India', 'Russia',
+        'Hungary', 'Germany', 'Turkey', 'Malaysia', 'Egypt', 'Japan',
     ];
+
+    /**
+     * Where a scholarship is held: every country, with Zimbabwe first (the default and most listings) and the common
+     * destinations after it, then the rest alphabetically; the two flexible entries come last. Country is not an
+     * eligibility rule - ScholarFit never reads it - it is what the listing says and what search can filter on. Stored by
+     * name on the listing.
+     *
+     * @return list<string>
+     */
+    public static function countries(): array
+    {
+        static $list = null;
+
+        if ($list === null) {
+            $rest = array_values(array_diff(array_values(Countries::options()), self::COMMON_COUNTRIES));
+            usort($rest, static fn (string $a, string $b) => strcmp(
+                \Illuminate\Support\Str::ascii($a),
+                \Illuminate\Support\Str::ascii($b)
+            ));
+
+            $list = array_merge(self::COMMON_COUNTRIES, $rest, [self::COUNTRY_ANY, self::COUNTRY_ONLINE]);
+        }
+
+        return $list;
+    }
 
     /** The entries that are not a place. */
     public const FLEXIBLE_COUNTRIES = [self::COUNTRY_ANY, self::COUNTRY_ONLINE];

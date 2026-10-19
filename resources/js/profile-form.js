@@ -85,6 +85,39 @@
             new MutationObserver(syncQualifications).observe(resultsList, { childList: true });
         }
 
+        // The field of study is a programme from the catalogue, at the level chosen in the form. The list is drawn in full and
+        // narrowed here by level and by what is typed in the box above it; a programme of another level is dropped from the
+        // choice, so a level change never leaves one behind that the server would refuse.
+        const programmes = document.getElementById('current_programme_id');
+        let programmeSearch = null;
+        if (programmes) {
+            programmeSearch = document.createElement('input');
+            programmeSearch.type = 'search';
+            programmeSearch.className = 'form-control form-control-sm mb-1';
+            programmeSearch.placeholder = 'Search the list';
+            programmeSearch.setAttribute('aria-label', 'Search the programmes');
+            programmes.parentNode.insertBefore(programmeSearch, programmes);
+            programmeSearch.addEventListener('input', () => syncProgrammes());
+        }
+        const syncProgrammes = () => {
+            if (!programmes) return;
+
+            const level = select.value;
+            const term = (programmeSearch ? programmeSearch.value : '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+            Array.prototype.forEach.call(programmes.options, (option) => {
+                if (!option.value) return;
+
+                const wrongLevel = option.dataset.level !== level;
+                const noMatch = term !== '' && (option.dataset.search || option.textContent.toLowerCase()).indexOf(term) === -1;
+
+                if (wrongLevel && option.selected) programmes.value = '';
+
+                option.hidden = wrongLevel || noMatch;
+                option.disabled = wrongLevel;
+            });
+        };
+
         const sync = () => {
             const tier = TIER_BY_LEVEL[select.value] || null;
 
@@ -113,6 +146,7 @@
             });
 
             syncQualifications();
+            syncProgrammes();
 
             if (staleNotice) {
                 staleNotice.classList.toggle('d-none', select.value === initialLevel);

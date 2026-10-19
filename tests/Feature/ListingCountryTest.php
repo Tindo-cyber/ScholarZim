@@ -79,14 +79,44 @@ class ListingCountryTest extends TestCase
         $this->assertSame('Berlin, Germany', $this->make('Germany', 'Berlin', null)->locationLabel());
     }
 
-    public function test_the_country_list_is_exactly_the_agreed_one(): void
+    public function test_the_country_list_is_every_country_with_the_common_ones_first(): void
     {
+        $list = \App\Support\FormOptions::countries();
+
+        // The destinations that were offered before keep their place at the front, so nothing already saved stops matching.
         $this->assertSame([
             'Zimbabwe', 'South Africa', 'Botswana', 'Namibia', 'Zambia', 'Mauritius', 'Kenya',
             'United Kingdom', 'United States', 'Canada', 'Australia', 'China', 'India', 'Russia',
             'Hungary', 'Germany', 'Turkey', 'Malaysia', 'Egypt', 'Japan',
-            'Any country', 'Online / distance',
-        ], \App\Support\FormOptions::COUNTRIES);
+        ], array_slice($list, 0, 20));
+
+        // Then every other country, once, and the two entries that are not a place last.
+        $this->assertSame(['Any country', 'Online / distance'], array_slice($list, -2));
+        $this->assertSame(count($list), count(array_unique($list)), 'no country twice');
+        $this->assertEqualsCanonicalizing(
+            array_merge(array_values(\App\Support\Countries::options()), ['Any country', 'Online / distance']),
+            $list,
+            'every country in the world list, and nothing else'
+        );
+        foreach (['Ghana', 'Nigeria', 'France', 'Brazil', 'Zimbabwe', 'Tanzania', 'Malawi', 'Mozambique'] as $country) {
+            $this->assertContains($country, $list, $country);
+        }
+        $this->assertSame('Afghanistan', $list[20], 'the rest are alphabetical');
+    }
+
+    public function test_the_provider_form_offers_every_country_and_accepts_one_that_was_not_there_before(): void
+    {
+        $provider = \App\Models\User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
+
+        $html = $this->actingAs($provider)->get('/opportunities/create')->assertOk()->getContent();
+
+        foreach (['Ghana', 'Nigeria', 'France', 'Brazil', 'New Zealand', 'Any country'] as $country) {
+            $this->assertStringContainsString('>' . $country . '</option>', $html, $country);
+        }
+
+        $rule = \Illuminate\Support\Facades\Validator::make(['country' => 'Ghana'], ['country' => [\Illuminate\Validation\Rule::in(\App\Support\FormOptions::countries())]]);
+        $this->assertFalse($rule->fails());
+        $this->assertTrue(\Illuminate\Support\Facades\Validator::make(['country' => 'Atlantis'], ['country' => [\Illuminate\Validation\Rule::in(\App\Support\FormOptions::countries())]])->fails());
     }
 
     public function test_a_real_country_search_also_finds_listings_usable_anywhere_and_online(): void

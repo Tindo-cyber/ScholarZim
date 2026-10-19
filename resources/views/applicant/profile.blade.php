@@ -133,7 +133,9 @@
                                 --}}
                                 @php
                                     $fieldLevels = \App\Services\Catalogue\ApplicantProgrammes::levelsFor($profile);
-                                    $fieldOptions = $catalogue['programmes']->filter(fn ($p) => in_array($p->education_level, $fieldLevels, true));
+                                    // Every programme is drawn, those that do not belong to the level in the form start hidden: choosing another
+                                    // level in the form changes what is offered straight away (profile-form.js), without a save first.
+                                    $fieldOptions = $catalogue['programmes'];
                                     $fieldChosen = (int) old('current_programme_id', $profile->current_programme_id);
                                 @endphp
                                 <div class="mb-3" id="field_of_study" data-catalogue-filter>
@@ -142,12 +144,14 @@
                                         <option value="">Not chosen</option>
                                         @foreach($fieldOptions as $programme)
                                             <option value="{{ $programme->id }}" @selected($fieldChosen === $programme->id)
+                                                    data-level="{{ $programme->education_level }}"
+                                                    @unless(in_array($programme->education_level, $fieldLevels, true) || $fieldChosen === $programme->id) hidden disabled @endunless
                                                     data-search="{{ strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ')) }}">{{ $programme->name }}@if($programme->isPending()) (waiting for approval)@endif</option>
                                         @endforeach
                                     </select>
                                     @error('current_programme_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                                     <div class="form-text">
-                                        Choose your programme from the list for the level saved on your profile (change your level first, and save it, if that is not right).
+                                        Choose your programme from the list for your level. Type in the box to narrow it down.
                                         If it is not listed, use "My programme isn't listed" in the programme section below.
                                     </div>
                                     @if(filled($profile->field_of_study) && $fieldChosen === 0)
