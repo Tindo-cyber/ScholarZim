@@ -40,7 +40,7 @@ final class ApplicationReadiness
      */
     private const FIELD_FOR = [
         'institution' => 'institution_name',
-        'field of study' => 'field_of_study',
+        'field of study' => 'current_programme_id',
         'province' => 'province',
         'locality' => 'locality',
         'settlement type' => 'settlement_type',
@@ -174,7 +174,7 @@ final class ApplicationReadiness
     /** @return array<int, string> */
     private static function order(): array
     {
-        return ['gender', 'date_of_birth', 'institution_name', 'field_of_study', 'province', 'locality', 'settlement_type', 'biography'];
+        return ['gender', 'date_of_birth', 'institution_name', 'current_programme_id', 'province', 'locality', 'settlement_type', 'biography'];
     }
 
     /**
@@ -188,7 +188,9 @@ final class ApplicationReadiness
             'gender' => ['field' => $field, 'label' => 'Gender', 'kind' => 'select', 'options' => collect(Gender::ALL)->mapWithKeys(fn ($g) => [$g => Gender::label($g)])->all(), 'hint' => null],
             'date_of_birth' => ['field' => $field, 'label' => 'Date of birth', 'kind' => 'date', 'options' => [], 'hint' => 'Used to check age limits.'],
             'institution_name' => ['field' => $field, 'label' => 'Institution / school', 'kind' => 'text', 'options' => [], 'hint' => null],
-            'field_of_study' => ['field' => $field, 'label' => 'Field of study', 'kind' => 'text', 'options' => [], 'hint' => 'For example Information Systems or Nursing.'],
+            'current_programme_id' => ['field' => $field, 'label' => 'Field of study (your programme)', 'kind' => 'select',
+                'options' => $profile->user ? app(\App\Services\Catalogue\ApplicantProgrammes::class)->optionsFor($profile, $profile->user) : [],
+                'hint' => 'Choose your programme from the list. If it is not there, add it on your profile.'],
             'province' => ['field' => $field, 'label' => 'Province', 'kind' => 'select', 'options' => array_combine(FormOptions::ZIMBABWE_PROVINCES, FormOptions::ZIMBABWE_PROVINCES), 'hint' => null],
             'locality' => ['field' => $field, 'label' => 'Town / city', 'kind' => 'text', 'options' => [], 'hint' => null],
             'settlement_type' => ['field' => $field, 'label' => 'Home area', 'kind' => 'select', 'options' => collect(SettlementType::ALL)->mapWithKeys(fn ($t) => [$t => SettlementType::label($t)])->all(), 'hint' => null],

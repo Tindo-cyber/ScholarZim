@@ -315,7 +315,9 @@ class ApplicationReuseTest extends TestCase
 
     public function test_what_only_the_profile_can_hold_is_a_link_with_a_way_back(): void
     {
-        $this->profile()->forceFill(['degree_classification' => null])->save();
+        // An A-Level student states their results (from Certificate upward nothing academic is asked for).
+        $this->profile()->forceFill(['education_level' => EducationLevel::A_LEVEL, 'degree_classification' => null, 'field_of_study' => null])->save();
+        $this->giveRequiredDocuments($this->student);
         $this->profile()->academicResults()->delete();
         $listing = $this->listing();
 

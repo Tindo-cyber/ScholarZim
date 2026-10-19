@@ -86,7 +86,13 @@ class ApplicantProgrammesTest extends TestCase
         $this->save(['current_programme_id' => $this->programme('BSc Computer Science')]);
         $this->assertSame($this->programme('BSc Computer Science'), $this->rows('current')->sole()->programme_id);
 
+        // The programme is chosen as the field of study on the profile form, so a submission that does not carry it
+        // (the programme section's own form) leaves it where it is...
         $this->save([]);
+        $this->assertSame($this->programme('BSc Computer Science'), $this->rows('current')->sole()->programme_id);
+
+        // ...and an explicit empty answer clears it.
+        $this->save(['current_programme_id' => '']);
         $this->assertCount(0, $this->rows());
     }
 

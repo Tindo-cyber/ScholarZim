@@ -32,24 +32,9 @@
         <div class="card-body">
             @if($mode === 'current')
                 <p class="small text-secondary">
-                    Choose the programme you completed, so scholarships for your field can find you.
-                    This is at {{ \App\Support\EducationLevel::label($profile->education_level) }} level, matching your level above
-                    (change your level first, and save it, if that is not right).
+                    Your programme is chosen as your <strong>Field of study</strong> in the form above. Here you can say where you
+                    studied, what you want to study next, or suggest a programme that is not listed.
                 </p>
-
-                <div class="mb-3" data-catalogue-filter>
-                    <label class="form-label" for="current_programme_id">Programme</label>
-                    <select class="form-select @error('current_programme_id') is-invalid @enderror" id="current_programme_id" name="current_programme_id">
-                        <option value="">Not chosen</option>
-                        @foreach($options as $level => $programmes)
-                            @foreach($programmes as $programme)
-                                <option value="{{ $programme->id }}" @selected($currentId === $programme->id)
-                                        data-search="{{ strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ')) }}">{{ $programme->name }}@if($programme->isPending()) (waiting for approval)@endif</option>
-                            @endforeach
-                        @endforeach
-                    </select>
-                    @error('current_programme_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
 
                 <div class="mb-3">
                     <label class="form-label" for="current_institution_id">Where you studied (optional)</label>

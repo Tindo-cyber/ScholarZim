@@ -74,8 +74,16 @@ class ApplicantProgrammes
     public function save(ApplicantProfile $profile, User $user, array $input): void
     {
         $mode = self::modeFor($profile);
-        $currentId = filled($input['current_programme_id'] ?? null) ? (int) $input['current_programme_id'] : null;
-        $institutionId = filled($input['current_institution_id'] ?? null) ? (int) $input['current_institution_id'] : null;
+
+        // The programme itself is chosen as the "field of study" on the profile form (setCurrent()), not in this card, so a
+        // submission that does not carry it leaves it as it is; the same for where they studied.
+        $existing = ApplicantProgramme::where('profile_id', $profile->profile_id)->where('kind', self::CURRENT)->first();
+        $currentId = filled($input['current_programme_id'] ?? null)
+            ? (int) $input['current_programme_id']
+            : (! array_key_exists('current_programme_id', $input) && $mode === self::CURRENT && $existing?->programme_id !== null ? (int) $existing->programme_id : null);
+        $institutionId = array_key_exists('current_institution_id', $input)
+            ? (filled($input['current_institution_id']) ? (int) $input['current_institution_id'] : null)
+            : ($existing?->institution_id !== null ? (int) $existing->institution_id : null);
         $intended = array_values(array_unique(array_map('intval', array_filter((array) ($input['intended_programme_ids'] ?? []), 'is_scalar'))));
         $suggestion = trim((string) ($input['programme_suggestion'] ?? ''));
         $targets = array_values(array_unique(array_map('intval', array_filter((array) ($input['target_field_ids'] ?? []), 'is_scalar'))));
@@ -167,6 +175,77 @@ class ApplicantProgrammes
                 ApplicantProgramme::create(['profile_id' => $profile->profile_id, 'programme_id' => $programme->id, 'kind' => self::INTENDED]);
             }
         });
+
+        if ($mode === self::CURRENT && $chosen['current'] !== null) {
+            $this->syncFieldOfStudy($profile, $chosen['current']);
+        }
+    }
+
+    /**
+     * The programmes this person may choose as their field of study, as id => name: those at their own level in the
+     * catalogue, plus any they suggested themselves that are waiting for approval.
+     *
+     * @return array<int, string>
+     */
+    public function optionsFor(ApplicantProfile $profile, User $user): array
+    {
+        $levels = self::levelsFor($profile);
+
+        return $levels === []
+            ? []
+            : $this->catalogue->formOptions($user)['programmes']
+                ->filter(fn ($programme) => in_array($programme->education_level, $levels, true))
+                ->mapWithKeys(fn ($programme) => [$programme->id => $programme->name])
+                ->all();
+    }
+
+    /**
+     * Set (or clear) the programme an enrolled student or graduate is on, leaving where they studied and the fields they
+     * want next as they were. The "field of study" is this programme: its name is written to the profile so the provider's
+     * view, the completion checklist and ScholarFit's older field matching all read the same answer.
+     *
+     * @throws ValidationException when the programme is not one they may choose at their level
+     */
+    public function setCurrent(ApplicantProfile $profile, User $user, ?int $programmeId): void
+    {
+        if (self::modeFor($profile) !== self::CURRENT) {
+            throw ValidationException::withMessages(['current_programme_id' => 'A programme is chosen once your level is Certificate or above. Set your level first.']);
+        }
+
+        $programme = null;
+
+        if ($programmeId !== null) {
+            $errors = [];
+            $programme = $this->usable($programmeId, self::levelsFor($profile), $user, 'current_programme_id', $errors);
+
+            if ($errors) {
+                throw ValidationException::withMessages($errors);
+            }
+        }
+
+        DB::transaction(function () use ($profile, $programme): void {
+            ApplicantProfile::whereKey($profile->profile_id)->lockForUpdate()->first();
+
+            $existing = ApplicantProgramme::where('profile_id', $profile->profile_id)->where('kind', self::CURRENT)->first();
+            ApplicantProgramme::where('profile_id', $profile->profile_id)->where('kind', self::CURRENT)->delete();
+
+            if ($programme !== null) {
+                ApplicantProgramme::create([
+                    'profile_id' => $profile->profile_id, 'programme_id' => $programme->id,
+                    'kind' => self::CURRENT, 'institution_id' => $existing?->institution_id,
+                ]);
+            }
+        });
+
+        $programme !== null
+            ? $this->syncFieldOfStudy($profile, $programme)
+            : $profile->update(['field_of_study' => null]);
+    }
+
+    /** The profile's written field of study follows the programme chosen: one answer, not two that can disagree. */
+    private function syncFieldOfStudy(ApplicantProfile $profile, Programme $programme): void
+    {
+        $profile->update(['field_of_study' => $programme->name]);
     }
 
     /**

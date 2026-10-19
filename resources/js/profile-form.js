@@ -64,22 +64,25 @@
         const staleNotice = document.getElementById('academic-level-stale-notice');
         const initialLevel = select.value;
 
-        // Grade 7 results are for Primary applicants only. The option is marked data-primary-only, and is
-        // hidden (and disabled, for browsers that ignore hidden on options) for any other level. One that a
-        // row has already selected is left alone: hiding it would not remove the result, only make the row
-        // look as if it had lost it. Applies to rows added later too.
+        // The qualifications offered in the results editor are those of the level chosen in the form - Primary's Grade 7,
+        // O-Level's, A-Level's - plus, for the level the page loaded with, any lower level a scholarship asks for. One a row
+        // has already selected is left alone: hiding it would not remove the result, only make the row look as if it had
+        // lost it. Applies to rows added later too. (The server still holds the line for the level it saves.)
         const resultsList = document.getElementById('academic-results-list');
-        const syncPrimaryOnly = () => {
-            const primary = select.value === '' || select.value === 'PRIMARY';
+        const syncQualifications = () => {
+            const level = select.value;
 
-            document.querySelectorAll('#academic-results option[data-primary-only]').forEach((option) => {
-                const keep = primary || option.selected;
+            document.querySelectorAll('#academic-results option[data-level]').forEach((option) => {
+                const keep = option.selected
+                    || level === ''
+                    || option.dataset.level === level
+                    || (level === initialLevel && option.dataset.offered === '1');
                 option.hidden = !keep;
                 option.disabled = !keep;
             });
         };
         if (resultsList) {
-            new MutationObserver(syncPrimaryOnly).observe(resultsList, { childList: true });
+            new MutationObserver(syncQualifications).observe(resultsList, { childList: true });
         }
 
         const sync = () => {
@@ -95,8 +98,10 @@
                 el.hidden = tier !== null && tiers.includes(tier);
             });
 
+            // The results section is shown for Primary, O-Level and A-Level, and for the other levels only when a scholarship
+            // asks for results (the page says so with data-sz-keep).
             levelHide.forEach((el) => {
-                el.hidden = el.dataset.szLevelHide.split(',').includes(select.value);
+                el.hidden = el.dataset.szLevelHide.split(',').includes(select.value) && el.dataset.szKeep !== '1';
             });
 
             levelShow.forEach((el) => {
@@ -107,7 +112,7 @@
                 el.hidden = !isMinor();
             });
 
-            syncPrimaryOnly();
+            syncQualifications();
 
             if (staleNotice) {
                 staleNotice.classList.toggle('d-none', select.value === initialLevel);

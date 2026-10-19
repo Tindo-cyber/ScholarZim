@@ -9,13 +9,15 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 1. Register at `/register` with your email and password.
 2. Complete your **profile** at `/applicant/profile`. The form only asks for what your
    education level actually needs: a Primary pupil sees a Grade 7 results-slip upload; an O/A-Level student sees a results-certificate upload; anyone from
-   Certificate level upward sees a transcript upload, field of study and year of study. If you are under 18 (or at school with no date of birth given) a **Guardian details**
+   Certificate level upward sees a transcript upload and a **Field of study** - which is your programme, chosen from the list for your level (Certificate, Diploma, Undergraduate and so on), not typed. If you are under 18 (or at school with no date of birth given) a **Guardian details**
    section appears: your guardian's name, phone and relationship, and a tick that a parent or
    guardian is aware of and involved. You can browse and build your profile without them, but
    they are needed to submit an application, and providers see them on your application. There
    is no GPA field anywhere — providers see your actual results or transcript, not a number.
-   A **Certificate** or **Diploma** has no degree classification and no academic results to enter: you upload your
-   documents and that is all the profile needs. (A degree and above still state a classification.)
+   From **Certificate** upward (Certificate, Diploma, Undergraduate, Postgraduate, Masters, PhD) you only upload your
+   documents: there is no degree classification and no academic results to enter. The results section appears only if a
+   scholarship you could apply for asks for earlier results. **Primary**, **O-Level** and **A-Level** enter their results, and
+   the qualifications offered are those of the level you choose.
 3. Upload your documents once, on the profile. The **Documents** card says how many are required
    for your education level, how many you have uploaded and how many remain, and lists each by
    name. **Upload the required documents listed below** — clear, readable copies; ones already on

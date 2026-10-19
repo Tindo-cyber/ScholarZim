@@ -81,6 +81,19 @@ class ApplicantProfile extends Model
         return $this->hasMany(ApplicantProgramme::class, 'profile_id', 'profile_id');
     }
 
+    /**
+     * The id of the programme this applicant is on (Certificate and above), or null. Read as $profile->current_programme_id,
+     * so the profile form and the apply page ask for one thing - "field of study" - and it is the real programme.
+     */
+    public function getCurrentProgrammeIdAttribute(): ?int
+    {
+        $current = $this->relationLoaded('programmeChoices')
+            ? $this->programmeChoices->firstWhere('kind', ApplicantProgramme::CURRENT)
+            : $this->programmeChoices()->where('kind', ApplicantProgramme::CURRENT)->first();
+
+        return $current?->programme_id !== null ? (int) $current->programme_id : null;
+    }
+
     /** Up to three fields an enrolled student or graduate wants to study next. See ApplicantTargetField. */
     public function targetFields(): HasMany
     {
@@ -219,7 +232,12 @@ class ApplicantProfile extends Model
 
         $askedFor = $this->levelsProvidersAskFor();
 
-        return $active->filter(function (AcademicQualification $qualification) use ($rung, $alreadyHeld, $askedFor) {
+        // From Certificate upward nothing of the applicant's own level is asked for: their documents are the evidence, and the
+        // degree-classification scheme the catalogue keeps at those levels is not a results form. Only an earlier level a
+        // scholarship asks for is offered.
+        $ownLevelOffered = ! EducationLevel::needsNoAcademicDetail($this->education_level);
+
+        return $active->filter(function (AcademicQualification $qualification) use ($rung, $alreadyHeld, $askedFor, $ownLevelOffered) {
             if (in_array((int) $qualification->id, array_map('intval', $alreadyHeld), true)) {
                 return true;
             }
@@ -233,7 +251,7 @@ class ApplicantProfile extends Model
                 return true;
             }
 
-            return $qualificationRung === $rung
+            return ($ownLevelOffered && $qualificationRung === $rung)
                 || ($qualificationRung < $rung && in_array($level, $askedFor, true));
         })->values();
     }

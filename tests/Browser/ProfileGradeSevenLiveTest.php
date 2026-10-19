@@ -14,7 +14,7 @@ use Tests\DuskTestCase;
 class ProfileGradeSevenLiveTest extends DuskTestCase
 {
     /** The Grade 7 choices nobody has selected: a row that already holds Grade 7 results keeps showing them. */
-    private const PRIMARY_OPTION = '#academic-results option[data-primary-only]:not(:checked)';
+    private const PRIMARY_OPTION = '#academic-results option[data-level=PRIMARY]:not(:checked)';
 
     private function pupil(): User
     {

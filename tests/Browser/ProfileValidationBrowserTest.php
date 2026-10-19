@@ -51,7 +51,7 @@ class ProfileValidationBrowserTest extends DuskTestCase
                         ->waitFor('#academic-results-list .academic-result-row', self::WAIT);
 
                     // A qualification chosen, no subject and no grade: the row is started but not finished.
-                    $browser->script("var s = document.querySelector('#academic-results-list .qualification-select'); s.selectedIndex = 1; s.dispatchEvent(new Event('change', {bubbles: true}));");
+                    $browser->script("var s = document.querySelector('#academic-results-list .qualification-select'); var o = Array.from(s.options).find(function (x) { return x.value && !x.disabled; }); s.value = o.value; s.dispatchEvent(new Event('change', {bubbles: true}));");
                     $browser->script("document.querySelector('#sz-profile-form').requestSubmit();");
 
                     $browser->waitForText('Please fix the following:', self::WAIT)
