@@ -20,6 +20,7 @@ APP_KEY=base64:...
 
 APP_URL=https://scholarzim.onrender.com
 SESSION_SECURE_COOKIE=true
+SESSION_EXPIRE_ON_CLOSE=true
 
 # Managed MySQL (see "Aiven MySQL" below)
 DB_CONNECTION=mysql
@@ -157,6 +158,23 @@ directory tree across with the service stopped or in maintenance mode - `rsync
 relative paths exactly - then set `FILESYSTEM_ROOT` and restart. Never delete
 the old copy until a spot-check confirms a few real documents open correctly
 through the app from the new location.
+
+### Cloudflare R2 (S3) storage - verified on the real service by the maintainer (2026-10-18)
+
+`FILESYSTEM_DISK=s3` is wired for a private R2 bucket (see `docs/security.md`). The automated tests use the local disk
+and fakes; the maintainer has confirmed it works against real R2. The checks below are for repeating on any new
+bucket or credentials:
+
+1. **Upload** - an applicant uploads a results certificate and an ID; the objects appear in the bucket
+   under the expected keys, and `document_files` rows point at them.
+2. **Replacement** - upload a new file over the old one; the profile shows the new file and the old object
+   is removed (or at least no longer reachable from the app).
+3. **Retrieval** - the applicant opens their own document through the app; the bucket itself has no public
+   access (a direct object URL is refused).
+4. **Provider download** - a provider with an application opens the submitted document (snapshot) and gets
+   the bytes; a provider without an application is refused.
+5. **Missing object** - delete one object by hand; the app shows "File unavailable" instead of erroring.
+6. **Audit** - each download writes an audit entry.
 
 ### Troubleshooting a failed deploy
 
@@ -431,6 +449,7 @@ APP_URL=https://www.scholarzim.co.zw
 # (no APP_TIMEZONE - the application timezone is fixed at UTC in config/app.php
 #  and is not read from the environment; see "Timezone" below)
 SESSION_SECURE_COOKIE=true
+SESSION_EXPIRE_ON_CLOSE=true
 LOG_CHANNEL=stderr
 LOG_LEVEL=warning
 
@@ -504,6 +523,6 @@ Back up the uploads volume (`storage/app`) alongside database backups. Documents
 - [ ] `SCHOLARZIM_DEMO_SEED=false` (or `true` for the FYP demo only)
 - [ ] Secrets only in `.env.prod` / host env
 - [ ] Mail verified
-- [ ] HTTPS on www.scholarzim.co.zw, `SESSION_SECURE_COOKIE=true`
+- [ ] HTTPS on www.scholarzim.co.zw, `SESSION_SECURE_COOKIE=true`, `SESSION_EXPIRE_ON_CLOSE=true` (closing the browser signs the user out)
 - [ ] Persistent uploads (Render disk or Docker volume) + DB backups
 - [ ] CI green on `main`

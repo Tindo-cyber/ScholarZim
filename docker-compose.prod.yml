@@ -41,6 +41,7 @@ services:
       LOG_CHANNEL: stderr
       LOG_LEVEL: warning
       SESSION_SECURE_COOKIE: "true"
+      SESSION_EXPIRE_ON_CLOSE: "true"
       # TLS stops at the reverse proxy, so the scheme arrives in
       # X-Forwarded-Proto. Without a trusted proxy the app reads every request
       # as plain HTTP and never sends HSTS. Safe as "*" only because the port

@@ -16,6 +16,7 @@ use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\ScholarFitTestSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Tests\Support\GivesRequiredDocuments;
 use Tests\TestCase;
 
 /**
@@ -29,6 +30,7 @@ use Tests\TestCase;
 class VisibleEligibilityTest extends TestCase
 {
     use RefreshDatabase;
+    use GivesRequiredDocuments;
 
     private const NO_REQUIREMENTS = 'No specific requirements were provided. You appear eligible to apply.';
 
@@ -165,6 +167,7 @@ class VisibleEligibilityTest extends TestCase
     public function test_a_complete_profile_gets_the_application_form_for_open_doors(): void
     {
         $id = $this->listing('Open Doors Bursary')->opportunity_id;
+        $this->giveRequiredDocuments($this->user('rudo.mutasa'));
 
         $this->actingAs($this->user('rudo.mutasa'))->get(route('applications.wizard', $id))->assertOk()->assertSee('Submit application');
     }
@@ -175,7 +178,8 @@ class VisibleEligibilityTest extends TestCase
 
         // No date of birth at school level is read as a minor (ApplicantProfile::isMinor), so a guardian comes first.
         $this->actingAs($this->user('tariro.gumbo'))->get(route('applications.wizard', $id))->assertOk()
-            ->assertSee('A PARENT OR GUARDIAN IS NEEDED')
+            ->assertSee('Parent or guardian')
+            ->assertSee('name="profile[guardian_name]"', false)
             ->assertDontSee('Submit application');
     }
 
@@ -187,7 +191,8 @@ class VisibleEligibilityTest extends TestCase
         $this->assertTrue($this->fit('lloyd.ncube', 'Open Doors Bursary')->isEligibleWithoutRequirements(), 'eligible regardless');
 
         $this->actingAs($this->user('lloyd.ncube'))->get(route('applications.wizard', $id))->assertOk()
-            ->assertSee('COMPLETE YOUR PROFILE FIRST')
+            ->assertSee('A few details are still needed')
+            ->assertSee('name="profile[biography]"', false)
             ->assertDontSee('Submit application');
     }
 
@@ -220,7 +225,8 @@ class VisibleEligibilityTest extends TestCase
             'closed' => [['status' => OpportunityStatus::CLOSED]],
             'withdrawn' => [['status' => OpportunityStatus::WITHDRAWN]],
             'not approved' => [['moderation_status' => OpportunityModerationStatus::PENDING]],
-            'past its deadline' => [['deadline' => Carbon::today()->subDay()->toDateString()]],
+            // Two days back: this runs before the application sets its zone, so "yesterday" could still be today in UTC.
+            'past its deadline' => [['deadline' => Carbon::now('UTC')->subDays(2)->toDateString()]],
         ];
     }
 
@@ -377,7 +383,8 @@ class VisibleEligibilityTest extends TestCase
         $profile = $this->setLevel('memory.chikwanha', EducationLevel::DIPLOMA, null);
         $profile->academicResults()->delete();
 
-        $this->assertFalse($profile->refresh()->isComplete(), 'the profile is incomplete');
+        // A Diploma is shown by its documents: no academic information is needed for the profile to be complete.
+        $this->assertTrue($profile->refresh()->isComplete(), 'a Diploma needs no academic information');
         $this->assertSame([], AcademicRecord::fromProfile($profile)->levelsHeld());
         $this->assertFalse($this->fit('memory.chikwanha', 'Bachelor Completion Bursary')->isIneligible(), 'incomplete is not ineligible');
         $this->assertTrue($this->fit('memory.chikwanha', 'Bachelor Completion Bursary')->meetsRequirements());

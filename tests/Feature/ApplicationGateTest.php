@@ -6,6 +6,7 @@ use App\Models\Opportunity;
 use App\Models\User;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Support\GivesRequiredDocuments;
 use Tests\TestCase;
 
 /**
@@ -24,6 +25,7 @@ use Tests\TestCase;
 class ApplicationGateTest extends TestCase
 {
     use RefreshDatabase;
+    use GivesRequiredDocuments;
 
     protected function setUp(): void
     {
@@ -136,6 +138,7 @@ class ApplicationGateTest extends TestCase
         $farai = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'National Merit Undergraduate Bursary')->firstOrFail();
         $opportunity->forceFill(['accepts_o_level' => true])->save();
+        $this->giveRequiredDocuments($farai, $opportunity);
 
         $this->actingAs($farai)
             ->post('/apply/' . $opportunity->opportunity_id . '/quick')
@@ -170,6 +173,7 @@ class ApplicationGateTest extends TestCase
     {
         $tanaka = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'Midlands Engineering Excellence Award')->firstOrFail();
+        $this->giveRequiredDocuments($tanaka, $opportunity);
 
         $this->actingAs($tanaka)
             ->post('/apply/' . $opportunity->opportunity_id . '/quick')
@@ -201,6 +205,7 @@ class ApplicationGateTest extends TestCase
     {
         $blessing = User::where('email', 'blessing.moyana@scholarzim.co.zw')->firstOrFail();
         $opportunity = Opportunity::where('title', 'Harare Health Sciences Postgraduate Grant')->firstOrFail();
+        $this->giveRequiredDocuments($blessing, $opportunity);
 
         $this->actingAs($blessing)
             ->post('/apply/' . $opportunity->opportunity_id . '/quick')

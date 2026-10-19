@@ -45,7 +45,8 @@
                 <div class="alert alert-danger">
                     <h2 class="h6 fw-semibold mb-1">Your application was not successful.</h2>
                     <p class="mb-0">
-                        This decision is final for this scholarship, but there are others open to you.
+                        There are other scholarships open to you. If the provider reconsiders this decision
+                        you will be told here and by notification.
                     </p>
                 </div>
             @elseif($application->isWithdrawn())
@@ -54,6 +55,30 @@
                     <p class="mb-0">
                         The provider was notified. You can apply again while the scholarship is still open.
                     </p>
+                </div>
+            @elseif($application->isReopened())
+                {{--
+                    Pending again because the provider withdrew a decision. Says what happened and what it means for
+                    the student - an accepted scholarship is NOT guaranteed while it is reconsidered - and shows the
+                    provider's reason as written.
+                --}}
+                <div class="alert alert-warning" id="application-reopened">
+                    <h2 class="h6 fw-semibold mb-1">
+                        {{ $application->reopened_from === \App\Support\ApplicationStatus::ACCEPTED
+                            ? 'The provider withdrew their acceptance and reopened your application.'
+                            : 'The provider withdrew their earlier decision and reopened your application.' }}
+                    </h2>
+                    <p class="mb-1">
+                        @if($application->reopened_from === \App\Support\ApplicationStatus::ACCEPTED)
+                            Your acceptance no longer stands while they reconsider, so the scholarship is not guaranteed.
+                        @else
+                            Your application is being reviewed again.
+                        @endif
+                        You will be notified when they make a new decision.
+                    </p>
+                    @if($application->reopen_reason)
+                        <p class="small mb-0"><strong>Their reason:</strong> {{ $application->reopen_reason }}</p>
+                    @endif
                 </div>
             @else
                 <div class="alert alert-primary">

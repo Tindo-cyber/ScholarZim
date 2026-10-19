@@ -122,3 +122,23 @@ reading is limited to a fixed set of conditions and is only used where no struct
 | The 300-pair test and its key | `tests/Feature/ScholarFitAccuracyTest.php`, `tests/Fixtures/scholarfit/` |
 | The marking sheets and the answer key as spreadsheets | `tests/Fixtures/scholarfit/export/` |
 | Comparing a marked sheet | `php artisan scholarfit:compare <file> [--brief]` |
+
+## Listings that say who they are for in ordinary words
+
+Providers do not always use the level fields. The reader (`DescriptionEligibility`) keeps three statements apart,
+because they are judged differently, and never lets wording it cannot read make a listing look open to everyone:
+
+| What the wording says | Examples | How it is judged |
+|---|---|---|
+| Who the award is **for** (the level it funds study at) | "Form 5 and 6 Bursary", "Forms 5 & 6", "Lower Sixth", "Sixth Form", "for Form 5 and 6", "A-Level students", "Advanced Level" | Progression toward that level, as for "A-Level students": a learner moving into it or at it qualifies; a Primary pupil does not. Form 5 and Form 6 (Lower and Upper Sixth) are A-Level; Forms 2-4 are O-Level. |
+| What the applicant must **already hold** | "must have completed Form 6", "Upper Sixth leavers", "requires A-Level passes" | The "at least this level, or evidence of it" floor a structured minimum uses. Only the year that ends a course counts as a qualification: finishing Form 5 is not an A-Level. |
+| Wording that cannot be read reliably | "requires Form 5", "completed Form 5", "school leavers", "senior secondary", "matric", "tertiary", "IGCSE" | **Needs review**: not eligible-confirmed, not refused. The applicant is told what was found and to check with the provider; they can still apply. |
+
+Not read as a level: paperwork ("submit Form 5", "Form 5 application must be signed"), a provider's own name ("Harare College
+Trust"), and a year mentioned only to exclude ("not open to Form 5 students" - dropped, never inverted). A provider who sets the
+level fields in the form is using the rule; the words are not asked to say it again.
+
+Limitations: the reader is a small fixed vocabulary, not language understanding. A negated mention is dropped rather than turned
+into "everyone else". Other ways of writing a school year are not in the vocabulary and read as no wording at all unless one of the
+review hints above is also present; the fix for a provider is to choose the level in the form.
+

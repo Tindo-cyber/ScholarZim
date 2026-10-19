@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\Academic\AcademicCatalogue;
+use App\Support\DocumentChecklist;
 use App\Support\EducationLevel;
 use App\Support\Gender;
 use Illuminate\Database\Eloquent\Model;
@@ -344,6 +345,11 @@ class ApplicantProfile extends Model
             return false;
         }
 
+        // A Certificate or Diploma is evidenced by its uploaded documents; there is no academic fact to hold first.
+        if (EducationLevel::needsNoAcademicDetail($canonical)) {
+            return true;
+        }
+
         $tier = EducationLevel::tier($canonical);
 
         if ($tier === EducationLevel::TIER_PRIMARY || $tier === EducationLevel::TIER_SECONDARY) {
@@ -431,43 +437,100 @@ class ApplicantProfile extends Model
     }
 
     /**
-     * A Primary applicant is asked for no uploaded documents: their academic
-     * evidence is the Grade 7 results they enter in the academic-information
-     * section, and the recommendation letter stays specific to O-Level and
-     * above. O/A-Level applicants are asked for their results certificate plus a
-     * recommendation letter; a postgraduate applicant's evidence is the
-     * previous tertiary qualification certificate they already hold, not a
-     * CV or ID - the document set below that is for someone still entering
-     * tertiary study, who has a current proof of study rather than a
-     * completed one to show, and an identity document a continuing
-     * postgraduate relationship with a provider does not re-ask for.
+     * Which documents are REQUIRED, and why - the one place that rule is written down.
+     *
+     * A Primary applicant is asked for no uploaded documents: their academic evidence is the Grade 7 results they
+     * enter in the academic-information section. The one exception is an award that asks for proof of results; then
+     * the Grade 7 results slip is required, for that award. O/A-Level applicants are asked for their results
+     * certificate plus a recommendation letter; a postgraduate applicant's evidence is the previous tertiary
+     * qualification certificate they already hold, plus a recommendation letter; anyone else at Certificate level or
+     * above is asked for a transcript or proof of study, an ID or passport and a recommendation letter. An award that
+     * asks for proof of results is asking for the same academic document the level already requires, so it adds none.
+     *
+     * @return array<string, string> document type => 'level' (this education level asks for it) or 'scholarship'
+     *                               (this award asks for it), in the order they are asked for
      */
-    public function requiredDocumentTypes(?Opportunity $for = null): array
+    public function documentRequirementsFor(?Opportunity $for = null): array
     {
-        if (EducationLevel::isPrimary($this->education_level)) {
-            // Nothing is required of a Grade 7 pupil in general - their results are structured data
-            // (hasStructuredResults()). The one exception is an award that asks for proof of results:
-            // then the results slip is required, for that award.
-            return $for?->requires_results_certificate ? ['grade7_slip'] : [];
-        }
-
-        if (EducationLevel::usesSchoolResults($this->education_level)) {
-            return ['results', 'recommendation'];
-        }
-
-        if (EducationLevel::tier($this->education_level) === EducationLevel::TIER_POSTGRADUATE) {
-            return ['transcript', 'recommendation'];
-        }
-
-        return ['transcript', 'passport', 'recommendation'];
+        return self::documentRequirementsAt($this->education_level, $for);
     }
 
+    /**
+     * The same rule for a stated level rather than this profile's current one - how a provider's review page asks what an
+     * application was required to hold at the level it was submitted at.
+     *
+     * @return array<string, string> see documentRequirementsFor()
+     */
+    public static function documentRequirementsAt(?string $level, ?Opportunity $for = null): array
+    {
+        if (EducationLevel::isPrimary($level)) {
+            return $for?->requires_results_certificate ? ['grade7_slip' => 'scholarship'] : [];
+        }
+
+        if (EducationLevel::usesSchoolResults($level)) {
+            return ['results' => 'level', 'recommendation' => 'level'];
+        }
+
+        if (EducationLevel::tier($level) === EducationLevel::TIER_POSTGRADUATE) {
+            return ['transcript' => 'level', 'recommendation' => 'level'];
+        }
+
+        return ['transcript' => 'level', 'passport' => 'level', 'recommendation' => 'level'];
+    }
+
+    /**
+     * Every document this applicant is asked for - or may offer - and where each stands, for this scholarship if one
+     * is given. The profile's upload card, the apply wizard, the submission check, the completion checklist and the
+     * provider's review page all read this, so the count one shows is the count another enforces.
+     *
+     * Required documents come first within their group; the CV, and an ID or recommendation letter that this level
+     * does not require, are listed as optional and never counted.
+     */
+    public function documentChecklist(?Opportunity $for = null): DocumentChecklist
+    {
+        $required = $this->documentRequirementsFor($for);
+
+        $academic = match (true) {
+            EducationLevel::isPrimary($this->education_level) => 'grade7_slip',
+            EducationLevel::usesSchoolResults($this->education_level) => 'results',
+            default => 'transcript',
+        };
+
+        // Offered at every level above Primary; a Primary pupil only ever has the slip.
+        $offered = EducationLevel::isPrimary($this->education_level)
+            ? [$academic]
+            : [$academic, 'passport', 'recommendation', 'cv'];
+
+        $types = array_values(array_unique(array_merge(array_keys($required), $offered)));
+
+        $items = array_map(fn (string $type) => [
+            'type' => $type,
+            'label' => self::DOCUMENT_LABELS[$type],
+            'required' => isset($required[$type]),
+            'reason' => $required[$type] ?? null,
+            'group' => in_array($type, DocumentChecklist::ACADEMIC_TYPES, true) ? 'academic' : 'other',
+            'present' => filled($this->documentPath($type)),
+            'filename' => $this->documentFilename($type),
+            'uploaded_at' => $this->documentUploadedAt($type),
+        ], $types);
+
+        // Academic documents first, then required before optional, each keeping the order they are asked for in.
+        usort($items, static fn (array $a, array $b) => [$a['group'] === 'academic' ? 0 : 1, $a['required'] ? 0 : 1]
+            <=> [$b['group'] === 'academic' ? 0 : 1, $b['required'] ? 0 : 1]);
+
+        return new DocumentChecklist($items);
+    }
+
+    /** @return array<int, string> the types this applicant must upload (for this scholarship, if given) */
+    public function requiredDocumentTypes(?Opportunity $for = null): array
+    {
+        return array_keys($this->documentRequirementsFor($for));
+    }
+
+    /** @return array<int, string> the required types that have nothing stored yet */
     public function missingRequiredDocumentTypes(?Opportunity $for = null): array
     {
-        return array_values(array_filter(
-            $this->requiredDocumentTypes($for),
-            fn (string $type) => blank($this->documentPath($type))
-        ));
+        return $this->documentChecklist($for)->missingTypes();
     }
 
     public function age(): ?int
@@ -600,7 +663,7 @@ class ApplicantProfile extends Model
                 'hint' => 'Required for the Form 1 pathway - Primary applicants apply with a guardian.'];
             $items[] = ['label' => 'Academic results', 'value' => $this->hasStructuredResults() ?: null, 'anchor' => 'academic-results',
                 'hint' => 'Your Grade 7 learning areas and results, entered one by one.'];
-        } else {
+        } elseif (! EducationLevel::needsNoAcademicDetail($this->education_level)) {
             // Any structured result counts, whatever the board. Asking a
             // Cambridge A-Level applicant for ZIMSEC A-Level results - or an
             // O-Level applicant for A-Level ones - would mark a complete

@@ -10,7 +10,7 @@ final class DescriptionCondition
     public const SOURCE_DESCRIPTION = 'description';
 
     public function __construct(
-        /** One of DescriptionEligibility::EDUCATION_LEVEL, ::ENTRY_QUALIFICATION, ::FIELD_OF_STUDY, ::UNSUPPORTED. */
+        /** One of DescriptionEligibility::EDUCATION_LEVEL, ::ENTRY_QUALIFICATION, ::FIELD_OF_STUDY, ::UNSUPPORTED, ::UNRESOLVED_LEVEL. */
         public readonly string $kind,
         /**
          * For EDUCATION_LEVEL and ENTRY_QUALIFICATION: the canonical EducationLevel value.

@@ -107,6 +107,13 @@ final class RequirementOutcome
      */
     public const TYPE_PROVIDER_CONDITION = 'provider_condition';
 
+    /**
+     * Wording in the title or description that sounds like an education restriction but cannot be read reliably (see
+     * DescriptionEligibility::UNRESOLVED_LEVEL). A review outcome: the listing is not called open to everyone and the
+     * applicant is not turned away; they are told what could not be read and asked to check with the provider.
+     */
+    public const TYPE_DESCRIPTION_UNRESOLVED = 'description_unresolved';
+
     private function __construct(
         public readonly string $type,
         public readonly bool $passed,
@@ -134,6 +141,11 @@ final class RequirementOutcome
         public readonly ?string $missing = null,
         /** For a passed programme-scope rule: FIT_PROGRAMME, FIT_NARROW_FIELD or FIT_BROAD_FIELD. */
         public readonly ?string $fit = null,
+        /**
+         * A needs-information outcome the applicant cannot answer from their profile: the listing's own wording could not be
+         * read. It keeps the listing out of the matches (nothing was confirmed) without making it impossible to apply to.
+         */
+        public readonly bool $review = false,
     ) {
     }
 
@@ -195,6 +207,16 @@ final class RequirementOutcome
         return new self($type, false, $message, null, null, null, $required, null, false, true, $missing);
     }
 
+    /**
+     * A requirement the listing seems to state but that cannot be read reliably. Pending like any unanswered
+     * requirement - so it is never counted as met - but nothing in the profile answers it, so it carries no field and
+     * does not stop an application (see blockingPending()).
+     */
+    public static function review(string $type, string $message, string|int|float|null $required = null): self
+    {
+        return new self($type, false, $message, null, null, null, $required, null, false, true, null, null, true);
+    }
+
     /** @return array<string, mixed> */
     public function toArray(): array
     {
@@ -209,6 +231,7 @@ final class RequirementOutcome
             'required' => $this->required,
             'actual' => $this->actual,
             'needs_information' => $this->needsInformation,
+            'review' => $this->review,
             'missing' => $this->missing,
             'fit' => $this->fit,
         ];
@@ -243,6 +266,18 @@ final class RequirementOutcome
     }
 
     /**
+     * The unanswered requirements the applicant can do something about: the ones a profile answer would settle. These are
+     * what stops an application; a review outcome (the listing's wording could not be read) does not.
+     *
+     * @param  array<int, self>  $outcomes
+     * @return array<int, self>
+     */
+    public static function blockingPending(array $outcomes): array
+    {
+        return array_values(array_filter(self::pending($outcomes), static fn (self $o) => ! $o->review));
+    }
+
+    /**
      * The profile fields behind them, each named once.
      *
      * @param  array<int, self>  $outcomes
@@ -252,7 +287,7 @@ final class RequirementOutcome
     {
         return array_values(array_unique(array_map(
             static fn (self $o) => (string) $o->missing,
-            self::pending($outcomes)
+            self::blockingPending($outcomes)
         )));
     }
 

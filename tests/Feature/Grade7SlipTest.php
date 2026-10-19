@@ -391,14 +391,16 @@ class Grade7SlipTest extends TestCase
 
     public function test_a_pupil_without_the_slip_is_sent_to_upload_it_before_applying(): void
     {
-        $html = $this->actingAs($this->pupil)->get('/apply/' . $this->formOne(true)->opportunity_id)->assertOk()->getContent();
+        $listing = $this->formOne(true);
+        $html = $this->actingAs($this->pupil)->get('/apply/' . $listing->opportunity_id)->assertOk()->getContent();
 
-        $this->assertStringContainsString('NEEDS INFORMATION', $html, 'a slip he can upload is a question, not a refusal');
+        // A slip he can upload is a question, not a refusal - and it is asked for right here, once.
+        $this->assertStringContainsString('A few details are still needed', $html);
         $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
         $this->assertStringContainsString('Grade 7 results slip', $html);
-        $this->assertStringContainsString('Upload my Grade 7 results slip', $html);
-        $this->assertStringContainsString('#grade7-slip-card', $html);
-        $this->assertStringNotContainsString('name="documents[grade7_slip]"', $html, 'a submit button that cannot succeed is not shown');
+        $this->assertStringContainsString('name="documents[grade7_slip]"', $html, 'the upload is offered in place');
+        $this->assertStringContainsString(route('applications.details', $listing->opportunity_id), $html);
+        $this->assertStringNotContainsString('name="personal_statement"', $html, 'the statement waits until the slip is on file');
     }
 
     public function test_a_student_missing_their_results_certificate_is_asked_for_it_not_refused(): void
@@ -409,10 +411,11 @@ class Grade7SlipTest extends TestCase
 
         $html = $this->actingAs($student)->get('/apply/' . $listing->opportunity_id)->assertOk()->getContent();
 
-        // Above Primary the missing evidence also makes the profile incomplete, which is the first thing said.
+        // Above Primary the missing evidence also makes the profile incomplete; it is asked for in place, not refused.
         $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
-        $this->assertStringContainsString('COMPLETE YOUR PROFILE FIRST', $html);
+        $this->assertStringContainsString('A few details are still needed', $html);
         $this->assertStringContainsString('Results certificate', $html);
+        $this->assertStringContainsString('name="documents[results]"', $html);
     }
 
     public function test_with_the_slip_on_file_the_wizard_opens_and_says_it_will_be_attached(): void

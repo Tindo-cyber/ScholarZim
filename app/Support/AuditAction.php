@@ -8,6 +8,8 @@ final class AuditAction
     public const APPLY = 'APPLY';
     public const APPLICATION_VIEWED = 'APPLICATION_VIEWED';
     public const STATUS_UPDATE = 'STATUS_UPDATE';
+    /** A provider withdrew an accepted or rejected decision and reopened the application for review. */
+    public const REOPEN_APPLICATION = 'REOPEN_APPLICATION';
     public const CREATE_OPPORTUNITY = 'CREATE_OPPORTUNITY';
     public const DELETE_USER = 'DELETE_USER';
     public const UPDATE_USER = 'UPDATE_USER';
@@ -15,6 +17,8 @@ final class AuditAction
     public const REJECT_PROVIDER = 'REJECT_PROVIDER';
     public const VIEW_APPLICANT_RESULTS = 'VIEW_APPLICANT_RESULTS';
     public const VIEW_APPLICANT_TRANSCRIPT = 'VIEW_APPLICANT_TRANSCRIPT';
+    /** A provider opened a CV, ID or passport, or recommendation letter an application was submitted with. */
+    public const VIEW_APPLICANT_DOCUMENT = 'VIEW_APPLICANT_DOCUMENT';
     public const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
     public const LOGIN_FAILURE = 'LOGIN_FAILURE';
     public const PASSWORD_RESET_REQUEST = 'PASSWORD_RESET_REQUEST';

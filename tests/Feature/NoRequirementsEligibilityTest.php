@@ -21,6 +21,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Blade;
+use Tests\Support\GivesRequiredDocuments;
 use Tests\TestCase;
 
 /**
@@ -34,6 +35,7 @@ use Tests\TestCase;
 class NoRequirementsEligibilityTest extends TestCase
 {
     use RefreshDatabase;
+    use GivesRequiredDocuments;
 
     private const MESSAGE = 'No specific eligibility requirements have been provided by the scholarship provider. '
         . 'You appear eligible to apply based on the available information.';
@@ -126,6 +128,7 @@ class NoRequirementsEligibilityTest extends TestCase
     private function completeProfile(): void
     {
         $this->giveResults(['Mathematics' => 'A', 'Physics' => 'B', 'Chemistry' => 'A']);
+        $this->giveRequiredDocuments($this->student);
         $this->assertTrue($this->profile()->isComplete(), 'precondition: a complete profile');
     }
 

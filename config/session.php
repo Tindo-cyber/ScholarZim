@@ -33,7 +33,16 @@ return [
 
     'lifetime' => env('SESSION_LIFETIME', 120),
 
-    'expire_on_close' => false,
+    /*
+    | When true the session cookie carries no expiry date, so the browser drops it when the browser session ends
+    | and the next visit must sign in again. false would let the cookie outlive the browser for the whole
+    | `lifetime` above - which is how a person who closed the browser and came back an hour later was still
+    | signed in. Defaults to true; set SESSION_EXPIRE_ON_CLOSE=false only for a deliberately persistent setup.
+    |
+    | `lifetime` still applies on the server as the idle limit. Some browsers restore session cookies when the
+    | person chooses "continue where you left off" - see docs/security.md.
+    */
+    'expire_on_close' => env('SESSION_EXPIRE_ON_CLOSE', true),
 
     /*
     |--------------------------------------------------------------------------

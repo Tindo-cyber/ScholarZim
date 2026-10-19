@@ -14,21 +14,47 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
    guardian is aware of and involved. You can browse and build your profile without them, but
    they are needed to submit an application, and providers see them on your application. There
    is no GPA field anywhere — providers see your actual results or transcript, not a number.
-3. Upload the document your level asks for. It is not required to apply everywhere, but a
-   provider can mark an individual scholarship as requiring it — an applicant without it
-   sees "Requirements not met" on that listing rather than a score.
+   A **Certificate** or **Diploma** has no degree classification and no academic results to enter: you upload your
+   documents and that is all the profile needs. (A degree and above still state a classification.)
+3. Upload your documents once, on the profile. The **Documents** card says how many are required
+   for your education level, how many you have uploaded and how many remain, and lists each by
+   name. **Upload the required documents listed below** — clear, readable copies; ones already on
+   your profile are reused when they meet the requirements. Your academic certificate is in the
+   *Academic certificates* section; your ID or passport, recommendation letter and optional CV are
+   under *Other documents*. A new upload replaces the file you had. Only you, and a provider you apply
+   to, can open your documents. The optional CV is listed but is not counted as required.
 4. Browse scholarships at `/scholarships` or your dashboard recommendations.
 
 ![Applicant profile](../docs/screenshots/04-applicant-profile.png)
 
 ### Applying
 
+- Your profile is the one place your details and documents live. Applying reuses them: you do
+  not type your details again or upload a document ScholarZim already holds.
 - Click **Apply** on a scholarship you are eligible for. The highest level you have completed, the
   level the scholarship targets, and any hard requirement it states are all checked again at
   the moment you apply — not only when the recommendations list was built — so a listing you
   are not eligible for refuses the submission with the same reason the listing page already
   showed you, and the wizard does not even offer a Submit button for it.
-- Complete the application wizard (personal statement; optional supporting document).
+- ScholarZim checks that scholarship's requirements against your saved profile and tells you
+  only what is missing. If something is, **A few details are still needed** asks for exactly
+  that — a province, a date of birth, a guardian's details if you are under 18, a missing
+  document — and saves it to your profile, so you will not be asked again. Anything that only
+  the profile can hold (your results, your programme) is a link to that section, with a
+  **Back to my application** button when you are done. It does not make you complete the whole
+  profile again, and it does not collect documents for a scholarship you are not eligible for.
+- One extra question can appear for school-leavers: a scholarship limited to named institutions
+  asks which institutions you have applied to or hold an offer from (up to three), because you
+  have no current institution to check. It is asked only on that kind of scholarship, saved
+  once, and reused by the next one whenever it fits. It is not on the profile page. If the list
+  you saved does not include an institution a later scholarship is limited to, that application
+  page shows your saved list ticked and lets you add to it, remove from it or change it
+  (**Save and check again**); eligibility is worked out again from the new list, and you can
+  apply only if it now fits.
+- Then write your personal statement (the one thing that is particular to each scholarship),
+  tick the confirmation and **Submit**. The application is recorded for you.
+- You never record where you have applied. Every application you submit appears in the
+  **Application tracker** by itself, with its number, the date submitted and its status.
 - Follow each application in the **Application tracker** (`/my-applications`, also on your dashboard): a progress rail per application - Applied, Under review, Decision - with the date each step happened. (The screenshot below is from before it was renamed.)
 
 ![Application tracker](../docs/screenshots/06-my-applications.png)
@@ -39,8 +65,11 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
   to do in the meantime.
 - When they decide, you get an email and a notification. The application page then shows
   **Accepted** or **Rejected**, together with the reason they wrote.
-- An acceptance is the end of it: the scholarship is yours and there is nothing further to
-  confirm.
+- An acceptance means the provider has granted the scholarship and there is nothing further to
+  confirm. Rarely, a provider may withdraw a decision they made by mistake: you are notified,
+  the application goes back to **Pending** (an accepted scholarship is *not* guaranteed while
+  they reconsider), and you are notified again when they decide. The page shows what happened
+  and the reason they gave.
 - Changed your mind before a decision? **Withdraw application** tells the provider the place
   is free. You can apply again later while the scholarship is still open.
 
@@ -78,6 +107,10 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 
 - **Settings** → `/account/security` — password, email preferences, sessions, and account
   deletion.
+- **Signing in:** closing the browser signs you out, so the next visit asks for your password.
+  There is no "keep me signed in" option. Some browsers can be set to restore your previous
+  session when they reopen, which also restores your sign-in; sign out explicitly on a shared
+  computer.
 - **Sign out all other sessions** ends every session except the one you are using — useful
   after signing in on a library or lab computer.
 - **Messages** → notification inbox for application updates and deadline reminders.
@@ -149,11 +182,19 @@ or "Online / distance"), independently of where your organisation is registered.
 ### Reviewing applications
 
 - Open an application from the inbox to see the student, their profile, their documents and
-  their ScholarFit eligibility check, then press **Accept** or **Reject**.
+  their ScholarFit eligibility check, then press **Accept** or **Reject**. Under **Documents**
+  you can open everything the application was submitted with: the attachment, results
+  certificate, academic certificate or proof of study, Grade 7 slip, CV, ID or passport, and
+  recommendation letter. A document the applicant did not send says **Not provided**.
 - Both decisions require a written reason. The applicant reads it verbatim, in their email
   and on their application page.
-- Both decisions are final. Accepting *is* granting the scholarship — there is no separate
-  award step, and a decision cannot be reversed afterwards.
+- Accepting *is* granting the scholarship — there is no separate award step. A decision is not
+  edited in place. If you made a mistake, open the application and choose **Withdraw decision
+  and reopen**: you must give a reason (the applicant is shown it), you confirm the dialog, and
+  the application goes back to **Pending** so you can accept or reject it afresh. Withdrawing an
+  **acceptance** reverses the award: the applicant is told it no longer stands and is not
+  guaranteed, and the award slot is released. Your original decision and reason stay in the
+  application's **Decision history** and the audit log. The applicant is notified at each step.
 - Decisions are made one application at a time: a reason written for one student should not
   be sent to a batch.
 

@@ -256,6 +256,24 @@ class ApplicationProfileSnapshotTest extends TestCase
         $this->assertStringContainsString("The applicant's profile has changed since they applied.", $html);
     }
 
+    public function test_a_verdict_read_back_with_its_keys_in_another_order_is_not_a_change(): void
+    {
+        // What MySQL's JSON type does to an object: same content, different key order.
+        $saved = ['verdict' => 'eligible', 'rules' => [['status' => 'met', 'message' => 'A']], 'notes' => []];
+        $reordered = ['notes' => [], 'rules' => [['message' => 'A', 'status' => 'met']], 'verdict' => 'eligible'];
+
+        $this->assertTrue(\App\Services\ApplicationSnapshot::sameVerdict($saved, $reordered));
+        $this->assertFalse(\App\Services\ApplicationSnapshot::sameVerdict($saved, ['verdict' => 'not_eligible'] + $saved));
+        $this->assertFalse(\App\Services\ApplicationSnapshot::sameVerdict(
+            $saved,
+            ['verdict' => 'eligible', 'rules' => [['status' => 'unmet', 'message' => 'A']], 'notes' => []]
+        ), 'a rule that changed is a change');
+        $this->assertFalse(\App\Services\ApplicationSnapshot::sameVerdict(
+            ['rules' => [['status' => 'met', 'message' => 'A'], ['status' => 'met', 'message' => 'B']]],
+            ['rules' => [['status' => 'met', 'message' => 'B'], ['status' => 'met', 'message' => 'A']]]
+        ), 'the order of the rules is part of the verdict');
+    }
+
     public function test_no_change_note_when_the_verdict_still_stands(): void
     {
         $this->requireFirstSubject();

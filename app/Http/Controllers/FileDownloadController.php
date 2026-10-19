@@ -56,6 +56,24 @@ class FileDownloadController extends Controller
         return $this->submittedDocument($request, $applicationId, 'grade7_slip', AuditAction::VIEW_APPLICANT_RESULTS, 'grade-7-results-slip');
     }
 
+    /** The CV the application was submitted with, for the reviewing provider. */
+    public function applicantCv(Request $request, int $applicationId)
+    {
+        return $this->submittedDocument($request, $applicationId, 'cv', AuditAction::VIEW_APPLICANT_DOCUMENT, 'cv');
+    }
+
+    /** The ID or passport the application was submitted with, for the reviewing provider. */
+    public function applicantPassport(Request $request, int $applicationId)
+    {
+        return $this->submittedDocument($request, $applicationId, 'passport', AuditAction::VIEW_APPLICANT_DOCUMENT, 'id-or-passport');
+    }
+
+    /** The recommendation letter the application was submitted with, for the reviewing provider. */
+    public function applicantRecommendation(Request $request, int $applicationId)
+    {
+        return $this->submittedDocument($request, $applicationId, 'recommendation', AuditAction::VIEW_APPLICANT_DOCUMENT, 'recommendation-letter');
+    }
+
     /**
      * One of the documents an application was sent with: the one recorded at submission, not whatever the applicant's
      * profile holds now. Only the provider of that award can open it, and each opening is audited.
@@ -72,7 +90,8 @@ class FileDownloadController extends Controller
             $user->email,
             $auditAction,
             'APPLICANT_PROFILE',
-            $application->user?->applicantProfile?->profile_id
+            $application->user?->applicantProfile?->profile_id,
+            $auditAction === AuditAction::VIEW_APPLICANT_DOCUMENT ? 'Opened ' . $fallbackName . ' for application ' . $application->application_id : null
         );
 
         return $this->fileStorage->respond($document['path'], $document['filename'] ?: $fallbackName);

@@ -168,6 +168,7 @@ class EmailService
             'APPLICATION_ACCEPTED' => 'Your scholarship application was accepted',
             'APPLICATION_REJECTED' => 'Update on your scholarship application',
             'APPLICATION_WITHDRAWN' => 'An applicant withdrew their application',
+            'APPLICATION_REOPENED' => 'Your scholarship application has been reopened for review',
             // Subjects for notification rows written before the workflow was
             // simplified; nothing new is sent with these types.
             'APPLICATION_APPROVED', 'APPLICATION_AWARDED' => 'Your scholarship application was accepted',

@@ -116,45 +116,41 @@
                         @endif
 
                         {{--
-                            Every document this provider may open, listed whether it is there
-                            or not.
+                            Every document this provider may open for THIS application: the ones it was
+                            submitted with (not whatever the profile holds now), and a "Not provided" row for
+                            any the applicant's level asks for and did not send.
 
-                            Before, a missing document simply had no button, which reads the
-                            same as a document the reviewer is not allowed to see - and a
-                            provider weighing an application needs to know the difference
-                            between "they did not supply it" and "I cannot open it here".
-                            The three routes below are exactly the three a provider is
-                            authorised for; nothing about that authorisation changed.
+                            Before, a missing document simply had no button, which reads the same as a
+                            document the reviewer is not allowed to see - and a provider weighing an
+                            application needs to know the difference between "they did not supply it" and
+                            "I cannot open it here". A recorded file that cannot be found says so instead of
+                            offering a link that would 404. The rows come from the controller; no path is
+                            ever rendered.
                         --}}
                         <h3 class="sz-eyebrow">Documents</h3>
 
-                        <ul class="list-unstyled d-grid gap-2 mb-0">
-                            @foreach([
-                                ['label' => $application->document_filename ?: 'Application attachment',
-                                 'present' => (bool) $application->document_filename,
-                                 'route' => 'files.applicationDocument'],
-                                ['label' => 'Results certificate',
-                                 'present' => $application->documentFor('results') !== null,
-                                 'route' => 'files.applicantResults'],
-                                ['label' => 'Grade 7 results slip',
-                                 'present' => $application->documentFor('grade7_slip') !== null,
-                                 'route' => 'files.applicantGrade7Slip'],
-                                ['label' => 'Academic transcript',
-                                 'present' => $application->documentFor('transcript') !== null,
-                                 'route' => 'files.applicantTranscript'],
-                            ] as $document)
+                        <ul class="list-unstyled d-grid gap-2 mb-0" id="application-documents">
+                            @foreach($documents as $document)
                                 <li class="d-flex flex-wrap align-items-center gap-2">
-                                    <x-status-badge :label="$document['present'] ? 'Uploaded' : 'Not provided'"
-                                                    :tone="$document['present'] ? 'success' : 'secondary'" />
-                                    <span class="small {{ $document['present'] ? '' : 'text-secondary' }}">
+                                    @if($document['state'] === 'available')
+                                        <x-status-badge label="Uploaded" tone="success" />
+                                    @elseif($document['state'] === 'unavailable')
+                                        <x-status-badge label="File unavailable" tone="warning" />
+                                    @else
+                                        <x-status-badge label="Not provided" tone="secondary" />
+                                    @endif
+                                    <span class="small {{ $document['state'] === 'missing' ? 'text-secondary' : '' }}">
                                         {{ $document['label'] }}
                                     </span>
-                                    @if($document['present'])
+                                    @if($document['state'] === 'available')
                                         <a class="btn btn-sm btn-outline-secondary ms-auto d-inline-flex align-items-center gap-1"
                                            href="{{ route($document['route'], $application->application_id) }}"
-                                           target="_blank" rel="noopener">
+                                           target="_blank" rel="noopener"
+                                           aria-label="View {{ $document['label'] }}">
                                             <x-icon name="eye" :size="14" />View
                                         </a>
+                                    @elseif($document['state'] === 'unavailable')
+                                        <span class="small text-secondary ms-auto">The file could not be found. Ask the applicant to upload it again.</span>
                                     @endif
                                 </li>
                             @endforeach
@@ -186,6 +182,7 @@
                                     'eligible' => ['ELIGIBLE', 'success'],
                                     'not_eligible' => ['NOT ELIGIBLE', 'danger'],
                                     'needs_information' => ['NEEDS INFORMATION', 'warning'],
+                                    'needs_review' => ['NEEDS REVIEW', 'warning'],
                                     'insufficient' => ['INSUFFICIENT INFORMATION', 'secondary'],
                                     'no_requirements' => ['NO STATED REQUIREMENTS', 'secondary'],
                                 ][$sentEligibility['verdict']] ?? ['UNKNOWN', 'secondary'];
@@ -236,6 +233,14 @@
                             and both outcomes need the reason the applicant is
                             shown verbatim.
                         --}}
+                        @if($application->isReopened())
+                            <div class="alert alert-info small" role="note">
+                                You withdrew your {{ strtolower(\App\Support\ApplicationStatus::displayLabel($application->reopened_from)) }}
+                                decision on {{ $application->reopened_at->format('d M Y') }}. Decide again below.
+                                <span class="d-block mt-1">Your reason: {{ $application->reopen_reason }}</span>
+                            </div>
+                        @endif
+
                         <form method="POST" action="{{ route('provider.applications.review', $application->application_id) }}">
                             @csrf
 
@@ -250,8 +255,10 @@
                         <div class="alert alert-warning small d-flex gap-2" role="note">
                             <x-icon name="shield" :size="16" class="flex-shrink-0 mt-1" />
                             <div>
-                                A decision is final. The applicant is notified straight away and sees
-                                your reason word for word. Accepting is granting the scholarship.
+                                The applicant is notified straight away and sees your reason word for word.
+                                Accepting is granting the scholarship. If you later find a decision was a
+                                mistake you can withdraw it, which reopens the application, but the applicant
+                                will have been told in the meantime.
                             </div>
                         </div>
 
@@ -280,7 +287,6 @@
                             <span class="text-secondary small">
                                 @if($application->isDecided())
                                     Decided {{ $application->decided_at?->format('d M Y') ?? 'recently' }}.
-                                    This is final &mdash; the application cannot be changed again.
                                 @else
                                     The applicant withdrew this application, so there is no decision to make.
                                 @endif
@@ -292,9 +298,59 @@
                             <h3 class="h6 fw-semibold text-uppercase text-secondary small mb-1">Reason you gave</h3>
                             <p class="mb-0">{{ $application->decision_reason }}</p>
                         @endif
+
+                        @if($canReopen)
+                            {{--
+                                Withdrawing a decision: back to Pending, so a fresh one can be made. Needs a reason
+                                (the applicant is told it) and a confirmation, and says plainly what withdrawing an
+                                acceptance undoes. The server checks all of it again; this only keeps the provider
+                                from reaching for it by accident.
+                            --}}
+                            <hr>
+                            <x-confirm-dialog id="reopen-decision"
+                                              :action="route('provider.applications.reopen', $application->application_id)"
+                                              :title="$application->isAccepted() ? 'Withdraw your acceptance?' : 'Withdraw your rejection?'"
+                                              trigger-label="Withdraw decision and reopen"
+                                              trigger-class="btn btn-outline-secondary w-100"
+                                              trigger-icon="clock-history"
+                                              confirm-label="Withdraw decision"
+                                              :tone="$application->isAccepted() ? 'danger' : 'warning'"
+                                              :message="$application->isAccepted()
+                                                  ? 'This reverses the scholarship award. The applicant is told their acceptance no longer stands, the award slot is released, and the application goes back to Pending until you decide again. Your original decision stays in the audit history.'
+                                                  : 'The application goes back to Pending so you can decide again, and the applicant is told. Your original decision stays in the audit history.'">
+                                <x-form.textarea name="reason" :rows="3" required id="reopen-reason" bag="reopen-decision"
+                                                 label="Why are you withdrawing this decision?"
+                                                 hint="The applicant sees this exactly as you write it." />
+                            </x-confirm-dialog>
+                        @endif
                     @endif
                 </div>
             </div>
+
+            @if($decisionHistory->count() > 1 || $application->isReopened())
+                <div class="card mt-4" id="decision-history">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Decision history</h2>
+                    </div>
+                    <ul class="list-group list-group-flush small">
+                        @foreach($decisionHistory as $entry)
+                            <li class="list-group-item">
+                                <span class="fw-semibold">
+                                    @if($entry['kind'] === 'reopened')
+                                        Withdrew the {{ $entry['from'] }} decision
+                                    @else
+                                        {{ ucfirst($entry['kind']) }}
+                                    @endif
+                                </span>
+                                <span class="text-secondary">&middot; {{ $entry['at']?->format('d M Y H:i') }}@if($entry['by']) &middot; {{ $entry['by'] }}@endif</span>
+                                @if($entry['reason'])
+                                    <span class="d-block">{{ $entry['reason'] }}</span>
+                                @endif
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
         </div>
     </div>
 

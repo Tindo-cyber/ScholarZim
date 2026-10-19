@@ -124,7 +124,9 @@ final class EligibilityEvaluator
 
         return array_merge(
             RequirementOutcome::failureMessages($outcomes),
-            RequirementOutcome::messages(RequirementOutcome::pending($outcomes))
+            // Only what the applicant's profile could settle. A listing whose wording could not be read is not theirs to fix,
+            // and must not stop them applying.
+            RequirementOutcome::messages(RequirementOutcome::blockingPending($outcomes))
         );
     }
 
@@ -844,6 +846,10 @@ final class EligibilityEvaluator
                 // different statement (what must already be held) and no longer silences it.
                 DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->education_level),
                 DescriptionEligibility::ENTRY_QUALIFICATION => blank($opportunity->minimum_education_level),
+                // A provider who stated a level in the form has used the builder, and the structured field is the rule. Only
+                // a listing that states neither is asked to be read from its words, and wording that cannot be read is then
+                // reviewed rather than ignored.
+                DescriptionEligibility::UNRESOLVED_LEVEL => blank($opportunity->education_level) && blank($opportunity->minimum_education_level),
                 DescriptionEligibility::FIELD_OF_STUDY => blank($opportunity->target_field) && ! ProgrammeScope::hasChosenScope($opportunity)
                     && ! ProgrammeScope::isOpenToAll($opportunity),
                 default => true,
@@ -901,6 +907,17 @@ final class EligibilityEvaluator
             }
         }
 
+        // Wording that sounds like an education restriction but could not be read. Never a pass, never a failure: one
+        // review outcome naming what could not be read, so the listing is not quietly treated as open to everyone.
+        $unresolved = array_values(array_filter(
+            $conditions,
+            static fn (DescriptionCondition $c) => $c->kind === DescriptionEligibility::UNRESOLVED_LEVEL
+        ));
+
+        if ($unresolved !== []) {
+            $outcomes[] = $this->descriptionUnresolvedLevel($unresolved);
+        }
+
         foreach ($conditions as $condition) {
             $outcome = match ($condition->kind) {
                 DescriptionEligibility::FIELD_OF_STUDY => $this->programmeScope->readsFieldMentions($profile) && LegacyFieldMap::codesFor($condition->value) !== []
@@ -916,6 +933,37 @@ final class EligibilityEvaluator
         }
 
         return $outcomes;
+    }
+
+    /**
+     * The one review outcome for wording about who the award is for that could not be read reliably.
+     *
+     * It says what was found and what to do, and nothing more: it does not guess a level, and it does not turn the
+     * applicant away. The profile cannot answer it, so it is the applicant (with the provider) who settles it.
+     *
+     * @param  array<int, DescriptionCondition>  $conditions
+     */
+    private function descriptionUnresolvedLevel(array $conditions): RequirementOutcome
+    {
+        $phrases = array_values(array_unique(array_map(static fn (DescriptionCondition $c) => $c->matchedPhrase, $conditions)));
+        $quoted = implode(', ', array_map(static fn (string $p) => '"' . $p . '"', $phrases));
+
+        $sources = [];
+        foreach ($conditions as $condition) {
+            $sources[$condition->source] = true;
+        }
+
+        $where = implode(' and ', array_filter([
+            isset($sources[DescriptionCondition::SOURCE_TITLE]) ? 'title' : null,
+            isset($sources[DescriptionCondition::SOURCE_DESCRIPTION]) ? 'description' : null,
+        ]));
+
+        return RequirementOutcome::review(
+            RequirementOutcome::TYPE_DESCRIPTION_UNRESOLVED,
+            'Level: the scholarship ' . $where . ' mentions ' . $quoted . ', which ScholarZim cannot reliably read as an education requirement. '
+                . 'We cannot say whether it applies to you - read the listing and check with the provider that you qualify before you apply.',
+            required: implode(', ', $phrases),
+        );
     }
 
     /**
@@ -1010,7 +1058,11 @@ final class EligibilityEvaluator
         $progressesForward = ! $exactMatch && ! $sameTierAsAny
             && $applicantLevel !== null && $this->progressesTowardAny($applicantLevel, $levels);
 
-        $statedLevelMeets = $applicantLevel === null || $exactMatch || $sameTierAsAny || $progressesForward;
+        // A level the profile does not state is not a level that meets the audience: nothing was compared. It used to
+        // pass ("your profile states ."), which put a Primary pupil whose level had not been saved, or was not in a
+        // recognised form, on the matches list for an A-Level award. Recorded results can still show the level was
+        // reached (below); otherwise the applicant is asked for it.
+        $statedLevelMeets = $exactMatch || $sameTierAsAny || $progressesForward;
 
         if ($statedLevelMeets) {
             $progressionNote = $progressesForward
@@ -1049,6 +1101,16 @@ final class EligibilityEvaluator
                     actual: $evidence,
                 );
             }
+        }
+
+        if ($applicantLevel === null) {
+            return RequirementOutcome::needsInfo(
+                RequirementOutcome::TYPE_DESCRIPTION_EDUCATION_LEVEL,
+                'Level: this scholarship is intended for '.$labels.' students (identified from the scholarship '.$sourceLabel
+                    .') - add your education level to your profile so we can check it.',
+                ScholarFitFieldNames::EDUCATION_LEVEL,
+                required: $labels,
+            );
         }
 
         return RequirementOutcome::fail(
@@ -1123,9 +1185,9 @@ final class EligibilityEvaluator
         if ($applicantLevel === null && $record->qualificationAtOrAbove($opportunity->minimum_education_level) === null) {
             return RequirementOutcome::needsInfo(
                 RequirementOutcome::TYPE_EDUCATION_LEVEL,
-                'Qualification: '.$requiredLabel.' required - add your education level to your profile so we can check it.',
+                'Qualification: '.$labels.' required - add your education level to your profile so we can check it.',
                 ScholarFitFieldNames::EDUCATION_LEVEL,
-                required: $requiredLabel,
+                required: $labels,
             );
         }
 

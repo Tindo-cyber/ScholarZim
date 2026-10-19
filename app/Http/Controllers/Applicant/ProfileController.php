@@ -13,7 +13,7 @@ use App\Support\Academic\AcademicCatalogue;
 use App\Support\EducationLevel;
 use App\Support\FormOptions;
 use App\Support\Gender;
-use App\Support\ZimbabweLocalities;
+use App\Support\ProfileDetailRules;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -41,7 +41,6 @@ class ProfileController extends Controller
             'profile' => $profile,
             'catalogue' => app(\App\Services\Catalogue\ProgrammeCatalogue::class)->formOptions($user),
             'programmeChoices' => $profile->programmeChoices()->get(),
-            'appliedInstitutionIds' => $profile->appliedInstitutions()->pluck('institution_id')->all(),
             'targetFieldIds' => $profile->targetFields()->pluck('field_id')->map(fn ($id) => (int) $id)->all(),
             'educationLevels' => FormOptions::educationLevelGroups(),
             'fields' => FormOptions::FIELDS_OF_STUDY,
@@ -86,15 +85,11 @@ class ProfileController extends Controller
         $request->validate([
             'current_programme_id' => ['nullable', 'integer'],
             'current_institution_id' => ['nullable', 'integer'],
-            'applied_institution_ids' => ['nullable', 'array', 'max:20'],
-            'applied_institution_ids.*' => ['integer'],
             'intended_programme_ids' => ['nullable', 'array', 'max:20'],
             'intended_programme_ids.*' => ['integer'],
             'programme_suggestion' => ['nullable', 'string', 'max:200'],
             'programme_suggestion_field' => ['nullable', 'integer'],
             'programme_suggestion_level' => ['nullable', 'string', 'max:30'],
-            'applied_institution_ids' => ['nullable', 'array', 'max:20'],
-            'applied_institution_ids.*' => ['integer'],
             'target_field_ids' => ['nullable', 'array', 'max:20'],
             'target_field_ids.*' => ['integer'],
         ]);
@@ -122,30 +117,16 @@ class ProfileController extends Controller
 
     public function update(Request $request)
     {
+        $this->setAsideUntouchedResultRows($request);
+
         $data = $request->validate([
             'full_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
             'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'education_level' => ['nullable', Rule::in(EducationLevel::APPLICANT_LEVELS)],
-            'institution_name' => ['nullable', 'string', 'max:255'],
-            // Free text everywhere: the platform does not require an
-            // institution to exist in a fixed list (see FormOptions::INSTITUTIONS,
-            // which is suggestions only), and a Grade 7 pupil's primary school
-            // is exactly as valid an answer here as a university's full name.
-            'field_of_study' => ['nullable', 'string', 'max:255'],
-            'province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
-            // A specific place (e.g. "Gweru"), not a fixed list - Zimbabwe has
-            // far more towns and growth points than any dropdown would sensibly
-            // enumerate, and this is the applicant's own claim about where they
-            // live, not a value ScholarFit needs to validate against a register.
-            'locality' => ['nullable', 'string', 'max:100'],
-            'settlement_type' => ['nullable', Rule::in(SettlementType::ALL)],
-            'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1920-01-01'],
-            'guardian_name' => ['nullable', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
-            'guardian_phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
-            'guardian_relationship' => ['nullable', 'string', 'max:100'],
-            'guardian_confirmed' => ['nullable', 'boolean'],
-            'biography' => ['nullable', 'string', 'max:5000'],
-            'gender' => ['required', Rule::in(Gender::ALL)],
+            // The simple profile details (institution, field of study, province, town, home area, date of birth,
+            // gender, guardian, biography) are validated by ProfileDetailRules, which the apply wizard's
+            // "add what is missing" step uses too.
+            ...ProfileDetailRules::base(),
             'degree_classification' => ['nullable', Rule::in(
                 AcademicCatalogue::scheme(AcademicCatalogue::TERTIARY)?->symbols() ?? []
             )],
@@ -180,31 +161,77 @@ class ProfileController extends Controller
         // over the data that already passed the first.
         \Illuminate\Support\Facades\Validator::make($data, [])
             ->after(function (Validator $validator) use ($data, $currentProfile) {
-                $this->assertAgeIsConsistent($validator, $data);
-                $this->assertLocalityMatchesProvince($validator, $data);
+                foreach (ProfileDetailRules::crossChecks($data, null) as $field => $message) {
+                    $validator->errors()->add($field, $message);
+                }
                 $this->assertProgressionIsSequential($validator, $data, $currentProfile);
             })
             ->validate();
 
-        $this->profileService->update($request->user(), $data);
+        // The details and the results are one save: a result the catalogue refuses must not leave the details beside it
+        // changed, with the person told off for something that "did not save".
+        \Illuminate\Support\Facades\DB::transaction(function () use ($request, $data) {
+            $this->profileService->update($request->user(), $data);
 
-        // Academic results are touched only when the request actually carried
-        // them. This used to be an unconditional call with
-        // `$data['academic_subject_results'] ?? []`, and since no form posted
-        // that key the array was always empty and the service opened by
-        // deleting everything - so saving a phone number wiped an applicant's
-        // entire academic record and silently changed what they were eligible
-        // for. The marker is a hidden field rendered beside the results
-        // editor, which is stricter than testing for the array: an applicant
-        // who removes their last row still submits the section, and that has
-        // to remain a deletion they can make.
-        if ($request->boolean('academic_results_submitted')) {
-            $this->profileService->syncAcademicResults($request->user(), $data['academic_subject_results'] ?? []);
-        }
+            $this->saveResultsIfSubmitted($request, $data);
+        });
 
         return redirect()
             ->route('applicant.profile')
             ->with('successMessage', 'Profile saved. Your scholarship matches now reflect these changes.');
+    }
+
+    /**
+     * Subject rows nobody has started are not rows. "Add subject" puts an empty one on the page and a person may
+     * leave it so; refusing the whole profile because of it - and, for a Primary pupil, because of a row for a
+     * qualification they have not sat - would be refusing them for something they never entered.
+     *
+     * A row with anything in it is a row, and is validated in full: a qualification with no subject or grade is
+     * told what is missing, never dropped quietly. The keys are kept, so an error is shown against the row it
+     * belongs to.
+     */
+    private function setAsideUntouchedResultRows(Request $request): void
+    {
+        $rows = $request->input('academic_subject_results');
+
+        if (! is_array($rows)) {
+            return;
+        }
+
+        $started = array_filter($rows, static function ($row) {
+            if (! is_array($row)) {
+                return true; // malformed: left for validation to refuse
+            }
+
+            foreach (['qualification_id', 'subject_id', 'result', 'year'] as $key) {
+                if (filled($row[$key] ?? null)) {
+                    return true;
+                }
+            }
+
+            return false;
+        });
+
+        $request->merge(['academic_subject_results' => $started]);
+    }
+
+    /**
+     * Academic results are touched only when the request actually carried
+     * them. This used to be an unconditional call with
+     * `$data['academic_subject_results'] ?? []`, and since no form posted
+     * that key the array was always empty and the service opened by
+     * deleting everything - so saving a phone number wiped an applicant's
+     * entire academic record and silently changed what they were eligible
+     * for. The marker is a hidden field rendered beside the results
+     * editor, which is stricter than testing for the array: an applicant
+     * who removes their last row still submits the section, and that has
+     * to remain a deletion they can make.
+     */
+    private function saveResultsIfSubmitted(Request $request, array $data): void
+    {
+        if ($request->boolean('academic_results_submitted')) {
+            $this->profileService->syncAcademicResults($request->user(), $data['academic_subject_results'] ?? []);
+        }
     }
 
     /**
@@ -248,64 +275,6 @@ class ProfileController extends Controller
                 'Record your ' . EducationLevel::label($currentLevel) . ' results before moving on to '
                     . EducationLevel::label($newLevel) . '.'
             );
-        }
-    }
-
-    /**
-     * A town and a province that cannot both be true.
-     *
-     * Gwanda is in Matabeleland South; a profile claiming it under Midlands is
-     * stating something false about where the applicant lives, and would be
-     * matched against province-restricted awards on the wrong province.
-     *
-     * Only a locality ZimbabweLocalities recognises is checked. An unfamiliar
-     * name is left alone - this field is free text precisely so a growth point
-     * nobody catalogued is still a valid answer.
-     */
-    private function assertLocalityMatchesProvince(Validator $validator, array $data): void
-    {
-        $reason = ZimbabweLocalities::mismatchReason(
-            $data['locality'] ?? null,
-            $data['province'] ?? null
-        );
-
-        if ($reason !== null) {
-            $validator->errors()->add('locality', $reason);
-        }
-    }
-
-    /**
-     * A profile-consistency check, distinct from a scholarship's own age
-     * eligibility rule (that is EligibilityEvaluator's job, per listing). This
-     * only catches a date of birth that plainly does not fit the stated
-     * education level - Primary plus an adult date of birth, Undergraduate
-     * plus a small child's - and is deliberately generous at the top end so a
-     * mature student is never blocked here.
-     */
-    private function assertAgeIsConsistent(Validator $validator, array $data): void
-    {
-        $level = $data['education_level'] ?? null;
-        $dateOfBirth = $data['date_of_birth'] ?? null;
-
-        if (blank($dateOfBirth)) {
-            return;
-        }
-
-        $age = \Illuminate\Support\Carbon::parse($dateOfBirth)->age;
-
-        if ($age < 12) {
-            $validator->errors()->add('date_of_birth', 'You must be at least 12 years old to use this platform.');
-            return;
-        }
-
-        if (blank($level)) {
-            return;
-        }
-
-        $reason = EducationLevel::ageConsistencyReason($level, $age);
-
-        if ($reason !== null) {
-            $validator->errors()->add('date_of_birth', $reason);
         }
     }
 

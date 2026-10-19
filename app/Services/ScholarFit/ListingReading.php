@@ -129,11 +129,13 @@ final class ListingReading
                 DescriptionEligibility::EDUCATION_LEVEL => 'For ' . EducationLevel::label($condition->value) . ' students',
                 DescriptionEligibility::ENTRY_QUALIFICATION => 'Must already hold ' . EducationLevel::label($condition->value),
                 DescriptionEligibility::FIELD_OF_STUDY => 'Studying ' . $condition->value,
+                DescriptionEligibility::UNRESOLVED_LEVEL => 'Applicants are told to check this with you, because it cannot be read as a level: ' . $quoted
+                    . ' - choose the level the award is for, and the one required, in the form to make it a rule',
                 default => 'Mentioned but cannot be checked: ' . $quoted,
             };
 
             $rules[] = [
-                'text' => $text . ($condition->kind === DescriptionEligibility::UNSUPPORTED ? '' : ' (from ' . $quoted . ')'),
+                'text' => $text . (in_array($condition->kind, [DescriptionEligibility::UNSUPPORTED, DescriptionEligibility::UNRESOLVED_LEVEL], true) ? '' : ' (from ' . $quoted . ')'),
                 'source' => self::FROM_TEXT,
                 'where' => $where,
             ];
