@@ -46,6 +46,14 @@ class InternationalPhoneNumber implements ValidationRule
             return;
         }
 
+        // libphonenumber reads letters as keypad digits ("0771abc567" becomes 0771222567), so the shape is checked first:
+        // digits, a leading +, spacing marks, and at most one extension (x123, ext 12, #12) after them.
+        if (! preg_match('/^\+?[0-9 ().\-]+(?:\s*(?:ext\.?|x|#)\s*[0-9]{1,6})?$/iD', trim($value))) {
+            $fail('The :attribute must be a valid phone number.');
+
+            return;
+        }
+
         $util = PhoneNumberUtil::getInstance();
 
         try {

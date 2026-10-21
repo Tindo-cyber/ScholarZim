@@ -57,7 +57,7 @@
                                       data-name-input-skip-role="{{ \App\Support\RoleNames::PROVIDER }}" />
                         <x-form.input name="email" label="Email address" type="email" required />
                         <x-form.input name="phone" label="Phone number" type="tel"
-                                      inputmode="tel" maxlength="30"
+                                      inputmode="tel" maxlength="30" data-phone-input="by-role" data-phone-input-role-check="role_name" data-phone-input-international-role="ROLE_PROVIDER"
                                       hint="Optional. Applicants and administrators: 10 digits, no spaces or country code, e.g. 0771234567. Providers: any valid mobile or landline, with or without a country code or extension. The rule for the chosen role is checked on save." />
 
                         <x-form.select name="role_name" label="Role"

@@ -14,6 +14,7 @@ import './navigation';
 import './flash-alerts';
 import './submit-state';
 import './name-input';
+import './phone-input';
 import './profile-form';
 import './academic-results';
 import './subject-requirements';
