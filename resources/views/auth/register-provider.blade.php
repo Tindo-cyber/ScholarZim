@@ -105,7 +105,7 @@
             <x-form.input name="email" label="Work email address" type="email" required autocomplete="email"
                           hint="Preferably an address at your organisation's own domain. You sign in with it and must verify it." />
             <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
-                          inputmode="tel" maxlength="30"
+                          inputmode="tel" maxlength="30" data-phone-input="international"
                           hint="Optional. Mobile or landline. Outside Zimbabwe, start with your country code, e.g. +44 20 7946 0000 or +27 11 555 0100. Zimbabwean numbers may be written locally, e.g. 0771234567. An extension is allowed (x123)." />
 
             <button class="btn btn-primary btn-lg w-100 mb-3" type="button" data-step-next>Continue</button>

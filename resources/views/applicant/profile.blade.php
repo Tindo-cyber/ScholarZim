@@ -45,7 +45,7 @@
                             </div>
                             <div class="col-md-6">
                                 <x-form.input name="phone" label="Phone number" type="tel" :value="auth()->user()->phone"
-                                              inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"
+                                              inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}" data-phone-input="digits"
                                               hint="Optional. 10 digits, no spaces or country code, e.g. 0771234567." />
                             </div>
                             <div class="col-md-6">
@@ -214,7 +214,7 @@
                             <div class="col-md-4">
                                 <x-form.input name="guardian_phone" label="Guardian phone number" type="tel"
                                               :value="$profile->guardian_phone"
-                                              inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"
+                                              inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}" data-phone-input="digits"
                                               hint="10 digits, no spaces or country code, e.g. 0771234567." />
                             </div>
                             <div class="col-md-4">

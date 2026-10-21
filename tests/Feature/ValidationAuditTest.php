@@ -324,7 +324,8 @@ class ValidationAuditTest extends TestCase
             'zimbabwean landline' => ['+263242771234', true], 'local mobile' => ['0771234567', true], 'south african' => ['+27 11 123 4567', true],
             'us' => ['+1 202 555 0143', true], 'with extension' => ['+263242771234 ext 12', true], 'letters' => ['abc', false],
             'too short' => ['12345', false], 'country code only' => ['+263', false], 'script' => ['<script>', false], 'unassigned country' => ['+999999999', false],
-            'mixed' => ['+263abc771234', false], 'array' => [['+263242771234'], false],
+            'mixed' => ['+263abc771234', false], 'letters read as keypad digits' => ['0771abc567', false], 'letters after the code' => ['+44 20 79ab 0000', false],
+            'extension x' => ['+44 20 7946 0000 x12', true], 'letters in the extension' => ['+44 20 7946 0000 ext ab', false], 'array' => [['+263242771234'], false],
         ];
     }
 
