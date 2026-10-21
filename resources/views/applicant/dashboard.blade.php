@@ -98,7 +98,7 @@
 
             <x-stat-card label="Eligible matches" :value="$stats['eligibleMatches']" icon="stars" tone="primary"
                          hint="Open scholarships whose stated requirements you currently meet."
-                         :href="route('applicant.recommendations')" class="mb-4" />
+                         :href="route('applicant.recommendations')" class="mb-4 h-auto" />
 
             {{-- The same checklist the profile shows, from the same component. It used
                  to be a dial plus a bare list of gaps here and an annotated checklist
