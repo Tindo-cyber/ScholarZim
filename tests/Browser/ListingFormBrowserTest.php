@@ -71,7 +71,7 @@ class ListingFormBrowserTest extends DuskTestCase
             // A rule filled in, a required field left empty: the form comes back with the rule still showing.
             $browser->select(self::LEVEL, EducationLevel::UNDERGRADUATE)
                 ->type('#field-max_age', '25')
-                ->press('Submit for review')
+                ->click('#submit-listing') // "Publish" for a trusted provider, "Submit for review" otherwise
                 ->waitFor('.invalid-feedback', self::WAIT);
 
             $this->assertTrue($browser->script("return document.getElementById('advanced-rules').open;")[0], 'the rule the provider typed must still be on screen');

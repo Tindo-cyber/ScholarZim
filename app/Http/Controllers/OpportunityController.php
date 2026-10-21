@@ -8,6 +8,7 @@ use App\Http\Requests\UpdateOpportunityRequest;
 use App\Models\AcademicSubject;
 use App\Models\Opportunity;
 use App\Support\EditImpact;
+use App\Support\OpportunityModerationStatus;
 use App\Services\ApplicationService;
 use App\Services\OpportunityService;
 use App\Services\SavedScholarshipService;
@@ -171,6 +172,9 @@ class OpportunityController extends Controller
     private function formData(): array
     {
         return [
+            // Whether a new listing from this provider skips review (ProviderTrust), so the
+            // form says what will happen when they submit instead of always "reviewed first".
+            'providerTrusted' => \App\Support\ProviderTrust::isTrusted(request()->user()),
             'educationLevels' => FormOptions::providerLevelGroups(forTarget: true),
             'minimumLevels' => FormOptions::providerLevelGroups(forTarget: false),
             'fields' => FormOptions::FIELDS_OF_STUDY,
@@ -205,15 +209,21 @@ class OpportunityController extends Controller
         }
 
         try {
-            $this->opportunityService->create($request->validated(), $request->user(), $draft);
+            $opportunity = $this->opportunityService->create($request->validated(), $request->user(), $draft);
         } catch (UnauthorizedException $e) {
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
 
+        // A trusted provider's listing can go live at once (see ProviderTrust), so the
+        // message says what actually happened rather than always "submitted for review".
+        $message = OpportunityModerationStatus::isApproved($opportunity->fresh()->moderation_status)
+            ? 'Scholarship published. It is live now and students can apply.'
+            : 'Scholarship submitted for review. It goes live once an administrator approves it.';
+
         return $this->withListingWarnings(
             redirect()
                 ->route('provider.dashboard')
-                ->with('successMessage', 'Scholarship submitted for review. It goes live once an administrator approves it.'),
+                ->with('successMessage', $message),
             $request->validated()
         );
     }
@@ -259,7 +269,8 @@ class OpportunityController extends Controller
 
     public function update(UpdateOpportunityRequest $request, int $id)
     {
-        $this->ownedListing($request, $id, 'update');
+        $before = $this->ownedListing($request, $id, 'update');
+        $wasPending = $before !== null && OpportunityModerationStatus::isPending($before->moderation_status);
         $data = $request->validated();
 
         try {
@@ -268,10 +279,19 @@ class OpportunityController extends Controller
             return back()->withInput()->with('errorMessage', $e->getMessage());
         }
 
+        // The same three outcomes the edit page warned about (EditImpact), so the message
+        // after saving cannot contradict the one shown before it.
+        $title = '"' . $opportunity->title . '"';
+        $message = match (true) {
+            OpportunityModerationStatus::isApproved($opportunity->moderation_status) => $title . ' was updated. It stays live.',
+            $wasPending => $title . ' was updated. It is still waiting for review.',
+            default => $title . ' was updated and sent for review. It is not public until an administrator approves it.',
+        };
+
         return $this->withListingWarnings(
             redirect()
                 ->route('provider.dashboard')
-                ->with('successMessage', '"' . $opportunity->title . '" was updated and re-submitted for review.'),
+                ->with('successMessage', $message),
             $data
         );
     }

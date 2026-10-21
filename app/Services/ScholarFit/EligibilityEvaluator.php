@@ -720,6 +720,14 @@ final class EligibilityEvaluator
             return null;
         }
 
+        // "All programmes at this level", chosen on purpose, is the answer too. The form tells the
+        // provider the field text is only what students see and search on, so it must not then
+        // refuse every student whose field is worded differently. Only an old listing that never
+        // answered "Who is it open to?" still has the free text as its rule.
+        if (ProgrammeScope::isOpenToAll($opportunity)) {
+            return null;
+        }
+
         $required = trim((string) $opportunity->target_field);
 
         if (! EducationLevel::usesFieldOfStudy($profile->education_level)) {

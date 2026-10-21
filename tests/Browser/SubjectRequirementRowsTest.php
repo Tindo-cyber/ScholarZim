@@ -80,7 +80,7 @@ class SubjectRequirementRowsTest extends DuskTestCase
             }
 
             // No title: the save fails and the form comes back.
-            $browser->press('Submit for review')
+            $browser->click('#submit-listing') // "Publish" for a trusted provider, "Submit for review" otherwise
                 ->waitFor(self::ROWS, self::WAIT);
 
             $this->assertCount(2, $browser->elements(self::ROWS), 'both rows must survive the failed save');

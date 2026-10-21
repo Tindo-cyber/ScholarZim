@@ -389,6 +389,77 @@ class TrustedPublishingTest extends TestCase
         return preg_match('#<tbody>(.*?)</tbody>#s', $html, $match) ? $match[1] : '';
     }
 
+    // ------------------------------------------- what the provider is told --
+
+    public function test_a_trusted_provider_is_told_the_listing_is_live(): void
+    {
+        $this->publish();
+
+        $this->assertStringContainsString('It is live now', (string) session('successMessage'));
+    }
+
+    public function test_an_untrusted_provider_is_told_it_waits_for_review(): void
+    {
+        $this->provider->providerProfile->update(['trusted_override' => false]);
+
+        $this->publish();
+
+        $this->assertStringContainsString('submitted for review', (string) session('successMessage'));
+    }
+
+    public function test_the_create_form_says_what_submitting_will_do(): void
+    {
+        $this->actingAs($this->provider)->get('/opportunities/create')
+            ->assertOk()->assertSee('go live straight away')->assertSee('Publish');
+
+        $this->provider->providerProfile->update(['trusted_override' => false]);
+        $this->flushSession();
+
+        $this->actingAs($this->provider->fresh())->get('/opportunities/create')
+            ->assertOk()->assertSee('Submit for review')->assertSee('queued for administrator review');
+    }
+
+    public function test_a_minor_edit_says_the_listing_stays_live(): void
+    {
+        $listing = $this->publish();
+
+        $this->flushSession();
+        $this->actingAs($this->provider)->put('/opportunities/' . $listing->opportunity_id, [
+            'title' => $listing->title,
+            'description' => $listing->description,
+            'education_level' => EducationLevel::canonical($listing->education_level),
+            'target_field' => $listing->target_field,
+            'funding_type' => $listing->funding_type,
+            'country' => $listing->country,
+            'deadline' => $listing->deadline->toDateString(),
+            'external_url' => 'https://example.org/apply',
+            'reason' => 'Added our own application page.',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(OpportunityModerationStatus::APPROVED, $listing->fresh()->moderation_status, 'adding an application link is minor');
+        $this->assertStringContainsString('It stays live', (string) session('successMessage'));
+    }
+
+    public function test_a_material_edit_says_it_went_back_to_review(): void
+    {
+        $listing = $this->publish();
+
+        $this->flushSession();
+        $this->actingAs($this->provider)->put('/opportunities/' . $listing->opportunity_id, [
+            'title' => $listing->title,
+            'description' => $listing->description . ' Now also covers accommodation.',
+            'education_level' => EducationLevel::canonical($listing->education_level),
+            'target_field' => $listing->target_field,
+            'funding_type' => $listing->funding_type,
+            'country' => $listing->country,
+            'deadline' => $listing->deadline->toDateString(),
+            'reason' => 'Accommodation added.',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(OpportunityModerationStatus::PENDING, $listing->fresh()->moderation_status);
+        $this->assertStringContainsString('sent for review', (string) session('successMessage'));
+    }
+
     private function publish(array $overrides = []): Opportunity
     {
         $title = $overrides['title'] ?? 'Trust Publishing ' . uniqid();
