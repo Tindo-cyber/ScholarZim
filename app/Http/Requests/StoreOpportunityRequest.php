@@ -84,13 +84,14 @@ class StoreOpportunityRequest extends FormRequest
             'target_field' => ['nullable', 'string', 'max:255'],
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
             'deadline' => $this->deadlineRules(),
-            'award_amount' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
+            // Digits with at most two decimals, written plainly: no exponent (1e3), sign (+5), bare dot (.5 or 5.) or three decimals.
+            'award_amount' => ['nullable', 'regex:/^\d{1,8}(\.\d{1,2})?$/'],
             'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
-            'award_slots' => ['nullable', 'integer', 'min:1', 'max:5000'],
+            'award_slots' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:1', 'max:5000'],
             'is_renewable' => ['nullable', 'boolean'],
-            'external_url' => ['nullable', 'url', 'max:500'],
-            'min_academic_points' => ['nullable', 'integer', 'min:1', 'max:' . AcademicCatalogue::maxZimsecALevelPoints()],
-            'max_age' => ['nullable', 'integer', 'min:10', 'max:99'],
+            'external_url' => ['nullable', 'string', 'url:http,https', 'max:500'],
+            'min_academic_points' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:1', 'max:' . AcademicCatalogue::maxZimsecALevelPoints()],
+            'max_age' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:10', 'max:99'],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), free text for the same reason
             // the applicant's own locality field is - no fixed list of every
@@ -120,7 +121,7 @@ class StoreOpportunityRequest extends FormRequest
     /** @return array<int, mixed> */
     protected function deadlineRules(): array
     {
-        return ['nullable', 'date', 'after_or_equal:today'];
+        return ['bail', 'nullable', 'string', 'date_format:Y-m-d', 'after_or_equal:today'];
     }
 
     /** @return array<string, string> */

@@ -24,6 +24,12 @@ final class WebsiteAddress
      */
     public static function normalise(mixed $value): ?string
     {
+        // Anything that is not text (an array sent where an address was asked for) cannot be an address: it is left as a value the
+        // validator refuses, rather than being turned into the word "Array".
+        if (! is_scalar($value) && $value !== null) {
+            return '[not an address]';
+        }
+
         $trimmed = trim((string) $value);
 
         if ($trimmed === '') {

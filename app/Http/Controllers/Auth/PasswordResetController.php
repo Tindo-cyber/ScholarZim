@@ -21,7 +21,7 @@ class PasswordResetController extends Controller
     public function sendResetLink(Request $request)
     {
         $data = $request->validate([
-            'email' => ['required', 'email'],
+            'email' => ['required', 'string', 'email'],
         ]);
 
         $this->passwordResetService->request($data['email']);
@@ -49,7 +49,7 @@ class PasswordResetController extends Controller
     public function reset(Request $request, string $token)
     {
         $data = $request->validate([
-            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
         ]);
 
         if (! $this->passwordResetService->reset($token, $data['password'])) {

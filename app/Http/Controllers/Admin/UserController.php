@@ -21,11 +21,14 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
+        // A repeated key (?q[]=x) arrives as an array; only plain text is a filter.
+        $filters = array_filter($request->only(['role', 'status', 'q']), 'is_string');
+
         return view('admin.users', [
-            'users' => $this->adminUserService->paginate($request->only(['role', 'status', 'q'])),
+            'users' => $this->adminUserService->paginate($filters),
             'roles' => RoleNames::ALL,
             'statuses' => [AccountStatus::ACTIVE, AccountStatus::PENDING, AccountStatus::SUSPENDED, AccountStatus::REJECTED],
-            'filters' => $request->only(['role', 'status', 'q']),
+            'filters' => $filters,
         ]);
     }
 
@@ -56,10 +59,10 @@ class UserController extends Controller
 
         $data = $request->validate([
             'full_name' => $nameRule,
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => [...\App\Rules\EmailAddress::rules(), 'unique:users,email'],
             'phone' => $phoneRule,
             'role_name' => ['required', Rule::in(RoleNames::ALL)],
-            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
         ]);
 
         $user = $this->adminUserService->createUser($data, $request->user());

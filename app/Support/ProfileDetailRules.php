@@ -46,7 +46,8 @@ final class ProfileDetailRules
             // any dropdown would sensibly enumerate, and this is the applicant's own claim about where they live.
             'locality' => ['nullable', 'string', 'max:100'],
             'settlement_type' => ['nullable', Rule::in(SettlementType::ALL)],
-            'date_of_birth' => ['nullable', 'date', 'before:today', 'after:1920-01-01'],
+            // Exactly Y-m-d, as the date picker sends it: `date` alone also reads "17-05-2000x", "tomorrow" and the like.
+            'date_of_birth' => ['bail', 'nullable', 'string', 'date_format:Y-m-d', 'before:today', 'after:1920-01-01'],
             'guardian_name' => ['nullable', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
             'guardian_phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
             'guardian_relationship' => ['nullable', 'string', 'max:100'],

@@ -15,7 +15,8 @@
  * turns sanitising off for as long as that role is selected.
  */
 document.addEventListener('DOMContentLoaded', function () {
-    var DISALLOWED = /[^\p{L}\s'-]/gu;
+    // Letters and their marks, spaces, hyphens, full stops and apostrophes (straight or curly): what FormOptions::NAME_PATTERN allows.
+    var DISALLOWED = /[^\p{L}\p{M} '\u2019.\-\u2010\u2011]/gu;
 
     function sanitise(input) {
         if (isSkipped(input)) {

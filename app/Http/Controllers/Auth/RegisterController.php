@@ -30,9 +30,9 @@ class RegisterController extends Controller
     {
         $data = $request->validate([
             'full_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => [...\App\Rules\EmailAddress::rules(), 'unique:users,email'],
             'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
-            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
         ]);
 
         $this->registrationService->registerApplicant($data);
@@ -68,7 +68,7 @@ class RegisterController extends Controller
             // reads to judge whether they may act for the organisation.
             'contact_name' => ['required', 'string', 'max:255'],
             'contact_role' => ['required', 'string', 'max:150'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => [...\App\Rules\EmailAddress::rules(), 'unique:users,email'],
             // Not FormOptions::PHONE_PATTERN: a provider's own work/organisation
             // number is international and may be a landline, a switchboard, or
             // carry an extension - see InternationalPhoneNumber's own docblock.
@@ -81,7 +81,7 @@ class RegisterController extends Controller
             // Optional, and unconfirmed until an administrator says it is theirs.
             'website' => \App\Support\WebsiteAddress::rules(),
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
-            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
             // The organisation's confirmation that it is registered and that this
             // person may act for it. Not terms of use: the admin still verifies
             // the uploaded certificate, this is the applicant's own statement.

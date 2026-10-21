@@ -189,16 +189,21 @@ final class FormOptions
 
     /**
      * A person's name: letters (any script - \p{L} rather than A-Z, so a
-     * name is not assumed to be English), spaces, hyphens and apostrophes -
-     * "Anne-Marie" and "O'Brien" are ordinary names, not exceptions. No
-     * digits and no other punctuation. Applied only where a field actually
+     * name is not assumed to be English) with their combining marks (an accent typed as a separate mark), spaces, hyphens,
+     * full stops (initials: "J. K. Moyo") and apostrophes, straight or curly (a phone types the curly one) - "Anne-Marie",
+     * "O'Brien" and "D\u{2019}Souza" are ordinary names, not exceptions. It must start with a letter and hold at least one,
+     * so "-", "'" and "---" are not names, and only an ordinary space separates words (no line break or tab). No digits and no
+     * other punctuation. Applied only where a field actually
      * holds a person's own name (an applicant, a guardian, an
      * admin-created account) - never to `full_name` on provider
      * registration, which this product uses as the organisation or
      * contact-person name ("Chikafu Education Trust") and is free text for
      * that reason.
      */
-    public const NAME_PATTERN = "/^[\p{L}\s'\-]+$/u";
+    public const NAME_PATTERN = "/^(?=.*\p{L})[\p{L}\p{M}][\p{L}\p{M} '\x{2019}.\-\x{2010}\x{2011}]*$/u";
+
+    /** The same rule as the browser reads it (the `pattern` attribute): per character, since a browser cannot take a lookahead there. */
+    public const NAME_INPUT_PATTERN = "[\p{L}\p{M} '\u{2019}.\-\u{2010}\u{2011}]+";
 
     /**
      * A Zimbabwean local phone number: exactly ten digits, nothing else -
@@ -214,7 +219,8 @@ final class FormOptions
      * written to avoid being. See App\Rules\InternationalPhoneNumber for
      * that rule instead.
      */
-    public const PHONE_PATTERN = '/^\d{10}$/';
+    // The D modifier: without it `$` also matches before a final line break, so "0771234567\n" would pass.
+    public const PHONE_PATTERN = '/^\d{10}$/D';
 
     private function __construct()
     {

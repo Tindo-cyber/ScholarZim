@@ -14,7 +14,7 @@ class SearchController extends Controller
 
     public function index(Request $request)
     {
-        $term = (string) $request->query('q', '');
+        $term = (is_string($request->query('q')) ? $request->query('q') : '');
 
         return view('admin.search', [
             'term' => $term,
