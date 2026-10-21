@@ -120,6 +120,8 @@ something that was deliberately removed, not a regression.
       "Upload clear, readable copies. Existing documents will be reused when they meet the
       requirements." and no mention of ScholarFit
 - [ ] Changing the education level and saving changes the required count and the labels
+- [ ] **Institution / school** is said once: suggestions are the catalogue's names, the programme section does not ask where you
+      studied again, and a scholarship limited to named institutions is checked from what you wrote
 - [ ] Choosing a level in the form (before saving) fills the **Field of study** list with that level's programmes, and the search box
       narrows it
 - [ ] A provider's listing form offers every country (Zimbabwe and the common destinations first), plus Any country and Online

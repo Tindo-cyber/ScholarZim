@@ -52,7 +52,7 @@
                             rule once "Provider" is the selected role.
                         --}}
                         <x-form.input name="full_name" label="Full name" required autofocus
-                                      pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers. Not restricted for a provider's organisation name."
+                                      pattern="{{ \App\Support\FormOptions::NAME_INPUT_PATTERN }}" hint="Letters only - no numbers. Not restricted for a provider's organisation name."
                                       data-name-input data-name-input-role-check="role_name"
                                       data-name-input-skip-role="{{ \App\Support\RoleNames::PROVIDER }}" />
                         <x-form.input name="email" label="Email address" type="email" required />

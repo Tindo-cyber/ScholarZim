@@ -324,7 +324,7 @@ class OpportunityController extends Controller
     {
         $listing = $this->ownedListing($request, $id, 'extendDeadline');
 
-        $rules = ['required', 'date', 'after:today'];
+        $rules = ['bail', 'required', 'string', 'date_format:Y-m-d', 'after:today'];
 
         // Not earlier than the date it already has: that would shorten it, which
         // is an edit (and a material one), not an extension.

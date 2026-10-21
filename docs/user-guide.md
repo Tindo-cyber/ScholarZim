@@ -111,9 +111,8 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
   deletion.
 - **Signing in:** closing the page (or the browser) signs you out, so opening it again asks for your password. If you open
   another ScholarZim tab while one is still open, you stay signed in.
-  There is no "keep me signed in" option. Some browsers can be set to restore your previous
-  session when they reopen, which also restores your sign-in; sign out explicitly on a shared
-  computer.
+  There is no "keep me signed in" option. If a browser restores your tabs after a restart, you
+  are still asked for your password. Sign out explicitly on a shared computer.
 - **Sign out all other sessions** ends every session except the one you are using — useful
   after signing in on a library or lab computer.
 - **Messages** → notification inbox for application updates and deadline reminders.

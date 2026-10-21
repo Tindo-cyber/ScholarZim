@@ -26,11 +26,13 @@ class ApplicationReviewController extends Controller
     public function index(Request $request)
     {
         $user = $request->user();
+        // A repeated key (?status[]=x) arrives as an array; only plain text is a filter.
+        $status = is_string($request->query('status')) ? $request->query('status') : null;
 
         return view('applications.provider-applications', [
-            'applications' => $this->applicationService->forProvider($user, $request->query('status')),
+            'applications' => $this->applicationService->forProvider($user, $status),
             'statusCounts' => $this->applicationService->statusCountsForProvider($user),
-            'activeStatus' => $request->query('status'),
+            'activeStatus' => $status,
             'statuses' => ApplicationStatus::FILTERABLE,
         ]);
     }

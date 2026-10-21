@@ -119,18 +119,26 @@ class PublicController extends Controller
      */
     public static function filtersFrom(Request $request): array
     {
-        $sort = (string) $request->input('sort', FormOptions::DEFAULT_SORT);
+        // Each filter is a single piece of text. One sent as an array (?keyword[]=a) is not a filter and is ignored, rather than
+        // reaching code that expects text.
+        $text = static fn (string $key, mixed $default = null): ?string => is_string($request->input($key, $default)) ? $request->input($key, $default) : null;
+        $date = static function (string $key) use ($text): ?string {
+            $value = $text($key);
+
+            return $value !== null && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) === 1 && \DateTime::createFromFormat('!Y-m-d', $value)?->format('Y-m-d') === $value ? $value : null;
+        };
+        $sort = (string) ($text('sort', FormOptions::DEFAULT_SORT) ?? FormOptions::DEFAULT_SORT);
 
         return [
-            'keyword' => $request->input('keyword'),
-            'education_level' => $request->input('education_level'),
-            'province' => $request->input('province'),
-            'country' => $request->input('country'),
-            'field_of_study' => $request->input('field_of_study'),
-            'provider' => $request->input('provider'),
-            'funding_type' => $request->input('funding_type'),
-            'deadline_before' => $request->input('deadline_before'),
-            'min_award' => $request->input('min_award'),
+            'keyword' => $text('keyword'),
+            'education_level' => $text('education_level'),
+            'province' => $text('province'),
+            'country' => $text('country'),
+            'field_of_study' => $text('field_of_study'),
+            'provider' => $text('provider'),
+            'funding_type' => $text('funding_type'),
+            'deadline_before' => $date('deadline_before'),
+            'min_award' => ($min = $text('min_award')) !== null && preg_match('/^\d{1,8}(\.\d{1,2})?$/', $min) === 1 ? $min : null,
             'renewable_only' => $request->boolean('renewable_only') ?: null,
             'sort' => array_key_exists($sort, FormOptions::SORT_OPTIONS) ? $sort : FormOptions::DEFAULT_SORT,
         ];

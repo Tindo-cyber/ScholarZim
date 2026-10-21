@@ -56,7 +56,7 @@ class CatalogueController extends Controller
     {
         $query = Programme::query()->with(['field.parent', 'institutions'])->withCount('synonyms');
 
-        if (filled($request->query('q'))) {
+        if (is_string($request->query('q')) && filled($request->query('q'))) {
             $like = '%' . addcslashes(trim((string) $request->query('q')), '\\%_') . '%';
             $query->where(fn ($q) => $q->whereRaw("name LIKE ? ESCAPE '\\'", [$like])
                 ->orWhereHas('synonyms', fn ($s) => $s->whereRaw("synonym LIKE ? ESCAPE '\\'", [$like])));

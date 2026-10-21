@@ -40,9 +40,10 @@ final class ListingPreview
             $input = OpportunityLevelRules::clearInapplicable($input, $level) + $input;
         }
 
-        $text = static fn (string $key): ?string => filled($input[$key] ?? null) ? trim((string) $input[$key]) : null;
-        $number = static fn (string $key): ?float => is_numeric($input[$key] ?? null) ? (float) $input[$key] : null;
-        $integer = static fn (string $key): ?int => is_numeric($input[$key] ?? null) ? (int) $input[$key] : null;
+        // The preview is forgiving, but it reads only what is the right kind of value: an array, or a number written as 1e999, is left out.
+        $text = static fn (string $key): ?string => is_scalar($input[$key] ?? null) && filled($input[$key]) ? trim((string) $input[$key]) : null;
+        $number = static fn (string $key): ?float => is_scalar($input[$key] ?? null) && preg_match('/^\d{1,8}(\.\d{1,2})?$/', (string) $input[$key]) === 1 ? (float) $input[$key] : null;
+        $integer = static fn (string $key): ?int => is_scalar($input[$key] ?? null) && preg_match('/^\d{1,9}$/', (string) $input[$key]) === 1 ? (int) $input[$key] : null;
         $oneOf = static fn (string $key, array $allowed): ?string => in_array($input[$key] ?? null, $allowed, true) ? $input[$key] : null;
 
         $own = trim((string) $provider->full_name);
@@ -89,7 +90,7 @@ final class ListingPreview
 
     private static function date(mixed $value): ?Carbon
     {
-        if (! filled($value)) {
+        if (! is_scalar($value) || ! filled($value)) {
             return null;
         }
 

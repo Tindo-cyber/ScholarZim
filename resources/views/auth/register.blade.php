@@ -12,7 +12,7 @@
         @csrf
 
         <x-form.input name="full_name" label="Full name" required autocomplete="name" autofocus
-                      pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." data-name-input />
+                      pattern="{{ \App\Support\FormOptions::NAME_INPUT_PATTERN }}" hint="Letters only - no numbers." data-name-input />
         <x-form.input name="email" label="Email address" type="email" required autocomplete="email" />
         <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
                       inputmode="numeric" minlength="10" maxlength="10" pattern="\d{10}"

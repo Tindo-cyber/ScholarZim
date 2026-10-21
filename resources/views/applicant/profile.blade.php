@@ -41,7 +41,7 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <x-form.input name="full_name" label="Full name" :value="auth()->user()->full_name" required
-                                              pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." data-name-input />
+                                              pattern="{{ \App\Support\FormOptions::NAME_INPUT_PATTERN }}" hint="Letters only - no numbers." data-name-input />
                             </div>
                             <div class="col-md-6">
                                 <x-form.input name="phone" label="Phone number" type="tel" :value="auth()->user()->phone"
@@ -52,7 +52,7 @@
                                 <x-form.input name="date_of_birth" label="Date of birth" type="date"
                                               :value="$profile->date_of_birth?->format('Y-m-d')"
                                               max="{{ now()->subYears(12)->toDateString() }}"
-                                              hint="Some awards have an age limit. Without this we cannot check one for you." />
+                                              hint="Used to check age limits." />
                             </div>
                             <div class="col-md-6">
                                 <fieldset class="mb-3">
@@ -72,8 +72,7 @@
                                         <div class="invalid-feedback d-block mt-1" id="gender-error">{{ $message }}</div>
                                     @enderror
                                     <div class="form-text">
-                                        Required. Shown to providers reviewing your application; it does not
-                                        affect which awards you are eligible for.
+                                        Required. Shown to providers; it does not affect eligibility.
                                     </div>
                                 </fieldset>
                             </div>
@@ -104,7 +103,7 @@
                             <div class="col-md-6">
                                 <x-form.select name="education_level" label="Highest level you have completed"
                                                :options="$educationLevels" :grouped="true"
-                                               hint="Choose the highest level you have finished. Scholarships are matched to the next stage after it."
+                                               hint="The highest level you have finished."
                                                :value="$profile->education_level"
                                                placeholder="Select your level"
                                                id="sz-education-level" />
@@ -113,7 +112,7 @@
                                 <x-form.input name="institution_name" label="Institution / school"
                                               :value="$profile->institution_name"
                                               list="institution-list"
-                                              hint="Type your school, college or university - it does not need to be on the list." />
+                                              hint="Where you study. Pick from the list or type it." />
                                 <datalist id="institution-list">
                                     @foreach($institutions as $institution)
                                         <option value="{{ $institution }}"></option>
@@ -151,8 +150,7 @@
                                     </select>
                                     @error('current_programme_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                                     <div class="form-text">
-                                        Choose your programme from the list for your level. Type in the box to narrow it down.
-                                        If it is not listed, use "My programme isn't listed" in the programme section below.
+                                        Choose your programme. Not listed? Use the box below.
                                     </div>
                                     @if(filled($profile->field_of_study) && $fieldChosen === 0)
                                         <div class="form-text text-warning-emphasis">Earlier you wrote "{{ $profile->field_of_study }}". Please choose the matching programme.</div>
@@ -170,8 +168,7 @@
                     </div>
                     <div class="card-body">
                         <p class="small text-secondary">
-                            Some awards are limited to one province, or aimed at rural or urban applicants.
-                            ScholarFit uses this to match you; nothing here is shown publicly.
+                            Some awards are limited to a province, or to rural or urban applicants. Not shown publicly.
                         </p>
                         <div class="row">
                             <div class="col-md-4">
@@ -212,7 +209,7 @@
                             <div class="col-md-4">
                                 <x-form.input name="guardian_name" label="Guardian full name"
                                               :value="$profile->guardian_name"
-                                              pattern="[\p{L}\s'\-]+" hint="Letters only - no numbers." data-name-input />
+                                              pattern="{{ \App\Support\FormOptions::NAME_INPUT_PATTERN }}" hint="Letters only - no numbers." data-name-input />
                             </div>
                             <div class="col-md-4">
                                 <x-form.input name="guardian_phone" label="Guardian phone number" type="tel"
@@ -268,11 +265,7 @@
                                 <div>
                                     <strong class="d-block mb-1">Please re-enter your results below</strong>
                                     <p class="small mb-2">
-                                        You recorded your results before we asked for them subject by subject.
-                                        We have not filled anything in for you, because we would have to guess
-                                        at your grades. Add each subject below and your points will be worked
-                                        out automatically. <strong>Scholarships cannot check your results until
-                                        you do.</strong>
+                                        Please re-enter your results below, subject by subject. <strong>Scholarships cannot check them until you do.</strong>
                                     </p>
                                     <p class="small text-secondary mb-1">What you wrote before:</p>
                                     <blockquote class="small fst-italic border-start border-2 ps-3 mb-0">
@@ -283,13 +276,10 @@
                         @endif
 
                         <p class="text-secondary small">
-                            Enter your subjects and grades exactly as they appear on your results slip.
-                            ScholarZim works out any points itself - you never type a points total, and
-                            grades from one examination board are never converted into another's.
+                            Enter your subjects and grades as on your results slip. Points are worked out for you.
                         </p>
                         <p class="text-secondary small">
-                            Record the results of the level you have completed. Results from an earlier level
-                            are listed only when a scholarship you could apply for asks for them.
+                            Record the level you have completed. Earlier results appear only if a scholarship asks.
                         </p>
 
 
@@ -497,8 +487,7 @@
                         </p>
 
                         <p class="text-secondary small mt-3 mb-0" data-sz-tier="PRIMARY">
-                            Primary applicants apply through the guardian-assisted Form 1 pathway. You may record
-                            your Grade 7 learning areas above, but no result is required to start.
+                            You can record your Grade 7 results above. None is required to start.
                         </p>
 
                         <script type="application/json" id="academic-catalogue">@json($academicCatalogue)</script>
@@ -565,9 +554,7 @@
                         </div>
 
                         <p class="small text-secondary">
-                            Some Form 1 awards ask to see your Grade 7 results slip. Upload a photo or scan of it here and it
-                            will be used for any award that asks. Uploading again replaces it. It is private: only you, and
-                            a provider you have applied to, can open it.
+                            Some Form 1 awards ask for your Grade 7 slip. Uploading again replaces it. Only you and providers you apply to can open it.
                         </p>
 
                         @if($slipName)

@@ -62,7 +62,7 @@
     <div {{ $attributes->merge(['class' => 'd-flex flex-wrap align-items-center gap-2']) }}>
         @if($review)
             <x-status-badge label="Needs review" tone="warning" icon="shield" />
-            <span class="small text-secondary">The listing's education wording could not be read with confidence. Check it with the provider.</span>
+            <span class="small text-secondary">We could not read this listing's education wording. Check with the provider.</span>
         @elseif($pending)
             <x-status-badge label="Needs information" tone="warning" icon="shield" />
             <span class="small text-secondary">Add your {{ implode(' and ', $missing) }} to check this one.</span>
@@ -114,7 +114,7 @@
                 <div class="fw-semibold mb-1">NEEDS REVIEW</div>
 
                 <p class="small mb-2">
-                    We cannot confirm whether you qualify: part of this listing's wording describes who it is for, and ScholarZim could not read it reliably.
+                    We cannot confirm you qualify: part of the listing's wording could not be read.
                 </p>
 
                 <ul class="list-unstyled d-grid gap-1 mb-0 small">

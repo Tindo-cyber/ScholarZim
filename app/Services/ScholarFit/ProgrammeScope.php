@@ -220,6 +220,13 @@ class ProgrammeScope
                 $current = $choices->firstWhere('kind', 'current');
                 $institutions = $current?->institution_id ? [(int) $current->institution_id] : [];
                 $names = $current?->institution ? [(int) $current->institution_id => $current->institution->name] : [];
+
+                // Where they study is the institution written on the profile; when the programme row does not carry it, it is read
+                // from that, so it is only ever said once.
+                if ($institutions === [] && ($written = \App\Models\Institution::matching($profile->institution_name)) !== null) {
+                    $institutions = [(int) $written->id];
+                    $names = [(int) $written->id => $written->name];
+                }
             } elseif ($mode === ApplicantProgrammes::INTENDED) {
                 $applied = $profile->relationLoaded('appliedInstitutions')
                     ? $profile->appliedInstitutions

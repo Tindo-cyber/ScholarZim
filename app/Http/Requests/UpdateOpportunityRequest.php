@@ -27,7 +27,7 @@ class UpdateOpportunityRequest extends StoreOpportunityRequest
     protected function deadlineRules(): array
     {
         if ($this->deadlineIsUnchanged()) {
-            return ['nullable', 'date'];
+            return ['bail', 'nullable', 'string', 'date_format:Y-m-d'];
         }
 
         return parent::deadlineRules();

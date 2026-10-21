@@ -37,7 +37,7 @@
                        id="sz-topbar-search"
                        class="form-control border-start-0"
                        name="{{ $user->isAdmin() ? 'q' : 'keyword' }}"
-                       value="{{ request('q') ?? request('keyword') }}"
+                       value="{{ is_string(request('q')) ? request('q') : (is_string(request('keyword')) ? request('keyword') : '') }}"
                        placeholder="{{ $user->isAdmin() ? 'Search users, listings, applications' : 'Search scholarships' }}">
             </div>
         </form>

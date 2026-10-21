@@ -27,38 +27,21 @@
     <form method="POST" action="{{ route('applicant.profile.programmes') }}" class="card mb-4" id="programme-card" novalidate>
         @csrf
         <div class="card-header">
-            <h2 class="h6 fw-semibold mb-0">{{ $mode === 'current' ? 'The programme you completed' : 'What you hope to study' }}</h2>
+            <h2 class="h6 fw-semibold mb-0">{{ $mode === 'current' ? 'What you want to study next' : 'What you hope to study' }}</h2>
         </div>
         <div class="card-body">
             @if($mode === 'current')
                 <p class="small text-secondary">
-                    Your programme is chosen as your <strong>Field of study</strong> in the form above. Here you can say where you
-                    studied, what you want to study next, or suggest a programme that is not listed.
+                    Your programme and institution are in the form above. Here: what you want to study next, or a programme that is not listed.
                 </p>
-
-                <div class="mb-3">
-                    <label class="form-label" for="current_institution_id">Where you studied (optional)</label>
-                    <select class="form-select @error('current_institution_id') is-invalid @enderror" id="current_institution_id" name="current_institution_id">
-                        <option value="">Not chosen</option>
-                        @foreach($catalogue['institutions']->groupBy('type') as $type => $institutions)
-                            <optgroup label="{{ \App\Models\Institution::TYPE_LABELS[$type] ?? $type }}">
-                                @foreach($institutions as $institution)
-                                    <option value="{{ $institution->id }}" @selected($institutionId === $institution->id)>{{ $institution->name }}</option>
-                                @endforeach
-                            </optgroup>
-                        @endforeach
-                    </select>
-                    @error('current_institution_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                </div>
 
                 <x-limited-choice name="target_field_ids" id="target_field_ids" label="Fields you want to study next (optional)"
                                   :max="\App\Models\ApplicantTargetField::MAX" noun="fields"
                                   :groups="\App\Models\Field::pickerGroups($catalogue['fields'], array_map('intval', (array) old('target_field_ids', $targetFieldIds ?? [])))"
-                                  hint="For your next qualification, if it is in a different field from your programme - for example a Masters in Data Science after a BCom. Scholarships open to these fields will match you too, including scholarships to study abroad." />
+                                  hint="For a next qualification in a different field. Scholarships open to these fields will match you, including abroad." />
             @else
                 <p class="small text-secondary">
-                    You have not started a programme yet. Choose up to 3 you hope to study, and you will be matched to a
-                    scholarship if any one of them fits.
+                    Choose up to 3 programmes you hope to study. You match a scholarship if any one fits.
                 </p>
 
                 <x-limited-choice name="intended_programme_ids" id="intended_programme_ids" label="Programmes you hope to study"

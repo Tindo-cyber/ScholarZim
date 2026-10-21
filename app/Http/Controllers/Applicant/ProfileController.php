@@ -49,7 +49,8 @@ class ProfileController extends Controller
             'fields' => FormOptions::FIELDS_OF_STUDY,
             'provinces' => FormOptions::ZIMBABWE_PROVINCES,
             'settlementTypes' => SettlementType::ALL,
-            'institutions' => FormOptions::INSTITUTIONS,
+            // The names the catalogue holds, so what is written here is the institution scholarships limited to named institutions check.
+            'institutions' => \App\Models\Institution::active()->orderBy('name')->pluck('name')->all(),
             'genders' => Gender::options(),
             'degreeClassifications' => AcademicCatalogue::scheme(AcademicCatalogue::TERTIARY)?->symbols() ?? [],
             'qualifications' => $allQualifications,

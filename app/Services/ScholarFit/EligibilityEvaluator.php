@@ -960,8 +960,7 @@ final class EligibilityEvaluator
 
         return RequirementOutcome::review(
             RequirementOutcome::TYPE_DESCRIPTION_UNRESOLVED,
-            'Level: the scholarship ' . $where . ' mentions ' . $quoted . ', which ScholarZim cannot reliably read as an education requirement. '
-                . 'We cannot say whether it applies to you - read the listing and check with the provider that you qualify before you apply.',
+            'Level: the scholarship ' . $where . ' mentions ' . $quoted . ', which we cannot read as a requirement. Check with the provider before you apply.',
             required: implode(', ', $phrases),
         );
     }

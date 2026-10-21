@@ -28,16 +28,20 @@ class ApplicationController extends Controller
     {
         $user = $request->user();
 
+        // A repeated key (?status[]=x) arrives as an array; only plain text is a filter.
+        $status = is_string($request->query('status')) ? $request->query('status') : null;
+        $search = is_string($request->query('search')) ? $request->query('search') : null;
+
         return view('applications.my-applications', [
             'applications' => $this->applicationService->paginateForApplicant(
                 $user,
-                $request->query('status'),
-                $request->query('search')
+                $status,
+                $search
             ),
             'statusCounts' => $this->applicationService->statusCountsForApplicant($user),
-            'activeStatus' => $request->query('status'),
+            'activeStatus' => $status,
             'statuses' => ApplicationStatus::FILTERABLE,
-            'search' => $request->query('search'),
+            'search' => $search,
         ]);
     }
 

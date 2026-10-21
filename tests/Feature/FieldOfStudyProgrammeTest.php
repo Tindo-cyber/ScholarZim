@@ -111,8 +111,84 @@ class FieldOfStudyProgrammeTest extends TestCase
         $html = $this->page();
 
         $this->assertSame(1, substr_count($html, 'name="current_programme_id"'), 'asked once on the page');
-        $this->assertStringContainsString('chosen as your', $html);
-        $this->assertStringContainsString('name="current_institution_id"', $html, 'where they studied is still asked there');
+        $this->assertStringContainsString('in the form above', $html);
+        $this->assertStringNotContainsString('name="current_institution_id"', $html, 'where they studied is the Institution above, not asked again');
+        $this->assertStringNotContainsString('Where you studied', $html);
+    }
+
+    // ------------------------------------------- where they studied is said once --
+
+    public function test_the_institution_field_suggests_the_catalogue_names(): void
+    {
+        $this->at(EducationLevel::UNDERGRADUATE);
+
+        $html = $this->page();
+
+        $this->assertStringContainsString('<option value="' . e(Institution::where('code', 'MSU')->value('name')) . '"', $html);
+        $this->assertStringContainsString('Where you study. Pick from the list or type it.', $html);
+    }
+
+    public function test_the_written_institution_is_matched_to_the_catalogue(): void
+    {
+        $msu = Institution::where('code', 'MSU')->firstOrFail();
+        $uz = Institution::where('code', 'UZ')->firstOrFail();
+
+        $this->assertSame($msu->id, Institution::matching($msu->name)?->id);
+        $this->assertSame($msu->id, Institution::matching('  ' . strtoupper($msu->name) . '  ')?->id, 'case and spacing do not matter');
+        $this->assertSame($msu->id, Institution::matching($msu->name . ' (MSU)')?->id, 'a bracketed code is allowed');
+        $this->assertSame($uz->id, Institution::matching('University of Zimbabwe (UZ)')?->id);
+        $this->assertSame($uz->id, Institution::matching('UZ')?->id, 'or the code on its own');
+        $this->assertNull(Institution::matching('Some Small College'));
+        $this->assertNull(Institution::matching(''));
+        $this->assertNull(Institution::matching(null));
+    }
+
+    public function test_writing_the_institution_links_the_programme_to_it_without_asking_again(): void
+    {
+        $this->at(EducationLevel::UNDERGRADUATE);
+        $programme = $this->programmeAt(EducationLevel::UNDERGRADUATE);
+        $msu = Institution::where('code', 'MSU')->firstOrFail();
+
+        // Programme chosen after the institution was written.
+        $this->saveProfile(['education_level' => EducationLevel::UNDERGRADUATE, 'institution_name' => $msu->name, 'current_programme_id' => $programme->id])
+            ->assertSessionHasNoErrors();
+        $this->assertSame($msu->id, (int) $this->current()->institution_id);
+
+        // Institution changed afterwards.
+        $uz = Institution::where('code', 'UZ')->firstOrFail();
+        $this->saveProfile(['education_level' => EducationLevel::UNDERGRADUATE, 'institution_name' => $uz->name, 'current_programme_id' => $programme->id]);
+        $this->assertSame($uz->id, (int) $this->current()->institution_id);
+
+        // One the catalogue does not know leaves the link as it was rather than inventing one.
+        $this->saveProfile(['education_level' => EducationLevel::UNDERGRADUATE, 'institution_name' => 'Some Small College', 'current_programme_id' => $programme->id]);
+        $this->assertSame($uz->id, (int) $this->current()->institution_id);
+        $this->assertSame('Some Small College', $this->profile()->institution_name);
+    }
+
+    public function test_a_scholarship_limited_to_institutions_is_checked_from_the_one_institution_answer(): void
+    {
+        $this->at(EducationLevel::UNDERGRADUATE, ['institution_name' => 'Midlands State University']);
+        $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
+        $listing = Opportunity::create([
+            'provider_user_id' => $provider->user_id, 'provider_name' => 'Trust', 'title' => 'MSU Students Award',
+            'description' => 'Funding for learners in Zimbabwe.', 'funding_type' => 'Full Scholarship',
+            'country' => 'Zimbabwe', 'target_country' => 'Zimbabwe', 'deadline' => Carbon::today()->addDays(30),
+            'status' => OpportunityStatus::ACTIVE, 'moderation_status' => OpportunityModerationStatus::APPROVED,
+            'submitted_at' => now()->subDay(), 'open_to_all_programmes' => true, 'any_institution' => false,
+        ]);
+        \App\Models\OpportunityScope::create(['opportunity_id' => $listing->opportunity_id, 'institution_id' => Institution::where('code', 'MSU')->value('id')]);
+
+        $fit = fn () => app(\App\Services\RecommendationService::class)->evaluateOne($this->student->fresh(), $listing);
+
+        // Written once on the profile, no programme chosen and nothing in the programme section.
+        $this->assertTrue($fit()->meetsRequirements());
+
+        $this->profile()->forceFill(['institution_name' => 'University of Zimbabwe'])->save();
+        $this->assertTrue($fit()->isIneligible(), 'a different institution does not qualify');
+        $this->assertStringContainsString('you study at University of Zimbabwe', implode(' ', $fit()->failureMessages()));
+
+        $this->profile()->forceFill(['institution_name' => 'Some Small College'])->save();
+        $this->assertTrue($fit()->needsInformation(), 'one the catalogue does not know cannot be checked, and is asked for, not refused');
     }
 
     public function test_a_saved_programme_is_shown_chosen(): void

@@ -15,7 +15,7 @@
     <form method="GET" class="row g-2 mb-3" role="search">
         <div class="col-md-4">
             <label class="visually-hidden" for="q">Search</label>
-            <input class="form-control" id="q" name="q" value="{{ request('q') }}" placeholder="Name or synonym">
+            <input class="form-control" id="q" name="q" value="{{ is_string(request('q')) ? request('q') : '' }}" placeholder="Name or synonym">
         </div>
         <div class="col-md-2">
             <label class="visually-hidden" for="level">Level</label>

@@ -232,7 +232,9 @@ class ApplicantProgrammes
             if ($programme !== null) {
                 ApplicantProgramme::create([
                     'profile_id' => $profile->profile_id, 'programme_id' => $programme->id,
-                    'kind' => self::CURRENT, 'institution_id' => $existing?->institution_id,
+                    'kind' => self::CURRENT,
+                    // Where they studied is the institution written on the profile, read against the catalogue.
+                    'institution_id' => Institution::matching($profile->institution_name)?->id ?? $existing?->institution_id,
                 ]);
             }
         });
@@ -240,6 +242,19 @@ class ApplicantProgrammes
         $programme !== null
             ? $this->syncFieldOfStudy($profile, $programme)
             : $profile->update(['field_of_study' => null]);
+    }
+
+    /**
+     * Where an enrolled student studied is the institution they wrote on their profile: when it is one the catalogue knows,
+     * the programme they are on is linked to it. One answer, given once, instead of the same thing asked twice.
+     */
+    public function syncInstitution(ApplicantProfile $profile): void
+    {
+        $institution = Institution::matching($profile->institution_name);
+
+        if ($institution !== null) {
+            ApplicantProgramme::where('profile_id', $profile->profile_id)->where('kind', self::CURRENT)->update(['institution_id' => $institution->id]);
+        }
     }
 
     /** The profile's written field of study follows the programme chosen: one answer, not two that can disagree. */

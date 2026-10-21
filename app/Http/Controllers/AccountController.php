@@ -28,8 +28,8 @@ class AccountController extends Controller
     public function updatePassword(Request $request)
     {
         $data = $request->validate([
-            'current_password' => ['required', 'current_password'],
-            'password' => ['required', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'current_password' => ['bail', 'required', 'string', 'current_password'],
+            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
         ]);
 
         $request->user()->update(['password_hash' => Hash::make($data['password'])]);
@@ -68,7 +68,7 @@ class AccountController extends Controller
     public function logoutOtherSessions(Request $request)
     {
         $request->validate([
-            'current_password' => ['required', 'current_password'],
+            'current_password' => ['bail', 'required', 'string', 'current_password'],
         ]);
 
         // The second argument is not optional here: this schema stores the hash
@@ -98,7 +98,7 @@ class AccountController extends Controller
         $user = $request->user();
 
         $request->validate([
-            'current_password' => ['required', 'current_password'],
+            'current_password' => ['bail', 'required', 'string', 'current_password'],
             'confirm_email' => ['required', 'string'],
         ]);
 

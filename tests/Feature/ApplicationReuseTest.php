@@ -636,7 +636,7 @@ class ApplicationReuseTest extends TestCase
         $this->assertStringContainsString('NOT ELIGIBLE', $html, 'the reason is still given');
         $this->assertStringContainsString('id="correct-institutions"', $html);
         $this->assertStringContainsString('Save and check again', $html);
-        $this->assertStringContainsString('none of the ones you listed is one of them', $html);
+        $this->assertStringContainsString('None of your institutions is on the list for this scholarship', $html);
         $this->assertSame($this->ids('UZ', 'NUST'), $this->tickedInstitutions($html), 'the saved selection is the starting point');
         $this->assertStringNotContainsString('name="personal_statement"', $html, 'no submission while ineligible');
         $this->assertSame($this->ids('UZ', 'NUST'), $this->savedInstitutions(), 'looking at the page changes nothing');
