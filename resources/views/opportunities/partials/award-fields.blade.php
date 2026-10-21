@@ -32,7 +32,7 @@
 
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">Funding and award</h2>
+        <h2 class="h6 fw-semibold mb-0">Award and deadline</h2>
     </div>
     <div class="card-body">
         <p class="text-secondary small">
@@ -41,6 +41,17 @@
         </p>
 
         <div class="row">
+            <div class="col-md-6">
+                <x-form.select name="funding_type" label="Funding type"
+                               :options="$fundingTypes" :value="$opportunity?->funding_type"
+                               placeholder="Not specified" />
+            </div>
+            <div class="col-md-6">
+                <x-form.input name="deadline" label="Application deadline" type="date"
+                              :value="$opportunity?->deadline?->format('Y-m-d')"
+                              min="{{ ($opportunity?->deadline && $opportunity->deadline->isPast() ? $opportunity->deadline : now())->toDateString() }}"
+                              hint="Leave blank for a rolling intake." />
+            </div>
             <div class="col-md-4">
                 <x-form.input name="award_amount" label="Award value" type="number"
                               min="0" step="0.01"
@@ -75,6 +86,17 @@
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card-header">
+        <h2 class="h6 fw-semibold mb-0">Other conditions (optional)</h2>
+    </div>
+    <div class="card-body">
+        <x-form.textarea name="other_conditions" label="Conditions students must check for themselves" :rows="3"
+                         :value="$opportunity?->other_conditions"
+                         hint="One a line, for example: IELTS 6.5 or higher / Two years of work experience / Return to Zimbabwe after studying. Students see these as &quot;Also check yourself&quot;; they never decide whether a student qualifies." />
+    </div>
+</div>
+
 {{--
     The stricter rules, folded away. Native <details>, so it opens and closes with
     JavaScript off, and the server decides whether it starts open ({{ '$advancedOpen' }}).
@@ -102,7 +124,7 @@
                 <x-form.select name="minimum_education_level" label="Minimum qualifying level"
                                :options="$minimumLevels" :grouped="true"
                                :value="$value('minimum_education_level')"
-                               placeholder="Whatever the level above allows"
+                               placeholder="No extra minimum"
                                hint="Only set this if your listing is stricter than the general pathway - for example, an Undergraduate award that requires A-Level rather than accepting O-Level applicants directly." />
             </div>
             <div class="col-md-6">
@@ -112,19 +134,19 @@
                               hint="Only applied when the student has given a date of birth." />
             </div>
             <div class="col-md-6">
-                <x-form.select name="required_province" label="Required province"
+                <x-form.select name="required_province" label="Student must live in this province"
                                :options="$provinces"
                                :value="$value('required_province')"
                                placeholder="No restriction" />
             </div>
             <div class="col-md-6">
-                <x-form.input name="target_locality" label="Target locality (optional)"
+                <x-form.input name="target_locality" label="Student must live in or near this town (optional)"
                               :value="$value('target_locality')"
                               placeholder="e.g. Gweru"
-                              hint="Only set this for a place-specific award. Leave blank for a province-wide or nationwide one - a blank locality on the student's own profile will never be treated as a match, so this never silently excludes students who simply haven't stated one." />
+                              hint="Only for a place-specific award. Leave blank for a province-wide or nationwide one." />
             </div>
             <div class="col-md-6">
-                <x-form.select name="target_settlement_type" label="Target settlement type (optional)"
+                <x-form.select name="target_settlement_type" label="Student must come from this kind of area (optional)"
                                :options="$settlementTypes"
                                :value="$value('target_settlement_type')"
                                placeholder="No restriction" />

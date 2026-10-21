@@ -54,7 +54,7 @@ class ListingDraftBrowserTest extends DuskTestCase
                 // may leave it blank, a submission may not. The HTTP tests answer it for you, a real provider must.
                 ->script("document.getElementById('open-to-all').click(); document.getElementById('institutions-any').click();");
             $browser
-                ->press('Submit for review')
+                ->click('#submit-listing') // "Publish" for a trusted provider, "Submit for review" otherwise
                 ->waitForText('Scholarship submitted for review', self::WAIT);
         });
 

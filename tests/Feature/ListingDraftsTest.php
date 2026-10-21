@@ -444,7 +444,8 @@ class ListingDraftsTest extends TestCase
         $this->assertStringContainsString('value="24"', $html);
         $this->assertMatchesRegularExpression('#<option value="C"[^>]*selected#', $html);
         $this->assertMatchesRegularExpression('#<button[^>]*formaction="' . preg_quote(route('opportunities.draft.save'), '#') . '"#', $html, 'it can be saved as a draft again');
-        $this->assertStringContainsString('Submit for review', $html);
+        // A trusted provider publishes straight away, so their button says so.
+        $this->assertStringContainsString(\App\Support\ProviderTrust::isTrusted($this->provider) ? 'Publish' : 'Submit for review', $html);
         $this->assertStringNotContainsString('Reason for this change', $html, 'a draft has no change history to explain');
         $this->assertStringNotContainsString('id="edit-impact"', $html);
     }
