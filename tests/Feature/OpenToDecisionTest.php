@@ -209,7 +209,7 @@ class OpenToDecisionTest extends TestCase
             ->assertSee('All programmes at this level')
             ->assertSee('Any institution')
             ->assertSee('O-Level holders may apply')
-            ->assertSee('Host universities (optional)')
+            ->assertSee('Institution not listed? Enter institution name')
             ->assertSee('Other conditions (optional)');
     }
 

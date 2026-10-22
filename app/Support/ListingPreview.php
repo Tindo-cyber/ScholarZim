@@ -84,6 +84,9 @@ final class ListingPreview
         $opportunity->setRelation('provider', $provider);
         $opportunity->setRelation('subjectRequirements', self::requirements($input['subject_requirements'] ?? []));
         $opportunity->setRelation('scopes', self::scopes($input, $level));
+        $opportunity->custom_institutions = \App\Services\Catalogue\ListingScopes::appliesTo($level)
+            ? (app(\App\Services\Catalogue\ListingScopes::class)->choices($input)['custom'] ?: null)
+            : null;
 
         return $opportunity;
     }

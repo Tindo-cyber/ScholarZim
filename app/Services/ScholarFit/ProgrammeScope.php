@@ -75,7 +75,16 @@ class ProgrammeScope
             $outcomes[] = $level;
         }
 
+        // Institutions the provider typed because the catalogue does not list them (a university abroad, say). A student's
+        // institution is chosen from the catalogue, so nothing on a profile can be compared with these: they never pass
+        // anyone, and never fail anyone either. See institutionOutcome() and unlistedInstitutionOutcome().
+        $unlisted = $this->unlisted($listing);
+
         if ($scopes->isEmpty()) {
+            if ($unlisted !== [] && $level === null) {
+                $outcomes[] = $this->unlistedInstitutionOutcome($unlisted);
+            }
+
             return $outcomes;
         }
 
@@ -92,7 +101,9 @@ class ProgrammeScope
         }
 
         if ($where->isNotEmpty()) {
-            $outcomes[] = $this->institutionOutcome($where, $applicant, $describer->describeInstitutions($where), $origin);
+            $outcomes[] = $this->institutionOutcome($where, $applicant, $describer->describeInstitutions($where, $unlisted), $origin, $unlisted);
+        } elseif ($unlisted !== [] && $level === null) {
+            $outcomes[] = $this->unlistedInstitutionOutcome($unlisted);
         }
 
         return $outcomes;
@@ -482,7 +493,43 @@ class ProgrammeScope
 
     // ------------------------------------------------------------ institutions --
 
-    private function institutionOutcome(Collection $where, array $applicant, string $open, ?array $origin): RequirementOutcome
+    /**
+     * The institutions a home listing names that are not in the catalogue, as {name, country} rows. None for study abroad,
+     * where the institutions are hosts the student goes to after the award rather than somewhere they already are.
+     *
+     * @return array<int, array{name: string, country?: ?string}>
+     */
+    private function unlisted(Opportunity $listing): array
+    {
+        if (ListingScopes::isAbroad($listing->country)) {
+            return [];
+        }
+
+        return array_values(array_filter((array) ($listing->custom_institutions ?? []), 'is_array'));
+    }
+
+    /**
+     * A listing restricted only to institutions we have no record of. The student cannot be checked, and is not turned
+     * away: this is a review outcome, so the listing is not called a match for them and they can still apply once they
+     * have confirmed with the provider that they qualify.
+     *
+     * @param  array<int, array{name: string, country?: ?string}>  $unlisted
+     */
+    private function unlistedInstitutionOutcome(array $unlisted): RequirementOutcome
+    {
+        $names = implode('; ', array_map([ListingScopes::class, 'customLabel'], $unlisted));
+
+        return RequirementOutcome::review(
+            RequirementOutcome::TYPE_INSTITUTION_SCOPE,
+            'Institution: this scholarship names ' . $names . ', which is not in our list, so your profile cannot be checked against it. Confirm with the provider before you apply.',
+            required: $names,
+        );
+    }
+
+    /**
+     * @param  array<int, array{name: string, country?: ?string}>  $unlisted  institutions the listing also names that we cannot check
+     */
+    private function institutionOutcome(Collection $where, array $applicant, string $open, ?array $origin, array $unlisted = []): RequirementOutcome
     {
         $prefix = $this->prefix($origin);
         $listed = $where->pluck('institution_id')->map(fn ($i) => (int) $i)->all();
@@ -525,6 +572,17 @@ class ProgrammeScope
                 $prefix . 'Institution: for students at ' . $open . '; ' . ($applicant['mode'] === ApplicantProgrammes::CURRENT ? 'you study at ' : 'you have applied to ') . ($names ?: 'a listed one') . '.',
                 required: $open,
                 actual: $names ?: null,
+            );
+        }
+
+        // The listing also names institutions that are not in the catalogue. Not matching a listed one does not show the
+        // student is outside the scholarship - they may be at one of the others, which a profile cannot say.
+        if ($unlisted !== []) {
+            return RequirementOutcome::review(
+                RequirementOutcome::TYPE_INSTITUTION_SCOPE,
+                $prefix . 'Institution: this scholarship is for students at ' . $open . '. You ' . ($applicant['mode'] === ApplicantProgrammes::CURRENT ? 'study at ' : 'have applied to ')
+                    . ($names ?: 'another institution') . ', and some of these are not in our list, so we cannot check them. Confirm with the provider before you apply.',
+                required: $open,
             );
         }
 

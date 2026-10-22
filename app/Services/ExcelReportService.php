@@ -43,7 +43,7 @@ class ExcelReportService
 
         return $this->build('Opportunities', [
             'Title', 'Provider', 'Education Level', 'Field',
-            'Location', 'Funding', 'Deadline', 'Status', 'Open to',
+            'Location', 'Funding', 'Deadline', 'Status', 'Open to', 'Institutions',
         ], Opportunity::notDraft()->with(['scopes.programme.field', 'scopes.field', 'scopes.institution'])->orderBy('opportunity_id')->lazy(200), fn (Opportunity $opp) => [
             $opp->title,
             $opp->provider_name,
@@ -57,6 +57,8 @@ class ExcelReportService
             // The Field column names the field a programme belongs to; this says whether the listing is open to
             // those programmes only, to the whole field, or (stated on purpose) to every programme. Blank: not stated.
             $opp->open_to_all_programmes === true ? 'All programmes' : $scopes->describeProgrammes($opp->scopes),
+            // Catalogue institutions, then any the provider typed in because the catalogue does not list them.
+            $scopes->describeInstitutions($opp->scopes, (array) $opp->custom_institutions),
         ]);
     }
 

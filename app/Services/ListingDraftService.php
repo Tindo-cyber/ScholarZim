@@ -341,7 +341,7 @@ class ListingDraftService
         $level = EducationLevel::canonical($draft->education_level);
         $input = $this->scopes->answered($input);
         $choices = $this->scopes->choices($input);
-        $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || filled($input['programme_suggestion'] ?? null);
+        $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || $choices['custom'] || filled($input['programme_suggestion'] ?? null);
 
         if ($any && ! ListingScopes::appliesTo($level)) {
             $notKept[] = ['field' => 'Open to', 'reason' => 'Programmes, fields and institutions do not apply to ' . EducationLevel::label($level) . ' awards, so none were kept.'];
@@ -378,6 +378,14 @@ class ListingDraftService
 
         if (count($knownInstitutions) !== count($choices['institutions'])) {
             $notKept[] = ['field' => 'Open to', 'reason' => 'An institution that is not available was not kept.'];
+        }
+
+        // An institution typed in that cannot be kept is said so, never dropped silently. The ones that can are saved with the
+        // draft's other attributes (ListingScopes::decision).
+        foreach ($this->scopes->customRows($input) as $row) {
+            if (($problem = $this->scopes->customProblem($row)) !== null) {
+                $notKept[] = ['field' => 'Institution not listed', 'reason' => ($row['name'] !== '' ? '"' . $row['name'] . '" was not kept: ' : '') . $problem];
+            }
         }
 
         if (filled($input['programme_suggestion'] ?? null)) {

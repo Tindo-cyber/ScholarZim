@@ -63,6 +63,7 @@ class Opportunity extends Model
         'any_institution',
         'accepts_o_level',
         'host_institutions',
+        'custom_institutions',
         'other_conditions',
     ];
 
@@ -82,6 +83,7 @@ class Opportunity extends Model
         'any_institution' => 'boolean',
         'accepts_o_level' => 'boolean',
         'risk_flags' => 'array',
+        'custom_institutions' => 'array',
         'auto_approved' => 'boolean',
         'post_reviewed_at' => 'datetime',
         'view_count' => 'integer',

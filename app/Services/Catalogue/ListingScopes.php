@@ -30,6 +30,11 @@ class ListingScopes
 
     public const MAX_INSTITUTIONS = 40;
 
+    /** Institutions typed in because they are not in the catalogue (see customRows()). */
+    public const MAX_CUSTOM_INSTITUTIONS = 10;
+
+    public const MAX_CUSTOM_NAME_LENGTH = 150;
+
     /**
      * The form's "Open to" answer, one of four:
      *  - OPEN_ALL        every programme at the level;
@@ -97,7 +102,7 @@ class ListingScopes
      * and no answer given stays null: not decided, which validation refuses for a new listing at a programme
      * level and which a listing posted before this rule simply is.
      *
-     * @return array{open_to_all_programmes: ?bool, any_institution: ?bool, accepts_o_level: bool, host_institutions: ?string, other_conditions: ?string}
+     * @return array{open_to_all_programmes: ?bool, any_institution: ?bool, accepts_o_level: bool, custom_institutions: ?array, host_institutions: ?string, other_conditions: ?string}
      */
     public function decision(array $input, ?string $level, ?string $country): array
     {
@@ -119,11 +124,14 @@ class ListingScopes
             },
             'any_institution' => ! $uses || $abroad ? null : match (true) {
                 $institutions === self::INSTITUTIONS_ANY => true,
-                $institutions === self::INSTITUTIONS_CHOSEN, $choices['institutions'] !== [] => false,
+                $institutions === self::INSTITUTIONS_CHOSEN, $choices['institutions'] !== [], $choices['custom'] !== [] => false,
                 default => null,
             },
             'accepts_o_level' => EducationLevel::canonical($level) === EducationLevel::UNDERGRADUATE
                 && filter_var($input['accepts_o_level'] ?? false, FILTER_VALIDATE_BOOLEAN),
+            // Institutions the provider typed because the catalogue does not list them. Shown on the listing; a name typed
+            // here is never matched against a student's profile, so it can neither grant nor refuse anyone on its own.
+            'custom_institutions' => $uses && ($abroad || $institutions !== self::INSTITUTIONS_ANY) && ($custom = $choices['custom']) !== [] ? $custom : null,
             'host_institutions' => $abroad && $uses && filled($input['host_institutions'] ?? null)
                 ? mb_substr(trim((string) $input['host_institutions']), 0, 500)
                 : null,
@@ -206,7 +214,7 @@ class ListingScopes
             }
 
             if ($choices['institutions'] !== []) {
-                $problems['scope_institutions'] = 'The institution list holds Zimbabwean institutions only. Write the universities abroad under "Host universities" instead.';
+                $problems['scope_institutions'] = 'The institution list holds Zimbabwean institutions only. Use "Institution not listed?" to enter the universities abroad instead.';
             }
         }
 
@@ -232,8 +240,8 @@ class ListingScopes
         if (! self::isAbroad($country)) {
             if ($decision['any_institution'] === null) {
                 $problems['institutions_open_to'] = 'Say where students must study: choose the institutions this scholarship pays for, or choose "Any institution".';
-            } elseif ($decision['any_institution'] === false && $choices['institutions'] === []) {
-                $problems['institutions_open_to'] = 'Choose at least one institution, or choose "Any institution".';
+            } elseif ($decision['any_institution'] === false && $choices['institutions'] === [] && $choices['custom'] === []) {
+                $problems['institutions_open_to'] = 'Choose at least one institution, enter one that is not listed, or choose "Any institution".';
             }
         }
 
@@ -248,18 +256,143 @@ class ListingScopes
         return $canonical === null || in_array($canonical, Programme::LEVELS, true);
     }
 
-    /** The scope keys in a submission, cleaned to unique integers; anything else is dropped. */
+    /**
+     * The scope keys in a submission, cleaned to unique integers; anything else is dropped.
+     *
+     * `custom` holds the institutions typed in because the catalogue does not list them. A typed name that IS in the
+     * catalogue (for study in Zimbabwe) is not kept as a second, free-text copy: it becomes the catalogue institution,
+     * so choosing "Midlands State University" by typing it behaves exactly like ticking it.
+     */
     public function choices(array $input): array
     {
         $ids = static fn (mixed $value): array => is_array($value)
             ? array_values(array_unique(array_map('intval', array_filter($value, fn ($v) => is_int($v) || (is_string($v) && ctype_digit($v))))))
             : [];
 
+        $institutions = $ids($input['scope_institutions'] ?? []);
+        $custom = [];
+        $seen = [];
+
+        foreach ($this->customRows($input) as $row) {
+            if ($this->customProblem($row) !== null) {
+                continue;
+            }
+
+            $catalogue = self::isAbroad($input['country'] ?? null) ? null : Institution::matching($row['name']);
+
+            if ($catalogue !== null) {
+                $institutions[] = $catalogue->id;
+
+                continue;
+            }
+
+            $key = self::nameKey($row['name']);
+
+            if (! isset($seen[$key])) {
+                $seen[$key] = true;
+                $custom[] = $row;
+            }
+        }
+
         return [
             'programmes' => $ids($input['scope_programmes'] ?? []),
             'fields' => $ids($input['scope_fields'] ?? []),
-            'institutions' => $ids($input['scope_institutions'] ?? []),
+            'institutions' => array_values(array_unique($institutions)),
+            'custom' => $custom,
         ];
+    }
+
+    // ---------------------------------------------- institutions not in the catalogue --
+
+    /**
+     * What was typed under "Institution not listed?", trimmed, with empty slots (no name) dropped. Keyed by the position it was
+     * sent in, so a problem can be shown against the right row. Nothing is judged here; see customProblem().
+     *
+     * @return array<int, array{name: string, country: ?string}>
+     */
+    public function customRows(array $input): array
+    {
+        $rows = [];
+
+        if (! is_array($input['custom_institutions'] ?? null)) {
+            return $rows;
+        }
+
+        $clean = static fn (mixed $v): string => is_scalar($v) ? trim((string) preg_replace('/\s+/u', ' ', (string) $v)) : '';
+
+        foreach ($input['custom_institutions'] as $i => $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $name = $clean($row['name'] ?? '');
+            $country = $clean($row['country'] ?? '');
+
+            // A country on its own says nothing, so a row without a name is an empty slot, not a mistake.
+            if ($name === '') {
+                continue;
+            }
+
+            $rows[(int) $i] = ['name' => $name, 'country' => $country === '' ? null : $country];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Why a typed institution cannot be kept, or null when it can. A real-looking name, 3 to 150 characters: letters and
+     * the punctuation names use, not a placeholder ("n/a", "test") and not a bare word like "University".
+     *
+     * @param  array{name: string, country: ?string}  $row
+     */
+    public function customProblem(array $row): ?string
+    {
+        $name = $row['name'];
+        $example = 'Use its full name, for example University of Cape Town.';
+
+        if ($name === '') {
+            return "Give the institution's name.";
+        }
+
+        if (mb_strlen($name) < 3 || mb_strlen($name) > self::MAX_CUSTOM_NAME_LENGTH) {
+            return "Give the institution's full name (3 to " . self::MAX_CUSTOM_NAME_LENGTH . ' characters).';
+        }
+
+        // Letters and the punctuation real names carry; no markup, links or symbols.
+        if (preg_match('/^[\p{L}\p{N}][\p{L}\p{N} .,\'’&()\/-]*$/u', $name) !== 1 || preg_match_all('/\p{L}/u', $name) < 3) {
+            return 'That does not look like an institution\'s name. ' . $example;
+        }
+
+        // The same character over and over ("aaaa", "xx xx").
+        if (count(array_unique(mb_str_split(mb_strtolower((string) preg_replace('/[^\p{L}\p{N}]/u', '', $name))))) === 1) {
+            return 'That does not look like an institution\'s name. ' . $example;
+        }
+
+        $filler = ['n', 'a', 'na', 'none', 'nil', 'tbc', 'tba', 'test', 'testing', 'unknown', 'other', 'others', 'any', 'xxx', 'asdf', 'abc',
+            'university', 'college', 'institute', 'institution', 'school', 'polytechnic', 'of', 'the', 'and', 'in'];
+        $words = preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower($name), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        if (array_diff($words, $filler) === []) {
+            return 'That is not specific enough. Give the institution\'s full name, for example University of Cape Town.';
+        }
+
+        if ($row['country'] !== null && ! in_array($row['country'], array_diff(FormOptions::countries(), FormOptions::FLEXIBLE_COUNTRIES), true)) {
+            return 'Choose the institution\'s country from the list, or leave it blank.';
+        }
+
+        return null;
+    }
+
+    /** One institution as the listing shows it: "University of Cape Town (South Africa)". */
+    public static function customLabel(array $row): string
+    {
+        return trim((string) ($row['name'] ?? '')) . (filled($row['country'] ?? null) ? ' (' . $row['country'] . ')' : '');
+    }
+
+    /** A name compared without case, spacing or a leading "the", so the same institution typed twice counts once. */
+    private static function nameKey(string $name): string
+    {
+        return trim((string) preg_replace('/^the\s+/u', '', mb_strtolower((string) preg_replace('/\s+/u', ' ', trim($name)))));
     }
 
     // -------------------------------------------------------------- validation --
@@ -274,11 +407,11 @@ class ListingScopes
         $problems = [];
         $input = $this->answered($input);
         $choices = $this->choices($input);
-        $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || filled($input['programme_suggestion'] ?? null);
+        $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || $choices['custom'] || filled($input['programme_suggestion'] ?? null);
         $canonical = EducationLevel::canonical($level);
 
         if ($any && ! self::appliesTo($level)) {
-            $key = $choices['programmes'] ? 'scope_programmes' : ($choices['fields'] ? 'scope_fields' : ($choices['institutions'] ? 'scope_institutions' : 'programme_suggestion'));
+            $key = $choices['programmes'] ? 'scope_programmes' : ($choices['fields'] ? 'scope_fields' : ($choices['institutions'] ? 'scope_institutions' : ($choices['custom'] ? 'custom_institutions' : 'programme_suggestion')));
 
             return [$key => 'Programmes, fields and institutions only apply to Certificate, Diploma, Undergraduate and higher awards. '
                 . EducationLevel::label($level) . ' awards are for a school level, not a programme.'];
@@ -287,6 +420,18 @@ class ListingScopes
         foreach ([['programmes', self::MAX_PROGRAMMES, 'programmes'], ['fields', self::MAX_FIELDS, 'fields'], ['institutions', self::MAX_INSTITUTIONS, 'institutions']] as [$key, $max, $word]) {
             if (count($choices[$key]) > $max) {
                 $problems['scope_' . $key] = 'Choose at most ' . $max . ' ' . $word . '. For a wider audience choose a field instead.';
+            }
+        }
+
+        $customRows = $this->customRows($input);
+
+        if (count($customRows) > self::MAX_CUSTOM_INSTITUTIONS) {
+            $problems['custom_institutions'] = 'Enter at most ' . self::MAX_CUSTOM_INSTITUTIONS . ' institutions that are not listed.';
+        }
+
+        foreach ($customRows as $i => $row) {
+            if (($message = $this->customProblem($row)) !== null) {
+                $problems["custom_institutions.$i.name"] = $message;
             }
         }
 
@@ -427,6 +572,17 @@ class ListingScopes
             'institutions' => $listing->scopes()->whereNotNull('institution_id')->pluck('institution_id')->map(fn ($i) => (int) $i)->all(),
         ];
 
+        $sameCustom = array_map(static fn (array $r) => mb_strtolower($r['name'] . '|' . ($r['country'] ?? '')), $choices['custom']);
+        $savedCustom = array_map(static fn (array $r) => mb_strtolower(($r['name'] ?? '') . '|' . ($r['country'] ?? '')), (array) ($listing->custom_institutions ?? []));
+        sort($sameCustom);
+        sort($savedCustom);
+
+        if ($sameCustom !== $savedCustom) {
+            return true;
+        }
+
+        unset($choices['custom']);
+
         foreach ($choices as $key => $ids) {
             sort($ids);
             sort($current[$key]);
@@ -446,10 +602,10 @@ class ListingScopes
      *
      * @param  Collection<int, OpportunityScope>  $scopes
      */
-    public function describe(Collection $scopes): string
+    public function describe(Collection $scopes, array $custom = []): string
     {
         $text = $this->describeProgrammes($scopes) ?? 'any programme';
-        $where = $this->describeInstitutions($scopes);
+        $where = $this->describeInstitutions($scopes, $custom);
 
         return $where === null ? $text : $text . ' at ' . $where;
     }
@@ -506,11 +662,15 @@ class ListingScopes
     /**
      * The institutions alone ("MSU or NUST"), or null when the listing names none.
      *
+     * Institutions the provider typed in follow the catalogue ones, each with its country when given.
+     *
      * @param  Collection<int, OpportunityScope>  $scopes
+     * @param  array<int, array{name: string, country?: ?string}>  $custom
      */
-    public function describeInstitutions(Collection $scopes): ?string
+    public function describeInstitutions(Collection $scopes, array $custom = []): ?string
     {
-        $institutions = $scopes->pluck('institution')->filter()->map(fn (Institution $i) => $this->short($i))->sort(SORT_NATURAL | SORT_FLAG_CASE)->values();
+        $institutions = $scopes->pluck('institution')->filter()->map(fn (Institution $i) => $this->short($i))->sort(SORT_NATURAL | SORT_FLAG_CASE)->values()
+            ->concat(collect($custom)->map(fn (array $row) => self::customLabel($row))->sort(SORT_NATURAL | SORT_FLAG_CASE)->values());
 
         return $institutions->isEmpty() ? null : $this->join($institutions->all());
     }

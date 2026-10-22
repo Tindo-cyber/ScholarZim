@@ -129,8 +129,8 @@
         </fieldset>
 
         <div class="alert alert-info small" data-abroad-only role="note" @unless($abroad) hidden @endunless>
-            For study outside Zimbabwe, choose <strong>An entire field of study</strong> and write the universities under
-            "Host universities". Our programme and institution lists are Zimbabwean only.
+            For study outside Zimbabwe, choose <strong>An entire field of study</strong> and enter the universities under
+            "Institution not listed?". Our programme and institution lists are Zimbabwean only.
         </div>
 
         <div data-open-programmes data-home-only @if($hideProgrammesList) hidden @endif>
@@ -215,10 +215,16 @@
             </div>
         </fieldset>
 
+        {{-- One copy, always in the page: for study in Zimbabwe it follows the institution list, for study abroad it replaces it. --}}
+        @include('opportunities.partials.custom-institutions', ['opportunity' => $opportunity, 'idPrefix' => 'listing'])
+
         <div class="mb-3" data-abroad-only @unless($abroad) hidden @endunless>
-            <x-form.input name="host_institutions" label="Host universities (optional)"
-                          :value="$opportunity?->host_institutions"
-                          hint="e.g. University of Edinburgh, UCL. Shown to students, not checked." />
+            {{-- Listings saved before institutions could be entered one by one keep their wording; it is shown until replaced. --}}
+            @if(filled(old('host_institutions', $opportunity?->host_institutions)))
+                <x-form.input name="host_institutions" label="Host universities (earlier wording)"
+                              :value="$opportunity?->host_institutions"
+                              hint="Shown to students, not checked. Enter each university above instead, then clear this." />
+            @endif
         </div>
 
         <div class="mb-3" data-level-needs="olevel">
