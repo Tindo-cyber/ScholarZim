@@ -174,7 +174,7 @@ class ProgrammePickerBrowserTest extends DuskTestCase
             $browser->script("document.getElementById('advanced-rules').open = true;");
             $browser->type('#field-max_age', '13');
             $browser->script("document.getElementById('field-max_age').removeAttribute('min'); document.getElementById('field-max_age').form.noValidate = true;");
-            $browser->press('Submit for review')
+            $browser->click('#submit-listing') // "Publish" for a trusted provider, "Submit for review" otherwise
                 ->waitForText('The maximum age must be at least 14 for Undergraduate awards', self::WAIT);
 
             $this->assertSame($chosen, $this->js($browser, "document.querySelector('#scope-programmes input:checked').value"), 'the ticked programme is still ticked');
