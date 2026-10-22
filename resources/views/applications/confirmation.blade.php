@@ -45,8 +45,7 @@
                 <div class="alert alert-danger">
                     <h2 class="h6 fw-semibold mb-1">Your application was not successful.</h2>
                     <p class="mb-0">
-                        Other scholarships are open to you. If the provider reconsiders, you will be told here and by
-                        notification.
+                        This decision is final. Other scholarships are open to you.
                     </p>
                 </div>
             @elseif($application->isWithdrawn())

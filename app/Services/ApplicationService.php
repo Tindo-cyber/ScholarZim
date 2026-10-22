@@ -668,17 +668,13 @@ class ApplicationService
     /** The reason a listing is given when its last award slot is filled and it closes by itself. */
     private const AUTO_CLOSED_REASON = 'Closed automatically: all award slots filled.';
 
-    /** The reason it is given when a withdrawn acceptance frees a slot and it opens again. */
-    private const AUTO_REOPENED_REASON = 'Reopened automatically: an award slot was released.';
-
     /**
      * The provider's decision, and the only way a PENDING application is decided.
      *
      * Accepting means the provider has granted the scholarship to this
      * applicant. Rejecting means they have not. Both need a written reason
-     * because the applicant is shown it verbatim. A decision is not changed in
-     * place: it is withdrawn with reopen() and then made again, so a decided
-     * application is refused here with an explanation of that.
+     * because the applicant is shown it verbatim. A decision is final: a decided
+     * application is refused here, and nothing reverses it.
      */
     public function decide(int $applicationId, string $status, ?string $reason, User $provider): Application
     {
@@ -830,171 +826,6 @@ class ApplicationService
         }
 
         return $application;
-    }
-
-    /**
-     * The provider withdraws a decision they made and reopens the application for review.
-     *
-     * ACCEPTED or REJECTED goes back to PENDING - not to WITHDRAWN, which is the applicant stepping back and carries
-     * the re-apply rules - and the provider can then decide again. A written reason is required and the applicant is
-     * told it. The current decision (reason, date) is cleared from the row, but nothing is lost: the audit log keeps
-     * the original decision (who, when, why) as it was written, and this reopening (who, when, why) beside it.
-     *
-     * Reopening an acceptance gives the award back: capacity is counted from accepted applications, so the slot is
-     * free the moment this commits, and a listing that closed by itself because its last slot filled opens again.
-     * The applicant is told their acceptance no longer stands while the provider reconsiders.
-     *
-     * Same shape as decide(): ownership first, the listing and then the application locked, the state machine as the
-     * only judge, the audit line inside the transaction and the notification after it.
-     */
-    public function reopen(int $applicationId, ?string $reason, User $provider): Application
-    {
-        if (blank($reason)) {
-            throw ValidationException::withMessages([
-                'reason' => 'A reason is required to withdraw a decision - the applicant is told it.',
-            ]);
-        }
-
-        $reason = trim($reason);
-
-        if (mb_strlen($reason) > 500) {
-            throw ValidationException::withMessages(['reason' => 'Keep the reason to 500 characters or fewer.']);
-        }
-
-        $opportunityId = $this->findForProvider($applicationId, $provider)->opportunity_id;
-
-        $listingReopened = false;
-
-        [$application, $previous] = DB::transaction(function () use ($applicationId, $opportunityId, $reason, $provider, &$listingReopened) {
-            $opportunity = Opportunity::whereKey($opportunityId)->lockForUpdate()->first();
-            $application = Application::whereKey($applicationId)->lockForUpdate()->firstOrFail();
-
-            $previousStatus = $application->application_status;
-
-            ApplicationStateMachine::assertCanTransition(
-                $previousStatus,
-                ApplicationStatus::PENDING,
-                ApplicationStateMachine::ACTOR_PROVIDER
-            );
-
-            // What is being withdrawn, taken before it is cleared.
-            $previous = [
-                'status' => ApplicationStatus::canonical($previousStatus),
-                'raw_status' => $previousStatus,
-                'reason' => $application->decision_reason,
-                'decided_at' => $application->decided_at,
-            ];
-
-            $now = Carbon::now();
-
-            $application->update([
-                'application_status' => ApplicationStatus::PENDING,
-                'decision_reason' => null,
-                'decided_at' => null,
-                'reopened_at' => $now,
-                'reopen_reason' => $reason,
-                'reopened_from' => $previous['status'],
-            ]);
-
-            $this->auditService->logOrFail(
-                $provider->email,
-                AuditAction::REOPEN_APPLICATION,
-                'APPLICATION',
-                $application->application_id,
-                'Withdrew the ' . strtolower(ApplicationStatus::displayLabel($previous['status'])) . ' decision on "'
-                    . ($application->opportunity?->title ?? 'a scholarship') . '" application from '
-                    . ($application->user?->displayName() ?? 'a deleted user') . ' and reopened it for review: ' . $reason,
-                [
-                    // The decision as it stood, so it is recoverable from here even though the row no longer holds it.
-                    'old' => [
-                        'application_status' => $previous['raw_status'],
-                        'decision_reason' => $previous['reason'],
-                        'decided_at' => $previous['decided_at']?->toIso8601String(),
-                    ],
-                    'new' => [
-                        'application_status' => ApplicationStatus::PENDING,
-                        'reopened_at' => $now->toIso8601String(),
-                        'applicant_user_id' => $application->user_id,
-                        'applicant_email' => $application->user?->email,
-                        'opportunity_id' => $application->opportunity_id,
-                        'opportunity_title' => $application->opportunity?->title,
-                    ],
-                    'reason' => $reason,
-                ]
-            );
-
-            // A withdrawn acceptance gives its slot back. A listing that closed by itself because the last slot filled
-            // opens again - and only one that closed for that reason, never one the provider closed or withdrew.
-            if ($previous['status'] === ApplicationStatus::ACCEPTED
-                && $opportunity !== null
-                && $opportunity->award_slots !== null
-                // A listing moderation has since taken down is not put back on show by a slot being released.
-                && OpportunityModerationStatus::isApproved($opportunity->moderation_status)
-                && strcasecmp((string) $opportunity->status, OpportunityStatus::CLOSED) === 0
-                && $opportunity->last_change_reason === self::AUTO_CLOSED_REASON
-                && ($opportunity->deadline === null || ! $opportunity->deadline->lt(\App\Support\Deadlines::today()))) {
-                $accepted = Application::where('opportunity_id', $opportunity->opportunity_id)
-                    ->where('application_status', ApplicationStatus::ACCEPTED)
-                    ->count();
-
-                if ($accepted < $opportunity->award_slots) {
-                    $opportunity->update([
-                        'status' => OpportunityStatus::ACTIVE,
-                        'last_change_reason' => self::AUTO_REOPENED_REASON,
-                        'updated_at' => Carbon::now(),
-                    ]);
-
-                    $this->auditService->logOrFail(
-                        $provider->email,
-                        AuditAction::UPDATE_OPPORTUNITY,
-                        'OPPORTUNITY',
-                        $opportunity->opportunity_id,
-                        'Reopened "' . $opportunity->title . '" automatically: a withdrawn acceptance released an award slot.'
-                    );
-
-                    $listingReopened = true;
-                }
-            }
-
-            return [$application, $previous];
-        });
-
-        // Only now, with the withdrawal committed, is the applicant told.
-        $this->notifyApplicantOfReopening($application, $previous['status'], $reason);
-
-        $application->setAttribute('listing_reopened', $listingReopened);
-
-        return $application;
-    }
-
-    private function notifyApplicantOfReopening(Application $application, string $previousStatus, string $reason): void
-    {
-        $applicant = $application->user;
-
-        if (! $applicant) {
-            return;
-        }
-
-        $title = $application->opportunity?->title ?? 'a scholarship';
-
-        $prefix = $previousStatus === ApplicationStatus::ACCEPTED
-            ? 'The provider of "' . $title . '" has withdrawn their decision to accept your application and reopened it for review. '
-                . 'Your acceptance no longer stands while they reconsider, so the scholarship is not guaranteed. '
-                . 'You will be told their new decision. Reason: '
-            : 'The provider of "' . $title . '" has withdrawn their earlier decision on your application and reopened it for review. '
-                . 'Your application is pending again and you will be told their new decision. Reason: ';
-
-        // The message column holds 500 characters; the reason is cut to fit rather than the explanation.
-        $room = max(40, 500 - mb_strlen($prefix));
-        $message = $prefix . (mb_strlen($reason) > $room ? mb_substr($reason, 0, $room - 3) . '...' : $reason);
-
-        $this->notificationService->notifyUser(
-            $applicant,
-            NotificationType::APPLICATION_REOPENED,
-            $message,
-            '/applications/' . $application->application_id . '/confirmation',
-            $application->application_id
-        );
     }
 
     private function notifyApplicantOfDecision(Application $application, string $status, string $reason): void

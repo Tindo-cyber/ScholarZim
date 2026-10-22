@@ -68,10 +68,8 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
 - When they decide, you get an email and a notification. The application page then shows
   **Accepted** or **Rejected**, together with the reason they wrote.
 - An acceptance means the provider has granted the scholarship and there is nothing further to
-  confirm. Rarely, a provider may withdraw a decision they made by mistake: you are notified,
-  the application goes back to **Pending** (an accepted scholarship is *not* guaranteed while
-  they reconsider), and you are notified again when they decide. The page shows what happened
-  and the reason they gave.
+  confirm. A decision is final: the provider cannot withdraw or change it afterwards, and the
+  application page shows it together with the reason they gave.
 - Changed your mind before a decision? **Withdraw application** tells the provider the place
   is free. You can apply again later while the scholarship is still open.
 
@@ -205,11 +203,8 @@ A programme that is not in the list can be added under "My programme isn't liste
 - Both decisions require a written reason. The applicant reads it verbatim, in their email
   and on their application page.
 - Accepting *is* granting the scholarship — there is no separate award step. A decision is not
-  edited in place. If you made a mistake, open the application and choose **Withdraw decision
-  and reopen**: you must give a reason (the applicant is shown it), you confirm the dialog, and
-  the application goes back to **Pending** so you can accept or reject it afresh. Withdrawing an
-  **acceptance** reverses the award: the applicant is told it no longer stands and is not
-  guaranteed, and the award slot is released. Your original decision and reason stay in the
+  edited in place, and it is final: it cannot be withdrawn, reversed or reopened, so check your
+  reason before you submit. An accepted application keeps its award slot. Your decision and reason stay in the
   application's **Decision history** and the audit log. The applicant is notified at each step.
 - Decisions are made one application at a time: a reason written for one student should not
   be sent to a batch.

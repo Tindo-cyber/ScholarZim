@@ -106,12 +106,12 @@ The whole of it, in one line:
 There are three application statuses and no others: `PENDING`, `ACCEPTED`, `REJECTED`.
 **Accepting an application is granting the scholarship** — there is no separate award step
 afterwards, nothing further for the provider to click, and nothing for the student to
-confirm. A decision is not flipped in place: an accepted application cannot become rejected
-directly, nor a rejected one accepted. A provider who got it wrong **withdraws the decision**
-(a written reason is required and the applicant is told), which returns the application to
-`PENDING`, and then decides again. Withdrawing an acceptance reverses the award: the slot it
-used is released, and a listing that had closed itself because its last slot filled opens again.
-The original decision, its reason and who made it stay in the audit history.
+confirm. **A decision is final**: an accepted application cannot become rejected, nor a rejected
+one accepted, and neither the provider nor anyone else can withdraw or reopen it. An accepted
+application keeps its place among the listing's awards, so a listing that closed itself because
+its last slot filled stays closed. The decision, its reason and who made it stay in the audit
+history. (Applications a provider reopened before this rule changed remain pending, with their
+history, and can be decided once more.)
 
 Applying reuses the applicant's profile rather than collecting it again. `ApplicationReadiness`
 reads what a scholarship needs against what the profile already holds and asks only for what is
@@ -124,7 +124,7 @@ profile later does not change an application already made.
 
 `WITHDRAWN` exists alongside those three, but it is the applicant's own action rather than
 a provider decision, and it is the only status that leaves the listing open to a fresh
-application. A provider withdrawing a *decision* is a different event and never sets it.
+application. A decision is never undone by it: the applicant cannot withdraw once one is made.
 
 | Who | Can set | From |
 |-----|---------|------|

@@ -9,7 +9,7 @@ use RuntimeException;
  *
  * A RuntimeException, like InvalidApplicationTransition, so callers that report a refused business rule keep working;
  * its own type so the review screen can answer it with a message instead of letting it surface as a server error.
- * Withdrawing an acceptance (ApplicationService::reopen) is what frees a slot.
+ * Acceptances are final, so a filled listing stays filled.
  */
 class AwardsFilled extends RuntimeException
 {

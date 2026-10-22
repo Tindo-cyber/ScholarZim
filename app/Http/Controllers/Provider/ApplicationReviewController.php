@@ -67,7 +67,6 @@ class ApplicationReviewController extends Controller
             // the decision form - offering buttons whose every outcome would be
             // refused on save is worse than offering none.
             'canDecide' => $application->awaitsDecision(),
-            'canReopen' => $application->canBeReopened(),
             'decisionHistory' => $application->decisionHistory(),
             'documents' => $this->documentRows($application),
             'timeline' => ApplicationStatus::timeline($application->application_status, $application->viewed_by_provider_at),
@@ -132,8 +131,8 @@ class ApplicationReviewController extends Controller
     /**
      * The provider's decision: accept or reject, with a reason the applicant
      * reads verbatim. There is nothing to do afterwards - accepting an
-     * application is granting the scholarship. A decision that turns out to be
-     * wrong is withdrawn with reopen() and made again.
+     * application is granting the scholarship. The decision is final: it cannot
+     * be withdrawn or changed afterwards.
      */
     public function review(Request $request, int $id)
     {
@@ -152,42 +151,12 @@ class ApplicationReviewController extends Controller
         } catch (InvalidApplicationTransition|AwardsFilled $e) {
             // A refused move is a business answer, not a crash: the provider is
             // told which rule stopped them and the page keeps their input.
-            $hint = $e instanceof AwardsFilled
-                ? ' To accept this applicant, first withdraw one of the existing acceptances on this scholarship.'
-                : '';
-
-            return back()->withInput()->with('errorMessage', $e->getMessage() . $hint);
+            return back()->withInput()->with('errorMessage', $e->getMessage());
         }
 
         return redirect()
             ->route('provider.applications.show', $id)
             ->with('successMessage', 'Application ' . strtolower(ApplicationStatus::displayLabel($data['status']))
                 . '. The applicant has been notified.');
-    }
-
-    /**
-     * The provider withdraws a decision and reopens the application for review.
-     *
-     * A reason is required and the applicant is told it. The dialog on the review page posts here, and its errors
-     * come back in the "reopen-decision" bag so the dialog opens again with them showing.
-     */
-    public function reopen(Request $request, int $id)
-    {
-        $data = $request->validateWithBag('reopen-decision', [
-            'reason' => ['required', 'string', 'max:500'],
-        ], [
-            'reason.required' => 'A reason is required to withdraw a decision - the applicant is told it.',
-        ]);
-
-        try {
-            $application = $this->applicationService->reopen($id, $data['reason'], $request->user());
-        } catch (InvalidApplicationTransition $e) {
-            return redirect()->route('provider.applications.show', $id)->with('errorMessage', $e->getMessage());
-        }
-
-        return redirect()
-            ->route('provider.applications.show', $id)
-            ->with('successMessage', 'Your decision was withdrawn and the application is pending again. The applicant has been told.'
-                . ($application->getAttribute('listing_reopened') ? ' The scholarship was reopened because an award slot was released.' : ''));
     }
 }

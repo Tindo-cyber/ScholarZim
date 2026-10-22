@@ -90,24 +90,16 @@ something that was deliberately removed, not a regression.
 
 - [ ] One student cannot submit a second application to the same listing
 - [ ] A provider decision (Accept or Reject) is refused without a written reason
-- [ ] An Accepted application cannot be turned straight into Rejected (or the reverse): the
-      page offers only **Withdraw decision and reopen**, and a direct request is refused
-- [ ] **Withdraw decision and reopen** asks for a reason and a confirmation; with the reason
-      empty nothing changes and the dialog opens again with the error
-- [ ] Withdrawing a **Rejection** returns the application to Pending; the provider can then
-      Accept it, or Reject it again with a new reason
-- [ ] Withdrawing an **Acceptance** shows the warning that it reverses the award; the applicant
-      is notified that the acceptance no longer stands and is not guaranteed
-- [ ] With a one-slot listing: after accepting, a second applicant cannot be accepted; after
-      withdrawing the first acceptance the second can, and the listing reopens if it had
-      closed itself
-- [ ] The applicant receives a notification at each step (decision, withdrawal, new decision)
-      and sees the withdrawal and its reason on their application page
-- [ ] **Decision history** on the review page lists each decision and withdrawal, oldest first,
-      and the audit log keeps the original decision and its reason
-- [ ] A different provider, an applicant and an administrator cannot withdraw the decision
-- [ ] A reopened application still blocks a second application from the same student, and the
-      applicant can still withdraw it
+- [ ] An Accepted application cannot be turned into Rejected (or the reverse): the review page
+      shows the decision and its reason with nothing to withdraw or reopen it, and a direct
+      request is refused
+- [ ] The old "Withdraw decision and reopen" address returns "not found" for everyone
+- [ ] With a one-slot listing: after accepting, a second applicant cannot be accepted, and the
+      listing stays closed
+- [ ] The applicant receives a notification when the decision is made and sees its reason on
+      their application page; a rejection says the decision is final
+- [ ] The audit log keeps the decision and its reason
+- [ ] The applicant cannot withdraw an application once it has been accepted or rejected
 - [ ] Withdrawing a Pending application notifies the provider and frees the listing for a
       fresh application from the same student
 - [ ] An Accepted or Rejected application cannot be withdrawn by the applicant
