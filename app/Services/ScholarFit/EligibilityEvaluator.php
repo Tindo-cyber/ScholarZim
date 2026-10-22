@@ -787,6 +787,30 @@ final class EligibilityEvaluator
 
         return trim((string) preg_replace('/\s+/', ' ', $clean));
     }
+
+    /**
+     * The level whose results the award is entered with, when that is above Primary - null when a Grade 7 slip is
+     * the right kind of evidence (a Primary-level, Form 1 or O-Level award with no higher minimum).
+     */
+    private function entryBeyondPrimary(Opportunity $opportunity): ?string
+    {
+        $minimum = EducationLevel::canonical($opportunity->minimum_education_level);
+
+        if ($minimum !== null && (EducationLadder::rung($minimum) ?? 0) > EducationLadder::rung(EducationLevel::PRIMARY)) {
+            return EducationLevel::label($minimum);
+        }
+
+        $target = EducationLevel::canonical($opportunity->education_level);
+
+        // Entered with the level below it: A-Level with O-Level, a certificate or diploma with A-Level or O-Level, a
+        // degree with A-Level. All of them are above what a Grade 7 slip can show.
+        if ($target !== null && (EducationLadder::rung($target) ?? 0) > EducationLadder::rung(EducationLevel::O_LEVEL)) {
+            return $target === EducationLevel::A_LEVEL ? EducationLevel::label(EducationLevel::O_LEVEL) : 'O-Level or A-Level';
+        }
+
+        return null;
+    }
+
     private function certificate(ApplicantProfile $profile, Opportunity $opportunity): ?RequirementOutcome
     {
         if (! $opportunity->requires_results_certificate) {
@@ -810,6 +834,18 @@ final class EligibilityEvaluator
             EducationLevel::usesSchoolResults($profile->education_level) => ['a results certificate', ScholarFitFieldNames::RESULTS_CERTIFICATE],
             default => ['a transcript', ScholarFitFieldNames::TRANSCRIPT],
         };
+
+        // A Grade 7 slip proves Primary results and nothing above them. When the award is entered from a higher
+        // level - its stated minimum, or A-Level and beyond, which are entered with O-Level results or more - a slip
+        // on file is not proof of what it asks for, and must not read as a pass just because a document exists.
+        if (EducationLevel::isPrimary($profile->education_level) && ($entry = $this->entryBeyondPrimary($opportunity)) !== null) {
+            return RequirementOutcome::fail(
+                RequirementOutcome::TYPE_CERTIFICATE,
+                'Proof of results: this scholarship needs proof of '.$entry.' results, and a Grade 7 results slip only shows Primary results.',
+                required: $entry.' results',
+                actual: 'Grade 7 results',
+            );
+        }
 
         // A document the student can still upload is a question, not a refusal: nothing is wrong with them, the
         // check just has nothing to read yet.
@@ -847,12 +883,16 @@ final class EligibilityEvaluator
     public static function textConditionsFor(Opportunity $opportunity): array
     {
         $conditions = DescriptionEligibility::conditions($opportunity->title, $opportunity->description);
+        // A title that names a different level from the setting is a contradiction the provider has not resolved.
+        // The setting does not get to silence it: the weaker reading would let, say, a Primary pupil through a
+        // listing titled for A-Level students that was saved as O Level.
+        $contradicted = DescriptionConflicts::contradictingTitleConditions($opportunity);
 
-        return array_values(array_filter($conditions, static function (DescriptionCondition $c) use ($opportunity) {
+        return array_values(array_filter($conditions, static function (DescriptionCondition $c) use ($opportunity, $contradicted) {
             return match ($c->kind) {
                 // Who the award is FOR is the structured target level's to say. The minimum is a
                 // different statement (what must already be held) and no longer silences it.
-                DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->education_level),
+                DescriptionEligibility::EDUCATION_LEVEL => blank($opportunity->education_level) || self::isAmong($c, $contradicted),
                 DescriptionEligibility::ENTRY_QUALIFICATION => blank($opportunity->minimum_education_level),
                 // A provider who stated a level in the form has used the builder, and the structured field is the rule. Only
                 // a listing that states neither is asked to be read from its words, and wording that cannot be read is then
@@ -863,6 +903,18 @@ final class EligibilityEvaluator
                 default => true,
             };
         }));
+    }
+
+    /** Whether a condition is one of these, compared by what it says (each reading builds fresh objects). */
+    private static function isAmong(DescriptionCondition $condition, array $among): bool
+    {
+        foreach ($among as $other) {
+            if ($other->kind === $condition->kind && $other->value === $condition->value && $other->source === $condition->source) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

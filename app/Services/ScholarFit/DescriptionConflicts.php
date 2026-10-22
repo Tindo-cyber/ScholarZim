@@ -33,6 +33,23 @@ final class DescriptionConflicts
         $conditions = DescriptionEligibility::conditions($listing->title, $listing->description);
         $conflicts = [];
 
+        // ---- what the title says the award funds ----
+        // The title is the one statement a provider cannot mean loosely, and it is read on its own: pooled with a
+        // description that mentions several levels ("O-Level students seeking an A-Level scholarship") it would
+        // agree with almost any setting. See contradictingTitleConditions().
+        $titleLevels = self::contradictingTitleConditions($listing);
+
+        if ($titleLevels !== []) {
+            $named = array_values(array_unique(array_map(static fn (DescriptionCondition $c) => $c->value, $titleLevels)));
+
+            $conflicts[] = [
+                'field' => 'education_level',
+                'message' => 'Your title says this is for '.implode(' or ', array_map(static fn (string $l) => EducationLevel::label($l), $named)).' students, but "Who is this scholarship for?" is set to '
+                    .EducationLevel::label($listing->education_level).'. That setting is the level the scholarship funds, not the level your '
+                    .'students are at now, and applicants are checked against both until you change whichever is wrong.',
+            ];
+        }
+
         // ---- who the award is for ----
         $audience = array_values(array_filter($conditions, static fn (DescriptionCondition $c) => $c->kind === DescriptionEligibility::EDUCATION_LEVEL));
 
@@ -40,7 +57,7 @@ final class DescriptionConflicts
             $set = EducationLevel::canonical($listing->education_level);
             $named = array_values(array_unique(array_map(static fn (DescriptionCondition $c) => $c->value, $audience)));
 
-            if ($set !== null && ! self::compatible($set, $named)) {
+            if ($titleLevels === [] && $set !== null && ! self::compatible($set, $named)) {
                 $conflicts[] = [
                     'field' => 'education_level',
                     'message' => 'Your '.self::source($audience).' mentions '.self::labels($named).' students, but "Who is this scholarship for?" is set to '
@@ -86,6 +103,77 @@ final class DescriptionConflicts
         }
 
         return $conflicts;
+    }
+
+    /**
+     * The level conditions read from the TITLE alone that name a level the listing's setting is not.
+     *
+     * Empty when the setting is blank (the words are then in charge), when the title names no level, or when the
+     * setting is one of the levels the title names. O-Level and A-Level share a tier but are different awards, so
+     * for them only a generic phrase ("high school") is allowed to agree with either; an explicit "A level" does
+     * not agree with a setting of O Level.
+     *
+     * EligibilityEvaluator keeps exactly these conditions alive when the setting would otherwise silence the words,
+     * so a mislabelled listing is checked against both readings instead of quietly the weaker one.
+     *
+     * @return array<int, DescriptionCondition>
+     */
+    public static function contradictingTitleConditions(Opportunity $listing): array
+    {
+        $set = EducationLevel::canonical($listing->education_level);
+
+        if ($set === null) {
+            return [];
+        }
+
+        $title = array_values(array_filter(
+            DescriptionEligibility::conditions($listing->title, null),
+            static fn (DescriptionCondition $c) => $c->kind === DescriptionEligibility::EDUCATION_LEVEL
+                && $c->source === DescriptionCondition::SOURCE_TITLE
+        ));
+
+        if ($title === []) {
+            return [];
+        }
+
+        // A title level BELOW the setting reads as who may enter ("Degree Award open to O-Level holders"), which is a
+        // different statement, not a contradiction. Only a title naming a later stage than the setting claims is one.
+        $setPosition = \App\Support\OpportunityLevelRules::position($set);
+        // Several levels ("Undergraduate and Master's Scholarship") are alternatives: any one at or below the setting means
+        // the setting is an acceptable reading, so it is a contradiction only when EVERY named level is a later stage.
+        foreach ($title as $condition) {
+            if ($setPosition !== null && (\App\Support\OpportunityLevelRules::position($condition->value) ?? 0) <= $setPosition) {
+                return [];
+            }
+        }
+
+        foreach ($title as $condition) {
+            if ($condition->value === $set || (self::isGeneric($condition) && self::compatible($set, [$condition->value]))) {
+                return [];
+            }
+        }
+
+        // Levels in the same tier (Postgraduate/Masters) still agree; O-Level and A-Level, which are separate awards, do not.
+        foreach ($title as $condition) {
+            if (! self::isSchoolLevelPair($set, $condition->value) && self::compatible($set, [$condition->value])) {
+                return [];
+            }
+        }
+
+        return $title;
+    }
+
+    /** "high school" and "secondary school" describe the tier, not one of its levels. */
+    private static function isGeneric(DescriptionCondition $condition): bool
+    {
+        return in_array(strtolower(trim($condition->matchedPhrase)), ['high school', 'secondary school', 'secondary education', 'secondary students'], true);
+    }
+
+    private static function isSchoolLevelPair(string $a, string $b): bool
+    {
+        $school = [EducationLevel::O_LEVEL, EducationLevel::A_LEVEL];
+
+        return in_array($a, $school, true) && in_array($b, $school, true);
     }
 
     /**
