@@ -6,7 +6,7 @@ This document supports viva/defense questions about how the system was verified.
 
 **Command:** `cd ScholarZim && php artisan test`
 
-**Last verified:** 2026-10-13 — 2,308 tests, 0 failures (run on Linux with `php artisan test --parallel`). Browser tests (Dusk, `php artisan dusk`): 49 passed, 271 assertions.
+**Last verified:** 2026-10-22 — 3,117 tests, 0 failures, 32,213 assertions (`php artisan test` on PHP 8.4; 2 of them, in `FrontendAssetsTest`, pass with a PHP warning from a deliberately refused port probe). Browser tests (Dusk, `php artisan dusk`, run locally - CI does not run them): 82 passed, 431 assertions. Two were failing earlier that day and were fixed: `ProgrammePickerBrowserTest` pressed "Submit for review" as the seeded trusted provider, whose button reads "Publish" (it now clicks `#submit-listing`), and `ResponsiveAccessibilityTest` found the landing page 12px wider than the screen from 768 to about 1200px, a real layout fault from `g-5` rows inside the landing page's 1180px container, now fixed in `scholarzim.css`.
 
 The exact count above will drift as the suite grows; the command is the source of truth, not
 this number. The skip is a Windows-only `finfo` limitation in one document-type test, not a

@@ -1558,6 +1558,25 @@ summary:focus-visible,
     }
 }
 
+/*
+ * The same 12px overflow, on the landing page from md up. The rule above rests on
+ * the container taking a fixed width from md and centring, which is Bootstrap's own
+ * stepped .container. The landing page overrides that with a single
+ * max-width: 1180px (see ".sz-landing .container"), so its container is still the
+ * full viewport until the viewport passes 1180px plus the 24px the row pulls out
+ * (1204px), and the g-5 rows are 12px wider than the screen on a tablet and a small
+ * laptop alike - measured at 768, 800, 992 and 1100, and 2-3px at 1199 and 1200.
+ * Same fix, same reason: cap the horizontal gutter, scoped to the one page that
+ * widened the container. From 1204px the container centres and g-5 is back to its
+ * full 48px.
+ */
+@media (min-width: 768px) and (max-width: 1203.98px) {
+    .sz-landing .row.g-5,
+    .sz-landing .row.gx-5 {
+        --bs-gutter-x: 1.5rem;
+    }
+}
+
 /* ---------- Tables that become cards on a phone ---------- */
 
 /*

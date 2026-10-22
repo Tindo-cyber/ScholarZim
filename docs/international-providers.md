@@ -11,7 +11,7 @@ table or workflow for foreign organisations.
 | Concept | Where it is stored | Who sets it | What it affects |
 | --- | --- | --- | --- |
 | **Country of registration** — where the organisation is legally registered | `provider_profiles.registration_country` (ISO 3166-1 alpha-2 code, e.g. `GB`) | The organisation, at registration; an administrator can record or correct it | Shown to administrators for verification. Nothing else. |
-| **Study destination** — where the funded study takes place | `opportunities.country` / `target_country` (a name from `FormOptions::COUNTRIES`, or "Any country" / "Online / distance") | The provider, per listing | Listing display, search filter, and the existing study-abroad scope rules (`ListingScopes::isAbroad`) |
+| **Study destination** — where the funded study takes place | `opportunities.country` / `target_country` (a country name from `FormOptions::countries()` - every country in `Countries`, by name - or "Any country" / "Online / distance") | The provider, per listing | Listing display, search filter, and the existing study-abroad scope rules (`ListingScopes::isAbroad`) |
 | **Applicant eligibility** — which students qualify | The listing's eligibility, academic and scope fields | The provider, per listing | ScholarFit |
 
 The country of registration never pre-fills, restricts or overrides a listing's destination or its
