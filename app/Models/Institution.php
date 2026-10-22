@@ -65,6 +65,92 @@ class Institution extends Model
         return strtolower(trim((string) preg_replace('/\s+/', ' ', (string) $name)));
     }
 
+    /**
+     * The programme levels each institution offers, from the catalogue's own institution-programme links:
+     * [institution id => [level, ...]]. An institution with no links at all is absent - no data is not "offers nothing".
+     *
+     * @return array<int, array<int, string>>
+     */
+    public static function offeredLevels(): array
+    {
+        $map = [];
+
+        $rows = \Illuminate\Support\Facades\DB::table('institution_programme as ip')
+            ->join('programmes as p', 'p.id', '=', 'ip.programme_id')
+            ->where('p.status', Programme::APPROVED)
+            ->where('p.is_active', true)
+            ->distinct()
+            ->get(['ip.institution_id', 'p.education_level']);
+
+        foreach ($rows as $row) {
+            $map[(int) $row->institution_id][] = $row->education_level;
+        }
+
+        return $map;
+    }
+
+    /**
+     * The picker's groups for a scholarship's institutions, split by level and type: only those that offer programmes at
+     * the level (by their catalogue links). One whose links are missing is listed at every level rather than dropped, an
+     * institution is never removed because of its type (a college that awards degrees is listed at Undergraduate), and
+     * one already chosen is always kept so editing a saved listing never loses it.
+     *
+     * @param  iterable<int, self>  $institutions
+     * @param  array<int, int>  $selected
+     * @return array<int, array{label: string, level: string, options: array}>
+     */
+    public static function pickerGroupsByLevel(iterable $institutions, array $selected = [], ?string $keepAtLevel = null): array
+    {
+        $levels = self::offeredLevels();
+        $groups = [];
+        $listedAtKeep = [];
+
+        $option = static fn (self $i) => [
+            'id' => $i->id,
+            'label' => $i->name,
+            'search' => strtolower($i->name . ' ' . $i->code),
+            'selected' => in_array($i->id, $selected, true),
+        ];
+
+        foreach (Programme::LEVELS as $level) {
+            foreach (self::TYPE_LABELS as $type => $typeLabel) {
+                $options = [];
+
+                foreach ($institutions as $institution) {
+                    if ($institution->type !== $type) {
+                        continue;
+                    }
+
+                    if (! isset($levels[$institution->id]) || in_array($level, $levels[$institution->id], true)) {
+                        $options[] = $option($institution);
+
+                        if ($level === ($keepAtLevel ?? Programme::LEVELS[0])) {
+                            $listedAtKeep[$institution->id] = true;
+                        }
+                    }
+                }
+
+                if ($options !== []) {
+                    $groups[] = ['level' => $level, 'label' => \App\Support\EducationLevel::label($level) . ' · ' . $typeLabel, 'options' => $options];
+                }
+            }
+        }
+
+        $kept = [];
+
+        foreach ($institutions as $institution) {
+            if (in_array($institution->id, $selected, true) && ! isset($listedAtKeep[$institution->id])) {
+                $kept[] = $option($institution);
+            }
+        }
+
+        if ($kept !== []) {
+            $groups[] = ['level' => $keepAtLevel ?? Programme::LEVELS[0], 'label' => 'Already chosen', 'options' => $kept];
+        }
+
+        return $groups;
+    }
+
     public function typeLabel(): string
     {
         return self::TYPE_LABELS[$this->type] ?? $this->type;

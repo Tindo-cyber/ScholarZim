@@ -11,6 +11,8 @@
     // written into the page; the rest wait, inert, in a <template> that scope-picker.js opens when the level changes.
     'activeLevel' => null,
     'errorKey' => null,
+    // What the list holds, for the prompt shown before a level is chosen.
+    'levelNoun' => 'programmes',
 ])
 
 @php
@@ -58,7 +60,7 @@
             @include('components.scope-picker-group', ['group' => $group, 'name' => $name, 'id' => $id])
         @endforeach
         <div class="small text-secondary" data-picker-empty hidden>Nothing matches. Try another word, or check the level chosen above.</div>
-        @if($levelSelect)<div class="small text-secondary" data-picker-prompt hidden>Choose a level of study above to list its programmes, or type a name to search every level.</div>@endif
+        @if($levelSelect)<div class="small text-secondary" data-picker-prompt hidden>Choose a level of study above to list its {{ $levelNoun }}, or type a name to search every level.</div>@endif
     </div>
     @if($reserve)
         <template data-picker-reserve>@foreach($reserve as $group)@include('components.scope-picker-group', ['group' => $group, 'name' => $name, 'id' => $id])@endforeach</template>

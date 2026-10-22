@@ -47,7 +47,6 @@
     // A list that has to be cleared before saving stays in view, so its error can be read and acted on.
     $hideProgrammes = $abroad && ! $errors->has('scope_programmes') && ! $errors->has('programme_suggestion');
     $hideInstitutions = $abroad && ! $errors->has('scope_institutions');
-    $typeLabels = \App\Models\Institution::TYPE_LABELS;
 
     $listingScopes = \App\Services\Catalogue\ListingScopes::class;
     // A list the answer above makes irrelevant is folded away, unless it holds an error that has to be read and fixed.
@@ -56,7 +55,8 @@
     $hideFieldsList = in_array($openTo, [$listingScopes::OPEN_ALL, $listingScopes::OPEN_PROGRAMMES], true) && ! $errors->has('scope_fields');
 
     $programmeGroups = \App\Services\Catalogue\ProgrammeCatalogue::pickerGroups($catalogue['programmes'], $chosen['programmes']);
-    $fieldGroups = \App\Models\Field::pickerGroups($catalogue['fields'], $chosen['fields']);
+    $activeLevel = \App\Support\EducationLevel::canonical(old('education_level', $opportunity?->education_level));
+    $fieldGroups = \App\Models\Field::pickerGroupsByLevel($catalogue['fields'], $catalogue['programmes'], $chosen['fields'], $activeLevel);
     foreach ($fieldGroups as &$fieldGroup) {
         foreach ($fieldGroup['options'] as &$fieldOption) {
             // The narrow Engineering field leaves civil and mining out; open-to.js shows a note while only it is ticked.
@@ -69,15 +69,7 @@
         unset($fieldOption);
     }
     unset($fieldGroup);
-    $institutionGroups = $catalogue['institutions']->groupBy('type')->map(fn ($institutions, $type) => [
-        'label' => $typeLabels[$type] ?? $type,
-        'options' => $institutions->map(fn ($institution) => [
-            'id' => $institution->id,
-            'label' => $institution->name,
-            'search' => strtolower($institution->name . ' ' . $institution->code),
-            'selected' => in_array($institution->id, $chosen['institutions'], true),
-        ])->all(),
-    ])->values()->all();
+    $institutionGroups = \App\Models\Institution::pickerGroupsByLevel($catalogue['institutions'], $chosen['institutions'], $activeLevel);
 @endphp
 
 <div class="card mb-4" data-level-needs="programmes" id="scope-card" data-open-to>
@@ -172,8 +164,8 @@
         <div data-open-fields @if($hideFieldsList) hidden @endif>
             {{-- A broad field with one narrow field of the same name is listed once: see Field::pickerGroups. --}}
             <x-scope-picker name="scope_fields" id="scope-fields" label="2. Which fields of study?" noun="fields"
-                            :groups="$fieldGroups"
-                            help="Tick a field to include every programme in it." />
+                            level-select="field-education_level" :active-level="$activeLevel" level-noun="fields" :groups="$fieldGroups"
+                            help="Fields that have programmes at the level chosen above. Tick a field to include every programme in it." />
             {{--
                 Civil engineering is filed under Architecture and construction and mining under Manufacturing, so the
                 narrow Engineering field leaves both out. Shown whenever it is chosen without the broad field above it;
@@ -211,7 +203,8 @@
 
             <div class="mt-2" data-institutions-chosen @if($institutionsOpenTo === $listingScopes::INSTITUTIONS_ANY) hidden @endif>
                 <x-scope-picker name="scope_institutions" id="scope-institutions" label="Institutions" noun="institutions"
-                                :groups="$institutionGroups" help="The institutions this scholarship pays for." />
+                                level-select="field-education_level" :active-level="$activeLevel" level-noun="institutions" :groups="$institutionGroups"
+                                help="Institutions that offer programmes at the level chosen above. Not here? Use the option below." />
             </div>
         </fieldset>
 

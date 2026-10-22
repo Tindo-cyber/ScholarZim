@@ -157,10 +157,14 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
 
     public function test_a_providers_form_lists_each_field_and_programme_once(): void
     {
-        $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
+        // With a level chosen, the lists write that level's choices live. (With none, they all wait in an inert reserve.)
+        $html = $this->actingAs($this->provider)
+            ->withSession(['_old_input' => ['education_level' => 'UNDERGRADUATE']])
+            ->get('/opportunities/create')->assertOk()->getContent();
 
         foreach (['scope_programmes', 'scope_fields', 'scope_institutions'] as $list) {
-            preg_match_all('/name="' . $list . '\[\]" value="(\d+)"/', $html, $values);
+            $live = preg_replace('#<template.*?</template>#s', '', $html) ?? '';
+            preg_match_all('/name="' . $list . '\[\]" value="(\d+)"/', $live, $values);
 
             $this->assertNotEmpty($values[1], $list);
             $this->assertSame(count($values[1]), count(array_unique($values[1])), $list . ' lists an id twice');
@@ -169,14 +173,18 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
 
     public function test_a_broad_field_with_one_narrow_field_of_the_same_name_is_listed_once(): void
     {
-        $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
+        $html = $this->actingAs($this->provider)
+            ->withSession(['_old_input' => ['education_level' => 'UNDERGRADUATE']])
+            ->get('/opportunities/create')->assertOk()->getContent();
 
-        preg_match('/mt-1">Education<\/div>(.*?)(?=<div data-picker-group|<div class="small text-secondary" data-picker-empty)/s', $html, $group);
+        // The fields picker only: the programme picker has groups with the same words in their headings.
+        preg_match('#<fieldset[^>]*id="scope-fields".*?</fieldset>#s', $html, $picker);
+        preg_match('/mt-1">Undergraduate · Education<\/div>(.*?)(?=<div data-picker-group|<div class="small text-secondary" data-picker-empty)/s', $picker[0], $group);
 
         $this->assertSame(1, substr_count($group[1], 'type="checkbox"'), 'Education is not offered as both "All of Education" and "Education"');
-        $this->assertStringNotContainsString('All of Education', $html);
+        $this->assertStringNotContainsString('All of Education', $picker[0]);
         // A field with several narrow fields keeps its "All of ..." choice.
-        $this->assertStringContainsString('All of Engineering and construction', $html);
+        $this->assertStringContainsString('All of Engineering and construction', $picker[0]);
     }
 
     public function test_the_picker_keeps_whichever_of_the_two_fields_was_saved(): void
