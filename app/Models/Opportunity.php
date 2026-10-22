@@ -126,6 +126,32 @@ class Opportunity extends Model
             && ! ($this->relationLoaded('scopes') ? $this->scopes->whereNotNull('institution_id')->isNotEmpty() : $this->scopes()->whereNotNull('institution_id')->exists());
     }
 
+    /**
+     * The subject label as it is stored: spaces collapsed, and spelt like the catalogue's own list when it is the same
+     * label in another case. The label is free text that the subject filter lists, so "mining engineering" and "Mining
+     * Engineering" would otherwise be two entries for one subject. Anything else is kept as the provider wrote it.
+     */
+    public static function tidySubjectArea(mixed $value): ?string
+    {
+        if (! is_scalar($value)) {
+            return null;
+        }
+
+        $clean = trim((string) preg_replace('/\s+/u', ' ', (string) $value));
+
+        if ($clean === '') {
+            return null;
+        }
+
+        foreach (FormOptions::FIELDS_OF_STUDY as $known) {
+            if (mb_strtolower($known) === mb_strtolower($clean)) {
+                return $known;
+            }
+        }
+
+        return $clean;
+    }
+
     public function scopes(): HasMany
     {
         return $this->hasMany(OpportunityScope::class, 'opportunity_id', 'opportunity_id');
@@ -233,7 +259,8 @@ class Opportunity extends Model
             $query->where(function (Builder $q) use ($like) {
                 $q->where('title', 'like', $like)
                     ->orWhere('description', 'like', $like)
-                    ->orWhere('provider_name', 'like', $like);
+                    ->orWhere('provider_name', 'like', $like)
+                    ->orWhere('target_field', 'like', $like);
             });
         }
 

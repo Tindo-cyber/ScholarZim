@@ -152,7 +152,7 @@ class OpportunityService
                 'funding_type' => $data['funding_type'] ?? null,
                 'country' => $country,
                 'target_country' => $country,
-                'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
+                'target_field' => Opportunity::tidySubjectArea($data['target_field'] ?? null),
                 'deadline' => $data['deadline'] ?? null,
                 'status' => OpportunityStatus::ACTIVE,
                 'moderation_status' => OpportunityModerationStatus::PENDING,
@@ -422,7 +422,7 @@ class OpportunityService
             'funding_type' => $data['funding_type'] ?? null,
             'country' => $country,
             'target_country' => $country,
-            'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
+            'target_field' => Opportunity::tidySubjectArea($data['target_field'] ?? null),
         ] + $this->identityAttributes($data, $provider) + $this->awardAttributes($data)
             + $this->scopes->decision($data, $data['education_level'] ?? null, $country);
 
@@ -773,6 +773,9 @@ class OpportunityService
             ->distinct()
             ->orderBy('target_field')
             ->pluck('target_field')
+            // The same label in two cases is one subject to a student choosing from the list.
+            ->unique(fn (string $label) => mb_strtolower($label))
+            ->values()
             ->all());
     }
 

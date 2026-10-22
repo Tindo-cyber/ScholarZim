@@ -66,10 +66,10 @@
                          hint="Cover what the award pays for, who it is aimed at, and what applicants must submit." />
 
         <div data-level-needs="field">
-            <x-form.input name="target_field" label="Subject area shown on the listing (optional)"
+            <x-form.input name="target_field" label="Subject label for the listing card (optional)"
                           :value="$opportunity?->target_field"
                           list="field-list"
-                          hint="A short label students see and search on, for example Mining Engineering. Once you have answered &quot;Who is it open to?&quot;, this label does not decide who qualifies." />
+                          hint="A short headline shown on the card and used by the subject filter and keyword search, for example Mining Engineering. It only describes the award: who qualifies is set by 'Who is it open to?' below." />
             <datalist id="field-list">
                 @foreach(array_unique(array_merge($fields, $targetFieldSuggestions)) as $field)
                     <option value="{{ $field }}"></option>
