@@ -27,13 +27,26 @@
 
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">Who is this scholarship for?</h2>
+        <h2 class="h6 fw-semibold mb-0">Level and place of study</h2>
     </div>
     <div class="card-body">
-        <x-form.select name="education_level" label="Level of study"
-                       :options="$educationLevels" :grouped="true"
-                       :value="\App\Support\EducationLevel::canonical($opportunity?->education_level) ?? $opportunity?->education_level"
-                       placeholder="Any level" />
+        <div class="row">
+            <div class="col-md-6">
+                <x-form.select name="education_level" label="Level of study"
+                               :options="$educationLevels" :grouped="true"
+                               :value="\App\Support\EducationLevel::canonical($opportunity?->education_level) ?? $opportunity?->education_level"
+                               placeholder="Any level"
+                               hint="What the scholarship pays for. This decides which questions below apply." />
+            </div>
+            <div class="col-md-6">
+                {{-- Asked here, before "Who is it open to?", because study abroad changes that card. --}}
+                <x-form.select name="country" label="Country of study"
+                               :options="$countries"
+                               :value="$opportunity?->country ?: \App\Support\FormOptions::DEFAULT_COUNTRY"
+                               :placeholder="null"
+                               hint="Where the student will study. Defaults to Zimbabwe." />
+            </div>
+        </div>
     </div>
 </div>
 
@@ -41,63 +54,32 @@
 
 <div class="card mb-4">
     <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">Other conditions (optional)</h2>
-    </div>
-    <div class="card-body">
-        <x-form.textarea name="other_conditions" label="Conditions students must check for themselves" :rows="3"
-                         :value="$opportunity?->other_conditions"
-                         hint="One per line, e.g. IELTS 6.5 or higher. Shown to students as &quot;Also check yourself&quot; and not counted in eligibility." />
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header">
-        <h2 class="h6 fw-semibold mb-0">The offer</h2>
+        <h2 class="h6 fw-semibold mb-0">About the scholarship</h2>
     </div>
     <div class="card-body">
         <x-form.input name="title" label="Scholarship title" required
                       :value="$opportunity?->title"
                       hint="For example: Zimplats Engineering Undergraduate Bursary 2026." />
 
-        <div class="row">
-            <div class="col-md-6" data-level-needs="field">
-                <x-form.input name="target_field" label="Field shown on the listing"
-                              :value="$opportunity?->target_field"
-                              list="field-list"
-                              hint="Optional. Shown to students, e.g. Mining Engineering." />
-                <datalist id="field-list">
-                    @foreach(array_unique(array_merge($fields, $targetFieldSuggestions)) as $field)
-                        <option value="{{ $field }}"></option>
-                    @endforeach
-                </datalist>
-            </div>
-            <div class="col-md-6">
-                <x-form.input name="deadline" label="Application deadline" type="date"
-                              :value="$opportunity?->deadline?->format('Y-m-d')"
-                              :min="($opportunity?->deadline && $opportunity->deadline->lte(\App\Support\Deadlines::earliest()) ? $opportunity->deadline : \App\Support\Deadlines::earliest())->toDateString()"
-                              hint="Optional. Must be after today. Leave blank for rolling intake." />
-            </div>
-            <div class="col-md-6">
-                <x-form.select name="funding_type" label="Funding type"
-                               :options="$fundingTypes" :value="$opportunity?->funding_type"
-                               placeholder="Not specified" />
-            </div>
-            <div class="col-md-6">
-                <x-form.select name="country" label="Country where it is held"
-                               :options="$countries"
-                               :value="$opportunity?->country ?: \App\Support\FormOptions::DEFAULT_COUNTRY"
-                               :placeholder="null"
-                               hint="Where the student will study. Defaults to Zimbabwe." />
-            </div>
-        </div>
-
         <x-form.textarea name="description" label="Full description" :rows="8" required
                          :value="$opportunity?->description"
                          hint="Cover what the award pays for, who it is aimed at, and what applicants must submit." />
 
+        <div data-level-needs="field">
+            <x-form.input name="target_field" label="Subject area shown on the listing (optional)"
+                          :value="$opportunity?->target_field"
+                          list="field-list"
+                          hint="A short label students see and search on, for example Mining Engineering. Once you have answered &quot;Who is it open to?&quot;, this label does not decide who qualifies." />
+            <datalist id="field-list">
+                @foreach(array_unique(array_merge($fields, $targetFieldSuggestions)) as $field)
+                    <option value="{{ $field }}"></option>
+                @endforeach
+            </datalist>
+        </div>
+
         <x-form.input name="provider_display_name" label="Awarding on behalf of another organisation (optional)"
                       :value="$opportunity?->on_behalf_of"
-                      hint="Only if you post for another organisation. It is shown publicly and checked by an administrator." />
+                      hint="Leave blank to publish as your own organisation. If filled in, the listing shows &quot;Posted by [your organisation] on behalf of [this name]&quot; and an administrator checks it first." />
     </div>
 </div>
 

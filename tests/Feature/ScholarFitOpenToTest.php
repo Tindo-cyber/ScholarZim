@@ -284,6 +284,31 @@ class ScholarFitOpenToTest extends TestCase
         $this->assertNull($this->programmeOutcome($this->fit($listing)));
     }
 
+    public function test_the_field_shown_on_an_all_programmes_listing_does_not_refuse_anyone(): void
+    {
+        $this->graduate('BSc Computer Science');
+        $this->profile()->forceFill(['field_of_study' => 'Computer Science'])->save();
+
+        $listing = $this->listing(['education_level' => EducationLevel::MASTERS, 'target_field' => 'Mining Engineering']);
+
+        $fit = $this->fit($listing);
+        $this->assertTrue($fit->meetsRequirements(), $this->messages($fit));
+        foreach ($fit->outcomes as $outcome) {
+            $this->assertNotSame(RequirementOutcome::TYPE_FIELD, $outcome->type, $this->messages($fit));
+        }
+    }
+
+    public function test_an_unanswered_old_listing_still_applies_its_field_text(): void
+    {
+        $this->graduate('BSc Computer Science');
+        $this->profile()->forceFill(['field_of_study' => 'Computer Science'])->save();
+
+        $listing = $this->listing(['education_level' => EducationLevel::MASTERS, 'target_field' => 'Mining Engineering']);
+        $listing->forceFill(['open_to_all_programmes' => null, 'any_institution' => null])->save();
+
+        $this->assertFalse($this->fit($listing->fresh())->meetsRequirements());
+    }
+
     public function test_an_unanswered_old_listing_still_reads_its_words(): void
     {
         $this->graduate('BSc Computer Science');

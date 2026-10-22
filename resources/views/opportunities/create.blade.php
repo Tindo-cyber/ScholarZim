@@ -5,7 +5,9 @@
 @section('content')
 
     <x-page-header :title="isset($draft) ? 'Edit draft' : (isset($duplicateOf) ? 'Post another intake' : 'Post a scholarship')"
-                   subtitle="Listings go live once an administrator has reviewed them."
+                   :subtitle="($providerTrusted ?? false)
+                       ? 'Your organisation is trusted: new listings go live straight away unless our checks flag something.'
+                       : 'Listings go live once an administrator has reviewed them.'"
                    eyebrow="Provider" />
 
     @isset($draft)
@@ -56,7 +58,7 @@
                 @include('opportunities.partials.listing-fields', ['opportunity' => $prefill ?? null, 'defaults' => $defaults ?? []])
 
                 <div class="d-flex flex-wrap gap-2">
-                    <x-submit-button label="Submit for review" size="lg" busy-label="Submitting..." />
+                    <x-submit-button id="submit-listing" :label="($providerTrusted ?? false) ? 'Publish' : 'Submit for review'" size="lg" busy-label="Submitting..." />
                     {{-- Saves what can be saved with no further checks. Works with JavaScript off: it is just a different formaction. --}}
                     <button type="submit" class="btn btn-outline-secondary btn-lg" id="save-draft"
                             formaction="{{ route('opportunities.draft.save') }}" formnovalidate>
@@ -80,11 +82,15 @@
                     <ol class="list-unstyled d-grid gap-3 mb-0 small">
                         <li class="d-flex gap-3">
                             <span class="sz-step-number flex-shrink-0" style="width:2rem;height:2rem;">1</span>
-                            <span>Your listing is queued for administrator review. It is not public yet.</span>
+                            @if($providerTrusted ?? false)
+                                <span>Your listing goes live as soon as you publish it. If our checks flag anything, it waits for an administrator instead.</span>
+                            @else
+                                <span>Your listing is queued for administrator review. It is not public yet.</span>
+                            @endif
                         </li>
                         <li class="d-flex gap-3">
                             <span class="sz-step-number flex-shrink-0" style="width:2rem;height:2rem;">2</span>
-                            <span>Once approved, it appears in search and students matching it are notified.</span>
+                            <span>Once it is live, it appears in search and students it fits are notified.</span>
                         </li>
                         <li class="d-flex gap-3">
                             <span class="sz-step-number flex-shrink-0" style="width:2rem;height:2rem;">3</span>
@@ -95,8 +101,8 @@
                     <hr>
 
                     <p class="small text-secondary mb-0">
-                        ScholarFit checks students against the education level, field of study, province or locality,
-                        and deadline you enter here.
+                        ScholarFit checks students against the level, who it is open to, and any extra rules you add.
+                        "Other conditions" are shown to students to check themselves; they never decide.
                     </p>
                 </div>
             </div>
