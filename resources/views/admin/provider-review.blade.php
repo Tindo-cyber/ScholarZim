@@ -168,9 +168,8 @@
                     <div class="card-header"><h2 class="h6 fw-semibold mb-0">Decision</h2></div>
                     <div class="card-body">
                         <p class="small text-secondary">
-                            The same checks apply wherever an organisation is registered: the document should name this
-                            organisation and support the country, type and registration number given. Being registered
-                            outside Zimbabwe is not a reason to refuse, nor a reason to skip the check.
+                            The document should name this organisation and support the country, type and registration number
+                            given. These checks apply wherever the organisation is registered.
                         </p>
 
                         <div class="d-flex flex-wrap gap-2">
@@ -228,9 +227,8 @@
                 <div class="card-header"><h2 class="h6 fw-semibold mb-0">Registration details</h2></div>
                 <div class="card-body">
                     <p class="small text-secondary">
-                        Record or correct what the registration document shows - for example the country of an account
-                        registered before it was asked. Saving changes nothing about the account's status, listings or
-                        applications, and is recorded in the audit log.
+                        Record or correct what the registration document shows. This does not change the account's status,
+                        listings or applications, and is recorded in the audit log.
                     </p>
                     <form method="POST" action="{{ route('admin.providers.registration', $provider->user_id) }}">
                         @csrf

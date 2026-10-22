@@ -46,7 +46,7 @@
     <div class="card-body">
         <x-form.textarea name="other_conditions" label="Conditions students must check for themselves" :rows="3"
                          :value="$opportunity?->other_conditions"
-                         hint="One a line, for example: IELTS 6.5 or higher / Two years of work experience / Return to Zimbabwe after studying. Students see these under their ScholarFit result as &quot;Also check yourself&quot;; they are never counted as met or not met." />
+                         hint="One per line, e.g. IELTS 6.5 or higher. Shown to students as &quot;Also check yourself&quot; and not counted in eligibility." />
     </div>
 </div>
 
@@ -64,7 +64,7 @@
                 <x-form.input name="target_field" label="Field shown on the listing"
                               :value="$opportunity?->target_field"
                               list="field-list"
-                              hint="A short phrase students see and can search on, for example Mining Engineering. Who the award is open to is chosen under &quot;Who is it open to?&quot;. Leave blank to accept any field." />
+                              hint="Optional. Shown to students, e.g. Mining Engineering." />
                 <datalist id="field-list">
                     @foreach(array_unique(array_merge($fields, $targetFieldSuggestions)) as $field)
                         <option value="{{ $field }}"></option>
@@ -74,8 +74,8 @@
             <div class="col-md-6">
                 <x-form.input name="deadline" label="Application deadline" type="date"
                               :value="$opportunity?->deadline?->format('Y-m-d')"
-                              min="{{ ($opportunity?->deadline && $opportunity->deadline->isPast() ? $opportunity->deadline : now())->toDateString() }}"
-                              hint="Leave blank for a rolling intake." />
+                              :min="($opportunity?->deadline && $opportunity->deadline->lte(\App\Support\Deadlines::earliest()) ? $opportunity->deadline : \App\Support\Deadlines::earliest())->toDateString()"
+                              hint="Optional. Must be after today. Leave blank for rolling intake." />
             </div>
             <div class="col-md-6">
                 <x-form.select name="funding_type" label="Funding type"
@@ -97,7 +97,7 @@
 
         <x-form.input name="provider_display_name" label="Awarding on behalf of another organisation (optional)"
                       :value="$opportunity?->on_behalf_of"
-                      hint="Leave blank to publish as your own organisation. Fill it in only if you are awarding for another organisation: it is then shown publicly as &quot;Posted by [your organisation] on behalf of [this name]&quot; and an administrator checks it before it goes live." />
+                      hint="Only if you post for another organisation. It is shown publicly and checked by an administrator." />
     </div>
 </div>
 
@@ -105,3 +105,4 @@
 
 {{-- Built here rather than inline in the directive: see award-fields for why. --}}
 <script type="application/json" id="level-capabilities">@json($levelCapabilities)</script>
+<script type="application/json" id="level-min-ages">@json(\App\Support\OpportunityLevelRules::minimumMaxAges())</script>

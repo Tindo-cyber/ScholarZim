@@ -95,8 +95,8 @@
                     <hr>
 
                     <p class="small text-secondary mb-0">
-                        The fields you fill in here feed ScholarFit directly: education level, field of study,
-                        province/locality, and deadline are what students are checked against.
+                        ScholarFit checks students against the education level, field of study, province or locality,
+                        and deadline you enter here.
                     </p>
                 </div>
             </div>

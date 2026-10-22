@@ -28,7 +28,7 @@ class ArchiveExpiredOpportunities extends Command
             // A draft has no public life to archive, and no applicants to tell.
             ->notDraft()
             ->whereNotNull('deadline')
-            ->where('deadline', '<', Carbon::today()->toDateString())
+            ->where('deadline', '<', \App\Support\Deadlines::today()->toDateString())
             ->get();
 
         foreach ($expired as $opportunity) {

@@ -258,7 +258,8 @@ class NoRequirementsEligibilityTest extends TestCase
 
     public function test_a_deadline_of_today_is_still_open(): void
     {
-        $this->assertTrue($this->fit($this->bare(['deadline' => Carbon::today()]))->isEligibleWithoutRequirements());
+        // "Today" is Harare's date, which is not the UTC date for two hours every night.
+        $this->assertTrue($this->fit($this->bare(['deadline' => \App\Support\Deadlines::today()]))->isEligibleWithoutRequirements());
     }
 
     // -------------------------------------------- 4/8. with requirements --

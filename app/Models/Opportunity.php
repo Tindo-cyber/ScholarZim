@@ -151,7 +151,7 @@ class Opportunity extends Model
             ->where('status', OpportunityStatus::ACTIVE)
             ->where('moderation_status', OpportunityModerationStatus::APPROVED)
             ->where(function (Builder $q) {
-                $q->whereNull('deadline')->orWhere('deadline', '>=', Carbon::today()->toDateString());
+                $q->whereNull('deadline')->orWhere('deadline', '>=', \App\Support\Deadlines::today()->toDateString());
             });
     }
 
@@ -360,7 +360,7 @@ class Opportunity extends Model
             return null;
         }
 
-        return (int) Carbon::today()->diffInDays($this->deadline, false);
+        return (int) \App\Support\Deadlines::today()->diffInDays($this->deadline, false);
     }
 
     public function isClosingSoon(): bool

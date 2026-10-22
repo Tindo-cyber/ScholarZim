@@ -160,7 +160,7 @@ final class OpportunityLifecycle
     public static function deadlineHasPassed(Opportunity $opportunity): bool
     {
         return $opportunity->deadline !== null
-            && $opportunity->deadline->lt(\Illuminate\Support\Carbon::today());
+            && $opportunity->deadline->lt(\App\Support\Deadlines::today());
     }
 
     /** Whether a listing may still take new applications. */

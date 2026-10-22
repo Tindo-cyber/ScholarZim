@@ -135,8 +135,7 @@
 
                     @if($user->isProvider())
                         <p class="small text-secondary">
-                            Withdraw any listing that is still live first &mdash; students' applications point
-                            at them, and deleting the listing would erase their history too.
+                            Withdraw any live listing first. Deleting a listing would erase students' application history.
                         </p>
                     @endif
 

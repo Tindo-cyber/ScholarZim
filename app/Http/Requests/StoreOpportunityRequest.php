@@ -6,6 +6,7 @@ use App\Models\AcademicQualification;
 use App\Services\Catalogue\ListingScopes;
 use App\Services\ScholarFit\Taxonomy\SettlementType;
 use App\Support\Academic\AcademicCatalogue;
+use App\Support\Deadlines;
 use App\Support\EducationLevel;
 use App\Support\FormOptions;
 use App\Support\OpportunityFormMessages;
@@ -91,7 +92,7 @@ class StoreOpportunityRequest extends FormRequest
             'is_renewable' => ['nullable', 'boolean'],
             'external_url' => ['nullable', 'string', 'url:http,https', 'max:500'],
             'min_academic_points' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:1', 'max:' . AcademicCatalogue::maxZimsecALevelPoints()],
-            'max_age' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:10', 'max:99'],
+            'max_age' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:' . EducationLevel::MINIMUM_APPLICANT_AGE, 'max:99'],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), free text for the same reason
             // the applicant's own locality field is - no fixed list of every
@@ -110,7 +111,7 @@ class StoreOpportunityRequest extends FormRequest
             'programme_suggestion' => ['nullable', 'string', 'max:200'],
             'programme_suggestion_field' => ['nullable', 'integer'],
             // The answer to "who is this open to?" - required at Certificate level and above, checked in checkScope().
-            'open_to' => ['nullable', Rule::in([ListingScopes::OPEN_CHOSEN, ListingScopes::OPEN_ALL])],
+            'open_to' => ['nullable', Rule::in(ListingScopes::OPEN_ANSWERS)],
             'institutions_open_to' => ['nullable', Rule::in([ListingScopes::INSTITUTIONS_CHOSEN, ListingScopes::INSTITUTIONS_ANY])],
             'accepts_o_level' => ['nullable', 'boolean'],
             'host_institutions' => ['nullable', 'string', 'max:500'],
@@ -121,13 +122,22 @@ class StoreOpportunityRequest extends FormRequest
     /** @return array<int, mixed> */
     protected function deadlineRules(): array
     {
-        return ['bail', 'nullable', 'string', 'date_format:Y-m-d', 'after_or_equal:today'];
+        // Strictly after today in Harare, not "not before today": a listing created for today would close as it opens.
+        return ['bail', 'nullable', 'string', 'date_format:Y-m-d', 'after:' . Deadlines::today()->toDateString()];
     }
 
     /** @return array<string, string> */
     public function messages(): array
     {
-        return OpportunityFormMessages::subjectRequirements();
+        return OpportunityFormMessages::subjectRequirements() + [
+            'deadline.after' => 'The deadline must be after today. Choose tomorrow or later.',
+            'deadline.date_format' => 'Enter the deadline as a date.',
+            'max_age.min' => 'The maximum age must be at least ' . EducationLevel::MINIMUM_APPLICANT_AGE
+                . ' because ScholarZim applicants must be at least ' . EducationLevel::MINIMUM_APPLICANT_AGE . ' years old.',
+            'max_age.max' => 'The maximum age cannot be more than 99.',
+            'max_age.regex' => 'Enter the maximum age as a whole number, for example 25.',
+            'max_age.integer' => 'Enter the maximum age as a whole number, for example 25.',
+        ];
     }
 
     /**

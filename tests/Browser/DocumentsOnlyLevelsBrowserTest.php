@@ -77,7 +77,7 @@ class DocumentsOnlyLevelsBrowserTest extends DuskTestCase
     {
         return $browser->script(
             "return Array.from(document.querySelectorAll('#current_programme_id option'))"
-            . ".filter(function (o) { return o.value && !o.hidden && !o.disabled; }).map(function (o) { return o.textContent.trim(); });"
+            . ".filter(function (o) { return o.value && !o.hidden && !o.disabled; }).map(function (o) { return o.textContent.split(' · ')[0].trim(); });"
         )[0];
     }
 

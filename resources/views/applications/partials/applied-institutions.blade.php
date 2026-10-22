@@ -14,5 +14,5 @@
                   label="Institutions you have applied to or hold an offer from"
                   :groups="$readiness->institutionGroups($chosenInstitutions)"
                   :hint="$correcting
-                      ? 'None of your institutions is on the list for this scholarship. Change them if wrong; eligibility is checked again on save.'
+                      ? 'None of your institutions is on the list for this scholarship. Correct them if wrong.'
                       : 'This scholarship is for students at certain institutions.'" />

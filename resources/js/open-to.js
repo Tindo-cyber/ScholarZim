@@ -1,7 +1,9 @@
 /**
  * "Who is it open to?" follows the answers given in it.
  *
- *  - "All programmes at this level" hides the programme and field lists ([data-open-chosen]).
+ *  - The answer to "how widely does it apply?" decides which list shows: "Specific programmes" the programme list
+ *    ([data-open-programmes]), "An entire field of study" the field list ([data-open-fields]), "All programmes at this
+ *    level" neither, and a listing saved with both keeps both. Until an answer is chosen neither shows.
  *  - "Any institution" hides the institution list ([data-institutions-chosen]).
  *  - A country other than Zimbabwe hides the Zimbabwean programme and institution lists ([data-home-only])
  *    and shows what applies abroad ([data-abroad-only]): fields, and host universities in words.
@@ -31,6 +33,11 @@
         });
         section.querySelectorAll('input[type="radio"]').forEach(function (radio) {
             radio.checked = false;
+        });
+        // Unticking is announced so a picker's list of chosen items follows.
+        section.querySelectorAll('input[type="checkbox"]:checked').forEach(function (box) {
+            box.checked = false;
+            box.dispatchEvent(new Event('change', { bubbles: true }));
         });
         section.querySelectorAll('input[type="text"], input:not([type])').forEach(function (input) {
             input.value = '';
@@ -62,7 +69,7 @@
         function apply() {
             var abroad = !!country && country.value !== '' && country.value !== 'Zimbabwe';
 
-            card.querySelectorAll('[data-home-only]').forEach(function (section) {
+            card.querySelectorAll('[data-home-only]:not([data-open-programmes])').forEach(function (section) {
                 show(section, !abroad);
             });
 
@@ -70,8 +77,14 @@
                 show(section, abroad);
             });
 
-            card.querySelectorAll('[data-open-chosen]').forEach(function (section) {
-                show(section, value('open_to') !== 'all');
+            var mode = value('open_to');
+
+            card.querySelectorAll('[data-open-programmes]').forEach(function (section) {
+                show(section, !abroad && (mode === 'programmes' || mode === 'chosen'));
+            });
+
+            card.querySelectorAll('[data-open-fields]').forEach(function (section) {
+                show(section, mode === 'fields' || mode === 'chosen');
             });
 
             card.querySelectorAll('[data-institutions-chosen]').forEach(function (section) {
@@ -85,19 +98,33 @@
             }
         });
 
-        // Choosing from a list answers the question it sits under.
+        // Ticking an institution answers "which institutions?" with "only the ones I choose".
         card.addEventListener('change', function (event) {
             var target = event.target;
 
-            if (!target || target.tagName !== 'SELECT' || !target.multiple || target.selectedOptions.length === 0) return;
+            if (!target || target.type !== 'checkbox' || !target.checked || !target.closest('#scope-institutions')) return;
 
-            var radio = target.name === 'scope_institutions[]'
-                ? card.querySelector('#institutions-chosen')
-                : (target.name === 'scope_programmes[]' || target.name === 'scope_fields[]' ? card.querySelector('#open-to-chosen') : null);
+            var radio = card.querySelector('#institutions-chosen');
 
             if (radio && !radio.checked) {
                 radio.checked = true;
             }
+        });
+
+        // The engineering note shows while "Engineering" is ticked without the broad field that holds civil and mining.
+        var hint = card.querySelector('[data-engineering-hint]');
+
+        function syncHint() {
+            if (!hint) return;
+
+            var narrow = card.querySelector('#scope-fields-' + hint.getAttribute('data-narrow'));
+            var broad = card.querySelector('#scope-fields-' + hint.getAttribute('data-broad'));
+
+            hint.hidden = !(narrow && narrow.checked && !(broad && broad.checked));
+        }
+
+        card.addEventListener('change', function (event) {
+            if (event.target && event.target.closest && event.target.closest('#scope-fields')) syncHint();
         });
 
         if (country) {

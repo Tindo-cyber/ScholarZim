@@ -536,7 +536,7 @@ final class EligibilityEvaluator
             return null;
         }
 
-        $on = $opportunity->deadline !== null ? Carbon::parse($opportunity->deadline)->startOfDay() : Carbon::today();
+        $on = $opportunity->deadline !== null ? Carbon::parse($opportunity->deadline)->startOfDay() : \App\Support\Deadlines::today();
         $age = $profile->ageOn($on);
 
         if ($age === null) {

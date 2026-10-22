@@ -81,17 +81,42 @@ final class OpportunityLevelRules
             . EducationLevel::label($target) . '), so nobody could qualify. Lower the minimum or raise the target.';
     }
 
-    /** The error for a maximum age that rules out everyone at the target level, or null. */
+    /**
+     * The error for a maximum age that rules out everyone who can apply, or null. The lowest allowed is the platform's
+     * minimum applicant age, or the youngest age anyone holds the target level at when that is higher.
+     */
     public static function maxAgeProblem(?int $maxAge, ?string $target): ?string
     {
         $youngest = EducationLevel::minimumAge($target);
 
-        if ($maxAge === null || $youngest === null || $maxAge >= $youngest) {
+        if ($maxAge === null || $maxAge >= $youngest) {
             return null;
         }
 
-        return 'A maximum age of ' . $maxAge . ' is below the youngest age at which anyone studies at '
-            . EducationLevel::label($target) . ' (' . $youngest . '), so nobody could qualify.';
+        if ($youngest === EducationLevel::MINIMUM_APPLICANT_AGE) {
+            return 'The maximum age must be at least ' . $youngest . ' because ScholarZim applicants must be at least '
+                . $youngest . ' years old.';
+        }
+
+        return 'The maximum age must be at least ' . $youngest . ' for ' . EducationLevel::label($target)
+            . ' awards: nobody younger than ' . $youngest . ' studies at that level, so nobody could qualify.';
+    }
+
+    /**
+     * The lowest maximum age a listing can ask for at each target level (and with none chosen, under ''), for the form
+     * to follow as the level changes. EducationLevel::minimumAge is the one source, so the form and the server agree.
+     *
+     * @return array<string, int>
+     */
+    public static function minimumMaxAges(): array
+    {
+        $ages = ['' => EducationLevel::minimumAge(null)];
+
+        foreach (EducationLevel::TARGET_LEVELS as $level) {
+            $ages[$level] = EducationLevel::minimumAge($level);
+        }
+
+        return $ages;
     }
 
     public static function allowsPoints(?string $target): bool

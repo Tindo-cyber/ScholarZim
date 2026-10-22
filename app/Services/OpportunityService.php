@@ -360,7 +360,7 @@ class OpportunityService
         // future again. Editing one used to set it ACTIVE unconditionally, which
         // said "open" about a listing whose deadline had already passed.
         if ($opportunity->isClosed() && filled($attributes['deadline'])
-            && Carbon::parse($attributes['deadline'])->gte(Carbon::today())) {
+            && Carbon::parse($attributes['deadline'])->gte(\App\Support\Deadlines::today())) {
             OpportunityLifecycle::assertPublication($opportunity->status, OpportunityStatus::ACTIVE);
             $attributes['status'] = OpportunityStatus::ACTIVE;
         }
@@ -508,7 +508,7 @@ class OpportunityService
         // only applies to a listing the deadline had closed. Setting ACTIVE
         // unconditionally, as this used to, would also have reopened a listing
         // the provider had withdrawn.
-        if ($opportunity->isClosed() && Carbon::parse($newDeadline)->gte(Carbon::today())) {
+        if ($opportunity->isClosed() && Carbon::parse($newDeadline)->gte(\App\Support\Deadlines::today())) {
             OpportunityLifecycle::assertPublication($opportunity->status, OpportunityStatus::ACTIVE);
             $attributes['status'] = OpportunityStatus::ACTIVE;
         }
@@ -728,8 +728,8 @@ class OpportunityService
             ->publiclyVisible()
             ->whereNotNull('deadline')
             ->whereBetween('deadline', [
-                Carbon::today()->toDateString(),
-                Carbon::today()->addDays($withinDays)->toDateString(),
+                \App\Support\Deadlines::today()->toDateString(),
+                \App\Support\Deadlines::today()->addDays($withinDays)->toDateString(),
             ])
             ->count();
     }

@@ -35,8 +35,8 @@
 @section('content')
     <h1 class="h3 fw-bold mb-1">Register as a provider</h1>
     <p class="text-secondary mb-4">
-        Takes about five minutes. We verify every organisation before it can publish, wherever it
-        is registered, so have your registration certificate or equivalent document ready.
+        Takes about five minutes. Every organisation is verified before it can publish, so have your
+        registration certificate or equivalent document ready.
     </p>
 
     <form method="POST" action="{{ route('register.provider') }}" enctype="multipart/form-data" novalidate
@@ -68,7 +68,7 @@
 
             <x-form.input name="website" label="Organisation website (optional)" type="text" inputmode="url"
                           autocomplete="url" placeholder="kariba-trust.org"
-                          hint="We check it when we verify you. Once confirmed, your application links are checked against it and your listing form is pre-filled with it." />
+                          hint="Checked when we verify you." />
 
             <div class="mb-4">
                 <label class="form-label" for="certificate">
@@ -85,9 +85,8 @@
                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" data-file-preview>
                 </label>
                 <div class="form-text" id="certificate-hint">
-                    The official document that registers or establishes your organisation in its country - for example a
-                    certificate of incorporation, charity or NPO registration, trust deed, or the act or charter that
-                    created a public body. If it is not in English, include an English translation in the same file.
+                    The document that registers your organisation, such as a certificate of incorporation, NPO
+                    registration or trust deed. If it is not in English, include a translation in the same file.
                 </div>
                 <div class="small fw-semibold mt-2 d-none" data-file-preview-for="certificate"></div>
 
@@ -106,7 +105,7 @@
                           hint="Preferably an address at your organisation's own domain. You sign in with it and must verify it." />
             <x-form.input name="phone" label="Phone number" type="tel" autocomplete="tel"
                           inputmode="tel" maxlength="30" data-phone-input="international"
-                          hint="Optional. Mobile or landline. Outside Zimbabwe, start with your country code, e.g. +44 20 7946 0000 or +27 11 555 0100. Zimbabwean numbers may be written locally, e.g. 0771234567. An extension is allowed (x123)." />
+                          hint="Optional. Mobile or landline; include the country code outside Zimbabwe, e.g. +44 20 7946 0000." />
 
             <button class="btn btn-primary btn-lg w-100 mb-3" type="button" data-step-next>Continue</button>
         </div>

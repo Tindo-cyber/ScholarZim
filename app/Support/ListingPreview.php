@@ -113,7 +113,8 @@ final class ListingPreview
             return collect();
         }
 
-        $choices = app(\App\Services\Catalogue\ListingScopes::class)->choices($input);
+        $scopes = app(\App\Services\Catalogue\ListingScopes::class);
+        $choices = $scopes->choices($scopes->answered($input));
         $rows = collect();
 
         foreach (Programme::with('field')->whereIn('id', $choices['programmes'])->get() as $programme) {

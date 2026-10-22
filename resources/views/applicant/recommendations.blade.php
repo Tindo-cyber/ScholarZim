@@ -128,8 +128,8 @@
         --}}
         <h2 class="h6 fw-bold mt-5 mb-3" id="needs-information">Complete your profile to check</h2>
         <p class="text-secondary small mb-3">
-            We cannot say yet whether you qualify for these: either they ask something your profile does not answer yet, or part of
-            the listing's wording could not be read reliably and is marked for review.
+            We cannot say yet whether you qualify for these. Either they ask for something your profile does not
+            answer, or part of the listing could not be read reliably and is marked for review.
         </p>
 
         <div class="d-grid gap-3">

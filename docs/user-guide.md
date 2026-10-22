@@ -181,6 +181,20 @@ or "Online / distance"), independently of where your organisation is registered.
   blank unless it genuinely is one; guidance belongs in the description, where it informs
   rather than blocks.
 
+### Who the award is open to
+
+Choose the level of study first, then say how widely the award applies:
+
+- **All programmes at this level** - any eligible student at the level, whatever they study.
+- **Specific programmes** - tick the programmes (search by name or abbreviation). Each is listed under its level and the field the catalogue files it under, which is looked up for you. Choosing one programme never opens the award to the rest of its field.
+- **An entire field of study** - tick a field and every programme in it at that level matches.
+
+Then choose the institutions (or "Any institution"). For study outside Zimbabwe, choose fields and write the host universities in words.
+
+A programme that is not in the list can be added under "My programme isn't listed": give its name and field. It is added at the award's level, used for your listing straight away, and checked by an administrator (added to the catalogue, or matched to the programme it really is). The same name at the same level is never added twice.
+
+**Maximum age** must be at least 12 (ScholarZim applicants must be 12 or older), and at least 14 for Certificate, Diploma and Undergraduate awards or 18 for Postgraduate, Master's and PhD awards. The form shows the lowest allowed for the level chosen, and the server refuses anything lower.
+
 ### Reviewing applications
 
 - Open an application from the inbox to see the student, their profile, their documents and

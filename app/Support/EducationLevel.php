@@ -317,15 +317,22 @@ final class EducationLevel
     }
 
     /**
-     * The youngest age anyone plausibly holds this level at, or null when the
-     * level is not recognised. A listing's maximum age below this excludes
-     * everybody it targets.
+     * The youngest age ScholarZim lets anyone use the platform at. A profile's date of birth must give at least this
+     * (ProfileDetailRules), and so a scholarship's maximum age below it could never be met by any applicant.
      */
-    public static function minimumAge(?string $level): ?int
+    public const MINIMUM_APPLICANT_AGE = 12;
+
+    /**
+     * The youngest an applicant for this level can be: the platform minimum, or the youngest age anyone plausibly
+     * holds the level at when that is higher (an Undergraduate is at least 14, a Postgraduate at least 18). A
+     * listing's maximum age below this excludes everybody it targets. With no recognised level it is the platform
+     * minimum alone.
+     */
+    public static function minimumAge(?string $level): int
     {
         $tier = self::tier($level);
 
-        return $tier === null ? null : self::AGE_RANGES[$tier][0];
+        return max(self::MINIMUM_APPLICANT_AGE, $tier === null ? 0 : self::AGE_RANGES[$tier][0]);
     }
 
     /** The sentence explaining an inconsistent age/level combination, or null when it is consistent. */

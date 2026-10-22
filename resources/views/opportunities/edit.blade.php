@@ -26,7 +26,7 @@
                     </div>
                     <div class="card-body">
                         <x-form.textarea name="reason" label="What changed and why" :rows="3" required
-                                         hint="Shown in the review trail for transparency, e.g. &quot;Corrected eligibility criteria&quot; or &quot;Updated award amount&quot;." />
+                                         hint="Recorded in the review trail, e.g. &quot;Updated award amount&quot;." />
                     </div>
                 </div>
 
@@ -56,12 +56,9 @@
                 </div>
                 <div class="card-body">
                     <p class="small text-secondary mb-0">
-                        Changes to what applicants rely on - the title, description, level, field, funding,
-                        country, location, award, eligibility rules or subject requirements - take a live listing
-                        offline until an administrator approves it again. Smaller edits, such as the application
-                        link, do not. It stays visible in your dashboard either way. If you
-                        only need to push the deadline back, use "Extend deadline" from the dashboard instead - it
-                        does not require re-review.
+                        Changing the title, description, level, field, funding, country, award, eligibility or subject
+                        requirements takes a live listing offline until an administrator approves it again. Other edits
+                        do not. To move the deadline later, use "Extend deadline" on the dashboard.
                     </p>
                 </div>
             </div>
