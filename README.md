@@ -539,9 +539,12 @@ bar (or under the browser menu) once the manifest and worker are both in place.
 php artisan test
 ```
 
-2,308 tests as of 2026-10-13 (one skipped on Windows only — a `finfo` limitation in a single
-document-type test, not a coverage gap), plus 49 browser tests (see Dusk below). Run `php artisan test` for the
-current number; this one will drift as the suite grows. The full run takes several minutes; `php artisan test --parallel`
+3,117 tests as of 2026-10-22, all passing on PHP 8.4 (3,115 passed and 2 in `FrontendAssetsTest` that pass with a
+PHP warning from a deliberately refused port probe; 32,213 assertions; one test is skipped on Windows only — a
+`finfo` limitation in a single document-type test, not a coverage gap). There are also 82 browser tests (see Dusk
+below). CI does not run them, so their result is whatever was last run locally: on 2026-10-22, all 82 passed (431
+assertions). Run `php artisan test`
+for the current number; this one will drift as the suite grows. The full run takes several minutes; `php artisan test --parallel`
 is faster.
 
 - `SmokeTest` renders every authenticated page for each role and checks the role guards.

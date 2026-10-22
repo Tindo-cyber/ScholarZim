@@ -57,12 +57,11 @@ class RegisterController extends Controller
         $request->merge(ProviderRegistrationDetails::prepare($request->all()));
 
         $data = $request->validate([
-            // Not FormOptions::NAME_PATTERN: this is an organisation or
-            // contact name ("Chikafu Education Trust"), free text for the
-            // same reason institution_name is - see FormOptions::NAME_PATTERN's
-            // own docblock.
-            // The organisation's registered name: it is what users.full_name holds
-            // for a provider, and what students see on its listings.
+            // The organisation's registered name ("Chikafu Education Trust"):
+            // what users.full_name holds for a provider, and what students see
+            // on its listings. Not FormOptions::NAME_PATTERN - an organisation
+            // name is free text, for the same reason institution_name is (see
+            // that constant's docblock). The person registering is contact_name.
             'full_name' => ['required', 'string', 'max:255'],
             // The person registering, and their position - what an administrator
             // reads to judge whether they may act for the organisation.
