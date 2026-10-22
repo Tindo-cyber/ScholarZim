@@ -45,8 +45,8 @@
                 <div class="alert alert-danger">
                     <h2 class="h6 fw-semibold mb-1">Your application was not successful.</h2>
                     <p class="mb-0">
-                        There are other scholarships open to you. If the provider reconsiders this decision
-                        you will be told here and by notification.
+                        Other scholarships are open to you. If the provider reconsiders, you will be told here and by
+                        notification.
                     </p>
                 </div>
             @elseif($application->isWithdrawn())
@@ -159,8 +159,8 @@
                         <div class="min-w-0">
                             <h2 class="h6 fw-semibold mb-1">Changed your mind?</h2>
                             <p class="small text-secondary mb-0">
-                                Withdrawing tells the provider you are no longer in the running. You can apply
-                                again later while the scholarship is still open.
+                                Withdrawing tells the provider you are no longer applying. You can apply again while the
+                                scholarship is open.
                             </p>
                         </div>
                         {{--

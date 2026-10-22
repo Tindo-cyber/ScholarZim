@@ -208,6 +208,17 @@ class OpportunityController extends Controller
             abort_if($draft === null || ! $draft->isDraft(), 404);
         }
 
+        // The same listing posted again within moments (a double click, a retried request) is the first one, not a second.
+        if ($draft === null && Opportunity::query()
+            ->where('provider_user_id', $request->user()->user_id)
+            ->where('title', $request->validated('title'))
+            ->where('description', $request->validated('description'))
+            ->where('created_at', '>=', now()->subSeconds(30))
+            ->notDraft()
+            ->exists()) {
+            return redirect()->route('provider.dashboard')->with('successMessage', 'That scholarship was already submitted a moment ago, so it was not added twice.');
+        }
+
         try {
             $opportunity = $this->opportunityService->create($request->validated(), $request->user(), $draft);
         } catch (UnauthorizedException $e) {
@@ -344,7 +355,7 @@ class OpportunityController extends Controller
     {
         $listing = $this->ownedListing($request, $id, 'extendDeadline');
 
-        $rules = ['bail', 'required', 'string', 'date_format:Y-m-d', 'after:today'];
+        $rules = ['bail', 'required', 'string', 'date_format:Y-m-d', 'after:' . \App\Support\Deadlines::today()->toDateString()];
 
         // Not earlier than the date it already has: that would shorten it, which
         // is an edit (and a material one), not an extension.

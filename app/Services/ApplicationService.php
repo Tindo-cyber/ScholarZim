@@ -637,7 +637,7 @@ class ApplicationService
             throw new RuntimeException('This scholarship is no longer accepting applications.');
         }
 
-        if ($opportunity->deadline !== null && $opportunity->deadline->lt(Carbon::today())) {
+        if ($opportunity->deadline !== null && $opportunity->deadline->lt(\App\Support\Deadlines::today())) {
             throw new RuntimeException('The deadline for this scholarship has passed.');
         }
     }
@@ -932,7 +932,7 @@ class ApplicationService
                 && OpportunityModerationStatus::isApproved($opportunity->moderation_status)
                 && strcasecmp((string) $opportunity->status, OpportunityStatus::CLOSED) === 0
                 && $opportunity->last_change_reason === self::AUTO_CLOSED_REASON
-                && ($opportunity->deadline === null || ! $opportunity->deadline->lt(Carbon::today()))) {
+                && ($opportunity->deadline === null || ! $opportunity->deadline->lt(\App\Support\Deadlines::today()))) {
                 $accepted = Application::where('opportunity_id', $opportunity->opportunity_id)
                     ->where('application_status', ApplicationStatus::ACCEPTED)
                     ->count();

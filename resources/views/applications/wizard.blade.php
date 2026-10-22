@@ -34,8 +34,7 @@
                     </div>
                     <div class="card-body">
                         <p class="small text-secondary">
-                            ScholarZim already has the rest of your profile. Add only what is missing; it is saved to your
-                            profile, so you will not be asked for it again.
+                            Add only what is missing. It is saved to your profile, so you will not be asked again.
                         </p>
 
                         @if($hasForm)

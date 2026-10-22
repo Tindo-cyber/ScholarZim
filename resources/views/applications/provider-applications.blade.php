@@ -82,8 +82,7 @@
 
             <div class="card-footer">
                 <p class="form-text mb-0">
-                    Open an application to review it. Decisions are made one at a time, each with a written
-                    reason the applicant reads verbatim.
+                    Open an application to review it. Each decision needs a written reason, which the applicant sees.
                 </p>
             </div>
         </div>

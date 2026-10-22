@@ -29,9 +29,8 @@
                 welcome message. Creating it is recorded in the audit log.
             </p>
             <p class="mb-0">
-                A provider created here is not put through verification: there is no registration
-                certificate on file and nothing appears in the review queue. Let an organisation
-                register itself if you want that check to happen.
+                A provider created here skips verification: no registration certificate is on file and
+                nothing appears in the review queue. Ask the organisation to register itself if you want it checked.
             </p>
         </div>
     </div>
@@ -58,12 +57,12 @@
                         <x-form.input name="email" label="Email address" type="email" required />
                         <x-form.input name="phone" label="Phone number" type="tel"
                                       inputmode="tel" maxlength="30" data-phone-input="by-role" data-phone-input-role-check="role_name" data-phone-input-international-role="ROLE_PROVIDER"
-                                      hint="Optional. Applicants and administrators: 10 digits, no spaces or country code, e.g. 0771234567. Providers: any valid mobile or landline, with or without a country code or extension. The rule for the chosen role is checked on save." />
+                                      hint="Optional. Applicants and administrators: 10 digits, e.g. 0771234567. Providers: any valid phone number." />
 
                         <x-form.select name="role_name" label="Role"
                                        :options="collect($roles)->mapWithKeys(fn ($r) => [$r => \App\Support\RoleNames::displayLabel($r)])->all()"
                                        placeholder="Select a role" required
-                                       hint="Applicants apply for scholarships, providers publish them, administrators run the platform. A role cannot be changed here afterwards." />
+                                       hint="The role cannot be changed afterwards." />
 
                         <div class="row">
                             <div class="col-md-6">

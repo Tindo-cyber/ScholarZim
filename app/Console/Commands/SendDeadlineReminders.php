@@ -35,7 +35,7 @@ class SendDeadlineReminders extends Command
     {
         $this->info('Running deadline reminder job');
 
-        $today = Carbon::today();
+        $today = \App\Support\Deadlines::today();
         $windowEnd = $today->copy()->addDays(self::REMINDER_WINDOW_DAYS);
         $sent = 0;
 

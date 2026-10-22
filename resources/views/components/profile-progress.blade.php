@@ -107,7 +107,7 @@
 
                     <p class="small text-secondary mb-0">
                         @if($complete)
-                            Your profile is complete. Matches are scored on everything you have given us.
+                            Your profile is complete.
                         @else
                             {{-- Names the next thing to do rather than the whole list: one clear
                                  step is what turns a score into an action. --}}

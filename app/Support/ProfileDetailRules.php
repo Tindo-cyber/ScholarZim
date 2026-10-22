@@ -100,8 +100,8 @@ final class ProfileDetailRules
         if (filled($dateOfBirth)) {
             $age = Carbon::parse($dateOfBirth)->age;
 
-            if ($age < 12) {
-                $problems['date_of_birth'] = 'You must be at least 12 years old to use this platform.';
+            if ($age < EducationLevel::MINIMUM_APPLICANT_AGE) {
+                $problems['date_of_birth'] = 'You must be at least ' . EducationLevel::MINIMUM_APPLICANT_AGE . ' years old to use this platform.';
             } elseif (filled($level = $held('education_level'))) {
                 $reason = EducationLevel::ageConsistencyReason($level, $age);
 

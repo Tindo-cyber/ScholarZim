@@ -52,8 +52,8 @@
                 <div class="card-body">
                     @if(empty($reading['rules']))
                         <p class="small mb-3">
-                            Nothing in this listing is checked, so every student with a complete profile will be
-                            shown it. If that is not what you want, add the requirements you mean.
+                            Nothing in this listing is checked, so every student with a complete profile will see it. Add
+                            requirements if that is not what you want.
                         </p>
                     @else
                         <p class="small text-secondary mb-2">Students are checked against these, and only these:</p>
@@ -164,10 +164,17 @@
                             </p>
                         @endif
 
+                        @php
+                            // What the provider chose in "Open to", so a visitor reads the same restriction ScholarFit applies.
+                            $listingScopes = app(\App\Services\Catalogue\ListingScopes::class);
+                            $scopeRows = $opportunity->scopes()->with(['programme', 'field.parent', 'institution'])->get();
+                            $openTo = $scopeRows->isNotEmpty() ? $listingScopes->describe($scopeRows) : null;
+                            $openToFields = $scopeRows->isNotEmpty() ? $listingScopes->describeProgrammes($scopeRows) : null;
+                        @endphp
                         <div class="row g-3 mb-4">
                             @foreach([
                                 ['Education level', \App\Support\EducationLevel::label($opportunity->education_level), 'file-text'],
-                                ['Field of study', $opportunity->target_field, 'stars'],
+                                ['Field of study', $opportunity->target_field ?: $openToFields, 'stars'],
                                 ['Location', $opportunity->locationLabel(), 'pin'],
                                 ['Deadline', $opportunity->deadline?->format('d M Y') ?? 'No deadline', 'calendar'],
                             ] as [$label, $value, $icon])
@@ -214,9 +221,15 @@
                             </div>
                         @endif
 
-                        @if($opportunity->hasEligibilityRules())
+                        @if($opportunity->hasEligibilityRules() || $openTo)
                             <h2 class="h6 fw-semibold text-uppercase text-secondary mb-2">Who can apply</h2>
                             <ul class="list-unstyled d-grid gap-2 mb-4">
+                                @if($openTo)
+                                    <li class="d-flex gap-2 align-items-start">
+                                        <x-icon name="check" :size="16" class="text-primary mt-1" />
+                                        <span>Open to {{ $openTo }}.</span>
+                                    </li>
+                                @endif
                                 @if($opportunity->min_academic_points)
                                     <li class="d-flex gap-2 align-items-start">
                                         <x-icon name="check" :size="16" class="text-primary mt-1" />
@@ -284,8 +297,8 @@
                             --}}
                             <h2 class="h6 fw-semibold text-uppercase text-secondary mb-2">Who can apply</h2>
                             <p class="text-secondary mb-4">
-                                This scholarship does not specify entry requirements. Read the description
-                                below for what the provider is looking for - they decide who is awarded.
+                                This scholarship lists no entry requirements. Read the description for what the provider
+                                is looking for. The provider decides who is awarded.
                             </p>
                         @endif
 

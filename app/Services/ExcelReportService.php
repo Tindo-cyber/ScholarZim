@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Application;
 use App\Models\Opportunity;
 use App\Models\User;
+use App\Services\Catalogue\ListingScopes;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -38,18 +39,24 @@ class ExcelReportService
 
     public function opportunitiesExcel(): string
     {
+        $scopes = app(ListingScopes::class);
+
         return $this->build('Opportunities', [
             'Title', 'Provider', 'Education Level', 'Field',
-            'Location', 'Funding', 'Deadline', 'Status',
-        ], Opportunity::notDraft()->orderBy('opportunity_id')->cursor(), fn (Opportunity $opp) => [
+            'Location', 'Funding', 'Deadline', 'Status', 'Open to',
+        ], Opportunity::notDraft()->with(['scopes.programme.field', 'scopes.field', 'scopes.institution'])->orderBy('opportunity_id')->lazy(200), fn (Opportunity $opp) => [
             $opp->title,
             $opp->provider_name,
             $opp->education_level ? \App\Support\EducationLevel::label($opp->education_level) : null,
-            $opp->target_field,
+            $scopes->fieldLabels($opp->scopes, $opp->target_field),
             $opp->target_locality ?: $opp->required_province,
             $opp->funding_type,
             $this->format($opp->deadline, self::DATE_FMT),
-            $opp->status,
+            // What the listing's state really is: one that is waiting for review or was declined is not "active".
+            $opp->lifecycleLabel(),
+            // The Field column names the field a programme belongs to; this says whether the listing is open to
+            // those programmes only, to the whole field, or (stated on purpose) to every programme. Blank: not stated.
+            $opp->open_to_all_programmes === true ? 'All programmes' : $scopes->describeProgrammes($opp->scopes),
         ]);
     }
 

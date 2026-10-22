@@ -22,18 +22,18 @@
                    :value="$profile?->registration_country" :bag="$bag"
                    placeholder="Select a country" required autocomplete="country"
                    :hint="$forAdmin
-                       ? 'Where the organisation is legally registered, as shown on its registration document. This is a record for review, not proof - check it against the document.'
-                       : 'The country where your organisation is legally registered. This is not where your scholarships are held: you choose each scholarship\'s study destination when you post it.'" />
+                       ? 'Where the organisation is legally registered. Check it against the document.'
+                       : 'The country where your organisation is registered, not where your scholarships are held.'" />
 </div>
 
 <x-form.input name="registration_number" :id="$idPrefix . '-number'"
               :label="$forAdmin ? 'Registration number' : 'Official registration number'"
               :value="$profile?->registration_number" :bag="$bag" maxlength="100" autocomplete="off"
-              hint="As it appears on the registration document - for example a company, charity, NPO, trust or PVO number. Any format your country uses is accepted." />
+              hint="As shown on the registration document, e.g. a company, charity, NPO, trust or PVO number." />
 
 <x-form.textarea name="registration_number_note" :id="$idPrefix . '-number-note'"
                  :label="$forAdmin ? 'Why there is no registration number' : 'No registration number? Tell us why'"
                  :value="$profile?->registration_number_note" :bag="$bag" :rows="2" maxlength="500"
                  :hint="$forAdmin
                      ? 'Optional here. Leave blank if the number is recorded above.'
-                     : 'Only if your organisation has no official number - for example a government body or public university established by law. Upload the document that establishes it instead, and an administrator will review it.'" />
+                     : 'Only if you have no official number, e.g. a government body. Upload the document that establishes your organisation.'" />

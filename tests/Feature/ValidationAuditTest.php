@@ -465,7 +465,7 @@ class ValidationAuditTest extends TestCase
     public function test_a_listing_deadline(): void
     {
         $cases = [
-            [Carbon::today()->addDays(10)->toDateString(), true], [Carbon::today()->toDateString(), true], [Carbon::yesterday()->toDateString(), false],
+            [Carbon::today()->addDays(10)->toDateString(), true], [\App\Support\Deadlines::earliest()->toDateString(), true], [\App\Support\Deadlines::today()->toDateString(), false], [Carbon::yesterday()->toDateString(), false],
             ['2000-01-01', false], ['2026-02-30', false], ['2026-13-40', false], ['next friday maybe', false], ['', true],
         ];
 

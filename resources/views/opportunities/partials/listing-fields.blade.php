@@ -87,3 +87,4 @@
 
 {{-- Built here rather than inline in the directive: see award-fields for why. --}}
 <script type="application/json" id="level-capabilities">@json($levelCapabilities)</script>
+<script type="application/json" id="level-min-ages">@json(\App\Support\OpportunityLevelRules::minimumMaxAges())</script>

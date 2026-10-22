@@ -273,8 +273,8 @@ class ListingScopeTest extends TestCase
 
         $html = $this->actingAs($this->provider)->get('/opportunities/' . $listing->opportunity_id . '/edit')->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('#<option value="' . $this->programme('BSc Computer Science') . '"[^>]*selected#', $html);
-        $this->assertMatchesRegularExpression('#<option value="' . $this->institution('MSU') . '"[^>]*selected#', $html);
+        $this->assertMatchesRegularExpression('#name="scope_programmes\[\]" value="' . $this->programme('BSc Computer Science') . '"[^>]*checked#', $html);
+        $this->assertMatchesRegularExpression('#name="scope_institutions\[\]" value="' . $this->institution('MSU') . '"[^>]*checked#', $html);
     }
 
     // ------------------------------------------------------------- the page --
@@ -284,7 +284,8 @@ class ListingScopeTest extends TestCase
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
         foreach (['scope_programmes[]', 'scope_fields[]', 'scope_institutions[]'] as $name) {
-            $this->assertMatchesRegularExpression('#<select[^>]*multiple[^>]*name="' . preg_quote($name, '#') . '"|<select[^>]*name="' . preg_quote($name, '#') . '"[^>]*multiple#', $html, $name);
+            // Plain checkboxes, so choosing several is one click each and needs no script.
+            $this->assertMatchesRegularExpression('#<input[^>]*type="checkbox"[^>]*name="' . preg_quote($name, '#') . '"#', $html, $name);
         }
 
         $this->assertStringContainsString('name="programme_suggestion"', $html);
@@ -297,7 +298,7 @@ class ListingScopeTest extends TestCase
     {
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('#<option value="' . $this->programme('BSc Information Systems') . '"[^>]*data-level="UNDERGRADUATE"[^>]*data-search="[^"]*info systems#i', $html);
+        $this->assertMatchesRegularExpression('#data-picker-option data-search="[^"]*info systems[^"]*"\s+data-level="UNDERGRADUATE"\s*>\s*<input[^>]*value="' . $this->programme('BSc Information Systems') . '"#i', $html);
     }
 
     public function test_a_new_listing_form_has_the_engineering_hint_hidden_until_it_is_needed(): void

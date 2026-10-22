@@ -32,13 +32,13 @@
         <div class="card-body">
             @if($mode === 'current')
                 <p class="small text-secondary">
-                    Your programme and institution are in the form above. Here: what you want to study next, or a programme that is not listed.
+                    Your current programme and institution are in the form above. Use this card for what you want to study next, or a programme that is not listed.
                 </p>
 
                 <x-limited-choice name="target_field_ids" id="target_field_ids" label="Fields you want to study next (optional)"
                                   :max="\App\Models\ApplicantTargetField::MAX" noun="fields"
                                   :groups="\App\Models\Field::pickerGroups($catalogue['fields'], array_map('intval', (array) old('target_field_ids', $targetFieldIds ?? [])))"
-                                  hint="For a next qualification in a different field. Scholarships open to these fields will match you, including abroad." />
+                                  hint="Scholarships open to these fields will match you." />
             @else
                 <p class="small text-secondary">
                     Choose up to 3 programmes you hope to study. You match a scholarship if any one fits.
@@ -50,8 +50,8 @@
                                       'label' => \App\Support\EducationLevel::label($level),
                                       'options' => $programmes->map(fn ($programme) => [
                                           'id' => $programme->id,
-                                          'label' => $programme->name . ($programme->isPending() ? ' (waiting for approval)' : ''),
-                                          'search' => strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ')),
+                                          'label' => $programme->name . ($programme->field ? ' · ' . $programme->field->label() : '') . ($programme->isPending() ? ' (waiting for approval)' : ''),
+                                          'search' => strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ') . ' ' . $programme->field?->label()),
                                           'selected' => in_array($programme->id, array_map('intval', (array) $intendedIds), true),
                                       ])->all(),
                                   ])->values()->all()" />

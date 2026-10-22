@@ -56,7 +56,12 @@
         function clear(section) {
             section.querySelectorAll('input, select, textarea').forEach(function (el) {
                 if (el.type === 'checkbox' || el.type === 'radio') {
+                    var was = el.checked;
+
                     el.checked = false;
+
+                    // A picker's list of what is chosen follows the boxes, so tell it.
+                    if (was && el.type === 'checkbox') el.dispatchEvent(new Event('change', { bubbles: true }));
                 } else if (el.tagName === 'SELECT' && el.multiple) {
                     // A multiple select has no "first option" to fall back to: clearing it means choosing nothing.
                     Array.prototype.forEach.call(el.options, function (option) {
@@ -75,8 +80,35 @@
             });
         }
 
+        // The lowest maximum age anyone could meet at this level (the platform minimum, or the level's own): the input's
+        // `min` and its hint follow it. The server enforces the same figure, so this is guidance, not the rule.
+        var minAges = {};
+
+        try {
+            minAges = JSON.parse((document.getElementById('level-min-ages') || {}).textContent || '{}');
+        } catch (e) {
+            minAges = {};
+        }
+
+        function followAge() {
+            var input = form.querySelector('[data-max-age]');
+            var age = minAges[select.value];
+
+            if (!input || typeof age !== 'number') return;
+
+            input.min = age;
+
+            var hint = document.getElementById(input.id + '-hint');
+
+            if (hint) {
+                hint.textContent = hint.textContent.replace(/^At least \d+/, 'At least ' + age);
+            }
+        }
+
         function apply() {
             var uses = capabilities[select.value] || capabilities[''];
+
+            followAge();
 
             sections.forEach(function (section) {
                 var needed = uses[section.getAttribute('data-level-needs')] !== false;

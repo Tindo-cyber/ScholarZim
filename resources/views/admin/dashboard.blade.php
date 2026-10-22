@@ -383,8 +383,8 @@
                     </div>
 
                     <p class="form-text mb-0 mt-2">
-                        Each listing in a batch goes through the same checks as a single decision: providers are
-                        notified, applicants are announced to on approval, and every action is audited.
+                        Each listing is handled as a single decision would be: providers are notified, applicants are
+                        told on approval, and every action is audited.
                     </p>
                 </form>
             </div>

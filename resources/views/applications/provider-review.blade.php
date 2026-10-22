@@ -255,10 +255,8 @@
                         <div class="alert alert-warning small d-flex gap-2" role="note">
                             <x-icon name="shield" :size="16" class="flex-shrink-0 mt-1" />
                             <div>
-                                The applicant is notified straight away and sees your reason word for word.
-                                Accepting is granting the scholarship. If you later find a decision was a
-                                mistake you can withdraw it, which reopens the application, but the applicant
-                                will have been told in the meantime.
+                                The applicant is notified at once and sees your reason. Accepting grants the scholarship.
+                                A mistaken decision can be withdrawn, which reopens the application.
                             </div>
                         </div>
 

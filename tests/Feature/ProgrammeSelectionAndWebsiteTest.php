@@ -159,12 +159,11 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
     {
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
-        foreach (['scope-programmes', 'scope-fields', 'scope-institutions'] as $select) {
-            preg_match('/<select[^>]*id="' . $select . '".*?<\/select>/s', $html, $block);
-            preg_match_all('/<option value="(\d+)"/', $block[0], $values);
+        foreach (['scope_programmes', 'scope_fields', 'scope_institutions'] as $list) {
+            preg_match_all('/name="' . $list . '\[\]" value="(\d+)"/', $html, $values);
 
-            $this->assertNotEmpty($values[1], $select);
-            $this->assertSame(count($values[1]), count(array_unique($values[1])), $select . ' lists an id twice');
+            $this->assertNotEmpty($values[1], $list);
+            $this->assertSame(count($values[1]), count(array_unique($values[1])), $list . ' lists an id twice');
         }
     }
 
@@ -172,9 +171,9 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
     {
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
-        preg_match('/<optgroup label="Education">(.*?)<\/optgroup>/s', $html, $group);
+        preg_match('/mt-1">Education<\/div>(.*?)(?=<div data-picker-group|<div class="small text-secondary" data-picker-empty)/s', $html, $group);
 
-        $this->assertSame(1, substr_count($group[1], '<option'), 'Education is not offered as both "All of Education" and "Education"');
+        $this->assertSame(1, substr_count($group[1], 'type="checkbox"'), 'Education is not offered as both "All of Education" and "Education"');
         $this->assertStringNotContainsString('All of Education', $html);
         // A field with several narrow fields keeps its "All of ..." choice.
         $this->assertStringContainsString('All of Engineering and construction', $html);
@@ -214,9 +213,9 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
 
         $html = $this->actingAs($this->provider)->get('/opportunities/' . $listing->opportunity_id . '/edit')->assertOk()->getContent();
 
-        $this->assertMatchesRegularExpression('/<option value="' . $broad->id . '"[^>]*selected/s', $html, 'the saved broad Education id is the one offered, and ticked');
-        $this->assertMatchesRegularExpression('/<option value="' . $engineering->id . '"[^>]*selected/s', $html);
-        $this->assertMatchesRegularExpression('/<option value="' . $programme->id . '"[^>]*selected/s', $html);
+        $this->assertMatchesRegularExpression('/name="scope_fields\[\]" value="' . $broad->id . '"[^>]*checked/s', $html, 'the saved broad Education id is the one offered, and ticked');
+        $this->assertMatchesRegularExpression('/name="scope_fields\[\]" value="' . $engineering->id . '"[^>]*checked/s', $html);
+        $this->assertMatchesRegularExpression('/name="scope_programmes\[\]" value="' . $programme->id . '"[^>]*checked/s', $html);
         $this->assertSame(3, $listing->scopes()->count(), 'viewing the form changes nothing');
     }
 
@@ -224,7 +223,7 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
     {
         $provider = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
         $this->assertSame(0, preg_match_all('/>\s*Field of study\s*</', $provider), 'the free-text box is not also called "Field of study"');
-        $this->assertSame(1, substr_count($provider, '>Programmes</label>'), 'one label, not a legend and a label saying the same');
+        $this->assertSame(1, substr_count($provider, '>2. Which programmes?</legend>'), 'one question, not a legend and a label saying the same');
     }
 
     public function test_a_students_field_of_study_is_the_programme_list_not_a_free_text_box(): void

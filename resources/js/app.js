@@ -22,6 +22,7 @@ import './edit-impact';
 import './level-form';
 import './catalogue-filter';
 import './limited-choice';
+import './scope-picker';
 import './searchable-select';
 import './open-to';
 import './reopen-modal';

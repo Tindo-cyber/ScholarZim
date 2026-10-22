@@ -145,12 +145,13 @@
                                             <option value="{{ $programme->id }}" @selected($fieldChosen === $programme->id)
                                                     data-level="{{ $programme->education_level }}"
                                                     @unless(in_array($programme->education_level, $fieldLevels, true) || $fieldChosen === $programme->id) hidden disabled @endunless
-                                                    data-search="{{ strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ')) }}">{{ $programme->name }}@if($programme->isPending()) (waiting for approval)@endif</option>
+                                                    data-search="{{ strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ') . ' ' . $programme->field?->label()) }}">{{ $programme->name }}@if($programme->field) &middot; {{ $programme->field->label() }}@endif @if($programme->isPending()) (waiting for approval)@endif</option>
                                         @endforeach
                                     </select>
                                     @error('current_programme_id')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
                                     <div class="form-text">
-                                        Choose your programme. Not listed? Use the box below.
+                                        Choose your programme and we fill in its subject area for you. Not listed?
+                                        <a href="#programme-card">Add it under "My programme isn't listed" in the next section</a>.
                                     </div>
                                     @if(filled($profile->field_of_study) && $fieldChosen === 0)
                                         <div class="form-text text-warning-emphasis">Earlier you wrote "{{ $profile->field_of_study }}". Please choose the matching programme.</div>
@@ -200,10 +201,9 @@
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info small">
-                            You are under 18, so a parent or guardian has to be involved in your applications.
-                            You can browse, see your matches and build your profile without these details, but they
-                            are needed when you submit an application. A provider reviewing your application sees
-                            your guardian's name, phone number and relationship to you.
+                            You are under 18, so a parent or guardian must be involved in your applications. You can browse and
+                            build your profile without these details, but they are needed when you submit an application. A
+                            provider reviewing your application sees your guardian's name, phone number and relationship to you.
                         </div>
                         <div class="row">
                             <div class="col-md-4">

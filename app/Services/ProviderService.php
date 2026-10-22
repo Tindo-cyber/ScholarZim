@@ -96,7 +96,7 @@ class ProviderService
         return Opportunity::where('provider_user_id', $provider->user_id)
             ->notDraft()
             ->whereNotNull('deadline')
-            ->whereDate('deadline', '>=', Carbon::today())
+            ->whereDate('deadline', '>=', \App\Support\Deadlines::today())
             ->where('status', '!=', OpportunityStatus::WITHDRAWN)
             ->orderBy('deadline')
             ->orderBy('opportunity_id')

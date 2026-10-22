@@ -19,6 +19,9 @@
      * A rule that silently disqualifies applicants from behind a closed section is
      * the thing this must not become.
      */
+    // The lowest maximum age anyone could meet at the level chosen above; level-form.js keeps it in step.
+    $minAge = \App\Support\EducationLevel::minimumAge(old('education_level', $opportunity?->education_level));
+
     $advancedKeys = ['max_age', 'required_province', 'target_locality', 'target_settlement_type', 'min_academic_points', 'minimum_education_level'];
 
     $advancedOpen = collect($advancedKeys)->contains(fn ($key) => filled(old($key, $value($key))))
@@ -36,8 +39,8 @@
     </div>
     <div class="card-body">
         <p class="text-secondary small">
-            This is the first thing a student compares. A listing with no stated value still appears in
-            search, but it is excluded from value sorting and from any "minimum award" filter.
+            Students compare this first. A listing with no stated value still appears in search, but not in
+            value sorting or "minimum award" filters.
         </p>
 
         <div class="row">
@@ -49,8 +52,8 @@
             <div class="col-md-6">
                 <x-form.input name="deadline" label="Application deadline" type="date"
                               :value="$opportunity?->deadline?->format('Y-m-d')"
-                              min="{{ ($opportunity?->deadline && $opportunity->deadline->isPast() ? $opportunity->deadline : now())->toDateString() }}"
-                              hint="Leave blank for a rolling intake." />
+                              :min="($opportunity?->deadline && $opportunity->deadline->lte(\App\Support\Deadlines::earliest()) ? $opportunity->deadline : \App\Support\Deadlines::earliest())->toDateString()"
+                              hint="Optional. Must be after today. Leave blank for rolling intake." />
             </div>
             <div class="col-md-4">
                 <x-form.input name="award_amount" label="Award value" type="number"
@@ -112,10 +115,8 @@
         <div class="alert alert-warning d-flex gap-2" role="note">
             <x-icon name="shield" :size="18" class="flex-shrink-0 mt-1" />
             <div class="small">
-                <strong>These disqualify, they do not merely score down.</strong>
-                A student who fails one of these is told they are not eligible and the listing is left out
-                of their recommendations. Leave a rule blank unless it is genuinely a rule - everything
-                else belongs in the description, where it guides rather than blocks.
+                <strong>These are strict rules.</strong>
+                A student who fails one is not eligible. Leave a rule blank unless it is a firm requirement.
             </div>
         </div>
 
@@ -129,9 +130,9 @@
             </div>
             <div class="col-md-6">
                 <x-form.input name="max_age" label="Maximum age" type="number"
-                              min="10" max="99" step="1"
-                              :value="$value('max_age')"
-                              hint="Only applied when the student has given a date of birth." />
+                              :min="$minAge" max="99" step="1"
+                              :value="$value('max_age')" data-max-age
+                              :hint="'At least ' . $minAge . ' for the level chosen above. Checked against the date of birth.'" />
             </div>
             <div class="col-md-6">
                 <x-form.select name="required_province" label="Student must live in this province"
@@ -154,7 +155,7 @@
             <div class="col-12" data-level-needs="certificate">
                 <x-form.checkbox name="requires_results_certificate" wrapper-class="mb-0"
                                  label="Proof of academic results must be on file before applying"
-                                 hint="A Grade 7 results slip for Form 1 awards, a results certificate for O/A-Level applicants, or a transcript for tertiary and postgraduate applicants."
+                                 hint="Grade 7 results slip, O/A-Level results certificate or transcript, depending on the level."
                                  :checked="(bool) $value('requires_results_certificate', false)" />
             </div>
         </div>
@@ -184,13 +185,11 @@
         <h3 class="sz-eyebrow">Subject requirements</h3>
 
         <p class="text-secondary small">
-            If this award requires applicants to hold specific subjects at a minimum grade, list them here.
-            Applicants who do not hold a required subject, or whose grade falls short, are told they are not
-            eligible and exactly why. Leave empty to place no subject bar.
+            List subjects applicants must hold at a minimum grade. Leave empty for none.
         </p>
         <p class="text-secondary small">
             Grades are compared under the qualification you choose. A Cambridge A Level result is never
-            converted into a ZIMSEC grade, so state the requirement under the board you actually mean.
+            converted into a ZIMSEC grade, so state the requirement under the right board.
         </p>
 
         @if($errors->has('subject_requirements'))
@@ -364,8 +363,8 @@
         <h3 class="sz-eyebrow">Total A-Level points</h3>
 
         <p class="text-secondary small">
-            A separate rule from the subjects above, and checked separately. It asks whether the
-            applicant's ZIMSEC A-Level grades add up to a total, whatever those subjects are.
+            Checked separately from the subjects above: do the applicant's ZIMSEC A-Level grades add up
+            to this total, whatever the subjects?
         </p>
 
         <div class="row">
@@ -373,7 +372,7 @@
                 <x-form.input name="min_academic_points" label="Minimum ZIMSEC A-Level points" type="number"
                               min="1" :max="\App\Support\Academic\AcademicCatalogue::maxZimsecALevelPoints()" step="1"
                               :value="$value('min_academic_points')"
-                              hint="ZIMSEC A-Level only: A=5, B=4, C=3, D=2, E=1, so three A grades is 15. O-Level, Cambridge and degree results are never counted towards this." />
+                              hint="ZIMSEC A-Level only: A=5, B=4, C=3, D=2, E=1." />
             </div>
         </div>
         </div>

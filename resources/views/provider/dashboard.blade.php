@@ -302,7 +302,7 @@
                                                         // current deadline if that is still ahead. A deadline that has
                                                         // already passed is no floor - the listing is closed, and any
                                                         // future date reopens it.
-                                                        $extendFrom = collect([now()->addDay()->startOfDay(), $opportunity->deadline])->max();
+                                                        $extendFrom = collect([\App\Support\Deadlines::earliest(), $opportunity->deadline])->max();
                                                     @endphp
                                                     <x-confirm-dialog :id="'extend-deadline-' . $opportunity->opportunity_id"
                                                                       :action="route('opportunities.extendDeadline', $opportunity->opportunity_id)"
@@ -405,8 +405,7 @@
                             @unless($profile->hasRegistrationCountry())
                                 <p class="small text-secondary mb-0 mt-2">
                                     Your account was registered before we asked where organisations are registered.
-                                    An administrator will record it from your registration document; you do not need to
-                                    do anything, and your listings are unaffected.
+                                    An administrator will record it from your registration document. You do not need to do anything.
                                 </p>
                             @endunless
                         @endif

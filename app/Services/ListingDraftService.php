@@ -339,6 +339,7 @@ class ListingDraftService
     private function syncScope(Opportunity $draft, array $input, User $provider, array &$notKept): void
     {
         $level = EducationLevel::canonical($draft->education_level);
+        $input = $this->scopes->answered($input);
         $choices = $this->scopes->choices($input);
         $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || filled($input['programme_suggestion'] ?? null);
 

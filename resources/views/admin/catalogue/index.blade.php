@@ -41,8 +41,8 @@
 
                 @if($report['rejectedTotal'] > 0)
                     <p class="small text-secondary mb-2">
-                        These rows were not imported. Fix them in your file and import it again - the rows that were
-                        accepted are already in, and importing them a second time changes nothing.
+                        These rows were not imported. Fix them in your file and import it again. Rows already accepted
+                        are not duplicated.
                     </p>
                     <div class="table-responsive">
                         <table class="table table-sm small align-middle">

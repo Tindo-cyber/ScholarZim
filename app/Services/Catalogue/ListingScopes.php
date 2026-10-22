@@ -30,10 +30,24 @@ class ListingScopes
 
     public const MAX_INSTITUTIONS = 40;
 
-    /** The form's "Open to" answer: specific programmes or fields, or every programme at the level. */
+    /**
+     * The form's "Open to" answer, one of four:
+     *  - OPEN_ALL        every programme at the level;
+     *  - OPEN_PROGRAMMES only the specific programmes ticked (a programme never opens its whole field);
+     *  - OPEN_FIELDS     every programme in the field or fields ticked;
+     *  - OPEN_CHOSEN     programmes and fields together. The form only offers it for a listing already saved that way,
+     *                    and a direct request may still send it.
+     */
     public const OPEN_CHOSEN = 'chosen';
 
     public const OPEN_ALL = 'all';
+
+    public const OPEN_PROGRAMMES = 'programmes';
+
+    public const OPEN_FIELDS = 'fields';
+
+    /** Every value the form's "Open to" answer may take. */
+    public const OPEN_ANSWERS = [self::OPEN_CHOSEN, self::OPEN_ALL, self::OPEN_PROGRAMMES, self::OPEN_FIELDS];
 
     /** The form's institutions answer: specific institutions, or any. */
     public const INSTITUTIONS_CHOSEN = 'chosen';
@@ -88,6 +102,7 @@ class ListingScopes
     public function decision(array $input, ?string $level, ?string $country): array
     {
         $abroad = self::isAbroad($country);
+        $input = $this->answered($input);
         $choices = $this->choices($input);
         $what = $choices['fields'] !== [] || (! $abroad && ($choices['programmes'] !== [] || filled($input['programme_suggestion'] ?? null)));
 
@@ -99,7 +114,7 @@ class ListingScopes
         return [
             'open_to_all_programmes' => ! $uses ? null : match (true) {
                 $open === self::OPEN_ALL => true,
-                $open === self::OPEN_CHOSEN, $what => false,
+                in_array($open, [self::OPEN_CHOSEN, self::OPEN_PROGRAMMES, self::OPEN_FIELDS], true), $what => false,
                 default => null,
             },
             'any_institution' => ! $uses || $abroad ? null : match (true) {
@@ -114,6 +129,30 @@ class ListingScopes
                 : null,
             'other_conditions' => ($lines = self::conditionLines($input['other_conditions'] ?? null)) === [] ? null : implode("\n", $lines),
         ];
+    }
+
+    /**
+     * The submission with the answer to "what is it open to?" applied to the lists: choosing "only these programmes"
+     * drops any field ticked earlier, and choosing "an entire field" drops the programmes and any programme being
+     * suggested. That is what keeps a list the person can no longer see from quietly changing who qualifies. The
+     * older answers ("all", "chosen", or none) leave the lists as they were.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array<string, mixed>
+     */
+    public function answered(array $input): array
+    {
+        $open = $input['open_to'] ?? null;
+
+        if ($open === self::OPEN_PROGRAMMES) {
+            $input['scope_fields'] = [];
+        } elseif ($open === self::OPEN_FIELDS) {
+            $input['scope_programmes'] = [];
+            $input['programme_suggestion'] = null;
+            $input['programme_suggestion_field'] = null;
+        }
+
+        return $input;
     }
 
     /**
@@ -142,6 +181,7 @@ class ListingScopes
     public function decisionProblems(array $input, ?string $level, ?string $country): array
     {
         $problems = [];
+        $input = $this->answered($input);
         $choices = $this->choices($input);
 
         if (count(self::conditionLines($input['other_conditions'] ?? null)) > self::MAX_OTHER_CONDITIONS) {
@@ -155,6 +195,11 @@ class ListingScopes
         }
 
         if (self::isAbroad($country)) {
+            if (($input['open_to'] ?? null) === self::OPEN_PROGRAMMES) {
+                $problems['open_to'] = 'This scholarship is for study outside Zimbabwe, and the programme list holds Zimbabwean programmes only. '
+                    . 'Choose "An entire field of study" and pick the fields it is open to (for example ICT), or "All programmes at this level".';
+            }
+
             if ($choices['programmes'] !== [] || filled($input['programme_suggestion'] ?? null)) {
                 $problems['scope_programmes'] = 'This scholarship is for study outside Zimbabwe, and the programme list holds Zimbabwean programmes only. '
                     . 'Choose the fields it is open to instead (for example ICT), or "All programmes at this level".';
@@ -176,9 +221,12 @@ class ListingScopes
             $problems['open_to'] = 'Say who this scholarship is open to: choose the programmes or fields it is for, or choose "All programmes at this level". '
                 . 'ScholarFit uses this to tell students whether they qualify.';
         } elseif ($decision['open_to_all_programmes'] === false && ! $what) {
-            $problems['open_to'] = self::isAbroad($country)
-                ? 'Choose at least one field this scholarship is open to, or choose "All programmes at this level".'
-                : 'Choose at least one programme or field, or choose "All programmes at this level".';
+            $problems['open_to'] = match (true) {
+                self::isAbroad($country) => 'Choose at least one field this scholarship is open to, or choose "All programmes at this level".',
+                ($input['open_to'] ?? null) === self::OPEN_PROGRAMMES => 'Choose at least one programme, or choose a different way of saying who it is open to.',
+                ($input['open_to'] ?? null) === self::OPEN_FIELDS => 'Choose at least one field of study, or choose a different way of saying who it is open to.',
+                default => 'Choose at least one programme or field, or choose "All programmes at this level".',
+            };
         }
 
         if (! self::isAbroad($country)) {
@@ -224,6 +272,7 @@ class ListingScopes
     public function problems(array $input, ?string $level, User $provider): array
     {
         $problems = [];
+        $input = $this->answered($input);
         $choices = $this->choices($input);
         $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || filled($input['programme_suggestion'] ?? null);
         $canonical = EducationLevel::canonical($level);
@@ -314,6 +363,7 @@ class ListingScopes
     public function save(Opportunity $listing, array $input, User $provider): void
     {
         $level = EducationLevel::canonical($listing->education_level);
+        $input = $this->answered($input);
         $programmes = $this->choices($input)['programmes'];
         $fields = $this->choices($input)['fields'];
         $institutions = $this->choices($input)['institutions'];
@@ -428,6 +478,29 @@ class ListingScopes
         }
 
         return $what === [] ? null : $this->join($what);
+    }
+
+    /**
+     * The fields a listing is about, for reports: the field of every programme it names and every field it is open to,
+     * each once. A listing with no programme or field rows falls back to the free-text field it was posted with (those
+     * posted before the catalogue), and is blank when it has neither. Reading only; it never widens who qualifies.
+     *
+     * @param  Collection<int, OpportunityScope>  $scopes
+     */
+    public function fieldLabels(Collection $scopes, ?string $legacy = null): ?string
+    {
+        $labels = $scopes->map(fn (OpportunityScope $s) => $s->field ?? $s->programme?->field)
+            ->filter()
+            ->map(fn (Field $f) => $f->label())
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        if ($labels->isNotEmpty()) {
+            return $labels->implode('; ');
+        }
+
+        return filled($legacy) ? trim($legacy) : null;
     }
 
     /**

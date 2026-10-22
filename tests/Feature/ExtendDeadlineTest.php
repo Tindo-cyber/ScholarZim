@@ -89,14 +89,15 @@ class ExtendDeadlineTest extends TestCase
     {
         $listing = $this->listing(['deadline' => Carbon::today()->subDays(10), 'status' => OpportunityStatus::CLOSED]);
 
-        $this->assertSame(Carbon::tomorrow()->toDateString(), $this->minOf($listing));
+        // Tomorrow as a deadline is judged: the date in Harare, which is not always the UTC date.
+        $this->assertSame(\App\Support\Deadlines::earliest()->toDateString(), $this->minOf($listing));
     }
 
     public function test_the_date_picker_starts_tomorrow_when_the_deadline_is_today(): void
     {
         $listing = $this->listing(['deadline' => Carbon::today()]);
 
-        $this->assertSame(Carbon::tomorrow()->toDateString(), $this->minOf($listing));
+        $this->assertSame(\App\Support\Deadlines::earliest()->toDateString(), $this->minOf($listing));
     }
 
     // -------------------------------------------------------------- the rules --

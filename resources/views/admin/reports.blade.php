@@ -85,8 +85,7 @@
         </ul>
 
         <div class="card-footer small text-secondary">
-            Every export is generated from live data at the moment you ask for it, and reflects
-            everything on the platform - not the filters on any other page.
+            Exports use live data and cover the whole platform, not the filters on any other page.
         </div>
     </div>
 

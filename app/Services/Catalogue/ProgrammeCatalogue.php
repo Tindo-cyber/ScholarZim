@@ -13,6 +13,7 @@ use App\Support\AuditAction;
 use App\Support\EducationLevel;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -121,7 +122,7 @@ class ProgrammeCatalogue
     {
         return [
             'programmes' => Programme::query()
-                ->with('synonyms')
+                ->with(['synonyms', 'field.parent'])
                 ->where(fn (Builder $visible) => $visible
                     ->where(fn (Builder $catalogue) => $catalogue->where('status', Programme::APPROVED)->where('is_active', true))
                     ->when($for !== null, fn (Builder $q) => $q->orWhere(fn (Builder $own) => $own
@@ -133,6 +134,43 @@ class ProgrammeCatalogue
             'fields' => Field::whereNull('parent_id')->with(['children' => fn ($q) => $q->orderBy('code')])->orderBy('code')->get(),
             'institutions' => \App\Models\Institution::active()->orderBy('type')->orderBy('name')->get(),
         ];
+    }
+
+    /**
+     * Programmes laid out for a checkbox picker: grouped by level and then by the field the catalogue files each one
+     * under ("Undergraduate · Accounting"), so the classification is seen, not typed. A programme's field is its own
+     * record's (field_id); nothing here widens a choice to the rest of its field.
+     *
+     * @param  iterable<int, Programme>  $programmes  with `field` and `synonyms` loaded
+     * @param  array<int, int>  $selected  ids already chosen
+     * @return array<int, array{label: string, level: string, field: string, options: array<int, array{id: int, label: string, search: string, selected: bool}>}>
+     */
+    public static function pickerGroups(iterable $programmes, array $selected = []): array
+    {
+        $groups = [];
+
+        foreach ($programmes as $programme) {
+            $field = $programme->field?->label() ?? 'No field recorded';
+            $key = array_search($programme->education_level, Programme::LEVELS, true) . '|' . mb_strtolower($field);
+
+            $groups[$key] ??= [
+                'label' => $programme->levelLabel() . ' · ' . $field,
+                'level' => $programme->education_level,
+                'field' => $field,
+                'options' => [],
+            ];
+
+            $groups[$key]['options'][] = [
+                'id' => $programme->id,
+                'label' => $programme->name . ($programme->isPending() ? ' (waiting for approval)' : ''),
+                'search' => mb_strtolower($programme->name . ' ' . $programme->synonyms->pluck('synonym')->implode(' ') . ' ' . $field),
+                'selected' => in_array($programme->id, $selected, true),
+            ];
+        }
+
+        ksort($groups, SORT_NATURAL);
+
+        return array_values($groups);
     }
 
     // ----------------------------------------------------------- suggestions --
@@ -179,14 +217,20 @@ class ProgrammeCatalogue
             throw new \DomainException('You already have ' . $limit . ' programmes waiting for approval. Please wait for those to be checked.');
         }
 
-        $programme = Programme::create([
-            'name' => $name,
-            'education_level' => $canonical,
-            'field_id' => $fieldId,
-            'is_active' => true,
-            'status' => Programme::PENDING,
-            'suggested_by' => $user->user_id,
-        ]);
+        try {
+            $programme = Programme::create([
+                'name' => $name,
+                'education_level' => $canonical,
+                'field_id' => $fieldId,
+                'is_active' => true,
+                'status' => Programme::PENDING,
+                'suggested_by' => $user->user_id,
+            ]);
+        } catch (UniqueConstraintViolationException) {
+            // The same name was suggested a moment ago (a double click, a second tab): use that one, not a second copy
+            // and not an error. The (name, level) key is what makes this the only way two can ever exist.
+            return Programme::query()->atLevel($canonical)->where('name', $name)->whereIn('status', [Programme::APPROVED, Programme::PENDING])->firstOrFail();
+        }
 
         $this->audit->log($user->email, AuditAction::CATALOGUE_PROGRAMME_SUGGESTED, 'Programme', $programme->id, $name);
 
