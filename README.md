@@ -541,7 +541,7 @@ php artisan test
 
 The runner prints the current totals; any count written here would drift as the suite grows. One test is skipped
 on Windows only — a `finfo` limitation in a single document-type test, not a coverage gap. There are also browser
-tests (see Dusk below). A serial run takes tens of minutes; `php artisan test --parallel` takes a few.
+tests (see Dusk below); CI does not run them, so their result is whatever was last run locally. A serial run takes tens of minutes; `php artisan test --parallel` takes a few.
 
 The suite runs on in-memory SQLite (`phpunit.xml`). To run it against MySQL, set `DB_CONNECTION=mysql` and
 `DB_DATABASE=<a throwaway database>` in the shell (never your development database - `RefreshDatabase` rebuilds it).

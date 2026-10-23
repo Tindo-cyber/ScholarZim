@@ -6,10 +6,9 @@ This document supports viva/defense questions about how the system was verified.
 
 **Command:** `cd ScholarZim && php artisan test`
 
-**Last verified:** 2026-10-13 — 2,308 tests, 0 failures (run on Linux with `php artisan test --parallel`). Browser tests (Dusk, `php artisan dusk`): 49 passed, 271 assertions.
+**Last verified:** no totals are kept in this document - they went out of date every time the suite grew. Run `php artisan test` for the PHP suite and `php artisan dusk` for the browser tests; each prints its own totals. CI runs `php artisan test` only (`.github/workflows/ci.yml`); the Dusk browser tests are run locally, so their result is whatever was last run. Two of the PHP tests, in `FrontendAssetsTest`, pass with a PHP warning from a deliberately refused port probe. Two browser tests failed on 2026-10-22 and were fixed: `ProgrammePickerBrowserTest` pressed "Submit for review" as the seeded trusted provider, whose button reads "Publish" (it now clicks `#submit-listing`), and `ResponsiveAccessibilityTest` found the landing page 12px wider than the screen from 768 to about 1200px, a real layout fault from `g-5` rows inside the landing page's 1180px container, now fixed in `scholarzim.css`.
 
-The exact count above will drift as the suite grows; the command is the source of truth, not
-this number. The skip is a Windows-only `finfo` limitation in one document-type test, not a
+The commands are the source of truth for the totals. One test is skipped on Windows only, because of a `finfo` limitation in one document-type test, not a
 gap in coverage — it runs (and passes) on Linux/CI.
 
 Coverage by area rather than a per-file table, because the file-by-file version of this
