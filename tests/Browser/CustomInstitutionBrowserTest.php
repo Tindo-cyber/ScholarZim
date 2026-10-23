@@ -31,6 +31,7 @@ class CustomInstitutionBrowserTest extends DuskTestCase
                 ->type('#field-title', $title)
                 ->type('#field-description', 'Covers tuition at a university abroad.')
                 ->select('#field-education_level', EducationLevel::UNDERGRADUATE)
+                ->select('#field-country', 'South Africa')
                 ->script("document.getElementById('open-to-all').click(); document.getElementById('institutions-chosen').click();");
 
             // Folded away until it is wanted, and the explanation is on offer.
@@ -38,7 +39,8 @@ class CustomInstitutionBrowserTest extends DuskTestCase
                 ->click('[data-custom-institutions] summary')
                 ->waitFor('#listing-custom-name-0', self::WAIT)
                 ->type('#listing-custom-name-0', 'University of Cape Town')
-                ->select('#listing-custom-country-0', 'South Africa')
+                // The country is asked once, above, as the country of study - not again for each institution.
+                ->assertMissing('#listing-custom-country-0')
                 ->click('#submit-listing') // "Publish" for a trusted provider, "Submit for review" otherwise
                 ->waitForLocation('/provider/dashboard', self::WAIT);
         });
@@ -54,7 +56,8 @@ class CustomInstitutionBrowserTest extends DuskTestCase
                 ->waitFor('#field-title', self::WAIT)
                 ->assertAttribute('[data-custom-institutions]', 'open', 'true')
                 ->assertValue('#listing-custom-name-0', 'University of Cape Town')
-                ->assertSelected('#listing-custom-country-0', 'South Africa');
+                ->assertMissing('#listing-custom-country-0')
+                ->assertSelected('#field-country', 'South Africa');
         });
     }
 

@@ -131,7 +131,7 @@ class ListingScopes
                 && filter_var($input['accepts_o_level'] ?? false, FILTER_VALIDATE_BOOLEAN),
             // Institutions the provider typed because the catalogue does not list them. Shown on the listing; a name typed
             // here is never matched against a student's profile, so it can neither grant nor refuse anyone on its own.
-            'custom_institutions' => $uses && ($abroad || $institutions !== self::INSTITUTIONS_ANY) && ($custom = $choices['custom']) !== [] ? $custom : null,
+            'custom_institutions' => $uses && ($abroad || $institutions !== self::INSTITUTIONS_ANY) && ($custom = $choices['custom']) !== [] ? self::inStudyCountry($custom, $country) : null,
             'host_institutions' => $abroad && $uses && filled($input['host_institutions'] ?? null)
                 ? mb_substr(trim((string) $input['host_institutions']), 0, 500)
                 : null,
@@ -420,6 +420,25 @@ class ListingScopes
         }
 
         return null;
+    }
+
+    /**
+     * The country of study is asked once, for the listing, so an institution typed without a country of its own is in
+     * that country - when it is a real one ("Any country" and "Online" name no place, and Zimbabwe is the unremarkable
+     * default the label leaves out). A country already on the row is kept.
+     *
+     * @param  array<int, array{name: string, country?: ?string}>  $rows
+     * @return array<int, array{name: string, country?: ?string}>
+     */
+    private static function inStudyCountry(array $rows, ?string $country): array
+    {
+        $country = trim((string) $country);
+
+        if (! self::isAbroad($country) || in_array($country, FormOptions::FLEXIBLE_COUNTRIES, true)) {
+            return $rows;
+        }
+
+        return array_map(static fn (array $row) => array_filter($row, static fn ($v) => $v !== null) + ['country' => $country], $rows);
     }
 
     /** One institution as the listing shows it: "University of Cape Town (South Africa)". */
