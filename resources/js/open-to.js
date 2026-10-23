@@ -130,5 +130,17 @@
         if (country) {
             country.addEventListener('change', apply);
         }
+
+        // A new listing starts with no answer, and "until an answer is chosen neither shows". The server cannot say so
+        // (without this script the form shows everything and still works), so it is done here, once, on load. Only the
+        // two lists are folded away, and nothing is cleared: there is nothing chosen yet, and a list that holds an error
+        // stays in view so the error can be read - which apply() would not know to do.
+        if (value('open_to') === null) {
+            card.querySelectorAll('[data-open-programmes], [data-open-fields]').forEach(function (section) {
+                if (!section.querySelector('.is-invalid, .invalid-feedback')) {
+                    section.hidden = true;
+                }
+            });
+        }
     });
 })();

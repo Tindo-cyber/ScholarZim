@@ -42,6 +42,23 @@ class ProgrammePickerBrowserTest extends DuskTestCase
         return (bool) $this->js($browser, "(function(){var e=document.querySelector('" . $selector . "');return !!e && !e.hidden && e.offsetParent !== null;})()");
     }
 
+    public function test_a_new_listing_shows_neither_list_until_an_answer_is_chosen(): void
+    {
+        $this->browse(function (Browser $browser) {
+            $this->open($browser);
+
+            $this->assertFalse($this->visible($browser, '#scope-programmes'), 'no answer yet: no programme list');
+            $this->assertFalse($this->visible($browser, '#scope-fields'), 'no answer yet: no field list');
+            $browser->assertSee('How widely does it apply?')
+                ->assertMissing('[name="target_field"]');
+
+            // Answering brings back only that answer's list.
+            $browser->script("document.getElementById('open-to-fields').click();");
+            $this->assertTrue($this->visible($browser, '#scope-fields'));
+            $this->assertFalse($this->visible($browser, '#scope-programmes'));
+        });
+    }
+
     public function test_the_three_ways_to_say_who_it_is_open_to_show_only_their_own_list(): void
     {
         $this->browse(function (Browser $browser) {
