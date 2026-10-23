@@ -34,6 +34,8 @@ class Application extends Model
         'document_filename',
         'document_path',
         'decision_reason',
+        // The optional note that comes with an ACCEPTANCE (never with a rejection); written once, by decide().
+        'acceptance_message',
         'decided_at',
         'withdrawn_at',
         'withdrawal_reason',

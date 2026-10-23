@@ -227,7 +227,6 @@ class ListingDraftService
             'on_behalf_of' => ($behalf !== null && strcasecmp($behalf, $own) !== 0) ? $behalf : null,
             'education_level' => $levelForDecision,
             'minimum_education_level' => $option('minimum_education_level', 'Minimum qualifying level', EducationLevel::APPLICANT_LEVELS, 'levels'),
-            'target_field' => Opportunity::tidySubjectArea($text('target_field', 'Field of study', 255)),
             'funding_type' => $option('funding_type', 'Funding type', FormOptions::FUNDING_TYPES, 'funding types'),
             'country' => $country ?? FormOptions::DEFAULT_COUNTRY,
             'target_country' => $country ?? FormOptions::DEFAULT_COUNTRY,

@@ -18,7 +18,7 @@
                 <td>{{ $opportunity->title ?: '—' }}</td>
                 <td>{{ $opportunity->provider_name ?: '—' }}</td>
                 <td>{{ $opportunity->education_level ? \App\Support\EducationLevel::label($opportunity->education_level) : '—' }}</td>
-                <td>{{ $opportunity->target_field ?: '—' }}</td>
+                <td>{{ $opportunity->subjectLabel() ?: '—' }}</td>
                 <td>{{ $opportunity->target_locality ?: ($opportunity->required_province ?: '—') }}</td>
                 <td>{{ $opportunity->deadline?->format('d M Y') ?: '—' }}</td>
             </tr>

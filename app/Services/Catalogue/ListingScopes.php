@@ -189,6 +189,17 @@ class ListingScopes
     public function decisionProblems(array $input, ?string $level, ?string $country): array
     {
         $problems = [];
+
+        // The three ways of saying who it is open to exclude each other, so a submission that says one and still carries
+        // another's choices is contradicting itself. The form clears what it hides, so this only meets a direct request or
+        // a browser with its script off; it is refused, not quietly trimmed, so nobody ends up with a list they cannot see.
+        // (A listing saved with both programmes and fields has its own answer, "chosen", which is not a contradiction.)
+        if (self::appliesTo($level)) {
+            foreach ($this->contradictions($input) as $key => $message) {
+                $problems[$key] = $message;
+            }
+        }
+
         $input = $this->answered($input);
         $choices = $this->choices($input);
 
@@ -239,10 +250,38 @@ class ListingScopes
 
         if (! self::isAbroad($country)) {
             if ($decision['any_institution'] === null) {
-                $problems['institutions_open_to'] = 'Say where students must study: choose the institutions this scholarship pays for, or choose "Any institution".';
+                $problems['institutions_open_to'] = 'Say where the student will study: choose the institutions, enter one that is not listed, or choose "Any institution".';
             } elseif ($decision['any_institution'] === false && $choices['institutions'] === [] && $choices['custom'] === []) {
                 $problems['institutions_open_to'] = 'Choose at least one institution, enter one that is not listed, or choose "Any institution".';
             }
+        }
+
+        return $problems;
+    }
+
+    /**
+     * What a submission picks that its own answer to "who is it open to?" rules out, keyed by the field to show it on.
+     *
+     * @return array<string, string>
+     */
+    public function contradictions(array $input): array
+    {
+        $open = $input['open_to'] ?? null;
+        $choices = $this->choices($input);
+        $programmes = $choices['programmes'] !== [] || filled($input['programme_suggestion'] ?? null);
+        $fields = $choices['fields'] !== [];
+        $problems = [];
+
+        if ($open === self::OPEN_PROGRAMMES && $fields) {
+            $problems['scope_fields'] = 'You chose specific programmes, so no field can be chosen as well. Remove the fields, or choose "An entire field of study".';
+        }
+
+        if ($open === self::OPEN_FIELDS && $programmes) {
+            $problems['scope_programmes'] = 'You chose an entire field of study, so no individual programme can be chosen as well. Remove the programmes, or choose "Specific programmes".';
+        }
+
+        if ($open === self::OPEN_ALL && ($programmes || $fields)) {
+            $problems[$programmes ? 'scope_programmes' : 'scope_fields'] = 'You chose all programmes at this level, so no programme or field can be chosen as well. Remove them, or choose another option.';
         }
 
         return $problems;
@@ -607,7 +646,7 @@ class ListingScopes
         $text = $this->describeProgrammes($scopes) ?? 'any programme';
         $where = $this->describeInstitutions($scopes, $custom);
 
-        return $where === null ? $text : $text . ' at ' . $where;
+        return $where === null ? $text : $text . ', to be studied at ' . $where;
     }
 
     /**

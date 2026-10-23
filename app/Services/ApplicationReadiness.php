@@ -72,10 +72,6 @@ final class ApplicationReadiness
      * @param  array<int, string>  $guardianMissing  what a minor still has to give, in words
      * @param  array<string, array<string, mixed>>  $details  profile field => how to ask for it (see inputFor())
      * @param  array<int, array{label: string, anchor: string}>  $profileOnly  things only the profile page can hold
-     * @param  bool  $asksInstitutions  a school-leaver is asked where they have applied, because this scholarship is
-     *                                  limited to named institutions and they have none on file to check it against
-     * @param  bool  $correctsInstitutions  they have a list on file, but it does not include an institution this
-     *                                      scholarship is limited to: it is shown for them to correct
      */
     private function __construct(
         public readonly ApplicantProfile $profile,
@@ -85,8 +81,6 @@ final class ApplicationReadiness
         public readonly array $details,
         public readonly array $profileOnly,
         public readonly DocumentChecklist $documents,
-        public readonly bool $asksInstitutions = false,
-        public readonly bool $correctsInstitutions = false,
     ) {
     }
 
@@ -94,8 +88,6 @@ final class ApplicationReadiness
     {
         $details = [];
         $profileOnly = [];
-        $asksInstitutions = false;
-        $correctsInstitutions = false;
 
         $note = static function (string $name) use (&$details, &$profileOnly, $profile): void {
             $name = strtolower($name);
@@ -129,30 +121,7 @@ final class ApplicationReadiness
                 continue;
             }
 
-            // A scholarship limited to named institutions. A school-leaver has no current institution to check, so where
-            // they have applied or hold an offer is asked for here, on the application that needs it; a student who is
-            // already studying sets where with their programme, which only the profile page holds.
-            if ($outcome->type === RequirementOutcome::TYPE_INSTITUTION_SCOPE && strtolower((string) $outcome->missing) === 'institution') {
-                if (ApplicantProgrammes::modeFor($profile) === ApplicantProgrammes::INTENDED) {
-                    $asksInstitutions = true;
-                } else {
-                    $profileOnly['programme-card'] = ['label' => 'Where you study', 'anchor' => 'programme-card'];
-                }
-
-                continue;
-            }
-
             $note((string) $outcome->missing);
-        }
-
-        // A list that is on file but does not fit this scholarship is not a dead end: where a school-leaver has applied
-        // can change, and it is only ever kept up here, so it is shown for them to correct.
-        if (ApplicantProgrammes::modeFor($profile) === ApplicantProgrammes::INTENDED) {
-            foreach ($fit?->failedRequirements() ?? [] as $outcome) {
-                if ($outcome->type === RequirementOutcome::TYPE_INSTITUTION_SCOPE) {
-                    $correctsInstitutions = true;
-                }
-            }
         }
 
         // Keep the profile form's own order, so the questions read in the order the profile does.
@@ -166,8 +135,6 @@ final class ApplicationReadiness
             $details,
             array_values($profileOnly),
             $profile->documentChecklist($opportunity),
-            $asksInstitutions,
-            $correctsInstitutions,
         );
     }
 
@@ -238,51 +205,7 @@ final class ApplicationReadiness
     /** Whether anything about the applicant's own details stands between them and the statement. */
     public function needsDetails(): bool
     {
-        return $this->needsGuardian() || $this->details !== [] || $this->profileOnly !== [] || $this->asksInstitutions;
-    }
-
-    /** Whether the school-leaver is asked where they have applied (up to three institutions). */
-    public function asksAppliedInstitutions(): bool
-    {
-        return $this->asksInstitutions;
-    }
-
-    /** Whether a list that is on file, and does not fit this scholarship, is offered for correction. */
-    public function correctsAppliedInstitutions(): bool
-    {
-        return $this->correctsInstitutions;
-    }
-
-    /** Whether the institutions control is drawn at all: asked for, or shown to be corrected. */
-    public function offersInstitutions(): bool
-    {
-        return $this->asksInstitutions || $this->correctsInstitutions;
-    }
-
-    /** @return array<int, int> what is already saved, so changing it starts from the truth */
-    public function savedInstitutionIds(): array
-    {
-        return $this->profile->appliedInstitutions()->pluck('institution_id')->map(fn ($id) => (int) $id)->all();
-    }
-
-    /**
-     * The institutions to choose from, grouped as x-limited-choice draws them.
-     *
-     * @param  array<int, int>  $selected
-     * @return array<int, array{label: string, options: array<int, array<string, mixed>>}>
-     */
-    public function institutionGroups(array $selected): array
-    {
-        return Institution::active()->orderBy('type')->orderBy('name')->get()->groupBy('type')
-            ->map(fn ($institutions, $type) => [
-                'label' => Institution::TYPE_LABELS[$type] ?? $type,
-                'options' => $institutions->map(fn ($institution) => [
-                    'id' => $institution->id,
-                    'label' => $institution->name,
-                    'search' => strtolower($institution->name . ' ' . $institution->code),
-                    'selected' => in_array($institution->id, $selected, true),
-                ])->all(),
-            ])->values()->all();
+        return $this->needsGuardian() || $this->details !== [] || $this->profileOnly !== [];
     }
 
     /**
@@ -305,7 +228,7 @@ final class ApplicationReadiness
     /** True when the applicant can be asked for something in place (as opposed to being sent to their profile). */
     public function hasInlineQuestions(): bool
     {
-        return $this->inlineFields() !== [] || $this->offersInstitutions() || $this->missingDocuments() !== [];
+        return $this->inlineFields() !== [] || $this->missingDocuments() !== [];
     }
 
     /** True while the statement and Submit must wait: something is missing, or the applicant cannot be considered. */

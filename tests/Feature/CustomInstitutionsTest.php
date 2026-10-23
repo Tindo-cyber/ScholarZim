@@ -419,40 +419,36 @@ class CustomInstitutionsTest extends TestCase
         return null;
     }
 
-    public function test_a_listing_naming_only_unlisted_institutions_never_reads_as_eligible(): void
+    public function test_a_typed_institution_is_a_study_destination_and_never_a_check_on_the_student(): void
     {
         $fit = $this->fit($this->studiesAt('MSU'), $this->listingFor([], [$this->typed('University of Cape Town', 'South Africa')]));
 
-        $this->assertFalse($fit->meetsRequirements(), 'typing a name must not make anyone eligible');
-        $this->assertTrue($fit->needsReview());
-        $this->assertFalse($fit->isIneligible(), 'and does not turn them away: they can still apply once they have checked');
-        $this->assertStringContainsString('University of Cape Town (South Africa)', $this->institutionOutcome($fit)->message);
+        $note = $this->institutionOutcome($fit);
+
+        $this->assertTrue($note->advisory, 'a note: nothing on a profile can say where someone will study');
+        $this->assertStringContainsString('study at University of Cape Town (South Africa)', $note->message);
+        $this->assertTrue($fit->meetsRequirements(), 'it neither passes nor refuses anyone');
+        $this->assertFalse($fit->needsReview());
     }
 
-    public function test_a_catalogue_institution_still_passes_beside_typed_ones(): void
+    public function test_catalogue_and_typed_destinations_are_stated_together_whoever_the_student_is(): void
     {
-        $fit = $this->fit($this->studiesAt('MSU'), $this->listingFor(['MSU'], [$this->typed('University of Cape Town')]));
+        foreach (['MSU', 'NUST'] as $current) {
+            $fit = $this->fit($this->studiesAt($current), $this->listingFor(['MSU'], [$this->typed('University of Cape Town')]));
 
-        $this->assertTrue($this->institutionOutcome($fit)->passed);
-        $this->assertTrue($fit->meetsRequirements());
+            $note = $this->institutionOutcome($fit);
+            $this->assertTrue($note->advisory);
+            $this->assertStringContainsString('MSU or University of Cape Town', $note->message);
+            $this->assertTrue($fit->meetsRequirements(), $current);
+        }
     }
 
-    public function test_a_student_at_another_catalogue_institution_is_asked_to_check_when_typed_ones_exist(): void
-    {
-        $fit = $this->fit($this->studiesAt('NUST'), $this->listingFor(['MSU'], [$this->typed('University of Cape Town')]));
-
-        $this->assertTrue($this->institutionOutcome($fit)->review);
-        $this->assertFalse($fit->meetsRequirements());
-        $this->assertFalse($fit->isIneligible());
-    }
-
-    public function test_a_catalogue_only_restriction_still_refuses_students_elsewhere(): void
+    public function test_a_catalogue_only_destination_does_not_refuse_students_elsewhere(): void
     {
         $fit = $this->fit($this->studiesAt('NUST'), $this->listingFor(['MSU'], []));
 
-        $this->assertFalse($this->institutionOutcome($fit)->passed);
-        $this->assertFalse($this->institutionOutcome($fit)->review);
-        $this->assertTrue($fit->isIneligible(), 'a restriction we can check keeps working exactly as before');
+        $this->assertTrue($this->institutionOutcome($fit)->advisory);
+        $this->assertFalse($fit->isIneligible(), 'where they are now is not where they would study');
     }
 
     public function test_study_abroad_listings_do_not_ask_a_students_current_institution_about_a_host(): void

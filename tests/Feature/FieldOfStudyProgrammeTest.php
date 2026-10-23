@@ -165,7 +165,7 @@ class FieldOfStudyProgrammeTest extends TestCase
         $this->assertSame('Some Small College', $this->profile()->institution_name);
     }
 
-    public function test_a_scholarship_limited_to_institutions_is_checked_from_the_one_institution_answer(): void
+    public function test_where_the_student_studies_is_written_once_and_a_scholarships_institution_never_checks_it(): void
     {
         $this->at(EducationLevel::UNDERGRADUATE, ['institution_name' => 'Midlands State University']);
         $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
@@ -180,15 +180,15 @@ class FieldOfStudyProgrammeTest extends TestCase
 
         $fit = fn () => app(\App\Services\RecommendationService::class)->evaluateOne($this->student->fresh(), $listing);
 
-        // Written once on the profile, no programme chosen and nothing in the programme section.
-        $this->assertTrue($fit()->meetsRequirements());
+        // The listing's institution is where the award is studied. Where the student is now - at that university, at
+        // another, at one the catalogue does not know, or nowhere yet - never refuses or asks anything of them.
+        foreach (['Midlands State University', 'University of Zimbabwe', 'Some Small College', null] as $where) {
+            $this->profile()->forceFill(['institution_name' => $where])->save();
 
-        $this->profile()->forceFill(['institution_name' => 'University of Zimbabwe'])->save();
-        $this->assertTrue($fit()->isIneligible(), 'a different institution does not qualify');
-        $this->assertStringContainsString('you study at University of Zimbabwe', implode(' ', $fit()->failureMessages()));
-
-        $this->profile()->forceFill(['institution_name' => 'Some Small College'])->save();
-        $this->assertTrue($fit()->needsInformation(), 'one the catalogue does not know cannot be checked, and is asked for, not refused');
+            $this->assertTrue($fit()->meetsRequirements(), (string) $where);
+            $this->assertFalse($fit()->isIneligible(), (string) $where);
+            $this->assertFalse($fit()->needsInformation(), (string) $where);
+        }
     }
 
     public function test_a_saved_programme_is_shown_chosen(): void

@@ -146,7 +146,6 @@ class EditImpactTest extends TestCase
             'title' => [['title' => 'Retitled award'], true],
             'description' => [['description' => 'A different description of the award.'], true],
             'target level' => [['education_level' => EducationLevel::MASTERS], true],
-            'field of study' => [['target_field' => 'Medicine'], true],
             'funding' => [['funding_type' => 'Partial Scholarship'], true],
             'country' => [['country' => 'Germany'], true],
             'award amount' => [['award_amount' => 1500, 'award_currency' => 'USD'], true],

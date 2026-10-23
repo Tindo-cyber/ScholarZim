@@ -139,6 +139,10 @@ class ApplicationReviewController extends Controller
         $data = $request->validate([
             'status' => ['required', Rule::in(ApplicationStatus::DECISIONS)],
             'reason' => ['required', 'string', 'max:500'],
+            // Optional, and only kept with an acceptance (ApplicationService::decide).
+            'message' => ['nullable', 'string', 'max:' . ApplicationService::MAX_ACCEPTANCE_MESSAGE],
+        ], [
+            'message.max' => 'Keep the message to ' . ApplicationService::MAX_ACCEPTANCE_MESSAGE . ' characters or fewer.',
         ]);
 
         try {
@@ -146,7 +150,8 @@ class ApplicationReviewController extends Controller
                 $id,
                 $data['status'],
                 $data['reason'],
-                $request->user()
+                $request->user(),
+                $data['message'] ?? null
             );
         } catch (InvalidApplicationTransition|AwardsFilled $e) {
             // A refused move is a business answer, not a crash: the provider is

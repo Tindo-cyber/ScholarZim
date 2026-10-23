@@ -263,6 +263,10 @@
                             <x-form.textarea name="reason" label="Reason for your decision" :rows="4" required
                                              hint="The applicant sees this exactly as you write it." />
 
+                            <x-form.textarea name="message" label="Message to applicant (optional)" :rows="3"
+                                             maxlength="1000"
+                                             hint="Sent only if you accept: next steps, registration, deadlines or how to contact you." />
+
                             <div class="d-grid gap-2">
                                 {{-- Two submits in one form, each with its own value. The busy
                                      state follows event.submitter, so only the one that was
@@ -295,6 +299,11 @@
                             <hr>
                             <h3 class="h6 fw-semibold text-uppercase text-secondary small mb-1">Reason you gave</h3>
                             <p class="mb-0">{{ $application->decision_reason }}</p>
+                        @endif
+
+                        @if($application->acceptance_message)
+                            <h3 class="h6 fw-semibold text-uppercase text-secondary small mt-3 mb-1">Message you sent</h3>
+                            <p class="mb-0" style="white-space: pre-line">{{ $application->acceptance_message }}</p>
                         @endif
 
                     @endif

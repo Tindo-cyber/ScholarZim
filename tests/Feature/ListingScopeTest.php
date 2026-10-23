@@ -385,7 +385,7 @@ class ListingScopeTest extends TestCase
     {
         $this->assertSame('any programme', $this->described([]));
         $this->assertSame(
-            'any Electrical, mechanical and other engineering programme at MSU or NUST',
+            'any Electrical, mechanical and other engineering programme, to be studied at MSU or NUST',
             $this->described(['scope_fields' => [$this->field('071')], 'scope_institutions' => [$this->institution('MSU'), $this->institution('NUST')]])
         );
         $this->assertSame(
@@ -397,7 +397,7 @@ class ListingScopeTest extends TestCase
             $this->described(['scope_programmes' => [$this->programme('BSc Computer Science'), $this->programme('BSc Information Systems')]])
         );
         $this->assertSame(
-            'any programme at MSU',
+            'any programme, to be studied at MSU',
             $this->described(['scope_institutions' => [$this->institution('MSU')]])
         );
     }
@@ -406,6 +406,6 @@ class ListingScopeTest extends TestCase
     {
         $text = $this->described(['scope_institutions' => [$this->institution('HARARE-POLY')]]);
 
-        $this->assertSame('any programme at Harare Polytechnic', $text);
+        $this->assertSame('any programme, to be studied at Harare Polytechnic', $text);
     }
 }

@@ -142,20 +142,22 @@ class ProgrammeTargetingAndAgeTest extends TestCase
         $this->assertCount(0, $scopes->whereNotNull('programme_id'));
     }
 
-    public function test_choosing_specific_programmes_drops_a_field_left_ticked_and_choosing_a_field_drops_the_programmes(): void
+    public function test_specific_programmes_beside_a_field_and_a_field_beside_programmes_are_refused(): void
     {
         $programme = $this->programmeAt(EducationLevel::UNDERGRADUATE);
         $field = Field::whereNotNull('parent_id')->orderBy('id')->firstOrFail();
 
         $this->create(['open_to' => ListingScopes::OPEN_PROGRAMMES, 'scope_programmes' => [$programme->id], 'scope_fields' => [$field->id]])
-            ->assertSessionHasNoErrors();
-        $this->assertCount(0, $this->listing()->scopes->whereNotNull('field_id'), 'a hidden, stale field must not widen the listing');
+            ->assertSessionHasErrors('scope_fields');
+        $this->assertSame(0, Opportunity::where('title', 'Targeting Award')->count(), 'a hidden, stale field must not widen the listing, so nothing is saved');
 
-        $this->listing()->delete();
+        $this->create(['open_to' => ListingScopes::OPEN_FIELDS, 'scope_programmes' => [$programme->id], 'scope_fields' => [$field->id]])
+            ->assertSessionHasErrors('scope_programmes');
 
-        $this->create(['open_to' => ListingScopes::OPEN_FIELDS, 'scope_programmes' => [$programme->id], 'scope_fields' => [$field->id], 'programme_suggestion' => 'A Hidden Suggestion', 'programme_suggestion_field' => $field->id])
-            ->assertSessionHasNoErrors();
-        $this->assertCount(0, $this->listing()->scopes->whereNotNull('programme_id'), 'a hidden, stale programme must not narrow it');
+        $this->create(['open_to' => ListingScopes::OPEN_FIELDS, 'scope_fields' => [$field->id], 'programme_suggestion' => 'A Hidden Suggestion', 'programme_suggestion_field' => $field->id])
+            ->assertSessionHasErrors('scope_programmes');
+
+        $this->assertSame(0, Opportunity::where('title', 'Targeting Award')->count());
         $this->assertSame(0, Programme::where('name', 'A Hidden Suggestion')->count(), 'and a hidden suggestion creates nothing');
     }
 

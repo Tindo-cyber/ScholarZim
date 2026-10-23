@@ -111,11 +111,20 @@ class OpenToDecisionTest extends TestCase
             ->assertSessionHasErrors(['open_to', 'institutions_open_to']);
     }
 
-    public function test_all_programmes_drops_a_list_left_behind(): void
+    public function test_all_programmes_with_a_field_left_behind_is_refused_not_trimmed(): void
     {
         $this->create([
             'open_to' => 'all', 'institutions_open_to' => 'any',
             'scope_fields' => [$this->field('061')],
+        ])->assertSessionHasErrors('scope_fields');
+
+        $this->assertSame(0, Opportunity::where('title', 'Open To Award')->count(), 'nothing was saved');
+    }
+
+    public function test_any_institution_drops_institutions_left_behind(): void
+    {
+        $this->create([
+            'open_to' => 'all', 'institutions_open_to' => 'any',
             'scope_institutions' => [$this->institution('MSU')],
         ])->assertSessionHasNoErrors();
 

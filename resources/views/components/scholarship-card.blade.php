@@ -71,8 +71,8 @@
             @if($opportunity->education_level)
                 <li class="d-flex align-items-center gap-1"><x-icon name="file-text" :size="14" />{{ \App\Support\EducationLevel::label($opportunity->education_level) }}</li>
             @endif
-            @if($opportunity->target_field)
-                <li class="d-flex align-items-center gap-1"><x-icon name="stars" :size="14" />{{ $opportunity->target_field }}</li>
+            @if($subject = $opportunity->subjectLabel())
+                <li class="d-flex align-items-center gap-1"><x-icon name="stars" :size="14" />{{ $subject }}</li>
             @endif
             @if($opportunity->locationLabel())
                 <li class="d-flex align-items-center gap-1"><x-icon name="pin" :size="14" />{{ $opportunity->locationLabel() }}</li>

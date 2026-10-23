@@ -109,9 +109,11 @@ class ScholarFitTestSeederTest extends TestCase
 
     public function test_institution_scope(): void
     {
-        $this->assertSame(self::YES, $this->verdict('fadzai.moyo', 'Midlands State University Bursary'), 'applied to MSU');
-        $this->assertSame(self::NO, $this->verdict('rudo.mutasa', 'Midlands State University Bursary'), 'applied to UZ');
-        $this->assertSame(self::ASK, $this->verdict('simba.dube', 'Midlands State University Bursary'), 'has not said where they applied');
+        // The institution is where the award is studied, never where the applicant is or has applied: nobody is refused
+        // or asked about it, and with nothing else stated the listing is open.
+        $this->assertSame(self::OPEN, $this->verdict('fadzai.moyo', 'Midlands State University Bursary'), 'applied to MSU');
+        $this->assertSame(self::OPEN, $this->verdict('rudo.mutasa', 'Midlands State University Bursary'), 'applied to UZ: still free to apply');
+        $this->assertSame(self::OPEN, $this->verdict('simba.dube', 'Midlands State University Bursary'), 'has not said where they applied: not asked');
     }
 
     public function test_province_settlement_and_locality(): void

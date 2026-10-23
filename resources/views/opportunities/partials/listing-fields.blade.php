@@ -65,18 +65,6 @@
                          :value="$opportunity?->description"
                          hint="Cover what the award pays for, who it is aimed at, and what applicants must submit." />
 
-        <div data-level-needs="field">
-            <x-form.input name="target_field" label="Subject label for the listing card (optional)"
-                          :value="$opportunity?->target_field"
-                          list="field-list"
-                          hint="A short headline shown on the card and used by the subject filter and keyword search, for example Mining Engineering. It only describes the award: who qualifies is set by 'Who is it open to?' below." />
-            <datalist id="field-list">
-                @foreach(array_unique(array_merge($fields, $targetFieldSuggestions)) as $field)
-                    <option value="{{ $field }}"></option>
-                @endforeach
-            </datalist>
-        </div>
-
         <x-form.input name="provider_display_name" label="Awarding on behalf of another organisation (optional)"
                       :value="$opportunity?->on_behalf_of"
                       hint="Leave blank to publish as your own organisation. If filled in, the listing shows &quot;Posted by [your organisation] on behalf of [this name]&quot; and an administrator checks it first." />

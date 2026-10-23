@@ -6,7 +6,7 @@
      *
      * The current-programme and institution pickers are plain <select>s; the pick-up-to-three lists are
      * checkboxes (x-limited-choice), because a multiple <select> needs Ctrl-click and nobody finds that out.
-     * There is no "institutions you have applied to" list: it is asked for on the application that needs it.
+     * There is no "institutions you have applied to" list: a scholarship's institutions are where it is studied, so nothing asks.
      * Both work with JavaScript off; resources/js adds a search box over each list and, on the checkbox
      * lists, a running count that stops a fourth being ticked. The server refuses a fourth regardless.
      */

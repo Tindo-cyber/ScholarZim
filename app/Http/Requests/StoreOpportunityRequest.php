@@ -82,7 +82,6 @@ class StoreOpportunityRequest extends FormRequest
             // FORM_1 is deliberately not a valid value here: nothing "requires
             // at least Form 1", since Form 1 only ever appears as a target.
             'minimum_education_level' => ['nullable', Rule::in(EducationLevel::APPLICANT_LEVELS)],
-            'target_field' => ['nullable', 'string', 'max:255'],
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
             'deadline' => $this->deadlineRules(),
             // Digits with at most two decimals, written plainly: no exponent (1e3), sign (+5), bare dot (.5 or 5.) or three decimals.

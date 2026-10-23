@@ -67,18 +67,19 @@ class ListingFormLayoutTest extends TestCase
 
         $html = $this->actingAs($this->provider)->get('/opportunities/' . $listing->opportunity_id . '/edit')->assertOk()->getContent();
 
-        foreach (['target_field', 'min_academic_points', 'requires_results_certificate', 'add-subject-requirement', 'max_age', 'required_province', 'target_locality', 'target_settlement_type'] as $field) {
+        foreach (['min_academic_points', 'requires_results_certificate', 'add-subject-requirement', 'max_age', 'required_province', 'target_locality', 'target_settlement_type'] as $field) {
             $this->assertStringContainsString($field, $html, "$field must be in the page even for a Form 1 listing");
         }
 
-        $this->assertDoesNotMatchRegularExpression('/<[^>]+\shidden[\s>][^>]*name="(target_field|min_academic_points)"/', $html, 'nothing is hidden by the server');
+        $this->assertDoesNotMatchRegularExpression('/<[^>]+\shidden[\s>][^>]*name="(min_academic_points)"/', $html, 'nothing is hidden by the server');
+        $this->assertStringNotContainsString('target_field', $html, 'and there is no subject label to hide or show');
     }
 
     public function test_the_fields_the_level_decides_are_marked_for_the_script(): void
     {
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
-        foreach (['field', 'points', 'certificate', 'subjects'] as $need) {
+        foreach (['points', 'certificate', 'subjects'] as $need) {
             $this->assertStringContainsString('data-level-needs="' . $need . '"', $html);
         }
     }
@@ -145,7 +146,6 @@ class ListingFormLayoutTest extends TestCase
 
         $this->submit(EducationLevel::FORM_1, [
             'level_driven' => '1',
-            'target_field' => 'Engineering',
             'min_academic_points' => 12,
             'requires_results_certificate' => '1',
             'subject_requirements' => [['qualification_id' => $qualification->id, 'subject_id' => $subject->id]],
@@ -153,27 +153,24 @@ class ListingFormLayoutTest extends TestCase
 
         $listing = $this->latest();
 
-        $this->assertNull($listing->target_field, 'a Form 1 award has no field of study');
         $this->assertNull($listing->min_academic_points);
         $this->assertTrue($listing->requires_results_certificate, 'a Form 1 award can ask for the Grade 7 results slip, so it is kept');
         $this->assertSame(1, $listing->subjectRequirements()->count(), 'Grade 7 subjects are valid for Form 1 and kept');
     }
 
-    public function test_a_phd_drops_points_and_school_subjects_but_keeps_its_field(): void
+    public function test_a_phd_drops_points_and_school_subjects(): void
     {
         $qualification = AcademicQualification::findByKey(AcademicCatalogue::ZIMSEC_A_LEVEL);
         $subject = $qualification->activeSubjects()->orderBy('id')->firstOrFail();
 
         $this->submit(EducationLevel::PHD, [
             'level_driven' => '1',
-            'target_field' => 'Engineering',
             'min_academic_points' => 12,
             'subject_requirements' => [['qualification_id' => $qualification->id, 'subject_id' => $subject->id]],
         ])->assertSessionHasNoErrors();
 
         $listing = $this->latest();
 
-        $this->assertSame('Engineering', $listing->target_field);
         $this->assertNull($listing->min_academic_points);
         $this->assertSame(0, $listing->subjectRequirements()->count());
     }
@@ -185,7 +182,6 @@ class ListingFormLayoutTest extends TestCase
 
         $this->submit(EducationLevel::UNDERGRADUATE, [
             'level_driven' => '1',
-            'target_field' => 'Engineering',
             'min_academic_points' => 12,
             'requires_results_certificate' => '1',
             'subject_requirements' => [['qualification_id' => $qualification->id, 'subject_id' => $subject->id]],
@@ -193,7 +189,6 @@ class ListingFormLayoutTest extends TestCase
 
         $listing = $this->latest();
 
-        $this->assertSame('Engineering', $listing->target_field);
         $this->assertSame(12, $listing->min_academic_points);
         $this->assertTrue($listing->requires_results_certificate);
         $this->assertSame(1, $listing->subjectRequirements()->count());
@@ -257,7 +252,7 @@ class ListingFormLayoutTest extends TestCase
 
         $advanced = $this->advancedRegion($html);
 
-        foreach (['title', 'education_level', 'target_field', 'deadline', 'award_amount', 'award_currency', 'award_slots', 'description'] as $basic) {
+        foreach (['title', 'education_level', 'deadline', 'award_amount', 'award_currency', 'award_slots', 'description'] as $basic) {
             $this->assertStringNotContainsString('name="' . $basic . '"', $advanced, "$basic is a basic and must not be folded away");
             $this->assertStringContainsString('name="' . $basic . '"', $html);
         }

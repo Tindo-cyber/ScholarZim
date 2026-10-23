@@ -289,7 +289,7 @@
                         </a>
                         <span class="small text-secondary d-block">
                             {{ $opportunity->education_level ? \App\Support\EducationLevel::label($opportunity->education_level) : 'Any level' }} &middot;
-                            {{ $opportunity->target_field ?: 'Any field' }} &middot;
+                            {{ $opportunity->subjectLabel() ?: 'Any field' }} &middot;
                             closes {{ $opportunity->deadline?->format('d M Y') ?? 'rolling' }}
                         </span>
 

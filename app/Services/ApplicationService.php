@@ -665,6 +665,9 @@ class ApplicationService
         }
     }
 
+    /** The longest message a provider may leave with an acceptance. */
+    public const MAX_ACCEPTANCE_MESSAGE = 1000;
+
     /** The reason a listing is given when its last award slot is filled and it closes by itself. */
     private const AUTO_CLOSED_REASON = 'Closed automatically: all award slots filled.';
 
@@ -676,7 +679,7 @@ class ApplicationService
      * because the applicant is shown it verbatim. A decision is final: a decided
      * application is refused here, and nothing reverses it.
      */
-    public function decide(int $applicationId, string $status, ?string $reason, User $provider): Application
+    public function decide(int $applicationId, string $status, ?string $reason, User $provider, ?string $message = null): Application
     {
         // Destination check first - it turns away anything that is not one of the
         // two decisions (a withdrawal, a legacy stage, a value invented by hand)
@@ -696,6 +699,18 @@ class ApplicationService
 
         $reason = trim($reason);
 
+        // The message is part of an acceptance and nothing else: a rejection carries only its reason. Kept as typed
+        // (trimmed), never shortened silently - an over-long one is refused so the provider can say it in fewer words.
+        $message = $status === ApplicationStatus::ACCEPTED ? trim((string) $message) : '';
+
+        if (mb_strlen($message) > self::MAX_ACCEPTANCE_MESSAGE) {
+            throw ValidationException::withMessages([
+                'message' => 'Keep the message to ' . self::MAX_ACCEPTANCE_MESSAGE . ' characters or fewer.',
+            ]);
+        }
+
+        $message = $message === '' ? null : $message;
+
         // Ownership is settled outside the transaction: it cannot change under
         // us, and a stranger should be turned away without taking a row lock.
         // The opportunity id comes from this same read - a foreign key that
@@ -705,7 +720,7 @@ class ApplicationService
 
         $justClosed = false;
 
-        $application = DB::transaction(function () use ($applicationId, $opportunityId, $status, $reason, $provider, &$justClosed) {
+        $application = DB::transaction(function () use ($applicationId, $opportunityId, $status, $reason, $message, $provider, &$justClosed) {
             // Opportunity locked before application - the same order submit()
             // uses - so a submission and a decision contending for the same
             // listing always queue rather than deadlock.
@@ -751,6 +766,7 @@ class ApplicationService
             $application->update([
                 'application_status' => $status,
                 'decision_reason' => $reason,
+                'acceptance_message' => $message,
                 'decided_at' => Carbon::now(),
                 // Whatever a reopening left on the row has done its job: this is the new decision.
                 'reopened_at' => null,
@@ -771,6 +787,8 @@ class ApplicationService
                     'new' => [
                         'application_status' => $status,
                         'decided_at' => $application->decided_at?->toIso8601String(),
+                        // Kept with the decision it came with (null when none was left).
+                        'acceptance_message' => $message,
                         // The student and the listing the decision belongs to, so
                         // the trail identifies it without a join back to rows
                         // that may since have been deleted.
@@ -813,7 +831,7 @@ class ApplicationService
         // it, and - if this was the acceptance that filled the last slot -
         // the provider told their listing closed. A notification sent before
         // this line could announce a decision that then rolled back.
-        $this->notifyApplicantOfDecision($application, $status, $reason);
+        $this->notifyApplicantOfDecision($application, $status, $reason, $message !== null);
 
         if ($justClosed && $application->opportunity?->provider) {
             $this->notificationService->notifyUser(
@@ -828,7 +846,15 @@ class ApplicationService
         return $application;
     }
 
-    private function notifyApplicantOfDecision(Application $application, string $status, string $reason): void
+    /**
+     * Tell the applicant. Runs after the decision (and its message) has committed, so a failure to notify can never lose
+     * either: NotificationService writes the in-app row, then the email, and records any failure in the audit log
+     * instead of throwing.
+     *
+     * The message itself is never put in the notification or the email - both only say there is one and link to the
+     * application page, where it is shown. So nothing the provider wrote travels by email.
+     */
+    private function notifyApplicantOfDecision(Application $application, string $status, string $reason, bool $hasMessage = false): void
     {
         $applicant = $application->user;
 
@@ -841,7 +867,8 @@ class ApplicationService
         [$type, $message] = $status === ApplicationStatus::ACCEPTED
             ? [
                 NotificationType::APPLICATION_ACCEPTED,
-                'Congratulations! Your application to "' . $title . '" has been accepted. ' . $reason,
+                'Congratulations! Your application to "' . $title . '" has been accepted. ' . $reason
+                    . ($hasMessage ? ' The provider has also left you a message: open ScholarZim to read it.' : ''),
             ]
             : [
                 NotificationType::APPLICATION_REJECTED,

@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Field;
 use App\Models\Opportunity;
+use App\Models\Programme;
 use App\Models\User;
 use App\Services\ListingRiskChecker;
 use App\Support\EducationLevel;
@@ -139,14 +141,42 @@ class DescriptionConflictTest extends TestCase
         ])->assertOk()->assertDontSee('Check this listing');
     }
 
-    public function test_the_structured_field_wins_in_what_students_see(): void
+    public function test_the_fields_chosen_win_in_what_students_see(): void
     {
-        // The description says Law; the setting says Engineering. A Law student is not matched on the description.
-        $this->submit(['title' => 'Field Conflict', 'education_level' => EducationLevel::UNDERGRADUATE, 'target_field' => 'Engineering', 'description' => 'Open to students of Law.']);
+        // The description says Law; the provider opened it to Engineering. A Law student is not matched on the description.
+        $this->submit([
+            'title' => 'Field Conflict', 'education_level' => EducationLevel::UNDERGRADUATE, 'description' => 'Open to students of Law.',
+            'open_to' => 'fields', 'scope_fields' => [Field::where('code', '071')->value('id')], 'institutions_open_to' => 'any',
+        ]);
         $listing = Opportunity::where('title', 'Field Conflict')->firstOrFail();
 
-        $this->assertSame('Engineering', $listing->target_field);
+        $this->assertNull($listing->target_field, 'no label is typed any more');
         $this->assertContains(ListingRiskChecker::DESCRIPTION_CONFLICT, array_column($listing->risk_flags, 'code'));
+    }
+
+    public function test_a_description_that_agrees_with_the_chosen_field_or_programme_is_not_a_conflict(): void
+    {
+        $this->submit([
+            'title' => 'Field Agrees', 'education_level' => EducationLevel::UNDERGRADUATE, 'description' => 'Open to students of Engineering.',
+            'open_to' => 'fields', 'scope_fields' => [Field::where('code', '071')->value('id')], 'institutions_open_to' => 'any',
+        ]);
+        $this->submit([
+            'title' => 'Programme Agrees', 'education_level' => EducationLevel::UNDERGRADUATE, 'description' => 'Open to students of Law.',
+            'open_to' => 'programmes', 'scope_programmes' => [Programme::where('name', 'Bachelor of Laws')->value('id')], 'institutions_open_to' => 'any',
+        ]);
+
+        foreach (['Field Agrees', 'Programme Agrees'] as $title) {
+            $codes = array_column(Opportunity::where('title', $title)->firstOrFail()->risk_flags ?? [], 'code');
+            $this->assertNotContains(ListingRiskChecker::DESCRIPTION_CONFLICT, $codes, $title);
+        }
+    }
+
+    public function test_a_listing_open_to_all_programmes_has_no_field_to_disagree_with(): void
+    {
+        $this->submit(['title' => 'Open To All', 'education_level' => EducationLevel::UNDERGRADUATE, 'description' => 'Open to students of Law.', 'open_to' => 'all', 'institutions_open_to' => 'any']);
+
+        $codes = array_column(Opportunity::where('title', 'Open To All')->firstOrFail()->risk_flags ?? [], 'code');
+        $this->assertNotContains(ListingRiskChecker::DESCRIPTION_CONFLICT, $codes);
     }
 
     // ------------------------------------------------------------- helpers --

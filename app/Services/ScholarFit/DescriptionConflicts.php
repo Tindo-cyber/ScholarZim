@@ -85,6 +85,35 @@ final class DescriptionConflicts
         // ---- the field of study ----
         $fields = array_values(array_filter($conditions, static fn (DescriptionCondition $c) => $c->kind === DescriptionEligibility::FIELD_OF_STUDY));
 
+        // A listing whose provider chose fields or programmes: the words are compared with what they chose, by catalogue
+        // field. (An older listing's own label, below, is compared the old way.)
+        $chosen = filled($listing->target_field) ? [] : self::chosenFields($listing);
+
+        if ($fields !== [] && $chosen !== []) {
+            $named = array_values(array_unique(array_map(static fn (DescriptionCondition $c) => $c->value, $fields)));
+            $readable = false;
+            $agrees = false;
+
+            foreach ($named as $field) {
+                $wanted = \App\Services\Catalogue\LegacyFieldMap::codesFor($field);
+                $readable = $readable || $wanted !== [];
+
+                foreach ($wanted as $code) {
+                    foreach (array_keys($chosen) as $have) {
+                        $agrees = $agrees || str_starts_with($have, $code) || str_starts_with($code, $have);
+                    }
+                }
+            }
+
+            if ($readable && ! $agrees) {
+                $conflicts[] = [
+                    'field' => 'scope_fields',
+                    'message' => 'Your description mentions '.implode(' or ', $named).', but this is open to '.implode(', ', array_values($chosen))
+                        .'. Students are checked against what you chose, so change whichever is wrong.',
+                ];
+            }
+        }
+
         if ($fields !== [] && filled($listing->target_field)) {
             $named = array_values(array_unique(array_map(static fn (DescriptionCondition $c) => $c->value, $fields)));
             $agrees = false;
@@ -177,6 +206,44 @@ final class DescriptionConflicts
     }
 
     /**
+     * The catalogue fields a listing is open to - a chosen field, or the field of a chosen programme - as code => label.
+     * Read from the listing's own scope rows, or, for one not yet saved, from the choices on it (see detectFromInput()).
+     *
+     * @return array<string, string>
+     */
+    private static function chosenFields(Opportunity $listing): array
+    {
+        $found = [];
+        $ids = $listing->getAttribute('_chosen_ids');
+
+        try {
+            if (is_array($ids)) {
+                foreach (\App\Models\Field::whereIn('id', $ids['fields'] ?? [])->get() as $field) {
+                    $found[$field->code] = $field->label();
+                }
+
+                foreach (\App\Models\Programme::with('field')->whereIn('id', $ids['programmes'] ?? [])->get() as $programme) {
+                    if ($programme->field) {
+                        $found[$programme->field->code] = $programme->field->label();
+                    }
+                }
+            } elseif ($listing->exists) {
+                foreach ($listing->scopes()->with(['field', 'programme.field'])->get() as $scope) {
+                    $field = $scope->field ?? $scope->programme?->field;
+
+                    if ($field) {
+                        $found[$field->code] = $field->label();
+                    }
+                }
+            }
+        } catch (\Illuminate\Database\QueryException) {
+            return [];
+        }
+
+        return $found;
+    }
+
+    /**
      * The same check from a form's input, before or without a saved listing.
      *
      * @param  array<string, mixed>  $input
@@ -192,6 +259,12 @@ final class DescriptionConflicts
             'minimum_education_level' => $input['minimum_education_level'] ?? null,
             'target_field' => $input['target_field'] ?? null,
         ]);
+
+        // What they chose to open it to, when they chose a way of saying so: "all programmes" has no field to compare.
+        if (($input['open_to'] ?? null) !== 'all') {
+            $ints = static fn (mixed $v): array => is_array($v) ? array_values(array_filter(array_map('intval', array_filter($v, 'is_scalar')))) : [];
+            $listing->setAttribute('_chosen_ids', ['fields' => $ints($input['scope_fields'] ?? []), 'programmes' => $ints($input['scope_programmes'] ?? [])]);
+        }
 
         return self::detect($listing);
     }

@@ -113,7 +113,7 @@ something that was deliberately removed, not a regression.
       requirements." and no mention of ScholarFit
 - [ ] Changing the education level and saving changes the required count and the labels
 - [ ] **Institution / school** is said once: suggestions are the catalogue's names, the programme section does not ask where you
-      studied again, and a scholarship limited to named institutions is checked from what you wrote
+      studied again; a scholarship's institutions are where it is studied and are never checked against it
 - [ ] Choosing a level in the form (before saving) fills the **Field of study** list with that level's programmes, and the search box
       narrows it
 - [ ] A provider's listing form offers every country (Zimbabwe and the common destinations first), plus Any country and Online
@@ -136,11 +136,8 @@ something that was deliberately removed, not a regression.
 - [ ] One-click **Apply** on a listing card refuses (and opens the apply page) while a required
       document is missing; it works once they are all on file
 - [ ] An award the applicant is not eligible for says **NOT ELIGIBLE** and collects no documents
-- [ ] A school-leaver applying to an award limited to named institutions is asked where they have
-      applied (nothing ticked) and it is not on the profile page; the answer is reused by the next such award
-- [ ] With a saved list that does not include the award's institution, the page says **NOT ELIGIBLE** and shows the
-      saved list ticked with **Save and check again**; adding the institution makes the statement appear, and a list
-      that still does not fit stays NOT ELIGIBLE. An invalid choice (a fourth, none) saves nothing
+- [ ] A school-leaver (or anyone) applying to an award to be studied at named institutions is not asked where they study or
+      have applied, is not refused for it, and the page says "Where you would study: ... You do not have to be there already"
 - [ ] A direct submission by someone who is not eligible, or for a listing that is closed, is refused and leaves no
       new document on the profile
 - [ ] The personal statement is still required (100 to 5,000 characters)

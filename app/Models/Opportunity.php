@@ -129,29 +129,48 @@ class Opportunity extends Model
     }
 
     /**
-     * The subject label as it is stored: spaces collapsed, and spelt like the catalogue's own list when it is the same
-     * label in another case. The label is free text that the subject filter lists, so "mining engineering" and "Mining
-     * Engineering" would otherwise be two entries for one subject. Anything else is kept as the provider wrote it.
+     * What a listing is about, for cards and pages: the fields of what it is open to, read from the catalogue - a
+     * programme's own field, or the fields chosen - so a provider never types the same thing twice. A listing posted
+     * before that keeps the label it was written with. None for a listing open to every programme.
+     *
+     * @return array<int, string>
      */
-    public static function tidySubjectArea(mixed $value): ?string
+    public function subjectFields(): array
     {
-        if (! is_scalar($value)) {
+        $legacy = trim((string) $this->target_field);
+
+        if ($legacy !== '') {
+            return [$legacy];
+        }
+
+        if ($this->open_to_all_programmes === true) {
+            return [];
+        }
+
+        $this->loadMissing(['scopes.field', 'scopes.programme.field']);
+
+        return $this->scopes
+            ->map(fn (OpportunityScope $scope) => $scope->field ?? $scope->programme?->field)
+            ->filter()
+            ->map(fn (Field $field) => $field->label())
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+    }
+
+    /** The same, as one short line: the first two, then how many more. */
+    public function subjectLabel(): ?string
+    {
+        $fields = $this->subjectFields();
+
+        if ($fields === []) {
             return null;
         }
 
-        $clean = trim((string) preg_replace('/\s+/u', ' ', (string) $value));
+        $shown = implode(', ', array_slice($fields, 0, 2));
 
-        if ($clean === '') {
-            return null;
-        }
-
-        foreach (FormOptions::FIELDS_OF_STUDY as $known) {
-            if (mb_strtolower($known) === mb_strtolower($clean)) {
-                return $known;
-            }
-        }
-
-        return $clean;
+        return count($fields) > 2 ? $shown . ' +' . (count($fields) - 2) . ' more' : $shown;
     }
 
     public function scopes(): HasMany
@@ -230,7 +249,16 @@ class Opportunity extends Model
         }
 
         if ($field = $value($filters['field_of_study'] ?? null)) {
-            $query->where('target_field', $field);
+            // An older listing's own label, or a field it is open to (a chosen field, or the field of a chosen programme).
+            $label = "COALESCE(NULLIF(display_name, ''), name) = ?";
+
+            $query->where(function (Builder $q) use ($field, $label) {
+                $q->where('target_field', $field)
+                    ->orWhereHas('scopes', function (Builder $scope) use ($field, $label) {
+                        $scope->whereHas('field', fn (Builder $f) => $f->whereRaw($label, [$field]))
+                            ->orWhereHas('programme.field', fn (Builder $f) => $f->whereRaw($label, [$field]));
+                    });
+            });
         }
 
         if ($provider = $value($filters['provider'] ?? null)) {

@@ -97,7 +97,7 @@ class PublicController extends Controller
                 ? $this->recommendationService->evaluateOne($user, $opportunity)
                 : null,
             'related' => $this->opportunityService->searchAll([
-                'field_of_study' => $opportunity->target_field,
+                'field_of_study' => $opportunity->subjectFields()[0] ?? null,
             ])->where('opportunity_id', '!=', $id)->take(3),
             'appliedIds' => $this->applicationService->appliedIds($user),
             'accepted' => $accepted,

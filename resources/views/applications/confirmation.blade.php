@@ -115,6 +115,17 @@
                 </div>
             @endif
 
+            @if($application->isAccepted() && $application->acceptance_message)
+                <div class="card mb-4 border-success" id="acceptance-message">
+                    <div class="card-header">
+                        <h2 class="h6 fw-semibold mb-0">Message from the provider</h2>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-0" style="white-space: pre-line">{{ $application->acceptance_message }}</p>
+                    </div>
+                </div>
+            @endif
+
             @if($application->isDecided() && $application->decision_reason)
                 <div class="card mb-4">
                     <div class="card-header">
@@ -197,7 +208,7 @@
                             @foreach([
                                 'Awarding body' => $application->opportunity->awardingBody(),
                                 'Education level' => \App\Support\EducationLevel::label($application->opportunity->education_level),
-                                'Field of study' => $application->opportunity->target_field,
+                                'Field of study' => $application->opportunity->subjectLabel(),
                                 'Funding' => $application->opportunity->funding_type,
                                 'Deadline' => $application->opportunity->deadline?->format('d M Y'),
                             ] as $label => $value)

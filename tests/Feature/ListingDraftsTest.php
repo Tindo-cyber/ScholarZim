@@ -185,7 +185,7 @@ class ListingDraftsTest extends TestCase
 
         $this->saveDraft([
             'title' => 'Full draft', 'description' => 'A long enough description.',
-            'education_level' => EducationLevel::UNDERGRADUATE, 'target_field' => 'Engineering',
+            'education_level' => EducationLevel::UNDERGRADUATE,
             'funding_type' => 'Full Scholarship', 'country' => 'Germany',
             'external_url' => 'https://kariba-trust.org/apply', 'is_renewable' => '1',
             'provider_display_name' => 'Another Trust',
@@ -195,7 +195,6 @@ class ListingDraftsTest extends TestCase
         $draft = Opportunity::where('title', 'Full draft')->firstOrFail();
 
         $this->assertSame('Germany', $draft->country);
-        $this->assertSame('Engineering', $draft->target_field);
         $this->assertSame('https://kariba-trust.org/apply', $draft->external_url);
         $this->assertTrue($draft->is_renewable);
         $this->assertSame('Another Trust', $draft->on_behalf_of);

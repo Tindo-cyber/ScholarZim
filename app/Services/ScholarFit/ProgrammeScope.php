@@ -77,14 +77,15 @@ class ProgrammeScope
             $outcomes[] = $level;
         }
 
-        // Institutions the provider typed because the catalogue does not list them (a university abroad, say). A student's
-        // institution is chosen from the catalogue, so nothing on a profile can be compared with these: they never pass
-        // anyone, and never fail anyone either. See institutionOutcome() and unlistedInstitutionOutcome().
+        // Institutions are WHERE THE AWARD IS TO BE STUDIED, not where an applicant is now. A student about to start (an
+        // A-Level leaver, say) is not at the university yet and must not be turned away for that, and a student already
+        // elsewhere may be moving. So the listing's institutions - from the catalogue or typed in - are said to the
+        // applicant as a note, once, and are never compared with the institution on their profile.
         $unlisted = $this->unlisted($listing);
 
         if ($scopes->isEmpty()) {
             if ($unlisted !== []) {
-                $outcomes[] = $this->unlistedInstitutionOutcome($unlisted);
+                $outcomes[] = $this->destinationNote(collect(), $unlisted);
             }
 
             return $outcomes;
@@ -102,10 +103,8 @@ class ProgrammeScope
             $outcomes[] = $this->asPreference($this->programmeOutcome($what, $applicant, $describer->describeProgrammes($what), $origin), $applicant);
         }
 
-        if ($where->isNotEmpty()) {
-            $outcomes[] = $this->institutionOutcome($where, $applicant, $describer->describeInstitutions($where, $unlisted), $origin, $unlisted);
-        } elseif ($unlisted !== []) {
-            $outcomes[] = $this->unlistedInstitutionOutcome($unlisted);
+        if ($where->isNotEmpty() || $unlisted !== []) {
+            $outcomes[] = $this->destinationNote($where, $unlisted);
         }
 
         return $outcomes;
@@ -520,7 +519,7 @@ class ProgrammeScope
 
     /**
      * The institutions a home listing names that are not in the catalogue, as {name, country} rows. None for study abroad,
-     * where the institutions are hosts the student goes to after the award rather than somewhere they already are.
+     * where the institutions are hosts the student goes to after the award and are shown on the listing instead.
      *
      * @return array<int, array{name: string, country?: ?string}>
      */
@@ -534,89 +533,24 @@ class ProgrammeScope
     }
 
     /**
-     * A listing restricted only to institutions we have no record of. The student cannot be checked, and is not turned
-     * away: this is a review outcome, so the listing is not called a match for them and they can still apply once they
-     * have confirmed with the provider that they qualify.
+     * Where the award is to be studied, said to the applicant. A note: it states what the provider intends and leaves
+     * the applicant to judge whether they would study there, and the provider to judge it at review (the note is kept in
+     * the application's snapshot). It is never a pass, a failure or a question, because nothing on a profile can say
+     * where someone WILL study - only where they are, or have applied, today.
      *
-     * @param  array<int, array{name: string, country?: ?string}>  $unlisted
+     * @param  Collection<int, OpportunityScope>  $where  the catalogue institutions
+     * @param  array<int, array{name: string, country?: ?string}>  $unlisted  typed-in ones
      */
-    private function unlistedInstitutionOutcome(array $unlisted): RequirementOutcome
+    private function destinationNote(Collection $where, array $unlisted): RequirementOutcome
     {
-        $names = implode('; ', array_map([ListingScopes::class, 'customLabel'], $unlisted));
+        $named = app(ListingScopes::class)->describeInstitutions($where, $unlisted) ?? '';
 
-        return RequirementOutcome::review(
+        return RequirementOutcome::note(
             RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-            'Institution: this scholarship names ' . $names . ', which is not in our list, so your profile cannot be checked against it. Confirm with the provider before you apply.',
-            required: $names,
-        );
-    }
-
-    /**
-     * @param  array<int, array{name: string, country?: ?string}>  $unlisted  institutions the listing also names that we cannot check
-     */
-    private function institutionOutcome(Collection $where, array $applicant, string $open, ?array $origin, array $unlisted = []): RequirementOutcome
-    {
-        $prefix = $this->prefix($origin);
-        $listed = $where->pluck('institution_id')->map(fn ($i) => (int) $i)->all();
-        $have = $applicant['institutions'];
-
-        if ($have === []) {
-            if (! $applicant['levelKnown']) {
-                return RequirementOutcome::needsInfo(
-                    RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                    $prefix . 'Institution: for students at ' . $open . ' - add your education level to your profile so we can check it.',
-                    ScholarFitFieldNames::EDUCATION_LEVEL,
-                    required: $open,
-                );
-            }
-
-            if ($applicant['mode'] === ApplicantProgrammes::NONE) {
-                return RequirementOutcome::fail(
-                    RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                    $prefix . 'Institution: this scholarship is for students at ' . $open . '. Your current level has no institution to check.',
-                    required: $open,
-                );
-            }
-
-            return RequirementOutcome::needsInfo(
-                RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                $prefix . 'Institution: for students at ' . $open . ' - '
-                    . ($applicant['mode'] === ApplicantProgrammes::CURRENT
-                        ? 'add where you study to your profile so we can check it.'
-                        : 'say which institutions you have applied to or hold an offer from when you apply, so we can check it.'),
-                ScholarFitFieldNames::INSTITUTION,
-                required: $open,
-            );
-        }
-
-        $names = collect($applicant['institutionNames'])->filter()->implode(', ');
-
-        if (array_intersect($have, $listed) !== []) {
-            return RequirementOutcome::pass(
-                RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                $prefix . 'Institution: for students at ' . $open . '; ' . ($applicant['mode'] === ApplicantProgrammes::CURRENT ? 'you study at ' : 'you have applied to ') . ($names ?: 'a listed one') . '.',
-                required: $open,
-                actual: $names ?: null,
-            );
-        }
-
-        // The listing also names institutions that are not in the catalogue. Not matching a listed one does not show the
-        // student is outside the scholarship - they may be at one of the others, which a profile cannot say.
-        if ($unlisted !== []) {
-            return RequirementOutcome::review(
-                RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                $prefix . 'Institution: this scholarship is for students at ' . $open . '. You ' . ($applicant['mode'] === ApplicantProgrammes::CURRENT ? 'study at ' : 'have applied to ')
-                    . ($names ?: 'another institution') . ', and some of these are not in our list, so we cannot check them. Confirm with the provider before you apply.',
-                required: $open,
-            );
-        }
-
-        return RequirementOutcome::fail(
-            RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-            $prefix . 'Institution: this scholarship is for students at ' . $open . ', but '
-                . ($applicant['mode'] === ApplicantProgrammes::CURRENT ? 'you study at ' : 'you have applied to ') . ($names ?: 'another institution') . '.',
-            required: $open,
-            actual: $names ?: null,
+            true,
+            'Where you would study: this scholarship is for study at ' . $named . '. You do not have to be there already - '
+                . 'it is where you would study if you are awarded it.',
+            required: $named,
         );
     }
 

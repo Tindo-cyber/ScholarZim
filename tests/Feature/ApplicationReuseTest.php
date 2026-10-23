@@ -433,91 +433,38 @@ class ApplicationReuseTest extends TestCase
         \App\Models\ApplicantInstitution::where('profile_id', $this->profile()->profile_id)->delete();
     }
 
-    public function test_a_school_leaver_is_asked_where_they_applied_only_for_a_scholarship_limited_to_institutions(): void
+    public function test_an_institution_limited_scholarship_never_asks_a_school_leaver_where_they_applied(): void
     {
         $this->asAdultSchoolLeaver();
 
-        $plain = $this->wizard($this->listing(['open_to_all_programmes' => true, 'any_institution' => true]));
-        $this->assertStringNotContainsString('applied_institution_ids', $plain, 'a scholarship open to any institution never asks');
-        $this->assertStringContainsString('name="personal_statement"', $plain);
+        $html = $this->wizard($this->institutionListing('MSU'));
 
-        $restricted = $this->institutionListing('MSU');
-        $html = $this->wizard($restricted);
-
-        $this->assertStringContainsString('A few details are still needed', $html);
-        $this->assertStringContainsString('name="profile[applied_institution_ids][]"', $html);
-        $this->assertStringContainsString('Institutions you have applied to or hold an offer from', $html);
-        $this->assertStringContainsString('This scholarship is for students at certain institutions.', $html);
-        $this->assertStringNotContainsString('name="profile[institution_name]"', $html, 'nothing else is asked for');
-        $this->assertStringNotContainsString('name="personal_statement"', $html);
+        $this->assertStringNotContainsString('applied_institution_ids', $html, 'where they are or have applied says nothing about where they would study');
+        $this->assertStringNotContainsString('A few details are still needed', $html);
+        $this->assertStringContainsString('name="personal_statement"', $html, 'straight to the statement');
+        $this->assertStringContainsString('study at', $html, 'the destination is stated');
     }
 
-    public function test_the_institutions_given_on_the_apply_page_are_saved_and_the_application_goes_on(): void
+    public function test_a_school_leaver_who_is_not_at_the_intended_university_can_apply(): void
     {
         $this->asAdultSchoolLeaver();
         $listing = $this->institutionListing('MSU');
 
-        $this->details($listing, ['profile' => ['applied_institution_ids' => [$this->institutionId('MSU'), $this->institutionId('UZ')]]])
-            ->assertRedirect(route('applications.wizard', $listing->opportunity_id))
-            ->assertSessionHasNoErrors();
+        $this->as($this->student)->post('/apply/' . $listing->opportunity_id, $this->statement());
 
-        $saved = \App\Models\ApplicantInstitution::where('profile_id', $this->profile()->profile_id)->pluck('institution_id')->all();
-        $this->assertEqualsCanonicalizing([$this->institutionId('MSU'), $this->institutionId('UZ')], $saved);
-
-        $html = $this->wizard($listing);
-        $this->assertStringContainsString('name="personal_statement"', $html, 'applied to MSU, which is on the list: nothing more is asked');
-        $this->assertStringNotContainsString('applied_institution_ids', $html);
+        $this->assertSame(1, \App\Models\Application::where('user_id', $this->student->user_id)->where('opportunity_id', $listing->opportunity_id)->count());
     }
 
-    public function test_the_institutions_answer_is_validated(): void
+    public function test_applying_somewhere_else_does_not_stop_an_application_to_an_institution_limited_scholarship(): void
     {
         $this->asAdultSchoolLeaver();
-        $listing = $this->institutionListing('MSU');
-        $ids = fn (string ...$codes) => array_map(fn ($code) => $this->institutionId($code), $codes);
-
-        $this->details($listing, ['profile' => ['applied_institution_ids' => $ids('UZ', 'MSU', 'NUST', 'CUT')]])->assertSessionHasErrors('profile.applied_institution_ids');
-        $this->details($listing, ['profile' => ['applied_institution_ids' => [999999]]])->assertSessionHasErrors('profile.applied_institution_ids');
-        $this->details($listing, ['profile' => ['applied_institution_ids' => []]])->assertSessionHasErrors('profile.applied_institution_ids');
-
-        $this->assertSame(0, \App\Models\ApplicantInstitution::where('profile_id', $this->profile()->profile_id)->count());
-    }
-
-    public function test_institutions_already_saved_are_not_asked_for_again(): void
-    {
-        $this->asAdultSchoolLeaver();
-        \App\Models\ApplicantInstitution::create(['profile_id' => $this->profile()->profile_id, 'institution_id' => $this->institutionId('MSU')]);
-
-        $html = $this->wizard($this->institutionListing('MSU', 'UZ'));
-
-        $this->assertStringNotContainsString('applied_institution_ids', $html);
-        $this->assertStringContainsString('name="personal_statement"', $html);
-    }
-
-    public function test_the_question_is_not_asked_of_someone_who_is_already_studying(): void
-    {
-        // The seeded undergraduate: where they study comes from their programme, which only the profile holds.
+        \App\Models\ApplicantInstitution::create(['profile_id' => $this->profile()->profile_id, 'institution_id' => $this->institutionId('UZ')]);
         $listing = $this->institutionListing('MSU');
 
-        $html = $this->wizard($listing);
+        $this->as($this->student)->post('/apply/' . $listing->opportunity_id, $this->statement());
 
-        $this->assertStringNotContainsString('applied_institution_ids', $html);
-        $this->assertStringNotContainsString('Institutions you have applied to', $html);
-    }
-
-    public function test_the_matches_page_sends_a_school_leaver_to_the_application_not_the_profile_for_it(): void
-    {
-        $this->asAdultSchoolLeaver();
-        Opportunity::query()->update(['moderation_status' => OpportunityModerationStatus::PENDING]);
-        $listing = $this->institutionListing('MSU');
-        $listing->forceFill(['title' => 'Institution Limited Award'])->save();
-
-        $html = $this->as($this->student)->get(route('applicant.recommendations'))->assertOk()->getContent();
-
-        $this->assertStringContainsString('Institution Limited Award', $html);
-        $this->assertStringContainsString('Say where you applied', $html);
-        $this->assertStringContainsString(route('applications.wizard', $listing->opportunity_id), $html);
-        $this->assertStringNotContainsString('Add your institution', $html, 'there is no profile field to send them to');
-        $this->assertStringNotContainsString('to your profile so we can check it', str_replace('add where you study to your profile so we can check it', '', $html));
+        $this->assertSame(1, \App\Models\Application::where('user_id', $this->student->user_id)->where('opportunity_id', $listing->opportunity_id)->count());
+        $this->assertSame([$this->institutionId('UZ')], $this->profile()->appliedInstitutions()->pluck('institution_id')->map(fn ($i) => (int) $i)->all(), 'what the profile held is untouched');
     }
 
     public function test_what_was_saved_on_an_application_is_reused_by_the_next_one_that_needs_it(): void
@@ -595,184 +542,16 @@ class ApplicationReuseTest extends TestCase
         $this->details($listing, [])->assertSessionHasErrors(['documents.recommendation' => 'Please choose a file for the recommendation letter.']);
     }
 
-    public function test_with_no_saved_institutions_the_question_is_shown_with_nothing_ticked(): void
-    {
-        $this->asAdultSchoolLeaver();
-
-        $html = $this->wizard($this->institutionListing('MSU'));
-
-        $this->assertStringContainsString('name="profile[applied_institution_ids][]"', $html);
-        $this->assertSame([], $this->tickedInstitutions($html));
-        $this->assertStringNotContainsString('id="correct-institutions"', $html, 'nothing is on file to correct');
-        $this->assertStringContainsString('A few details are still needed', $html);
-    }
-
-    public function test_saved_institutions_that_satisfy_the_scholarship_are_reused_and_left_exactly_as_they_were(): void
-    {
-        $this->asAdultSchoolLeaver();
-        $this->saveInstitutions('MSU', 'UZ', 'NUST');
-        $listing = $this->institutionListing('MSU');
-
-        $html = $this->wizard($listing);
-
-        $this->assertStringNotContainsString('applied_institution_ids', $html, 'not asked again');
-        $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
-        $this->assertStringContainsString('name="personal_statement"', $html);
-
-        $this->submitFor($listing)->assertRedirect()->assertSessionHasNoErrors();
-
-        $this->assertSame(1, $this->applicationsMade());
-        $this->assertSame($this->ids('MSU', 'UZ', 'NUST'), $this->savedInstitutions(), 'all three still there');
-    }
-
-    public function test_saved_institutions_that_do_not_satisfy_the_scholarship_are_shown_for_correction_with_the_saved_list_ticked(): void
-    {
-        $this->asAdultSchoolLeaver();
-        $this->saveInstitutions('UZ', 'NUST');
-        $listing = $this->institutionListing('MSU');
-
-        $html = $this->wizard($listing);
-
-        $this->assertStringContainsString('NOT ELIGIBLE', $html, 'the reason is still given');
-        $this->assertStringContainsString('id="correct-institutions"', $html);
-        $this->assertStringContainsString('Save and check again', $html);
-        $this->assertStringContainsString('None of your institutions is on the list for this scholarship', $html);
-        $this->assertSame($this->ids('UZ', 'NUST'), $this->tickedInstitutions($html), 'the saved selection is the starting point');
-        $this->assertStringNotContainsString('name="personal_statement"', $html, 'no submission while ineligible');
-        $this->assertSame($this->ids('UZ', 'NUST'), $this->savedInstitutions(), 'looking at the page changes nothing');
-    }
-
-    public function test_an_applicant_who_adds_the_required_institution_is_reassessed_and_can_apply(): void
-    {
-        $this->asAdultSchoolLeaver();
-        $this->saveInstitutions('UZ');
-        $listing = $this->institutionListing('MSU');
-
-        $this->institutionsPost($listing, $this->ids('UZ', 'MSU'))
-            ->assertRedirect(route('applications.wizard', $listing->opportunity_id))
-            ->assertSessionHasNoErrors();
-
-        $this->assertSame($this->ids('UZ', 'MSU'), $this->savedInstitutions(), 'added, not replaced');
-
-        $html = $this->wizard($listing);
-        $this->assertStringNotContainsString('NOT ELIGIBLE', $html);
-        $this->assertStringContainsString('name="personal_statement"', $html);
-
-        $this->submitFor($listing)->assertRedirect()->assertSessionHasNoErrors();
-        $this->assertSame(1, $this->applicationsMade());
-    }
-
-    public function test_an_applicant_can_edit_or_remove_institutions_and_the_list_is_what_they_chose(): void
-    {
-        $this->asAdultSchoolLeaver();
-        $this->saveInstitutions('UZ', 'NUST', 'CUT');
-        $listing = $this->institutionListing('MSU');
-
-        // Removes two, keeps one, adds the one the scholarship needs.
-        $this->institutionsPost($listing, $this->ids('NUST', 'MSU'))->assertSessionHasNoErrors();
-        $this->assertSame($this->ids('NUST', 'MSU'), $this->savedInstitutions());
-
-        // Once the list satisfies the scholarship it is reused, not offered: a further post changes nothing.
-        $this->institutionsPost($listing, $this->ids('UZ'))->assertSessionHasNoErrors();
-        $this->assertSame($this->ids('NUST', 'MSU'), $this->savedInstitutions());
-
-        // Narrowing a list that does not fit to the one institution that does is a deliberate choice, and is kept as made.
-        \App\Models\ApplicantInstitution::where('profile_id', $this->profile()->profile_id)->delete();
-        $this->saveInstitutions('UZ', 'NUST');
-        $this->institutionsPost($listing, $this->ids('MSU'))->assertSessionHasNoErrors();
-        $this->assertSame($this->ids('MSU'), $this->savedInstitutions());
-
-        // Nothing at all is not an answer: the list is kept rather than cleared.
-        \App\Models\ApplicantInstitution::where('profile_id', $this->profile()->profile_id)->delete();
-        $this->saveInstitutions('UZ');
-        $this->institutionsPost($listing, [])->assertSessionHasErrors('profile.applied_institution_ids');
-        $this->assertSame($this->ids('UZ'), $this->savedInstitutions());
-    }
-
-    public function test_an_applicant_who_is_still_not_on_the_list_after_correcting_it_remains_ineligible(): void
-    {
-        $this->asAdultSchoolLeaver();
-        $this->saveInstitutions('UZ');
-        $listing = $this->institutionListing('MSU');
-
-        $this->institutionsPost($listing, $this->ids('NUST'))->assertRedirect()->assertSessionHasNoErrors();
-
-        $this->assertSame($this->ids('NUST'), $this->savedInstitutions(), 'what they said is kept');
-
-        $html = $this->wizard($listing);
-        $this->assertStringContainsString('NOT ELIGIBLE', $html);
-        $this->assertStringContainsString('id="correct-institutions"', $html, 'and they can try again');
-        $this->assertSame($this->ids('NUST'), $this->tickedInstitutions($html));
-        $this->assertStringNotContainsString('name="personal_statement"', $html);
-
-        // The page is not the control: a direct submission is refused with the reason, and no application exists.
-        $this->submitFor($listing)->assertSessionHas('errorMessage');
-        $this->assertStringContainsString('do not meet', (string) session('errorMessage'));
-        $this->assertSame(0, $this->applicationsMade());
-    }
-
-    public function test_invalid_institution_identifiers_are_refused_and_save_nothing(): void
-    {
-        $this->asAdultSchoolLeaver();
-        $this->saveInstitutions('UZ', 'NUST');
-        $listing = $this->institutionListing('MSU');
-        \App\Models\Institution::where('code', 'CUT')->update(['is_active' => false]);
-
-        foreach ([
-            'unknown id' => [[999999], 'profile.applied_institution_ids'],
-            'switched off' => [$this->ids('CUT'), 'profile.applied_institution_ids'],
-            'four' => [$this->ids('UZ', 'MSU', 'NUST', 'CUT'), 'profile.applied_institution_ids'],
-            'not a number' => [['abc'], 'profile.applied_institution_ids.0'],
-            'nested' => [[[1]], 'profile.applied_institution_ids.0'],
-        ] as $case => [$ids, $key]) {
-            $this->institutionsPost($listing, $ids)->assertSessionHasErrors($key);
-            $this->assertSame($this->ids('UZ', 'NUST'), $this->savedInstitutions(), $case . ': the saved list is untouched');
-        }
-
-        $this->details($listing, ['profile' => ['applied_institution_ids' => 'not-an-array']])->assertSessionHasErrors('profile.applied_institution_ids');
-        $this->assertSame($this->ids('UZ', 'NUST'), $this->savedInstitutions());
-    }
-
-    public function test_a_failed_institution_update_saves_no_other_detail_or_document(): void
-    {
-        $this->asAdultSchoolLeaver();
-        $this->profile()->forceFill(['gender' => null, 'recommendation_letter_path' => null, 'recommendation_letter_filename' => null])->save();
-        $this->saveInstitutions('UZ');
-        $listing = $this->institutionListing('MSU');
-        // Nothing on file for this one: the question, a missing detail and a missing document are all on the page.
-        \App\Models\ApplicantInstitution::where('profile_id', $this->profile()->profile_id)->delete();
-
-        $html = $this->wizard($listing);
-        $this->assertStringContainsString('name="profile[gender]"', $html);
-        $this->assertStringContainsString('name="documents[recommendation]"', $html);
-        $before = $this->profile()->only(['gender', 'recommendation_letter_path']);
-        $filesBefore = Storage::disk((string) config('filesystems.default', 'local'))->allFiles();
-
-        $this->details($listing, ['profile' => ['gender' => 'female', 'applied_institution_ids' => [999999]]], ['documents' => ['recommendation' => $this->pdf('letter.pdf')]])
-            ->assertSessionHasErrors('profile.applied_institution_ids');
-
-        $this->assertSame($before, $this->profile()->only(['gender', 'recommendation_letter_path']), 'nothing beside it was saved');
-        $this->assertSame($filesBefore, Storage::disk((string) config('filesystems.default', 'local'))->allFiles(), 'no file was written');
-        $this->assertSame([], $this->savedInstitutions());
-
-        // The same request with a good answer saves all of it.
-        $this->details($listing, ['profile' => ['gender' => 'female', 'applied_institution_ids' => $this->ids('MSU')]], ['documents' => ['recommendation' => $this->pdf('letter.pdf')]])
-            ->assertSessionHasNoErrors();
-        $this->assertSame('female', $this->profile()->gender);
-        $this->assertNotNull($this->profile()->recommendation_letter_path);
-        $this->assertSame($this->ids('MSU'), $this->savedInstitutions());
-    }
-
     // ===================== a refused submission leaves nothing behind =====================
 
     /** An adult school-leaver who is certainly not eligible for a scholarship limited to MSU, and is missing the letter. */
     private function ineligibleWithNoLetter(): Opportunity
     {
         $this->asAdultSchoolLeaver();
-        $this->saveInstitutions('UZ');
         $this->profile()->forceFill(['recommendation_letter_path' => null, 'recommendation_letter_filename' => null, 'recommendation_letter_uploaded_at' => null])->save();
 
-        return $this->institutionListing('MSU');
+        // A real requirement they fail: a province no one lives in.
+        return $this->listing(['required_province' => 'ZZZ-Not-A-Real-Province']);
     }
 
     private function assertNothingWasKept(): void

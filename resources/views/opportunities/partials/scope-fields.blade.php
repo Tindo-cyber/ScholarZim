@@ -188,7 +188,7 @@
         </div>
 
         <fieldset class="mb-3" data-home-only @if($hideInstitutions) hidden @endif>
-            <legend class="form-label fs-6 mb-1">3. Which institutions?</legend>
+            <legend class="form-label fs-6 mb-1">3. Where will the student study?</legend>
             <div class="form-check">
                 <input class="form-check-input @error('institutions_open_to') is-invalid @enderror" type="radio" name="institutions_open_to" id="institutions-any"
                        value="{{ $listingScopes::INSTITUTIONS_ANY }}" @checked($institutionsOpenTo === $listingScopes::INSTITUTIONS_ANY)>
@@ -197,14 +197,14 @@
             <div class="form-check">
                 <input class="form-check-input @error('institutions_open_to') is-invalid @enderror" type="radio" name="institutions_open_to" id="institutions-chosen"
                        value="{{ $listingScopes::INSTITUTIONS_CHOSEN }}" @checked($institutionsOpenTo === $listingScopes::INSTITUTIONS_CHOSEN)>
-                <label class="form-check-label" for="institutions-chosen">Only students at the institutions I choose</label>
+                <label class="form-check-label" for="institutions-chosen">At the institutions I choose</label>
             </div>
             @error('institutions_open_to')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 
             <div class="mt-2" data-institutions-chosen @if($institutionsOpenTo === $listingScopes::INSTITUTIONS_ANY) hidden @endif>
                 <x-scope-picker name="scope_institutions" id="scope-institutions" label="Institutions" noun="institutions"
                                 level-select="field-education_level" :active-level="$activeLevel" level-noun="institutions" :groups="$institutionGroups"
-                                help="Institutions that offer programmes at the level chosen above. Not here? Use the option below." />
+                                help="Where the award is studied. Applicants do not need to be there already. Not listed? Use the option below." />
             </div>
         </fieldset>
 

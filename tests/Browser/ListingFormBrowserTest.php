@@ -29,28 +29,23 @@ class ListingFormBrowserTest extends DuskTestCase
                 ->visit('/opportunities/create')
                 ->waitFor(self::LEVEL, self::WAIT);
 
-            // Undergraduate uses everything.
+            // Undergraduate uses everything; and there is no subject label to type any more.
             $browser->select(self::LEVEL, EducationLevel::UNDERGRADUATE)
-                ->assertVisible('#field-target_field')
-                ->type('#field-target_field', 'Engineering')
+                ->assertMissing('#field-target_field')
                 ->click('#advanced-rules summary')
                 ->waitFor('#field-min_academic_points', self::WAIT)
                 ->type('#field-min_academic_points', '12');
 
-            // Form 1 has no field of study and no A-Level points: they go, and their values with them.
+            // Form 1 has no A-Level points: they go, and their value with them.
             $browser->select(self::LEVEL, EducationLevel::FORM_1)
-                ->assertMissing('#field-target_field')
                 ->assertMissing('#field-min_academic_points');
 
             // And they do not come back with the old text when the level is changed back.
             $browser->select(self::LEVEL, EducationLevel::UNDERGRADUATE)
-                ->assertVisible('#field-target_field')
-                ->assertValue('#field-target_field', '')
                 ->assertValue('#field-min_academic_points', '');
 
-            // A PhD keeps a field but has no points and no school subjects.
+            // A PhD has no points and no school subjects.
             $browser->select(self::LEVEL, EducationLevel::PHD)
-                ->assertVisible('#field-target_field')
                 ->assertMissing('#field-min_academic_points')
                 ->assertMissing('#add-subject-requirement');
         });
@@ -89,7 +84,7 @@ class ListingFormBrowserTest extends DuskTestCase
                 ->waitFor('#field-title', self::WAIT)
                 ->assertValue('#field-title', 'Browser Bursary 2027')
                 ->assertValue('#field-deadline', '')
-                ->assertValue('#field-target_field', 'Engineering')
+                ->assertMissing('#field-target_field')
                 ->assertSee('Copied from');
         });
     }

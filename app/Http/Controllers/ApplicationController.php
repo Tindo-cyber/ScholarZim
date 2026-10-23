@@ -97,13 +97,8 @@ class ApplicationController extends Controller
 
         $fields = $readiness->inlineFields();
         $documents = $readiness->missingDocumentTypes();
-        $offersInstitutions = $readiness->offersInstitutions();
 
         $rules = [];
-        if ($offersInstitutions) {
-            $rules['profile.applied_institution_ids'] = ['required', 'array', 'min:1', 'max:' . \App\Models\ApplicantInstitution::MAX];
-            $rules['profile.applied_institution_ids.*'] = ['integer'];
-        }
         foreach ($fields as $field) {
             $rules['profile.' . $field] = ProfileDetailRules::forMissing($field);
         }
@@ -131,31 +126,13 @@ class ApplicationController extends Controller
             $details['guardian_confirmed'] = true;
         }
 
-        // Everything is checked before anything is written, so a refused answer (an institution that is not in the
-        // catalogue, a fourth institution) cannot leave the details or documents beside it half saved.
-        $institutionIds = null;
-
-        if ($offersInstitutions) {
-            try {
-                $institutionIds = app(\App\Services\Catalogue\ApplicantProgrammes::class)
-                    ->validateAppliedInstitutions($profile, (array) ($data['profile']['applied_institution_ids'] ?? []));
-            } catch (ValidationException $e) {
-                throw ValidationException::withMessages([
-                    'profile.applied_institution_ids' => $e->errors()['applied_institution_ids'][0] ?? 'Choose institutions from the list.',
-                ]);
-            }
-        }
-
         // The database changes go together or not at all. The files are separate: a file store is not something a
         // transaction can roll back, so the documents follow, one at a time, once the rest is safely saved.
-        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $details, $profile, $institutionIds) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($user, $details, $profile) {
             if ($details !== []) {
                 $this->profileService->update($user, $details);
             }
 
-            if ($institutionIds !== null) {
-                app(\App\Services\Catalogue\ApplicantProgrammes::class)->saveAppliedInstitutions($profile, $institutionIds);
-            }
         });
 
         foreach ($documents as $type) {
@@ -163,7 +140,7 @@ class ApplicationController extends Controller
                 $this->profileService->storeDocument($user, $type, $request->file('documents.' . $type));
             } catch (\RuntimeException $e) {
                 return back()->withInput()->with('errorMessage', $e->getMessage()
-                    . ($details !== [] || $institutionIds !== null ? ' The other details you gave were saved; upload this document again.' : ''));
+                    . ($details !== [] ? ' The other details you gave were saved; upload this document again.' : ''));
             }
         }
 

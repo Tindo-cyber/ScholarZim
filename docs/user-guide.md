@@ -45,14 +45,8 @@ Screenshots for printed reports live in [docs/screenshots/](screenshots/) — ca
   the profile can hold (your results, your programme) is a link to that section, with a
   **Back to my application** button when you are done. It does not make you complete the whole
   profile again, and it does not collect documents for a scholarship you are not eligible for.
-- One extra question can appear for school-leavers: a scholarship limited to named institutions
-  asks which institutions you have applied to or hold an offer from (up to three), because you
-  have no current institution to check. It is asked only on that kind of scholarship, saved
-  once, and reused by the next one whenever it fits. It is not on the profile page. If the list
-  you saved does not include an institution a later scholarship is limited to, that application
-  page shows your saved list ticked and lets you add to it, remove from it or change it
-  (**Save and check again**); eligibility is worked out again from the new list, and you can
-  apply only if it now fits.
+- A scholarship for study at named institutions never asks where you are now or where you have applied: the institution
+  is where the award is studied, and you do not have to be there already. The scholarship page says "Where you would study".
 - Then write your personal statement (the one thing that is particular to each scholarship),
   tick the confirmation and **Submit**. The application is recorded for you.
 - You never record where you have applied. Every application you submit appears in the

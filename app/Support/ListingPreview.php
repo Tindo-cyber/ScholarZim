@@ -60,7 +60,6 @@ final class ListingPreview
             'description' => $text('description'),
             'education_level' => $level,
             'minimum_education_level' => $oneOf('minimum_education_level', EducationLevel::APPLICANT_LEVELS),
-            'target_field' => $text('target_field'),
             'funding_type' => $oneOf('funding_type', FormOptions::FUNDING_TYPES),
             'country' => $oneOf('country', FormOptions::countries()) ?? FormOptions::DEFAULT_COUNTRY,
             'deadline' => self::date($input['deadline'] ?? null),
