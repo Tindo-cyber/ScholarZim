@@ -223,7 +223,8 @@ class DatabaseIntegrityTest extends TestCase
             $table . ' is missing entirely'
         );
 
-        $indexes = collect(DB::select("PRAGMA index_list('" . $table . "')"))
+        // The schema builder reads the real indexes on whichever driver is running, so this holds on MySQL as well as SQLite.
+        $indexes = collect(Schema::getIndexes($table))
             ->pluck('name')
             ->all();
 
@@ -253,8 +254,8 @@ class DatabaseIntegrityTest extends TestCase
     #[DataProvider('expectedUniqueKeys')]
     public function test_the_duplicate_preventing_unique_keys_exist(string $table, string $index): void
     {
-        $unique = collect(DB::select("PRAGMA index_list('" . $table . "')"))
-            ->where('unique', 1)
+        $unique = collect(Schema::getIndexes($table))
+            ->where('unique', true)
             ->pluck('name')
             ->all();
 

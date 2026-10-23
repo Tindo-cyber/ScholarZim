@@ -539,10 +539,18 @@ bar (or under the browser menu) once the manifest and worker are both in place.
 php artisan test
 ```
 
-2,308 tests as of 2026-10-13 (one skipped on Windows only — a `finfo` limitation in a single
-document-type test, not a coverage gap), plus 49 browser tests (see Dusk below). Run `php artisan test` for the
-current number; this one will drift as the suite grows. The full run takes several minutes; `php artisan test --parallel`
-is faster.
+The runner prints the current totals; any count written here would drift as the suite grows. One test is skipped
+on Windows only — a `finfo` limitation in a single document-type test, not a coverage gap. There are also browser
+tests (see Dusk below). A serial run takes tens of minutes; `php artisan test --parallel` takes a few.
+
+The suite runs on in-memory SQLite (`phpunit.xml`). To run it against MySQL, set `DB_CONNECTION=mysql` and
+`DB_DATABASE=<a throwaway database>` in the shell (never your development database - `RefreshDatabase` rebuilds it).
+`DatabaseIntegrityTest` reads indexes through the schema builder, so it checks the same indexes on both drivers.
+
+Run one test command at a time. Separate `php artisan test` commands started together share one fake-storage folder,
+and document tests then fail at random. `php artisan test --parallel` is the exception: it is one command, and
+Laravel gives each of its workers its own fake-storage folder, so it is safe. It has been checked on the default SQLite
+setup only, not with a MySQL database.
 
 - `SmokeTest` renders every authenticated page for each role and checks the role guards.
 - `WorkflowTest` covers the moderation gate, the apply-once rule, and provider decisions.
