@@ -97,13 +97,14 @@ class ScholarFitTestSeederTest extends TestCase
     {
         $this->assertSame(self::YES, $this->verdict('rudo.mutasa', 'Computing Programmes Bursary'));
         $this->assertSame(self::YES, $this->verdict('fadzai.moyo', 'Computing Programmes Bursary'));
-        $this->assertSame(self::NO, $this->verdict('nyasha.hove', 'Computing Programmes Bursary'));
-        $this->assertSame(self::NO, $this->verdict('simba.dube', 'Computing Programmes Bursary'));
+        // School-leavers who chose other programmes: outside their choices (a note and a later place), not refused.
+        $this->assertSame(self::YES, $this->verdict('nyasha.hove', 'Computing Programmes Bursary'));
+        $this->assertSame(self::YES, $this->verdict('simba.dube', 'Computing Programmes Bursary'));
         $this->assertSame(self::ASK, $this->verdict('tariro.gumbo', 'Computing Programmes Bursary'), 'no programme chosen yet');
 
         $this->assertSame(self::YES, $this->verdict('nyasha.hove', 'Health Sciences Scholarship'));
-        $this->assertSame(self::NO, $this->verdict('rudo.mutasa', 'Health Sciences Scholarship'));
-        $this->assertSame(self::NO, $this->verdict('joseph.banda', 'Health Sciences Scholarship'));
+        $this->assertSame(self::YES, $this->verdict('rudo.mutasa', 'Health Sciences Scholarship'), 'a leaver who chose Computing: outside their choices, not refused');
+        $this->assertSame(self::YES, $this->verdict('joseph.banda', 'Health Sciences Scholarship'));
     }
 
     public function test_institution_scope(): void

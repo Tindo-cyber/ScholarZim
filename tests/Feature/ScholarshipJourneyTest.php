@@ -25,8 +25,8 @@ use Tests\TestCase;
 /**
  * One scholarship, start to finish, through the real routes and the four kinds of visitor:
  * a provider posts it for specific programmes with an age limit, it is invisible until an administrator approves it, a
- * visitor can then find it, the student on that programme is told they qualify and applies, the student on another
- * programme in the same field and the student who is too old are not, and the provider decides
+ * visitor can then find it, the student on that programme is told they qualify and applies, the student who is too old
+ * is stopped (one who chose another programme in the field is only told it is outside their choices), and the provider decides
  * and the decision stays final. Each hand-over is checked from the side that receives it.
  */
 class ScholarshipJourneyTest extends TestCase
@@ -156,19 +156,20 @@ class ScholarshipJourneyTest extends TestCase
         $failed = fn (User $student) => collect($evaluate($student))->filter(fn ($o) => ! $o->passed && ! $o->advisory)->pluck('type')->all();
 
         $this->assertSame([], $failed($this->match), 'the student on the programme, within the age limit, qualifies');
-        $this->assertContains('programme_scope', $failed($this->sibling), 'another programme in the same field does not');
+        $this->assertSame([], $failed($this->sibling), 'another programme in the same field is outside what a school-leaver chose, which is a note, not a refusal');
+        $this->assertTrue((new \App\Services\ScholarFit\EligibilityResult($listing->fresh(), $evaluate($this->sibling)))->outsidePreferences());
         $this->assertContains('age', $failed($this->tooOld), 'the age limit is enforced');
 
-        // 6. The student who qualifies applies; the others are stopped; nobody applies twice.
-        $this->as($this->sibling)->post('/apply/' . $listing->opportunity_id . '/quick');
+        // 6. The student who is too old is stopped; the one who qualifies applies; nobody applies twice.
         $this->as($this->tooOld)->post('/apply/' . $listing->opportunity_id . '/quick');
-        $this->assertSame(0, Application::where('opportunity_id', $listing->opportunity_id)->count(), 'neither was let through');
+        $this->assertSame(0, Application::where('opportunity_id', $listing->opportunity_id)->count(), 'the age limit stopped them');
 
         $quick = $this->as($this->match)->post('/apply/' . $listing->opportunity_id . '/quick');
         $this->assertNull(session('errorMessage'), (string) session('errorMessage'));
         $quick->assertSessionHasNoErrors();
         $this->as($this->match)->post('/apply/' . $listing->opportunity_id . '/quick');
         $application = Application::where('opportunity_id', $listing->opportunity_id)->sole();
+        // (The school-leaver who chose another programme in the field is not refused either: ScholarFitOpenToTest covers applying.)
         $this->assertSame(ApplicationStatus::PENDING, $application->application_status);
         $this->assertSame($this->match->user_id, $application->user_id);
 

@@ -67,8 +67,10 @@ class ProgrammeScope
         $applicant = $this->applicant($profile);
         $outcomes = [];
 
-        // A school-leaver said which level they want to study at by the programmes they chose. A listing at
-        // another level is not for them, whatever it is open to - checked even when it is open to all programmes.
+        // A school-leaver's chosen programmes are what they hope to study: a preference, not something they have done.
+        // A listing at another level, or in other programmes, is outside those preferences - which is said, and shown
+        // after the ones inside them, but is never a reason to refuse them. Only what a student actually is (the
+        // programme they are enrolled on) can fail a listing's programme restriction. See outsidePreferences().
         $level = $this->intendedLevelOutcome($listing, $applicant);
 
         if ($level !== null) {
@@ -81,7 +83,7 @@ class ProgrammeScope
         $unlisted = $this->unlisted($listing);
 
         if ($scopes->isEmpty()) {
-            if ($unlisted !== [] && $level === null) {
+            if ($unlisted !== []) {
                 $outcomes[] = $this->unlistedInstitutionOutcome($unlisted);
             }
 
@@ -94,15 +96,15 @@ class ProgrammeScope
         $what = $scopes->filter(fn (OpportunityScope $s) => $s->programme_id !== null || $s->field_id !== null)->values();
         $where = $scopes->filter(fn (OpportunityScope $s) => $s->institution_id !== null)->values();
 
-        // The level rule has already said this listing is not for them; saying again that their programmes are
-        // not its programmes would be the same refusal twice.
+        // The level note has already said this listing is outside their chosen programmes; saying again that their
+        // programmes are not its programmes would be the same note twice.
         if ($what->isNotEmpty() && $level === null) {
-            $outcomes[] = $this->programmeOutcome($what, $applicant, $describer->describeProgrammes($what), $origin);
+            $outcomes[] = $this->asPreference($this->programmeOutcome($what, $applicant, $describer->describeProgrammes($what), $origin), $applicant);
         }
 
         if ($where->isNotEmpty()) {
             $outcomes[] = $this->institutionOutcome($where, $applicant, $describer->describeInstitutions($where, $unlisted), $origin, $unlisted);
-        } elseif ($unlisted !== [] && $level === null) {
+        } elseif ($unlisted !== []) {
             $outcomes[] = $this->unlistedInstitutionOutcome($unlisted);
         }
 
@@ -418,10 +420,10 @@ class ProgrammeScope
      * A school-leaver whose chosen programmes are all at another level than the listing's.
      *
      * Their programmes say what they want to study next. An A-Level student who chose only diplomas has said
-     * they are looking for a diploma, so a degree award - even in the same field, even open to all programmes -
-     * is not for them; adding a degree programme to their choices is how they say otherwise. Nothing to judge
-     * when they have chosen nothing yet (that is "needs information", elsewhere), or when the listing is not
-     * for a level a school-leaver chooses programmes at.
+     * they are looking for a diploma, so a degree award is outside what they have chosen. That is a note and an
+     * ordering, never a refusal: a preference is not an eligibility requirement, and they may well want the award
+     * anyway. Nothing to say when they have chosen nothing yet (that is "needs information", elsewhere), or when
+     * the listing is not for a level a school-leaver chooses programmes at.
      */
     private function intendedLevelOutcome(Opportunity $listing, array $applicant): ?RequirementOutcome
     {
@@ -438,13 +440,36 @@ class ProgrammeScope
 
         $levels = $applicant['programmes']->map(fn (Programme $p) => EducationLevel::label($p->education_level))->unique()->implode(' and ');
 
-        return RequirementOutcome::fail(
+        return RequirementOutcome::note(
             RequirementOutcome::TYPE_PROGRAMME_SCOPE,
-            'Programme: this scholarship funds ' . EducationLevel::label($level) . ' study, but the programmes you chose are at '
-                . $levels . ' level (' . $applicant['programmes']->pluck('name')->implode(', ') . '). Add a '
-                . EducationLevel::label($level) . ' programme to your choices if you are also looking for this kind of award.',
+            false,
+            'Outside your chosen programmes: this scholarship funds ' . EducationLevel::label($level) . ' study, but the programmes you chose are at '
+                . $levels . ' level (' . $applicant['programmes']->pluck('name')->implode(', ') . '). This does not rule you out - '
+                . 'your chosen programmes only change the order listings are shown in. Your choices have not been changed.',
             required: EducationLevel::label($level),
             actual: $applicant['programmes']->pluck('name')->implode(', '),
+        );
+    }
+
+    /**
+     * A school-leaver's programmes are preferences, so a listing open to other programmes is outside them rather than
+     * closed to them: the refusal becomes a note. A student who is enrolled is judged on the programme they are on, as
+     * before, and what the applicant has not said stays a question.
+     */
+    private function asPreference(RequirementOutcome $outcome, array $applicant): RequirementOutcome
+    {
+        if ($applicant['mode'] !== ApplicantProgrammes::INTENDED || $outcome->passed || $outcome->advisory || $outcome->needsInformation) {
+            return $outcome;
+        }
+
+        return RequirementOutcome::note(
+            RequirementOutcome::TYPE_PROGRAMME_SCOPE,
+            false,
+            'Outside your chosen programmes: ' . preg_replace('/^Programme: /', '', $outcome->message)
+                . ' This does not rule you out - your chosen programmes only change the order listings are shown in, and your choices '
+                . 'have not been changed. Check that you would study one of these before you apply.',
+            required: $outcome->required,
+            actual: $outcome->actual,
         );
     }
 
