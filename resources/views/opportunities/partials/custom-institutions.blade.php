@@ -9,7 +9,6 @@
      * (ListingScopes::choices), so typing "University of Zimbabwe" never creates a second copy.
      */
     $max = \App\Services\Catalogue\ListingScopes::MAX_CUSTOM_INSTITUTIONS;
-    $countryNames = array_values(array_diff(\App\Support\FormOptions::countries(), \App\Support\FormOptions::FLEXIBLE_COUNTRIES));
     $rows = collect((array) old('custom_institutions', $opportunity?->custom_institutions ?? []))
         ->filter(fn ($row) => is_array($row))
         ->all();
@@ -34,7 +33,7 @@
 
     @foreach($rows as $i => $row)
         <div class="row g-2 mb-2">
-            <div class="col-md-7">
+            <div class="col-md-12">
                 <label class="form-label small" for="{{ $idPrefix }}-custom-name-{{ $i }}">Institution name</label>
                 <input class="form-control @error('custom_institutions.' . $i . '.name') is-invalid @enderror"
                        id="{{ $idPrefix }}-custom-name-{{ $i }}" name="custom_institutions[{{ $i }}][name]"
@@ -42,17 +41,12 @@
                        value="{{ $row['name'] ?? '' }}" placeholder="e.g. University of Cape Town">
                 @error('custom_institutions.' . $i . '.name')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-5">
-                <label class="form-label small" for="{{ $idPrefix }}-custom-country-{{ $i }}">Country (optional)</label>
-                <select class="form-select @error('custom_institutions.' . $i . '.country') is-invalid @enderror"
-                        id="{{ $idPrefix }}-custom-country-{{ $i }}" name="custom_institutions[{{ $i }}][country]">
-                    <option value="">Not stated</option>
-                    @foreach($countryNames as $name)
-                        <option value="{{ $name }}" @selected(($row['country'] ?? '') === $name)>{{ $name }}</option>
-                    @endforeach
-                </select>
-                @error('custom_institutions.' . $i . '.country')<div class="invalid-feedback">{{ $message }}</div>@enderror
-            </div>
+            {{-- No country question here: the listing's own "Country of study" above already says where. It is put on the
+                 institution when the listing is saved (ListingScopes::decision). A country already kept on a row is
+                 carried through unchanged. --}}
+            @if(filled($row['country'] ?? null))
+                <input type="hidden" name="custom_institutions[{{ $i }}][country]" value="{{ $row['country'] }}">
+            @endif
         </div>
     @endforeach
     <p class="form-text mb-0">Need to add another? Save the listing, then edit it. Up to {{ $max }} in all.</p>

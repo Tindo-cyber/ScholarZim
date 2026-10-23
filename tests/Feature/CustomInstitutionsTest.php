@@ -109,6 +109,32 @@ class CustomInstitutionsTest extends TestCase
         $this->assertCount(0, $listing->scopes, 'and is not a scope row, which points at the catalogue');
     }
 
+    public function test_an_institution_typed_without_a_country_is_in_the_listings_country_of_study(): void
+    {
+        $this->create([
+            'country' => 'Botswana',
+            'open_to' => 'fields',
+            'scope_fields' => [$this->field('07')],
+            'custom_institutions' => [$this->typed('University of Botswana'), $this->typed('Botswana Open University', 'South Africa')],
+        ])->assertSessionHasNoErrors();
+
+        $listing = $this->listing();
+
+        $this->assertSame('Botswana', $listing->custom_institutions[0]['country'], 'asked once, as the country of study');
+        $this->assertSame('South Africa', $listing->custom_institutions[1]['country'], 'a country already on the row is kept');
+    }
+
+    public function test_an_institution_for_study_in_zimbabwe_gets_no_country_label(): void
+    {
+        $this->create([
+            'country' => 'Zimbabwe',
+            'institutions_open_to' => 'chosen',
+            'custom_institutions' => [$this->typed('Rhodes Technical Institute')],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertNull($this->listing()->custom_institutions[0]['country']);
+    }
+
     public function test_a_foreign_institution_with_its_country_is_kept_without_the_zimbabwean_catalogue(): void
     {
         $before = Institution::count();
