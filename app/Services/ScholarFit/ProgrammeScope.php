@@ -67,15 +67,27 @@ class ProgrammeScope
         $applicant = $this->applicant($profile);
         $outcomes = [];
 
-        // A school-leaver said which level they want to study at by the programmes they chose. A listing at
-        // another level is not for them, whatever it is open to - checked even when it is open to all programmes.
+        // A school-leaver's chosen programmes are what they hope to study: a preference, not something they have done.
+        // A listing at another level, or in other programmes, is outside those preferences - which is said, and shown
+        // after the ones inside them, but is never a reason to refuse them. Only what a student actually is (the
+        // programme they are enrolled on) can fail a listing's programme restriction. See outsidePreferences().
         $level = $this->intendedLevelOutcome($listing, $applicant);
 
         if ($level !== null) {
             $outcomes[] = $level;
         }
 
+        // Institutions are WHERE THE AWARD IS TO BE STUDIED, not where an applicant is now. A student about to start (an
+        // A-Level leaver, say) is not at the university yet and must not be turned away for that, and a student already
+        // elsewhere may be moving. So the listing's institutions - from the catalogue or typed in - are said to the
+        // applicant as a note, once, and are never compared with the institution on their profile.
+        $unlisted = $this->unlisted($listing);
+
         if ($scopes->isEmpty()) {
+            if ($unlisted !== []) {
+                $outcomes[] = $this->destinationNote(collect(), $unlisted);
+            }
+
             return $outcomes;
         }
 
@@ -85,14 +97,14 @@ class ProgrammeScope
         $what = $scopes->filter(fn (OpportunityScope $s) => $s->programme_id !== null || $s->field_id !== null)->values();
         $where = $scopes->filter(fn (OpportunityScope $s) => $s->institution_id !== null)->values();
 
-        // The level rule has already said this listing is not for them; saying again that their programmes are
-        // not its programmes would be the same refusal twice.
+        // The level note has already said this listing is outside their chosen programmes; saying again that their
+        // programmes are not its programmes would be the same note twice.
         if ($what->isNotEmpty() && $level === null) {
-            $outcomes[] = $this->programmeOutcome($what, $applicant, $describer->describeProgrammes($what), $origin);
+            $outcomes[] = $this->asPreference($this->programmeOutcome($what, $applicant, $describer->describeProgrammes($what), $origin), $applicant);
         }
 
-        if ($where->isNotEmpty()) {
-            $outcomes[] = $this->institutionOutcome($where, $applicant, $describer->describeInstitutions($where), $origin);
+        if ($where->isNotEmpty() || $unlisted !== []) {
+            $outcomes[] = $this->destinationNote($where, $unlisted);
         }
 
         return $outcomes;
@@ -407,10 +419,10 @@ class ProgrammeScope
      * A school-leaver whose chosen programmes are all at another level than the listing's.
      *
      * Their programmes say what they want to study next. An A-Level student who chose only diplomas has said
-     * they are looking for a diploma, so a degree award - even in the same field, even open to all programmes -
-     * is not for them; adding a degree programme to their choices is how they say otherwise. Nothing to judge
-     * when they have chosen nothing yet (that is "needs information", elsewhere), or when the listing is not
-     * for a level a school-leaver chooses programmes at.
+     * they are looking for a diploma, so a degree award is outside what they have chosen. That is a note and an
+     * ordering, never a refusal: a preference is not an eligibility requirement, and they may well want the award
+     * anyway. Nothing to say when they have chosen nothing yet (that is "needs information", elsewhere), or when
+     * the listing is not for a level a school-leaver chooses programmes at.
      */
     private function intendedLevelOutcome(Opportunity $listing, array $applicant): ?RequirementOutcome
     {
@@ -427,13 +439,36 @@ class ProgrammeScope
 
         $levels = $applicant['programmes']->map(fn (Programme $p) => EducationLevel::label($p->education_level))->unique()->implode(' and ');
 
-        return RequirementOutcome::fail(
+        return RequirementOutcome::note(
             RequirementOutcome::TYPE_PROGRAMME_SCOPE,
-            'Programme: this scholarship funds ' . EducationLevel::label($level) . ' study, but the programmes you chose are at '
-                . $levels . ' level (' . $applicant['programmes']->pluck('name')->implode(', ') . '). Add a '
-                . EducationLevel::label($level) . ' programme to your choices if you are also looking for this kind of award.',
+            false,
+            'Outside your chosen programmes: this scholarship funds ' . EducationLevel::label($level) . ' study, but the programmes you chose are at '
+                . $levels . ' level (' . $applicant['programmes']->pluck('name')->implode(', ') . '). This does not rule you out - '
+                . 'your chosen programmes only change the order listings are shown in. Your choices have not been changed.',
             required: EducationLevel::label($level),
             actual: $applicant['programmes']->pluck('name')->implode(', '),
+        );
+    }
+
+    /**
+     * A school-leaver's programmes are preferences, so a listing open to other programmes is outside them rather than
+     * closed to them: the refusal becomes a note. A student who is enrolled is judged on the programme they are on, as
+     * before, and what the applicant has not said stays a question.
+     */
+    private function asPreference(RequirementOutcome $outcome, array $applicant): RequirementOutcome
+    {
+        if ($applicant['mode'] !== ApplicantProgrammes::INTENDED || $outcome->passed || $outcome->advisory || $outcome->needsInformation) {
+            return $outcome;
+        }
+
+        return RequirementOutcome::note(
+            RequirementOutcome::TYPE_PROGRAMME_SCOPE,
+            false,
+            'Outside your chosen programmes: ' . preg_replace('/^Programme: /', '', $outcome->message)
+                . ' This does not rule you out - your chosen programmes only change the order listings are shown in, and your choices '
+                . 'have not been changed. Check that you would study one of these before you apply.',
+            required: $outcome->required,
+            actual: $outcome->actual,
         );
     }
 
@@ -482,58 +517,40 @@ class ProgrammeScope
 
     // ------------------------------------------------------------ institutions --
 
-    private function institutionOutcome(Collection $where, array $applicant, string $open, ?array $origin): RequirementOutcome
+    /**
+     * The institutions a home listing names that are not in the catalogue, as {name, country} rows. None for study abroad,
+     * where the institutions are hosts the student goes to after the award and are shown on the listing instead.
+     *
+     * @return array<int, array{name: string, country?: ?string}>
+     */
+    private function unlisted(Opportunity $listing): array
     {
-        $prefix = $this->prefix($origin);
-        $listed = $where->pluck('institution_id')->map(fn ($i) => (int) $i)->all();
-        $have = $applicant['institutions'];
-
-        if ($have === []) {
-            if (! $applicant['levelKnown']) {
-                return RequirementOutcome::needsInfo(
-                    RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                    $prefix . 'Institution: for students at ' . $open . ' - add your education level to your profile so we can check it.',
-                    ScholarFitFieldNames::EDUCATION_LEVEL,
-                    required: $open,
-                );
-            }
-
-            if ($applicant['mode'] === ApplicantProgrammes::NONE) {
-                return RequirementOutcome::fail(
-                    RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                    $prefix . 'Institution: this scholarship is for students at ' . $open . '. Your current level has no institution to check.',
-                    required: $open,
-                );
-            }
-
-            return RequirementOutcome::needsInfo(
-                RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                $prefix . 'Institution: for students at ' . $open . ' - '
-                    . ($applicant['mode'] === ApplicantProgrammes::CURRENT
-                        ? 'add where you study to your profile so we can check it.'
-                        : 'say which institutions you have applied to or hold an offer from when you apply, so we can check it.'),
-                ScholarFitFieldNames::INSTITUTION,
-                required: $open,
-            );
+        if (ListingScopes::isAbroad($listing->country)) {
+            return [];
         }
 
-        $names = collect($applicant['institutionNames'])->filter()->implode(', ');
+        return array_values(array_filter((array) ($listing->custom_institutions ?? []), 'is_array'));
+    }
 
-        if (array_intersect($have, $listed) !== []) {
-            return RequirementOutcome::pass(
-                RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-                $prefix . 'Institution: for students at ' . $open . '; ' . ($applicant['mode'] === ApplicantProgrammes::CURRENT ? 'you study at ' : 'you have applied to ') . ($names ?: 'a listed one') . '.',
-                required: $open,
-                actual: $names ?: null,
-            );
-        }
+    /**
+     * Where the award is to be studied, said to the applicant. A note: it states what the provider intends and leaves
+     * the applicant to judge whether they would study there, and the provider to judge it at review (the note is kept in
+     * the application's snapshot). It is never a pass, a failure or a question, because nothing on a profile can say
+     * where someone WILL study - only where they are, or have applied, today.
+     *
+     * @param  Collection<int, OpportunityScope>  $where  the catalogue institutions
+     * @param  array<int, array{name: string, country?: ?string}>  $unlisted  typed-in ones
+     */
+    private function destinationNote(Collection $where, array $unlisted): RequirementOutcome
+    {
+        $named = app(ListingScopes::class)->describeInstitutions($where, $unlisted) ?? '';
 
-        return RequirementOutcome::fail(
+        return RequirementOutcome::note(
             RequirementOutcome::TYPE_INSTITUTION_SCOPE,
-            $prefix . 'Institution: this scholarship is for students at ' . $open . ', but '
-                . ($applicant['mode'] === ApplicantProgrammes::CURRENT ? 'you study at ' : 'you have applied to ') . ($names ?: 'another institution') . '.',
-            required: $open,
-            actual: $names ?: null,
+            true,
+            'Where you would study: this scholarship is for study at ' . $named . '. You do not have to be there already - '
+                . 'it is where you would study if you are awarded it.',
+            required: $named,
         );
     }
 

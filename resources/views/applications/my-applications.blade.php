@@ -145,6 +145,14 @@
                             @if($application->isDecided() && $application->decision_reason)
                                 <span class="d-block small text-secondary mt-1">{{ $application->decision_reason }}</span>
                             @endif
+
+                            {{-- What the provider left with an acceptance: kept here, not only in the notification. --}}
+                            @if($application->isAccepted() && $application->acceptance_message)
+                                <span class="d-block small mt-2 p-2 border rounded" id="acceptance-message-{{ $application->application_id }}">
+                                    <span class="d-block fw-semibold">Message from the provider</span>
+                                    <span class="d-block" style="white-space: pre-line">{{ $application->acceptance_message }}</span>
+                                </span>
+                            @endif
                         </x-data-table.cell>
 
                         <x-data-table.cell align="end">

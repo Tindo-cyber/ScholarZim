@@ -60,7 +60,6 @@ final class ListingPreview
             'description' => $text('description'),
             'education_level' => $level,
             'minimum_education_level' => $oneOf('minimum_education_level', EducationLevel::APPLICANT_LEVELS),
-            'target_field' => $text('target_field'),
             'funding_type' => $oneOf('funding_type', FormOptions::FUNDING_TYPES),
             'country' => $oneOf('country', FormOptions::countries()) ?? FormOptions::DEFAULT_COUNTRY,
             'deadline' => self::date($input['deadline'] ?? null),
@@ -84,6 +83,9 @@ final class ListingPreview
         $opportunity->setRelation('provider', $provider);
         $opportunity->setRelation('subjectRequirements', self::requirements($input['subject_requirements'] ?? []));
         $opportunity->setRelation('scopes', self::scopes($input, $level));
+        $opportunity->custom_institutions = \App\Services\Catalogue\ListingScopes::appliesTo($level)
+            ? (app(\App\Services\Catalogue\ListingScopes::class)->choices($input)['custom'] ?: null)
+            : null;
 
         return $opportunity;
     }

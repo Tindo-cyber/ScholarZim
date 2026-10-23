@@ -63,6 +63,7 @@ class Opportunity extends Model
         'any_institution',
         'accepts_o_level',
         'host_institutions',
+        'custom_institutions',
         'other_conditions',
     ];
 
@@ -82,6 +83,7 @@ class Opportunity extends Model
         'any_institution' => 'boolean',
         'accepts_o_level' => 'boolean',
         'risk_flags' => 'array',
+        'custom_institutions' => 'array',
         'auto_approved' => 'boolean',
         'post_reviewed_at' => 'datetime',
         'view_count' => 'integer',
@@ -124,6 +126,51 @@ class Opportunity extends Model
 
         return $this->any_institution === null && ! \App\Services\Catalogue\ListingScopes::isAbroad($this->country)
             && ! ($this->relationLoaded('scopes') ? $this->scopes->whereNotNull('institution_id')->isNotEmpty() : $this->scopes()->whereNotNull('institution_id')->exists());
+    }
+
+    /**
+     * What a listing is about, for cards and pages: the fields of what it is open to, read from the catalogue - a
+     * programme's own field, or the fields chosen - so a provider never types the same thing twice. A listing posted
+     * before that keeps the label it was written with. None for a listing open to every programme.
+     *
+     * @return array<int, string>
+     */
+    public function subjectFields(): array
+    {
+        $legacy = trim((string) $this->target_field);
+
+        if ($legacy !== '') {
+            return [$legacy];
+        }
+
+        if ($this->open_to_all_programmes === true) {
+            return [];
+        }
+
+        $this->loadMissing(['scopes.field', 'scopes.programme.field']);
+
+        return $this->scopes
+            ->map(fn (OpportunityScope $scope) => $scope->field ?? $scope->programme?->field)
+            ->filter()
+            ->map(fn (Field $field) => $field->label())
+            ->unique()
+            ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+    }
+
+    /** The same, as one short line: the first two, then how many more. */
+    public function subjectLabel(): ?string
+    {
+        $fields = $this->subjectFields();
+
+        if ($fields === []) {
+            return null;
+        }
+
+        $shown = implode(', ', array_slice($fields, 0, 2));
+
+        return count($fields) > 2 ? $shown . ' +' . (count($fields) - 2) . ' more' : $shown;
     }
 
     public function scopes(): HasMany
@@ -202,7 +249,16 @@ class Opportunity extends Model
         }
 
         if ($field = $value($filters['field_of_study'] ?? null)) {
-            $query->where('target_field', $field);
+            // An older listing's own label, or a field it is open to (a chosen field, or the field of a chosen programme).
+            $label = "COALESCE(NULLIF(display_name, ''), name) = ?";
+
+            $query->where(function (Builder $q) use ($field, $label) {
+                $q->where('target_field', $field)
+                    ->orWhereHas('scopes', function (Builder $scope) use ($field, $label) {
+                        $scope->whereHas('field', fn (Builder $f) => $f->whereRaw($label, [$field]))
+                            ->orWhereHas('programme.field', fn (Builder $f) => $f->whereRaw($label, [$field]));
+                    });
+            });
         }
 
         if ($provider = $value($filters['provider'] ?? null)) {
@@ -233,7 +289,8 @@ class Opportunity extends Model
             $query->where(function (Builder $q) use ($like) {
                 $q->where('title', 'like', $like)
                     ->orWhere('description', 'like', $like)
-                    ->orWhere('provider_name', 'like', $like);
+                    ->orWhere('provider_name', 'like', $like)
+                    ->orWhere('target_field', 'like', $like);
             });
         }
 

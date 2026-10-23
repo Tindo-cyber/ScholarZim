@@ -143,7 +143,6 @@ class ListingConveniencesTest extends TestCase
         $source = $this->listing([
             'title' => 'Engineering Bursary 2026',
             'description' => 'Covers tuition for a four-year engineering degree.',
-            'target_field' => 'Engineering',
             'award_amount' => 2500, 'award_currency' => 'ZAR', 'award_slots' => 4, 'is_renewable' => true,
             'external_url' => 'https://www.scholarzim.co.zw/apply',
             'max_age' => 24, 'required_province' => 'Harare', 'target_locality' => 'Harare',
@@ -159,7 +158,7 @@ class ListingConveniencesTest extends TestCase
         $this->assertStringContainsString('value="Engineering Bursary 2027"', $html);
         $this->assertStringContainsString('Covers tuition for a four-year engineering degree.', $html);
         $this->assertMatchesRegularExpression('#<option value="UNDERGRADUATE"[^>]*selected#', $html);
-        $this->assertStringContainsString('value="Engineering"', $html);
+        $this->assertStringNotContainsString('name="target_field"', $html, 'there is no subject label to copy');
         $this->assertStringContainsString('value="2500.00"', $html);
         $this->assertMatchesRegularExpression('#<option value="ZAR"[^>]*selected#', $html);
         $this->assertStringContainsString('value="4"', $html);
@@ -318,7 +317,7 @@ class ListingConveniencesTest extends TestCase
                 'title' => 'A Brand New Bursary',
                 'description' => 'Covers tuition and books.',
                 'education_level' => EducationLevel::UNDERGRADUATE,
-                'target_field' => 'Engineering',
+                'open_to' => 'fields', 'scope_fields' => [\App\Models\Field::where('code', '071')->value('id')],
                 'funding_type' => 'Full Scholarship',
                 'award_amount' => 3000, 'award_currency' => 'USD',
                 'country' => 'Germany',
@@ -327,7 +326,7 @@ class ListingConveniencesTest extends TestCase
             ->assertOk()
             ->assertSee('A Brand New Bursary')
             ->assertSee('Covers tuition and books.')
-            ->assertSee('Engineering')
+            ->assertSee(\App\Models\Field::where('code', '071')->firstOrFail()->label(), false)
             ->assertSee('USD 3,000')
             ->assertSee('Germany')
             ->assertSee('Preview')
@@ -454,7 +453,6 @@ class ListingConveniencesTest extends TestCase
             'education_level' => $copy->education_level,
             'funding_type' => $copy->funding_type,
             'country' => $copy->country,
-            'target_field' => $copy->target_field,
             'deadline' => Carbon::today()->addDays(30)->toDateString(),
         ], fn ($v) => $v !== null))->assertSessionHasNoErrors();
 

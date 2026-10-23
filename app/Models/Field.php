@@ -65,6 +65,102 @@ class Field extends Model
      */
     public static function pickerGroups(iterable $broads, array $selected = []): array
     {
+        return self::buildGroups($broads, $selected);
+    }
+
+    /**
+     * The same picker, split by level and holding only the fields that have a programme at that level.
+     *
+     * Read from the catalogue itself (each programme's own field), so a level lists what it can actually be open to
+     * instead of every field there is. Field-wide targeting is unchanged: "All of X" and the narrow fields are still
+     * there wherever the level has programmes in them. A field already chosen on a saved listing that has none at that
+     * level is kept, in a group of its own at the listing's level, so editing never silently drops it.
+     *
+     * @param  iterable<int, self>  $broads  broad fields with `children` loaded
+     * @param  iterable<int, Programme>  $programmes  the catalogue's programmes (only approved, active ones count)
+     * @param  array<int, int>  $selected  ids already chosen
+     * @param  ?string  $keepAtLevel  the level a chosen field with no programmes there is filed under
+     * @return array<int, array{label: string, level: ?string, options: array}>
+     */
+    public static function pickerGroupsByLevel(iterable $broads, iterable $programmes, array $selected = [], ?string $keepAtLevel = null): array
+    {
+        $offered = [];
+
+        foreach ($programmes as $programme) {
+            if ($programme->field_id !== null && $programme->status === Programme::APPROVED && $programme->is_active) {
+                $offered[$programme->education_level][$programme->field_id] = true;
+            }
+        }
+
+        $groups = [];
+        $listed = [];
+        $listedAtKeep = [];
+
+        foreach (Programme::LEVELS as $level) {
+            $ids = $offered[$level] ?? [];
+
+            if ($ids === []) {
+                continue;
+            }
+
+            $levelBroads = [];
+
+            foreach ($broads as $broad) {
+                $children = $broad->children->filter(fn (self $child) => isset($ids[$child->id]))->values();
+
+                if ($children->isEmpty() && ! isset($ids[$broad->id])) {
+                    continue;
+                }
+
+                $copy = clone $broad;
+                $copy->setRelation('children', $children);
+                $levelBroads[] = $copy;
+            }
+
+            foreach (self::buildGroups($levelBroads, $selected) as $group) {
+                foreach ($group['options'] as $option) {
+                    $listed[$option['id']] = true;
+
+                    if ($level === ($keepAtLevel ?? Programme::LEVELS[0])) {
+                        $listedAtKeep[$option['id']] = true;
+                    }
+                }
+
+                $groups[] = ['level' => $level, 'label' => \App\Support\EducationLevel::label($level) . ' · ' . $group['label']] + $group;
+            }
+        }
+
+        // A chosen field the listing's own level does not list (an older listing's): still shown, still ticked there,
+        // so changing nothing never drops it.
+        $orphans = array_values(array_filter($selected, fn (int $id) => ! isset($listedAtKeep[$id])));
+
+        if ($orphans !== []) {
+            $kept = [];
+
+            foreach ($broads as $broad) {
+                $children = $broad->children->filter(fn (self $child) => in_array($child->id, $orphans, true))->values();
+
+                if ($children->isNotEmpty() || in_array($broad->id, $orphans, true)) {
+                    $copy = clone $broad;
+                    $copy->setRelation('children', $children);
+                    $kept[] = $copy;
+                }
+            }
+
+            foreach (self::buildGroups($kept, $selected) as $group) {
+                $group['options'] = array_values(array_filter($group['options'], fn (array $o) => $o['selected']));
+
+                if ($group['options'] !== []) {
+                    $groups[] = ['level' => $keepAtLevel ?? Programme::LEVELS[0], 'label' => 'Already chosen · ' . $group['label']] + $group;
+                }
+            }
+        }
+
+        return $groups;
+    }
+
+    private static function buildGroups(iterable $broads, array $selected): array
+    {
         $groups = [];
 
         foreach ($broads as $broad) {

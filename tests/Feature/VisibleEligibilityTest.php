@@ -404,21 +404,23 @@ class VisibleEligibilityTest extends TestCase
 
     // ------------------------------------------------ 4. programme-level restrictions --
 
-    public function test_a_listing_that_names_a_level_refuses_a_school_leaver_whose_programmes_are_at_another(): void
+    public function test_a_listing_at_another_level_than_a_school_leavers_programmes_is_outside_their_choices_not_a_refusal(): void
     {
         $html = $this->recommendations('rudo.mutasa');
         $card = $this->card($html, 'Diploma Skills Award');
 
-        $this->assertStringContainsString('NOT ELIGIBLE', $card);
+        $this->assertStringNotContainsString('NOT ELIGIBLE', $card);
+        $this->assertStringContainsString('Outside your chosen programmes', $card);
         $this->assertStringContainsString('this scholarship funds Diploma study, but the programmes you chose are at Undergraduate level', $card);
-        $this->assertStringContainsString('BSc Computer Science', $card, 'it names the programmes it judged');
-        $this->assertStringContainsString('Add a Diploma programme to your choices', $card, 'and says how to put it right');
+        $this->assertStringContainsString('BSc Computer Science', $card, 'it names the programmes it compared');
+        $this->assertStringContainsString('does not rule you out', $card);
+        $this->assertTrue($this->fit('rudo.mutasa', 'Diploma Skills Award')->meetsRequirements());
     }
 
-    public function test_the_refusal_is_lifted_by_choosing_a_programme_at_that_level(): void
+    public function test_choosing_a_programme_at_that_level_moves_it_from_outside_their_choices_to_a_match(): void
     {
         $profile = ApplicantProfile::where('user_id', $this->user('rudo.mutasa')->user_id)->firstOrFail();
-        $this->assertTrue($this->fit('rudo.mutasa', 'Diploma Skills Award')->isIneligible());
+        $this->assertTrue($this->fit('rudo.mutasa', 'Diploma Skills Award')->outsidePreferences());
 
         ApplicantProgramme::create([
             'profile_id' => $profile->profile_id,
@@ -428,6 +430,7 @@ class VisibleEligibilityTest extends TestCase
 
         $fit = $this->fit('rudo.mutasa', 'Diploma Skills Award');
         $this->assertTrue($fit->meetsRequirements());
+        $this->assertFalse($fit->outsidePreferences());
         $this->assertStringContainsString('FIT Diploma Skills Award', $this->sections($this->recommendations('rudo.mutasa'))['matches']);
     }
 

@@ -93,10 +93,17 @@ final class ListingReading
         // What the provider chose in "Open to", in plain words.
         $scopes = $listing->relationLoaded('scopes') ? $listing->scopes : ($listing->exists ? $listing->scopes()->with(['programme', 'field.parent', 'institution'])->get() : collect());
 
+        $custom = (array) ($listing->custom_institutions ?? []);
+
         if ($scopes->isNotEmpty()) {
             $add('Open to: ' . app(ListingScopes::class)->describe($scopes));
         } elseif ($listing->open_to_all_programmes === true) {
             $add('Open to: all programmes at this level');
+        }
+
+        if ($custom !== []) {
+            $add('Institutions that are not in our list: ' . implode('; ', array_map([ListingScopes::class, 'customLabel'], $custom))
+                . ' (shown to students; profiles cannot be checked against them, so students are asked to confirm with you)');
         }
 
         if ($listing->accepts_o_level && EducationLevel::canonical($listing->education_level) === EducationLevel::UNDERGRADUATE) {

@@ -191,7 +191,7 @@
                                     <tr>
                                         <td data-label="Scholarship">
                                             <span class="fw-semibold d-block">{{ $opportunity->title }}</span>
-                                            <span class="small text-secondary">{{ $opportunity->target_field ?: 'Any field' }}</span>
+                                            <span class="small text-secondary">{{ $opportunity->subjectLabel() ?: 'Any field' }}</span>
                                         </td>
                                         <td class="text-secondary small" data-label="Deadline">
                                             {{ $opportunity->deadline?->format('d M Y') ?? 'Rolling' }}

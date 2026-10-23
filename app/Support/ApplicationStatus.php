@@ -8,9 +8,7 @@ namespace App\Support;
  * A student applies, the application is PENDING, and the provider either
  * ACCEPTS or REJECTS it with a written reason. "Accepted" means the provider has
  * granted the scholarship, so there is no second step after it and nothing for
- * the student to confirm. A provider who got a decision wrong withdraws it, which
- * returns the application to PENDING (ApplicationService::reopen()) so it can be
- * decided again.
+ * the student to confirm. A decision is final: it cannot be withdrawn or reopened.
  *
  * WITHDRAWN is kept because pulling out is the applicant's decision and the
  * columns and screens for it already exist, but it is not a provider decision
@@ -58,7 +56,7 @@ final class ApplicationStatus
 
     public const LEGACY_AWARDED = 'AWARDED';
 
-    /** The provider's two decisions. Both need a reason; either can be withdrawn, which reopens the application. */
+    /** The provider's two decisions. Both need a reason, and both are final. */
     public const DECISIONS = [
         self::ACCEPTED,
         self::REJECTED,

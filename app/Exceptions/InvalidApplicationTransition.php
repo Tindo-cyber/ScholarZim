@@ -38,7 +38,7 @@ class InvalidApplicationTransition extends RuntimeException
         ));
     }
 
-    /** Nobody but the provider who decided may change a decision, and then only by withdrawing it. */
+    /** Nobody, the provider included, may change a decision. */
     public static function terminal(?string $from): self
     {
         return new self(sprintf(
@@ -48,22 +48,12 @@ class InvalidApplicationTransition extends RuntimeException
     }
 
     /**
-     * The provider tried to decide an application that already has a decision. A decision is changed by withdrawing
-     * it first and deciding again, which keeps the correction on the record and tells the applicant.
+     * The provider tried to decide, or undo, an application that already has a decision. Decisions are final.
      */
     public static function alreadyDecided(?string $from): self
     {
         return new self(sprintf(
-            'This application was already %s. To change your decision, withdraw it first (with a reason) and then decide again.',
-            self::describe($from)
-        ));
-    }
-
-    /** The provider tried to withdraw a decision on an application that has none. */
-    public static function nothingToReopen(?string $from): self
-    {
-        return new self(sprintf(
-            'This application is %s, so there is no decision to withdraw.',
+            'This application was already %s. A decision is final and cannot be changed or withdrawn.',
             self::describe($from)
         ));
     }

@@ -133,7 +133,8 @@ class ProgrammePickerLoadTest extends TestCase
 
         $this->assertGreaterThan(30, preg_match_all('#name="scope_fields\[\]"#', $html));
         $this->assertGreaterThan(30, preg_match_all('#name="scope_institutions\[\]"#', $html));
-        $this->assertSame(1, substr_count($html, '<template data-picker-reserve>'), 'only the programme list has a reserve');
+        // The programme, field and institution lists all follow the level, so each keeps the other levels in a reserve.
+        $this->assertSame(3, substr_count($html, '<template data-picker-reserve>'), 'programmes, fields and institutions each have a reserve');
     }
 
     public function test_a_suggested_programme_waiting_for_approval_is_still_offered_to_its_suggester(): void

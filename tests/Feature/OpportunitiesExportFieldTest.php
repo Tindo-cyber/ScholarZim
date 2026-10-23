@@ -62,7 +62,7 @@ class OpportunitiesExportFieldTest extends TestCase
         }
 
         $header = array_shift($rows);
-        $this->assertSame(['Title', 'Provider', 'Education Level', 'Field', 'Location', 'Funding', 'Deadline', 'Status', 'Open to'], $header);
+        $this->assertSame(['Title', 'Provider', 'Education Level', 'Field', 'Location', 'Funding', 'Deadline', 'Status', 'Open to', 'Institutions'], $header);
 
         $out = [];
 

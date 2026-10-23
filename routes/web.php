@@ -255,9 +255,6 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
     Route::post('/provider/applications/{id}/review', [Provider\ApplicationReviewController::class, 'review'])
         ->whereNumber('id')
         ->name('provider.applications.review');
-    Route::post('/provider/applications/{id}/reopen', [Provider\ApplicationReviewController::class, 'reopen'])
-        ->whereNumber('id')
-        ->name('provider.applications.reopen');
     Route::get('/provider/applications/{applicationId}/results-certificate', [FileDownloadController::class, 'applicantResults'])
         ->whereNumber('applicationId')
         ->name('files.applicantResults');

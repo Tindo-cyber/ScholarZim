@@ -283,61 +283,74 @@ class ProgrammeScopeEligibilityTest extends TestCase
     }
 
     // ------------------------------------------------------------ institutions --
+    //
+    // A listing's institutions are where the award is to be STUDIED. They are said to the applicant as a note and never
+    // compared with where the applicant is now, or has applied: that is not where they would study if awarded it.
 
-    public function test_an_enrolled_student_at_a_listed_institution_passes(): void
+    private function destinationNote(Opportunity $listing): ?RequirementOutcome
+    {
+        $note = $this->institutionOutcome($listing);
+
+        $this->assertTrue($note === null || $note->advisory, 'the institution is only ever a note');
+
+        return $note;
+    }
+
+    public function test_the_institutions_are_stated_as_where_the_award_is_studied(): void
     {
         $this->enrolled('BSc Computer Science', 'MSU');
 
-        $outcome = $this->institutionOutcome($this->listing(['institution' => [$this->institution('MSU')->id, $this->institution('NUST')->id]]));
+        $note = $this->destinationNote($this->listing(['institution' => [$this->institution('MSU')->id, $this->institution('NUST')->id]]));
 
-        $this->assertTrue($outcome->passed);
+        $this->assertNotNull($note);
+        $this->assertStringContainsString('Where you would study', $note->message);
+        $this->assertStringContainsString('MSU or NUST', $note->message);
+        $this->assertStringContainsString('You do not have to be there already', $note->message);
     }
 
-    public function test_an_enrolled_student_at_another_institution_fails(): void
+    public function test_an_enrolled_student_at_another_institution_is_not_refused_for_that(): void
     {
         $this->enrolled('BSc Computer Science', 'UZ');
 
-        $outcome = $this->institutionOutcome($this->listing(['institution' => [$this->institution('MSU')->id]]));
+        $listing = $this->listing(['institution' => [$this->institution('MSU')->id]]);
+        $this->destinationNote($listing);
 
-        $this->assertFalse($outcome->passed);
-        $this->assertFalse($outcome->needsInformation);
-        $this->assertStringContainsString('MSU', $outcome->message);
-        $this->assertStringContainsString('University of Zimbabwe', $outcome->message);
+        $this->assertTrue($this->fit($listing)->meetsRequirements());
+        $this->assertSame([], $this->fit($listing)->failureMessages());
     }
 
-    public function test_an_enrolled_student_who_has_not_said_where_they_study_needs_information(): void
+    public function test_an_enrolled_student_who_has_not_said_where_they_study_is_not_asked(): void
     {
         $this->enrolled('BSc Computer Science');
 
         $listing = $this->listing(['institution' => [$this->institution('MSU')->id]]);
-        $outcome = $this->institutionOutcome($listing);
 
-        $this->assertTrue($outcome->needsInformation);
-        $this->assertSame(ScholarFitFieldNames::INSTITUTION, $outcome->missing);
-        $this->assertTrue($this->fit($listing)->needsInformation());
+        $this->assertFalse($this->fit($listing)->needsInformation());
         $this->assertFalse($this->fit($listing)->isIneligible());
+        $this->assertSame([], $this->fit($listing)->missingFields());
     }
 
-    public function test_a_school_leaver_with_no_institution_recorded_needs_information_not_a_fail(): void
+    public function test_a_school_leaver_with_no_institution_recorded_is_not_asked_and_not_refused(): void
     {
         $this->leaver(['BSc Computer Science']);
 
         $listing = $this->listing(['institution' => [$this->institution('MSU')->id]]);
 
-        $this->assertTrue($this->institutionOutcome($listing)->needsInformation);
-        $this->assertTrue($this->fit($listing)->needsInformation());
+        $this->assertTrue($this->fit($listing)->meetsRequirements());
+        $this->assertSame([], $this->fit($listing)->missingFields());
     }
 
-    public function test_a_school_leaver_who_applied_to_a_listed_institution_passes_and_to_none_fails(): void
+    public function test_a_school_leaver_is_judged_the_same_whichever_universities_they_applied_to(): void
     {
-        $this->leaver(['BSc Computer Science'], ['MSU', 'UZ']);
-        $this->assertTrue($this->institutionOutcome($this->listing(['institution' => [$this->institution('MSU')->id]]))->passed);
+        foreach ([['MSU', 'UZ'], ['UZ'], []] as $applied) {
+            $this->leaver(['BSc Computer Science'], $applied);
+            $listing = $this->listing(['institution' => [$this->institution('MSU')->id]]);
 
-        $this->leaver(['BSc Computer Science'], ['UZ']);
-        $this->assertFalse($this->institutionOutcome($this->listing(['institution' => [$this->institution('MSU')->id]]))->passed);
+            $this->assertTrue($this->fit($listing)->meetsRequirements(), json_encode($applied));
+        }
     }
 
-    public function test_programme_and_institution_must_both_fit(): void
+    public function test_the_programme_still_has_to_fit_and_the_institution_never_changes_that(): void
     {
         $scope = fn () => ['field' => [$this->field('06')->id], 'institution' => [$this->institution('MSU')->id, $this->institution('NUST')->id]];
 
@@ -345,10 +358,10 @@ class ProgrammeScopeEligibilityTest extends TestCase
         $this->assertTrue($this->fit($this->listing($scope()))->meetsRequirements());
 
         $this->enrolled('BSc Computer Science', 'UZ');
-        $this->assertTrue($this->fit($this->listing($scope()))->isIneligible(), 'right field, wrong institution');
+        $this->assertTrue($this->fit($this->listing($scope()))->meetsRequirements(), 'right field, another university now: still open to them');
 
         $this->enrolled('Bachelor of Laws', 'MSU');
-        $this->assertTrue($this->fit($this->listing($scope()))->isIneligible(), 'right institution, wrong field');
+        $this->assertTrue($this->fit($this->listing($scope()))->isIneligible(), 'at the intended university but the wrong field: the field is a real restriction');
     }
 
     public function test_a_failure_outranks_a_missing_answer(): void
@@ -358,7 +371,7 @@ class ProgrammeScopeEligibilityTest extends TestCase
         $fit = $this->fit($this->listing(['field' => [$this->field('06')->id], 'institution' => [$this->institution('MSU')->id]]));
 
         $this->assertTrue($fit->isIneligible());
-        $this->assertFalse($fit->needsInformation(), 'asking for a detail cannot change a no');
+        $this->assertFalse($fit->needsInformation(), 'nothing is missing: the institution is not asked about');
     }
 
     // ----------------------------------------------------------- school-leavers --

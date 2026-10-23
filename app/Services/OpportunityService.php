@@ -133,7 +133,9 @@ class OpportunityService
                 'title' => $data['title'] ?? null,
                 'description' => $data['description'] ?? null,
                 'education_level' => $data['education_level'] ?? null,
-                'target_field' => $data['target_field'] ?? null,
+                'open_to' => $data['open_to'] ?? null,
+                'scope_fields' => $data['scope_fields'] ?? [],
+                'scope_programmes' => $data['scope_programmes'] ?? [],
             ],
             $provider
         );
@@ -152,7 +154,6 @@ class OpportunityService
                 'funding_type' => $data['funding_type'] ?? null,
                 'country' => $country,
                 'target_country' => $country,
-                'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
                 'deadline' => $data['deadline'] ?? null,
                 'status' => OpportunityStatus::ACTIVE,
                 'moderation_status' => OpportunityModerationStatus::PENDING,
@@ -422,7 +423,6 @@ class OpportunityService
             'funding_type' => $data['funding_type'] ?? null,
             'country' => $country,
             'target_country' => $country,
-            'target_field' => filled($data['target_field'] ?? null) ? trim($data['target_field']) : null,
         ] + $this->identityAttributes($data, $provider) + $this->awardAttributes($data)
             + $this->scopes->decision($data, $data['education_level'] ?? null, $country);
 
@@ -431,7 +431,11 @@ class OpportunityService
         // elsewhere (student reports) are kept.
         $attributes['risk_flags'] = $this->riskChecker->withStickyFlags(
             $opportunity->risk_flags,
-            $this->riskChecker->check($attributes, $provider)
+            $this->riskChecker->check($attributes + [
+                'open_to' => $data['open_to'] ?? null,
+                'scope_fields' => $data['scope_fields'] ?? [],
+                'scope_programmes' => $data['scope_programmes'] ?? [],
+            ], $provider)
         ) ?: null;
 
         $material = OpportunityLifecycle::isMaterialChange($opportunity, $attributes)
@@ -763,17 +767,40 @@ class OpportunityService
             ->all());
     }
 
-    /** @return array<int, string> */
+    /**
+     * The subjects the filter offers: the fields of everything approved - a chosen field, or the field of a chosen
+     * programme - plus the label an older listing was written with.
+     *
+     * @return array<int, string>
+     */
     public function targetFields(): array
     {
-        return Cache::remember('opportunities.target_fields', now()->addMinutes(15), fn () => Opportunity::query()
-            ->approved()
-            ->whereNotNull('target_field')
-            ->where('target_field', '<>', '')
-            ->distinct()
-            ->orderBy('target_field')
-            ->pluck('target_field')
-            ->all());
+        return Cache::remember('opportunities.target_fields', now()->addMinutes(15), function () {
+            $legacy = Opportunity::query()
+                ->approved()
+                ->whereNotNull('target_field')
+                ->where('target_field', '<>', '')
+                ->distinct()
+                ->pluck('target_field');
+
+            $derived = \Illuminate\Support\Facades\DB::table('opportunity_scopes as s')
+                ->join('opportunities as o', 'o.opportunity_id', '=', 's.opportunity_id')
+                ->leftJoin('fields as f', 'f.id', '=', 's.field_id')
+                ->leftJoin('programmes as p', 'p.id', '=', 's.programme_id')
+                ->leftJoin('fields as pf', 'pf.id', '=', 'p.field_id')
+                ->where('o.moderation_status', OpportunityModerationStatus::APPROVED)
+                ->selectRaw("COALESCE(NULLIF(f.display_name, ''), f.name, NULLIF(pf.display_name, ''), pf.name) as label")
+                ->distinct()
+                ->pluck('label')
+                ->filter();
+
+            // The same label in two cases is one subject to a student choosing from the list.
+            return $legacy->merge($derived)
+                ->unique(fn (string $label) => mb_strtolower($label))
+                ->sort(SORT_NATURAL | SORT_FLAG_CASE)
+                ->values()
+                ->all();
+        });
     }
 
     public function forProvider(User $provider)

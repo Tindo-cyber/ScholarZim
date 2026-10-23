@@ -256,12 +256,16 @@
                             <x-icon name="shield" :size="16" class="flex-shrink-0 mt-1" />
                             <div>
                                 The applicant is notified at once and sees your reason. Accepting grants the scholarship.
-                                A mistaken decision can be withdrawn, which reopens the application.
+                                A decision is final: it cannot be changed or withdrawn afterwards, so check your reason first.
                             </div>
                         </div>
 
                             <x-form.textarea name="reason" label="Reason for your decision" :rows="4" required
                                              hint="The applicant sees this exactly as you write it." />
+
+                            <x-form.textarea name="message" label="Message to applicant (optional)" :rows="3"
+                                             maxlength="1000"
+                                             hint="Sent only if you accept: next steps, registration, deadlines or how to contact you." />
 
                             <div class="d-grid gap-2">
                                 {{-- Two submits in one form, each with its own value. The busy
@@ -297,30 +301,11 @@
                             <p class="mb-0">{{ $application->decision_reason }}</p>
                         @endif
 
-                        @if($canReopen)
-                            {{--
-                                Withdrawing a decision: back to Pending, so a fresh one can be made. Needs a reason
-                                (the applicant is told it) and a confirmation, and says plainly what withdrawing an
-                                acceptance undoes. The server checks all of it again; this only keeps the provider
-                                from reaching for it by accident.
-                            --}}
-                            <hr>
-                            <x-confirm-dialog id="reopen-decision"
-                                              :action="route('provider.applications.reopen', $application->application_id)"
-                                              :title="$application->isAccepted() ? 'Withdraw your acceptance?' : 'Withdraw your rejection?'"
-                                              trigger-label="Withdraw decision and reopen"
-                                              trigger-class="btn btn-outline-secondary w-100"
-                                              trigger-icon="clock-history"
-                                              confirm-label="Withdraw decision"
-                                              :tone="$application->isAccepted() ? 'danger' : 'warning'"
-                                              :message="$application->isAccepted()
-                                                  ? 'This reverses the scholarship award. The applicant is told their acceptance no longer stands, the award slot is released, and the application goes back to Pending until you decide again. Your original decision stays in the audit history.'
-                                                  : 'The application goes back to Pending so you can decide again, and the applicant is told. Your original decision stays in the audit history.'">
-                                <x-form.textarea name="reason" :rows="3" required id="reopen-reason" bag="reopen-decision"
-                                                 label="Why are you withdrawing this decision?"
-                                                 hint="The applicant sees this exactly as you write it." />
-                            </x-confirm-dialog>
+                        @if($application->acceptance_message)
+                            <h3 class="h6 fw-semibold text-uppercase text-secondary small mt-3 mb-1">Message you sent</h3>
+                            <p class="mb-0" style="white-space: pre-line">{{ $application->acceptance_message }}</p>
                         @endif
+
                     @endif
                 </div>
             </div>

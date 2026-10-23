@@ -77,10 +77,6 @@
                                     @include('applications.partials.missing-field', ['field' => $field])
                                 @endforeach
 
-                                @if($readiness->offersInstitutions())
-                                    @include('applications.partials.applied-institutions')
-                                @endif
-
                                 @if($missingDocuments !== [])
                                     <h3 class="h6 fw-semibold">Documents</h3>
                                     @php $needed = count($missingDocuments); @endphp
@@ -177,17 +173,6 @@
                                 <span>{{ $note->message }}</span>
                             </p>
                         @endforeach
-                        @if($readiness->correctsAppliedInstitutions())
-                            {{-- The requirement that failed is where the applicant has applied. That is kept up here, not on the
-                                 profile, so the list on file is offered for correction; eligibility is worked out again on save. --}}
-                            <form method="POST" action="{{ route('applications.details', $opportunity->opportunity_id) }}" id="correct-institutions"
-                                  class="border-top pt-3 mb-3" novalidate>
-                                @csrf
-                                @include('applications.partials.applied-institutions')
-                                <x-submit-button label="Save and check again" busy-label="Saving..." />
-                            </form>
-                        @endif
-
                         <div class="d-flex flex-wrap gap-2">
                             <a class="btn btn-primary" href="{{ route('applicant.profile', ['apply' => $opportunity->opportunity_id]) }}">Update my profile</a>
                             <a class="btn btn-outline-secondary"

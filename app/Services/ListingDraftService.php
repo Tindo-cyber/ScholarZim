@@ -227,7 +227,6 @@ class ListingDraftService
             'on_behalf_of' => ($behalf !== null && strcasecmp($behalf, $own) !== 0) ? $behalf : null,
             'education_level' => $levelForDecision,
             'minimum_education_level' => $option('minimum_education_level', 'Minimum qualifying level', EducationLevel::APPLICANT_LEVELS, 'levels'),
-            'target_field' => $text('target_field', 'Field of study', 255),
             'funding_type' => $option('funding_type', 'Funding type', FormOptions::FUNDING_TYPES, 'funding types'),
             'country' => $country ?? FormOptions::DEFAULT_COUNTRY,
             'target_country' => $country ?? FormOptions::DEFAULT_COUNTRY,
@@ -341,7 +340,7 @@ class ListingDraftService
         $level = EducationLevel::canonical($draft->education_level);
         $input = $this->scopes->answered($input);
         $choices = $this->scopes->choices($input);
-        $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || filled($input['programme_suggestion'] ?? null);
+        $any = $choices['programmes'] || $choices['fields'] || $choices['institutions'] || $choices['custom'] || filled($input['programme_suggestion'] ?? null);
 
         if ($any && ! ListingScopes::appliesTo($level)) {
             $notKept[] = ['field' => 'Open to', 'reason' => 'Programmes, fields and institutions do not apply to ' . EducationLevel::label($level) . ' awards, so none were kept.'];
@@ -378,6 +377,14 @@ class ListingDraftService
 
         if (count($knownInstitutions) !== count($choices['institutions'])) {
             $notKept[] = ['field' => 'Open to', 'reason' => 'An institution that is not available was not kept.'];
+        }
+
+        // An institution typed in that cannot be kept is said so, never dropped silently. The ones that can are saved with the
+        // draft's other attributes (ListingScopes::decision).
+        foreach ($this->scopes->customRows($input) as $row) {
+            if (($problem = $this->scopes->customProblem($row)) !== null) {
+                $notKept[] = ['field' => 'Institution not listed', 'reason' => ($row['name'] !== '' ? '"' . $row['name'] . '" was not kept: ' : '') . $problem];
+            }
         }
 
         if (filled($input['programme_suggestion'] ?? null)) {

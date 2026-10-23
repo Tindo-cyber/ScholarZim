@@ -90,24 +90,16 @@ something that was deliberately removed, not a regression.
 
 - [ ] One student cannot submit a second application to the same listing
 - [ ] A provider decision (Accept or Reject) is refused without a written reason
-- [ ] An Accepted application cannot be turned straight into Rejected (or the reverse): the
-      page offers only **Withdraw decision and reopen**, and a direct request is refused
-- [ ] **Withdraw decision and reopen** asks for a reason and a confirmation; with the reason
-      empty nothing changes and the dialog opens again with the error
-- [ ] Withdrawing a **Rejection** returns the application to Pending; the provider can then
-      Accept it, or Reject it again with a new reason
-- [ ] Withdrawing an **Acceptance** shows the warning that it reverses the award; the applicant
-      is notified that the acceptance no longer stands and is not guaranteed
-- [ ] With a one-slot listing: after accepting, a second applicant cannot be accepted; after
-      withdrawing the first acceptance the second can, and the listing reopens if it had
-      closed itself
-- [ ] The applicant receives a notification at each step (decision, withdrawal, new decision)
-      and sees the withdrawal and its reason on their application page
-- [ ] **Decision history** on the review page lists each decision and withdrawal, oldest first,
-      and the audit log keeps the original decision and its reason
-- [ ] A different provider, an applicant and an administrator cannot withdraw the decision
-- [ ] A reopened application still blocks a second application from the same student, and the
-      applicant can still withdraw it
+- [ ] An Accepted application cannot be turned into Rejected (or the reverse): the review page
+      shows the decision and its reason with nothing to withdraw or reopen it, and a direct
+      request is refused
+- [ ] The old "Withdraw decision and reopen" address returns "not found" for everyone
+- [ ] With a one-slot listing: after accepting, a second applicant cannot be accepted, and the
+      listing stays closed
+- [ ] The applicant receives a notification when the decision is made and sees its reason on
+      their application page; a rejection says the decision is final
+- [ ] The audit log keeps the decision and its reason
+- [ ] The applicant cannot withdraw an application once it has been accepted or rejected
 - [ ] Withdrawing a Pending application notifies the provider and frees the listing for a
       fresh application from the same student
 - [ ] An Accepted or Rejected application cannot be withdrawn by the applicant
@@ -121,7 +113,7 @@ something that was deliberately removed, not a regression.
       requirements." and no mention of ScholarFit
 - [ ] Changing the education level and saving changes the required count and the labels
 - [ ] **Institution / school** is said once: suggestions are the catalogue's names, the programme section does not ask where you
-      studied again, and a scholarship limited to named institutions is checked from what you wrote
+      studied again; a scholarship's institutions are where it is studied and are never checked against it
 - [ ] Choosing a level in the form (before saving) fills the **Field of study** list with that level's programmes, and the search box
       narrows it
 - [ ] A provider's listing form offers every country (Zimbabwe and the common destinations first), plus Any country and Online
@@ -144,11 +136,8 @@ something that was deliberately removed, not a regression.
 - [ ] One-click **Apply** on a listing card refuses (and opens the apply page) while a required
       document is missing; it works once they are all on file
 - [ ] An award the applicant is not eligible for says **NOT ELIGIBLE** and collects no documents
-- [ ] A school-leaver applying to an award limited to named institutions is asked where they have
-      applied (nothing ticked) and it is not on the profile page; the answer is reused by the next such award
-- [ ] With a saved list that does not include the award's institution, the page says **NOT ELIGIBLE** and shows the
-      saved list ticked with **Save and check again**; adding the institution makes the statement appear, and a list
-      that still does not fit stays NOT ELIGIBLE. An invalid choice (a fourth, none) saves nothing
+- [ ] A school-leaver (or anyone) applying to an award to be studied at named institutions is not asked where they study or
+      have applied, is not refused for it, and the page says "Where you would study: ... You do not have to be there already"
 - [ ] A direct submission by someone who is not eligible, or for a listing that is closed, is refused and leaves no
       new document on the profile
 - [ ] The personal statement is still required (100 to 5,000 characters)

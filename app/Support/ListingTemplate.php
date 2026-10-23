@@ -34,6 +34,7 @@ final class ListingTemplate
         'education_level',
         'minimum_education_level',
         'target_field',
+        'custom_institutions',
         'funding_type',
         'country',
         'on_behalf_of',

@@ -8,7 +8,7 @@ final class AuditAction
     public const APPLY = 'APPLY';
     public const APPLICATION_VIEWED = 'APPLICATION_VIEWED';
     public const STATUS_UPDATE = 'STATUS_UPDATE';
-    /** A provider withdrew an accepted or rejected decision and reopened the application for review. */
+    /** A provider withdrew an accepted or rejected decision and reopened the application. No longer possible; kept so earlier history still reads. */
     public const REOPEN_APPLICATION = 'REOPEN_APPLICATION';
     public const CREATE_OPPORTUNITY = 'CREATE_OPPORTUNITY';
     public const DELETE_USER = 'DELETE_USER';

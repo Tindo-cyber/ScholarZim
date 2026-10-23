@@ -665,22 +665,21 @@ class ApplicationService
         }
     }
 
+    /** The longest message a provider may leave with an acceptance. */
+    public const MAX_ACCEPTANCE_MESSAGE = 1000;
+
     /** The reason a listing is given when its last award slot is filled and it closes by itself. */
     private const AUTO_CLOSED_REASON = 'Closed automatically: all award slots filled.';
-
-    /** The reason it is given when a withdrawn acceptance frees a slot and it opens again. */
-    private const AUTO_REOPENED_REASON = 'Reopened automatically: an award slot was released.';
 
     /**
      * The provider's decision, and the only way a PENDING application is decided.
      *
      * Accepting means the provider has granted the scholarship to this
      * applicant. Rejecting means they have not. Both need a written reason
-     * because the applicant is shown it verbatim. A decision is not changed in
-     * place: it is withdrawn with reopen() and then made again, so a decided
-     * application is refused here with an explanation of that.
+     * because the applicant is shown it verbatim. A decision is final: a decided
+     * application is refused here, and nothing reverses it.
      */
-    public function decide(int $applicationId, string $status, ?string $reason, User $provider): Application
+    public function decide(int $applicationId, string $status, ?string $reason, User $provider, ?string $message = null): Application
     {
         // Destination check first - it turns away anything that is not one of the
         // two decisions (a withdrawal, a legacy stage, a value invented by hand)
@@ -700,6 +699,18 @@ class ApplicationService
 
         $reason = trim($reason);
 
+        // The message is part of an acceptance and nothing else: a rejection carries only its reason. Kept as typed
+        // (trimmed), never shortened silently - an over-long one is refused so the provider can say it in fewer words.
+        $message = $status === ApplicationStatus::ACCEPTED ? trim((string) $message) : '';
+
+        if (mb_strlen($message) > self::MAX_ACCEPTANCE_MESSAGE) {
+            throw ValidationException::withMessages([
+                'message' => 'Keep the message to ' . self::MAX_ACCEPTANCE_MESSAGE . ' characters or fewer.',
+            ]);
+        }
+
+        $message = $message === '' ? null : $message;
+
         // Ownership is settled outside the transaction: it cannot change under
         // us, and a stranger should be turned away without taking a row lock.
         // The opportunity id comes from this same read - a foreign key that
@@ -709,7 +720,7 @@ class ApplicationService
 
         $justClosed = false;
 
-        $application = DB::transaction(function () use ($applicationId, $opportunityId, $status, $reason, $provider, &$justClosed) {
+        $application = DB::transaction(function () use ($applicationId, $opportunityId, $status, $reason, $message, $provider, &$justClosed) {
             // Opportunity locked before application - the same order submit()
             // uses - so a submission and a decision contending for the same
             // listing always queue rather than deadlock.
@@ -755,6 +766,7 @@ class ApplicationService
             $application->update([
                 'application_status' => $status,
                 'decision_reason' => $reason,
+                'acceptance_message' => $message,
                 'decided_at' => Carbon::now(),
                 // Whatever a reopening left on the row has done its job: this is the new decision.
                 'reopened_at' => null,
@@ -775,6 +787,8 @@ class ApplicationService
                     'new' => [
                         'application_status' => $status,
                         'decided_at' => $application->decided_at?->toIso8601String(),
+                        // Kept with the decision it came with (null when none was left).
+                        'acceptance_message' => $message,
                         // The student and the listing the decision belongs to, so
                         // the trail identifies it without a join back to rows
                         // that may since have been deleted.
@@ -817,7 +831,7 @@ class ApplicationService
         // it, and - if this was the acceptance that filled the last slot -
         // the provider told their listing closed. A notification sent before
         // this line could announce a decision that then rolled back.
-        $this->notifyApplicantOfDecision($application, $status, $reason);
+        $this->notifyApplicantOfDecision($application, $status, $reason, $message !== null);
 
         if ($justClosed && $application->opportunity?->provider) {
             $this->notificationService->notifyUser(
@@ -833,171 +847,14 @@ class ApplicationService
     }
 
     /**
-     * The provider withdraws a decision they made and reopens the application for review.
+     * Tell the applicant. Runs after the decision (and its message) has committed, so a failure to notify can never lose
+     * either: NotificationService writes the in-app row, then the email, and records any failure in the audit log
+     * instead of throwing.
      *
-     * ACCEPTED or REJECTED goes back to PENDING - not to WITHDRAWN, which is the applicant stepping back and carries
-     * the re-apply rules - and the provider can then decide again. A written reason is required and the applicant is
-     * told it. The current decision (reason, date) is cleared from the row, but nothing is lost: the audit log keeps
-     * the original decision (who, when, why) as it was written, and this reopening (who, when, why) beside it.
-     *
-     * Reopening an acceptance gives the award back: capacity is counted from accepted applications, so the slot is
-     * free the moment this commits, and a listing that closed by itself because its last slot filled opens again.
-     * The applicant is told their acceptance no longer stands while the provider reconsiders.
-     *
-     * Same shape as decide(): ownership first, the listing and then the application locked, the state machine as the
-     * only judge, the audit line inside the transaction and the notification after it.
+     * The message itself is never put in the notification or the email - both only say there is one and link to the
+     * application page, where it is shown. So nothing the provider wrote travels by email.
      */
-    public function reopen(int $applicationId, ?string $reason, User $provider): Application
-    {
-        if (blank($reason)) {
-            throw ValidationException::withMessages([
-                'reason' => 'A reason is required to withdraw a decision - the applicant is told it.',
-            ]);
-        }
-
-        $reason = trim($reason);
-
-        if (mb_strlen($reason) > 500) {
-            throw ValidationException::withMessages(['reason' => 'Keep the reason to 500 characters or fewer.']);
-        }
-
-        $opportunityId = $this->findForProvider($applicationId, $provider)->opportunity_id;
-
-        $listingReopened = false;
-
-        [$application, $previous] = DB::transaction(function () use ($applicationId, $opportunityId, $reason, $provider, &$listingReopened) {
-            $opportunity = Opportunity::whereKey($opportunityId)->lockForUpdate()->first();
-            $application = Application::whereKey($applicationId)->lockForUpdate()->firstOrFail();
-
-            $previousStatus = $application->application_status;
-
-            ApplicationStateMachine::assertCanTransition(
-                $previousStatus,
-                ApplicationStatus::PENDING,
-                ApplicationStateMachine::ACTOR_PROVIDER
-            );
-
-            // What is being withdrawn, taken before it is cleared.
-            $previous = [
-                'status' => ApplicationStatus::canonical($previousStatus),
-                'raw_status' => $previousStatus,
-                'reason' => $application->decision_reason,
-                'decided_at' => $application->decided_at,
-            ];
-
-            $now = Carbon::now();
-
-            $application->update([
-                'application_status' => ApplicationStatus::PENDING,
-                'decision_reason' => null,
-                'decided_at' => null,
-                'reopened_at' => $now,
-                'reopen_reason' => $reason,
-                'reopened_from' => $previous['status'],
-            ]);
-
-            $this->auditService->logOrFail(
-                $provider->email,
-                AuditAction::REOPEN_APPLICATION,
-                'APPLICATION',
-                $application->application_id,
-                'Withdrew the ' . strtolower(ApplicationStatus::displayLabel($previous['status'])) . ' decision on "'
-                    . ($application->opportunity?->title ?? 'a scholarship') . '" application from '
-                    . ($application->user?->displayName() ?? 'a deleted user') . ' and reopened it for review: ' . $reason,
-                [
-                    // The decision as it stood, so it is recoverable from here even though the row no longer holds it.
-                    'old' => [
-                        'application_status' => $previous['raw_status'],
-                        'decision_reason' => $previous['reason'],
-                        'decided_at' => $previous['decided_at']?->toIso8601String(),
-                    ],
-                    'new' => [
-                        'application_status' => ApplicationStatus::PENDING,
-                        'reopened_at' => $now->toIso8601String(),
-                        'applicant_user_id' => $application->user_id,
-                        'applicant_email' => $application->user?->email,
-                        'opportunity_id' => $application->opportunity_id,
-                        'opportunity_title' => $application->opportunity?->title,
-                    ],
-                    'reason' => $reason,
-                ]
-            );
-
-            // A withdrawn acceptance gives its slot back. A listing that closed by itself because the last slot filled
-            // opens again - and only one that closed for that reason, never one the provider closed or withdrew.
-            if ($previous['status'] === ApplicationStatus::ACCEPTED
-                && $opportunity !== null
-                && $opportunity->award_slots !== null
-                // A listing moderation has since taken down is not put back on show by a slot being released.
-                && OpportunityModerationStatus::isApproved($opportunity->moderation_status)
-                && strcasecmp((string) $opportunity->status, OpportunityStatus::CLOSED) === 0
-                && $opportunity->last_change_reason === self::AUTO_CLOSED_REASON
-                && ($opportunity->deadline === null || ! $opportunity->deadline->lt(\App\Support\Deadlines::today()))) {
-                $accepted = Application::where('opportunity_id', $opportunity->opportunity_id)
-                    ->where('application_status', ApplicationStatus::ACCEPTED)
-                    ->count();
-
-                if ($accepted < $opportunity->award_slots) {
-                    $opportunity->update([
-                        'status' => OpportunityStatus::ACTIVE,
-                        'last_change_reason' => self::AUTO_REOPENED_REASON,
-                        'updated_at' => Carbon::now(),
-                    ]);
-
-                    $this->auditService->logOrFail(
-                        $provider->email,
-                        AuditAction::UPDATE_OPPORTUNITY,
-                        'OPPORTUNITY',
-                        $opportunity->opportunity_id,
-                        'Reopened "' . $opportunity->title . '" automatically: a withdrawn acceptance released an award slot.'
-                    );
-
-                    $listingReopened = true;
-                }
-            }
-
-            return [$application, $previous];
-        });
-
-        // Only now, with the withdrawal committed, is the applicant told.
-        $this->notifyApplicantOfReopening($application, $previous['status'], $reason);
-
-        $application->setAttribute('listing_reopened', $listingReopened);
-
-        return $application;
-    }
-
-    private function notifyApplicantOfReopening(Application $application, string $previousStatus, string $reason): void
-    {
-        $applicant = $application->user;
-
-        if (! $applicant) {
-            return;
-        }
-
-        $title = $application->opportunity?->title ?? 'a scholarship';
-
-        $prefix = $previousStatus === ApplicationStatus::ACCEPTED
-            ? 'The provider of "' . $title . '" has withdrawn their decision to accept your application and reopened it for review. '
-                . 'Your acceptance no longer stands while they reconsider, so the scholarship is not guaranteed. '
-                . 'You will be told their new decision. Reason: '
-            : 'The provider of "' . $title . '" has withdrawn their earlier decision on your application and reopened it for review. '
-                . 'Your application is pending again and you will be told their new decision. Reason: ';
-
-        // The message column holds 500 characters; the reason is cut to fit rather than the explanation.
-        $room = max(40, 500 - mb_strlen($prefix));
-        $message = $prefix . (mb_strlen($reason) > $room ? mb_substr($reason, 0, $room - 3) . '...' : $reason);
-
-        $this->notificationService->notifyUser(
-            $applicant,
-            NotificationType::APPLICATION_REOPENED,
-            $message,
-            '/applications/' . $application->application_id . '/confirmation',
-            $application->application_id
-        );
-    }
-
-    private function notifyApplicantOfDecision(Application $application, string $status, string $reason): void
+    private function notifyApplicantOfDecision(Application $application, string $status, string $reason, bool $hasMessage = false): void
     {
         $applicant = $application->user;
 
@@ -1010,7 +867,8 @@ class ApplicationService
         [$type, $message] = $status === ApplicationStatus::ACCEPTED
             ? [
                 NotificationType::APPLICATION_ACCEPTED,
-                'Congratulations! Your application to "' . $title . '" has been accepted. ' . $reason,
+                'Congratulations! Your application to "' . $title . '" has been accepted. ' . $reason
+                    . ($hasMessage ? ' The provider has also left you a message: open ScholarZim to read it.' : ''),
             ]
             : [
                 NotificationType::APPLICATION_REJECTED,

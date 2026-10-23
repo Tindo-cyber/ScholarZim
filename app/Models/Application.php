@@ -34,6 +34,8 @@ class Application extends Model
         'document_filename',
         'document_path',
         'decision_reason',
+        // The optional note that comes with an ACCEPTANCE (never with a rejection); written once, by decide().
+        'acceptance_message',
         'decided_at',
         'withdrawn_at',
         'withdrawal_reason',
@@ -43,7 +45,7 @@ class Application extends Model
         'viewed_by_provider_at',
         'submitted_snapshot',
         // What the screens show while a reopened application waits for its new decision; the withdrawn decision itself
-        // is kept in the audit log. Written only by ApplicationService::reopen() and cleared by decide() / re-applying.
+        // is kept in the audit log. Only applications reopened before reopening was removed carry it; cleared by decide() / re-applying.
         'reopened_at',
         'reopen_reason',
         'reopened_from',
@@ -274,13 +276,10 @@ class Application extends Model
         return ApplicationStateMachine::canDecide($this->application_status);
     }
 
-    /** Whether the provider may withdraw the decision already made and reopen it. */
-    public function canBeReopened(): bool
-    {
-        return ApplicationStateMachine::canReopen($this->application_status);
-    }
-
-    /** Pending again because a provider withdrew an earlier decision, and not yet decided a second time. */
+    /**
+     * Pending again because a provider withdrew an earlier decision, and not yet decided a second time. Providers can no
+     * longer withdraw a decision; this reads applications reopened before that was removed.
+     */
     public function isReopened(): bool
     {
         return $this->isPending() && $this->reopened_at !== null;

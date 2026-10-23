@@ -12,24 +12,21 @@ use App\Exceptions\InvalidApplicationTransition;
  *
  *     PENDING --> ACCEPTED   (provider, with a reason)
  *     PENDING --> REJECTED   (provider, with a reason)
- *     ACCEPTED --> PENDING   (provider withdraws the decision, with a reason)
- *     REJECTED --> PENDING   (provider withdraws the decision, with a reason)
  *     PENDING --> WITHDRAWN  (applicant)
  *     WITHDRAWN --> PENDING  (applicant applies again)
  *
  * There is no award step after acceptance - accepting *is* granting the
- * scholarship. A decision is not flipped in place: a provider who got it wrong
- * withdraws it (back to PENDING, with a reason, and the applicant is told) and
- * then decides again. That keeps a correction an explicit, recorded act rather
- * than an overwrite, and "provider withdraws a decision" is a different event
- * from WITHDRAWN, which is the applicant stepping back and carries the
- * re-apply rules.
+ * scholarship - and a decision is final. Neither the provider nor anyone else
+ * can withdraw, reverse or reopen an ACCEPTED or REJECTED application; it stays
+ * as decided, with its reason, and keeps counting toward the listing's awards.
+ * WITHDRAWN is only ever the applicant stepping back, and carries the re-apply
+ * rules.
  *
  * The moves are listed per actor rather than as one shared table plus a list of
- * what each actor may set. The two PENDING moves above must not leak into each
- * other: a provider may return a *decided* application to PENDING and nothing
- * else, and an applicant may return only a *withdrawn* one - never a decision.
- * A union table cannot say that.
+ * what each actor may set. The PENDING move must not leak between them: an
+ * applicant may return only a *withdrawn* application to PENDING, and the
+ * provider has no move that returns anything to it. A union table cannot say
+ * that.
  */
 final class ApplicationStateMachine
 {
@@ -40,15 +37,13 @@ final class ApplicationStateMachine
     /**
      * The moves each actor may make, by the status they start from.
      *
-     * The provider decides a pending application and may withdraw a decision (back to PENDING); they cannot
-     * withdraw an application on the applicant's behalf or touch a withdrawn one. The applicant withdraws a pending
-     * application and re-applies from a withdrawn one, and can never reach, or undo, a decision.
+     * The provider decides a pending application, once; they cannot change that decision afterwards, withdraw an
+     * application on the applicant's behalf or touch a withdrawn one. The applicant withdraws a pending application
+     * and re-applies from a withdrawn one, and can never reach, or undo, a decision.
      */
     private const MOVES = [
         self::ACTOR_PROVIDER => [
             ApplicationStatus::PENDING => [ApplicationStatus::ACCEPTED, ApplicationStatus::REJECTED],
-            ApplicationStatus::ACCEPTED => [ApplicationStatus::PENDING],
-            ApplicationStatus::REJECTED => [ApplicationStatus::PENDING],
         ],
         self::ACTOR_APPLICANT => [
             ApplicationStatus::PENDING => [ApplicationStatus::WITHDRAWN],
@@ -109,16 +104,12 @@ final class ApplicationStateMachine
         }
 
         if (ApplicationStatus::isDecision($from)) {
-            // A provider is told how to change a decision; nobody else may touch one.
+            // A decision is final for everyone; the provider who made it is told so in terms of what they tried.
             if ($actor !== self::ACTOR_PROVIDER) {
                 throw InvalidApplicationTransition::terminal($from);
             }
 
             throw InvalidApplicationTransition::alreadyDecided($from);
-        }
-
-        if ($actor === self::ACTOR_PROVIDER && $to === ApplicationStatus::PENDING) {
-            throw InvalidApplicationTransition::nothingToReopen($from);
         }
 
         if (! in_array($to, self::settableBy($actor), true)) {
@@ -158,12 +149,6 @@ final class ApplicationStateMachine
     public static function canDecide(?string $status): bool
     {
         return array_intersect(self::allowedFor($status, self::ACTOR_PROVIDER), ApplicationStatus::DECISIONS) !== [];
-    }
-
-    /** Whether the provider may withdraw the decision already made and reopen the application. */
-    public static function canReopen(?string $status): bool
-    {
-        return self::canTransition($status, ApplicationStatus::PENDING, self::ACTOR_PROVIDER);
     }
 
     /** Every status this actor can ever set, from any starting point. @return array<int, string> */

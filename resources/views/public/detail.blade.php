@@ -170,6 +170,11 @@
                             $scopeRows = $opportunity->scopes()->with(['programme', 'field.parent', 'institution'])->get();
                             $openTo = $scopeRows->isNotEmpty() ? $listingScopes->describe($scopeRows) : null;
                             $openToFields = $scopeRows->isNotEmpty() ? $listingScopes->describeProgrammes($scopeRows) : null;
+                            // Institutions the provider named that are not in our list: shown as written, with their country.
+                            $namedInstitutions = collect((array) $opportunity->custom_institutions)
+                                ->filter(fn ($row) => is_array($row) && filled($row['name'] ?? null))
+                                ->map(fn ($row) => \App\Services\Catalogue\ListingScopes::customLabel($row))
+                                ->values();
                         @endphp
                         <div class="row g-3 mb-4">
                             @foreach([
@@ -221,13 +226,19 @@
                             </div>
                         @endif
 
-                        @if($opportunity->hasEligibilityRules() || $openTo)
+                        @if($opportunity->hasEligibilityRules() || $openTo || $namedInstitutions->isNotEmpty())
                             <h2 class="h6 fw-semibold text-uppercase text-secondary mb-2">Who can apply</h2>
                             <ul class="list-unstyled d-grid gap-2 mb-4">
                                 @if($openTo)
                                     <li class="d-flex gap-2 align-items-start">
                                         <x-icon name="check" :size="16" class="text-primary mt-1" />
                                         <span>Open to {{ $openTo }}.</span>
+                                    </li>
+                                @endif
+                                @if($namedInstitutions->isNotEmpty())
+                                    <li class="d-flex gap-2 align-items-start" id="named-institutions">
+                                        <x-icon name="check" :size="16" class="text-primary mt-1" />
+                                        <span>Institutions named by the provider: {{ $namedInstitutions->implode('; ') }}.</span>
                                     </li>
                                 @endif
                                 @if($opportunity->min_academic_points)

@@ -14,7 +14,8 @@ namespace App\Services\ScholarFit;
  *   1. field of study   the applicant's own programme named by the listing, then a narrow field
  *                       they are in, then a broad field they are in, then everything else (a
  *                       listing open to any field, or limited only by institution). An older
- *                       free-text field setting that matches counts as a narrow field.
+ *                       free-text field setting that matches counts as a narrow field. A listing
+ *                       outside a school-leaver's chosen programmes comes after all of these.
  *   2. level step       a usual next step, then a listing that states no level, then an
  *                       unusual step
  *   3. stated rules     listings that state rules the applicant meets, then those that
@@ -71,6 +72,13 @@ final class MatchOrder
                     RequirementOutcome::FIT_BROAD_FIELD => 2,
                     default => 3,
                 };
+            }
+        }
+
+        // Outside the programmes a school-leaver chose: after listings that say nothing about their field, before nothing.
+        foreach ($outcomes as $outcome) {
+            if ($outcome->type === RequirementOutcome::TYPE_PROGRAMME_SCOPE && $outcome->advisory && ! $outcome->passed) {
+                return 4;
             }
         }
 

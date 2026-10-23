@@ -60,22 +60,27 @@ class AnalyticsService
         return ['labels' => $labels, 'data' => $data];
     }
 
-    /** Which fields of study attract the most listings. */
+    /** Which fields of study attract the most listings: the fields each is open to, or an older listing's own label. */
     public function topFields(int $limit = 8): array
     {
-        $rows = Opportunity::query()
+        $counts = [];
+
+        Opportunity::query()
             ->publiclyVisible()
-            ->whereNotNull('target_field')
-            ->where('target_field', '<>', '')
-            ->selectRaw('target_field, COUNT(*) as total')
-            ->groupBy('target_field')
-            ->orderByDesc('total')
-            ->limit($limit)
-            ->get();
+            ->with(['scopes.field', 'scopes.programme.field'])
+            ->get()
+            ->each(function (Opportunity $opportunity) use (&$counts) {
+                foreach ($opportunity->subjectFields() as $label) {
+                    $counts[$label] = ($counts[$label] ?? 0) + 1;
+                }
+            });
+
+        arsort($counts);
+        $counts = array_slice($counts, 0, $limit, true);
 
         return [
-            'labels' => $rows->pluck('target_field')->all(),
-            'data' => $rows->pluck('total')->map(fn ($v) => (int) $v)->all(),
+            'labels' => array_keys($counts),
+            'data' => array_values($counts),
         ];
     }
 

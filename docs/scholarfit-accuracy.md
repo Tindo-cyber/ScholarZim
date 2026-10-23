@@ -37,10 +37,12 @@ Only rules the listing actually states are checked:
 - **Programme, field of study and institution.** Checked against a catalogue of programmes and institutions, so
   "BSc Computer Science" and "any programme in Computing and ICT" mean something exact. Civil Engineering is
   correctly outside the narrow field "Engineering" (071) but inside the broad field (07).
-- **The level a school-leaver chose.** An O-Level or A-Level student chooses up to three programmes they hope to
-  study, and those say which level they want. Someone who chose only diplomas is not matched to a degree award,
-  even in the same field and even one open to all programmes; only their programmes at the award's level are
-  compared with what it is open to.
+- **Programmes a school-leaver chose.** An O-Level or A-Level student chooses up to three programmes they hope to
+  study. These are preferences, not eligibility rules (changed 23 October 2026; before that they refused): a listing
+  at another level, or open to other programmes, is shown as "Outside your chosen programmes", after the listings
+  inside their choices, and never makes them ineligible. Their saved choices are never changed by it. An enrolled
+  student or graduate is different: the programme they are on is a fact, so a listing limited to other programmes
+  still refuses them.
 - **Fields to study next.** An enrolled student or graduate can name up to three fields they want to study next
   (a Masters in Data Science after a BCom). A listing's fields are matched against these as well as against their
   own programme.

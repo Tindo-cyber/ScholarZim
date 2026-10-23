@@ -47,7 +47,6 @@
     // A list that has to be cleared before saving stays in view, so its error can be read and acted on.
     $hideProgrammes = $abroad && ! $errors->has('scope_programmes') && ! $errors->has('programme_suggestion');
     $hideInstitutions = $abroad && ! $errors->has('scope_institutions');
-    $typeLabels = \App\Models\Institution::TYPE_LABELS;
 
     $listingScopes = \App\Services\Catalogue\ListingScopes::class;
     // A list the answer above makes irrelevant is folded away, unless it holds an error that has to be read and fixed.
@@ -56,7 +55,8 @@
     $hideFieldsList = in_array($openTo, [$listingScopes::OPEN_ALL, $listingScopes::OPEN_PROGRAMMES], true) && ! $errors->has('scope_fields');
 
     $programmeGroups = \App\Services\Catalogue\ProgrammeCatalogue::pickerGroups($catalogue['programmes'], $chosen['programmes']);
-    $fieldGroups = \App\Models\Field::pickerGroups($catalogue['fields'], $chosen['fields']);
+    $activeLevel = \App\Support\EducationLevel::canonical(old('education_level', $opportunity?->education_level));
+    $fieldGroups = \App\Models\Field::pickerGroupsByLevel($catalogue['fields'], $catalogue['programmes'], $chosen['fields'], $activeLevel);
     foreach ($fieldGroups as &$fieldGroup) {
         foreach ($fieldGroup['options'] as &$fieldOption) {
             // The narrow Engineering field leaves civil and mining out; open-to.js shows a note while only it is ticked.
@@ -69,15 +69,7 @@
         unset($fieldOption);
     }
     unset($fieldGroup);
-    $institutionGroups = $catalogue['institutions']->groupBy('type')->map(fn ($institutions, $type) => [
-        'label' => $typeLabels[$type] ?? $type,
-        'options' => $institutions->map(fn ($institution) => [
-            'id' => $institution->id,
-            'label' => $institution->name,
-            'search' => strtolower($institution->name . ' ' . $institution->code),
-            'selected' => in_array($institution->id, $chosen['institutions'], true),
-        ])->all(),
-    ])->values()->all();
+    $institutionGroups = \App\Models\Institution::pickerGroupsByLevel($catalogue['institutions'], $chosen['institutions'], $activeLevel);
 @endphp
 
 <div class="card mb-4" data-level-needs="programmes" id="scope-card" data-open-to>
@@ -129,8 +121,8 @@
         </fieldset>
 
         <div class="alert alert-info small" data-abroad-only role="note" @unless($abroad) hidden @endunless>
-            For study outside Zimbabwe, choose <strong>An entire field of study</strong> and write the universities under
-            "Host universities". Our programme and institution lists are Zimbabwean only.
+            For study outside Zimbabwe, choose <strong>An entire field of study</strong> and enter the universities under
+            "Institution not listed?". Our programme and institution lists are Zimbabwean only.
         </div>
 
         <div data-open-programmes data-home-only @if($hideProgrammesList) hidden @endif>
@@ -172,8 +164,8 @@
         <div data-open-fields @if($hideFieldsList) hidden @endif>
             {{-- A broad field with one narrow field of the same name is listed once: see Field::pickerGroups. --}}
             <x-scope-picker name="scope_fields" id="scope-fields" label="2. Which fields of study?" noun="fields"
-                            :groups="$fieldGroups"
-                            help="Tick a field to include every programme in it." />
+                            level-select="field-education_level" :active-level="$activeLevel" level-noun="fields" :groups="$fieldGroups"
+                            help="Fields that have programmes at the level chosen above. Tick a field to include every programme in it." />
             {{--
                 Civil engineering is filed under Architecture and construction and mining under Manufacturing, so the
                 narrow Engineering field leaves both out. Shown whenever it is chosen without the broad field above it;
@@ -196,7 +188,7 @@
         </div>
 
         <fieldset class="mb-3" data-home-only @if($hideInstitutions) hidden @endif>
-            <legend class="form-label fs-6 mb-1">3. Which institutions?</legend>
+            <legend class="form-label fs-6 mb-1">3. Where will the student study?</legend>
             <div class="form-check">
                 <input class="form-check-input @error('institutions_open_to') is-invalid @enderror" type="radio" name="institutions_open_to" id="institutions-any"
                        value="{{ $listingScopes::INSTITUTIONS_ANY }}" @checked($institutionsOpenTo === $listingScopes::INSTITUTIONS_ANY)>
@@ -205,20 +197,27 @@
             <div class="form-check">
                 <input class="form-check-input @error('institutions_open_to') is-invalid @enderror" type="radio" name="institutions_open_to" id="institutions-chosen"
                        value="{{ $listingScopes::INSTITUTIONS_CHOSEN }}" @checked($institutionsOpenTo === $listingScopes::INSTITUTIONS_CHOSEN)>
-                <label class="form-check-label" for="institutions-chosen">Only students at the institutions I choose</label>
+                <label class="form-check-label" for="institutions-chosen">At the institutions I choose</label>
             </div>
             @error('institutions_open_to')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
 
             <div class="mt-2" data-institutions-chosen @if($institutionsOpenTo === $listingScopes::INSTITUTIONS_ANY) hidden @endif>
                 <x-scope-picker name="scope_institutions" id="scope-institutions" label="Institutions" noun="institutions"
-                                :groups="$institutionGroups" help="The institutions this scholarship pays for." />
+                                level-select="field-education_level" :active-level="$activeLevel" level-noun="institutions" :groups="$institutionGroups"
+                                help="Where the award is studied. Applicants do not need to be there already. Not listed? Use the option below." />
             </div>
         </fieldset>
 
+        {{-- One copy, always in the page: for study in Zimbabwe it follows the institution list, for study abroad it replaces it. --}}
+        @include('opportunities.partials.custom-institutions', ['opportunity' => $opportunity, 'idPrefix' => 'listing'])
+
         <div class="mb-3" data-abroad-only @unless($abroad) hidden @endunless>
-            <x-form.input name="host_institutions" label="Host universities (optional)"
-                          :value="$opportunity?->host_institutions"
-                          hint="e.g. University of Edinburgh, UCL. Shown to students, not checked." />
+            {{-- Listings saved before institutions could be entered one by one keep their wording; it is shown until replaced. --}}
+            @if(filled(old('host_institutions', $opportunity?->host_institutions)))
+                <x-form.input name="host_institutions" label="Host universities (earlier wording)"
+                              :value="$opportunity?->host_institutions"
+                              hint="Shown to students, not checked. Enter each university above instead, then clear this." />
+            @endif
         </div>
 
         <div class="mb-3" data-level-needs="olevel">

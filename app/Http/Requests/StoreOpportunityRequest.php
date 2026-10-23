@@ -82,7 +82,6 @@ class StoreOpportunityRequest extends FormRequest
             // FORM_1 is deliberately not a valid value here: nothing "requires
             // at least Form 1", since Form 1 only ever appears as a target.
             'minimum_education_level' => ['nullable', Rule::in(EducationLevel::APPLICANT_LEVELS)],
-            'target_field' => ['nullable', 'string', 'max:255'],
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
             'deadline' => $this->deadlineRules(),
             // Digits with at most two decimals, written plainly: no exponent (1e3), sign (+5), bare dot (.5 or 5.) or three decimals.
@@ -108,6 +107,11 @@ class StoreOpportunityRequest extends FormRequest
             'scope_programmes' => ['nullable', 'array'],
             'scope_fields' => ['nullable', 'array'],
             'scope_institutions' => ['nullable', 'array'],
+            // Institutions the catalogue does not list; each row is judged in ListingScopes::problems().
+            'custom_institutions' => ['nullable', 'array', 'max:' . (ListingScopes::MAX_CUSTOM_INSTITUTIONS * 2)],
+            'custom_institutions.*' => ['nullable', 'array'],
+            'custom_institutions.*.name' => ['nullable', 'string', 'max:300'],
+            'custom_institutions.*.country' => ['nullable', 'string', 'max:100'],
             'programme_suggestion' => ['nullable', 'string', 'max:200'],
             'programme_suggestion_field' => ['nullable', 'integer'],
             // The answer to "who is this open to?" - required at Certificate level and above, checked in checkScope().
@@ -275,7 +279,7 @@ class StoreOpportunityRequest extends FormRequest
     {
         $errors = $validator->errors();
 
-        foreach (['scope_programmes', 'scope_fields', 'scope_institutions', 'programme_suggestion', 'programme_suggestion_field'] as $key) {
+        foreach (['scope_programmes', 'scope_fields', 'scope_institutions', 'custom_institutions', 'programme_suggestion', 'programme_suggestion_field'] as $key) {
             if ($errors->has($key)) {
                 return;
             }

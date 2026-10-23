@@ -14,6 +14,7 @@ use App\Services\RecommendationService;
 use App\Services\ScholarFit\MatchOrder;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\ApplicationStatus;
+use App\Support\EducationLevel;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
 use Database\Seeders\DatabaseSeeder;
@@ -299,12 +300,27 @@ class RecommendationTest extends TestCase
 
         $twoFailures = $this->gatedListing('Two Reason Award', [
             'required_province' => 'ZZZ-Not-A-Real-Province',
-            'min_academic_points' => 999,
+            // A second, independent unmet requirement the student really fails: older than a near-minimum age limit. (This
+            // used to ask for 999 points, which no listing can ask for and which overflows MySQL's tiny integer column. A
+            // points bar within range would not do: the seeded student has no A-Level results recorded, so that is a
+            // request for information, not a failure.)
+            'max_age' => EducationLevel::MINIMUM_APPLICANT_AGE + 2,
         ]);
+
+        $results = app(RecommendationService::class)->notEligibleForUser($this->student, 20);
+
+        $failures = [];
+
+        foreach ($results as $scored) {
+            $failures[(int) $scored->opportunity->opportunity_id] = count($scored->failedRequirements());
+        }
+
+        $this->assertSame(1, $failures[$oneFailure->opportunity_id] ?? null, 'the first listing fails on its province alone');
+        $this->assertSame(2, $failures[$twoFailures->opportunity_id] ?? null, 'the second fails on its province and its age limit');
 
         $ids = array_map(
             fn ($scored) => (int) $scored->opportunity->opportunity_id,
-            app(RecommendationService::class)->notEligibleForUser($this->student, 20)
+            $results
         );
 
         $this->assertLessThan(

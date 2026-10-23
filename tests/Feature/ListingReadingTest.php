@@ -58,13 +58,12 @@ class ListingReadingTest extends TestCase
             'min_academic_points' => 12,
             'max_age' => 25,
             'required_province' => 'Harare',
-            'target_field' => 'Engineering',
             'requires_results_certificate' => '1',
         ]);
 
         $joined = implode(' | ', $this->texts($rules));
 
-        foreach (['Undergraduate', 'A Level', '12', '25', 'Harare', 'Engineering'] as $expected) {
+        foreach (['Undergraduate', 'A Level', '12', '25', 'Harare'] as $expected) {
             $this->assertStringContainsString($expected, $joined);
         }
 
@@ -79,7 +78,6 @@ class ListingReadingTest extends TestCase
             'title' => 'Engineering Bursary for Undergraduate Students',
             'description' => 'Open to students pursuing a degree in Law.',
             'education_level' => '',
-            'target_field' => '',
         ]);
 
         $fromText = array_values(array_filter($rules, fn ($r) => $r['source'] === ListingReading::FROM_TEXT));
@@ -199,7 +197,7 @@ class ListingReadingTest extends TestCase
             ],
         ]);
 
-        $this->assertContains('Open to: any Electrical, mechanical and other engineering programme at MSU or NUST', $this->texts($rules));
+        $this->assertContains('Open to: any Electrical, mechanical and other engineering programme, to be studied at MSU or NUST', $this->texts($rules));
         $this->assertSame(ListingReading::FROM_SETTING, collect($rules)->firstWhere(fn ($r) => str_starts_with($r['text'], 'Open to:'))['source']);
     }
 

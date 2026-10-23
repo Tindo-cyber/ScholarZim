@@ -10,22 +10,22 @@ L07,"Under-20s Award",E,E,I,I,I,I,I,I,I,I,N,I
 L08,"Harare Residents Bursary",E,I,I,I,I,I,I,I,I,I,N,I
 L09,"Rural Students Bursary",I,E,I,I,I,I,E,I,I,I,N,I
 L10,"Gweru Youth Award",I,I,I,I,I,I,I,I,I,I,N,I
-L11,"Computer Science Programme Award",E,I,I,I,I,I,I,I,I,I,N,I
-L12,"ICT Field Award",E,I,I,I,I,I,I,I,I,I,N,I
-L13,"Engineering and Construction Award",I,I,I,I,I,I,I,I,I,I,N,I
-L14,"Engineering Trades Award",I,I,I,I,I,I,I,I,I,I,N,I
-L15,"MSU and NUST Students Award",I,N,I,I,I,I,I,I,I,I,N,I
-L16,"Engineering at MSU or NUST Award",I,I,I,I,I,I,I,I,I,I,N,I
+L11,"Computer Science Programme Award",E,E,I,I,I,I,I,I,I,I,N,I
+L12,"ICT Field Award",E,E,I,I,I,I,I,I,I,I,N,I
+L13,"Engineering and Construction Award",E,E,I,I,I,I,I,I,I,I,N,I
+L14,"Engineering Trades Award",E,E,I,I,I,I,I,I,I,I,N,I
+L15,"MSU and NUST Students Award",E,E,I,I,I,I,E,I,I,I,N,I
+L16,"Engineering at MSU or NUST Award",E,E,I,I,I,I,I,I,I,I,N,I
 L17,"MBA Fellowship",I,I,I,I,I,I,I,I,N,N,N,I
-L18,"BSc Computer Science Bursary",E,I,I,I,I,I,I,I,I,I,N,I
-L19,"General Degree Support",I,I,I,I,I,I,I,I,I,I,N,I
+L18,"BSc Computer Science Bursary",E,E,I,I,I,I,I,I,I,I,N,I
+L19,"General Degree Support",E,E,I,I,I,I,I,I,I,I,N,I
 L20,"Bursary requiring proof of results",E,E,I,I,I,I,E,I,I,I,N,I
 L21,"Doctoral Research Award",I,I,I,I,I,I,I,E,I,I,N,I
-L22,"Diploma ICT Award",I,I,N,I,I,I,I,I,I,I,N,I
+L22,"Diploma ICT Award",E,E,N,I,I,I,I,I,I,I,N,I
 L23,"Rhine Valley ICT Masters (Germany)",I,I,I,I,E,I,I,I,E,N,N,E
 L24,"Open Degree Award",E,E,I,I,I,I,E,I,I,I,N,I
 L25,"Degree Award open to O-Level holders",E,E,E,I,I,I,E,I,I,I,N,I
 
 "Order, best first (no score)"
-A1,"L18 > L11 > L12 > L08 > L05 > L06 > L07 > L20 > L24 > L04 > L25"
+A1,"L18 > L11 > L12 > L08 > L05 > L06 > L07 > L20 > L15 > L24 > L04 > L25 > L19 > L16 > L22 > L13 > L14"
 A5,L23

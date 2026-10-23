@@ -167,10 +167,29 @@ final class EligibilityResult
         return RequirementOutcome::notes($this->outcomes);
     }
 
-    /** Whether the listing states any hard requirement at all. */
+    /**
+     * Whether this listing is outside the programmes a school-leaver chose. Only a way to tell such listings apart (they
+     * are shown after the ones inside those choices): it never makes anyone ineligible, and the applicant's choices are
+     * not touched.
+     */
+    public function outsidePreferences(): bool
+    {
+        foreach ($this->advisoryNotes() as $note) {
+            if ($note->type === RequirementOutcome::TYPE_PROGRAMME_SCOPE && ! $note->passed) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether the listing states any requirement at all. A listing limited to programmes the applicant did not choose has
+     * stated one - it is only a note for them, not a rule they fail - so it is not "no requirements" either.
+     */
     public function hasStatedRequirements(): bool
     {
-        return RequirementOutcome::rules($this->outcomes) !== [];
+        return RequirementOutcome::rules($this->outcomes) !== [] || $this->outsidePreferences();
     }
 
     /**
@@ -207,7 +226,7 @@ final class EligibilityResult
             $lines[] = ($note->passed ? 'Note:' : 'Please note:') . ' ' . $note->message;
         }
 
-        if ($rules === []) {
+        if (! $this->hasStatedRequirements()) {
             $lines[] = '';
             $lines[] = $this->listingIsOpen()
                 ? self::NO_REQUIREMENTS_MESSAGE
