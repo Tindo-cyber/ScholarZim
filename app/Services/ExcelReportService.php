@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Application;
+use App\Models\AuditLog;
 use App\Models\Opportunity;
 use App\Models\User;
 use App\Services\Catalogue\ListingScopes;
@@ -74,6 +75,33 @@ class ExcelReportService
                 $app->application_status,
                 $this->format($app->submitted_at, self::DATETIME_FMT),
             ]);
+    }
+
+    /**
+     * System activities: every audit entry, newest first, with the before-and-after values where they were recorded.
+     * The values were redacted when written (AuditService), so nothing secret is in them.
+     */
+    public function activitiesExcel(): string
+    {
+        $encode = static fn (?array $values): string => blank($values) ? '' : (string) json_encode($values, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return $this->build('System Activities', [
+            'Date and time', 'Actor', 'Actor ID', 'Action', 'Record type', 'Record ID', 'Details', 'Reason',
+            'Old values', 'New values', 'IP address', 'Request ID',
+        ], AuditLog::query()->orderByDesc('created_at')->orderByDesc('audit_id')->cursor(), fn (AuditLog $entry) => [
+            $this->format($entry->created_at, 'd M Y H:i:s'),
+            $entry->actor_email ?: 'System',
+            $entry->actor_user_id,
+            \App\Support\AuditAction::displayLabel($entry->action),
+            $entry->entity_type,
+            $entry->entity_id,
+            $entry->details,
+            $entry->reason,
+            $encode($entry->old_values),
+            $encode($entry->new_values),
+            $entry->ip_address,
+            $entry->request_id,
+        ]);
     }
 
     // ---------- helpers ----------
