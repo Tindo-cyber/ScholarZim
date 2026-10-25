@@ -285,9 +285,22 @@ final class FormOptions
      *
      * @return array<string, array<string, string>>
      */
-    public static function providerLevelGroups(bool $forTarget = true): array
+    public static function providerLevelGroups(bool $forTarget = true, ?\App\Models\User $provider = null): array
     {
-        return $forTarget ? self::targetEducationLevelGroups() : self::educationLevelGroups();
+        $groups = $forTarget ? self::targetEducationLevelGroups() : self::educationLevelGroups();
+
+        // An organisation registered outside Zimbabwe is offered Certificate and above only, on the target level; what an
+        // applicant must already hold ("minimum level") is not limited.
+        if (! $forTarget || ! EducationLevel::isLimitedProvider($provider)) {
+            return $groups;
+        }
+
+        $groups = array_map(
+            static fn (array $levels) => array_intersect_key($levels, array_flip(EducationLevel::ABROAD_PROVIDER_LEVELS)),
+            $groups
+        );
+
+        return array_filter($groups);
     }
 
     /** The same groups, for a scholarship's target level - includes Form 1 as its own entry point. */

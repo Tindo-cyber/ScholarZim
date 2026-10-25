@@ -35,8 +35,8 @@
                 <x-form.select name="education_level" label="Level of study"
                                :options="$educationLevels" :grouped="true"
                                :value="\App\Support\EducationLevel::canonical($opportunity?->education_level) ?? $opportunity?->education_level"
-                               placeholder="Any level"
-                               hint="What the scholarship pays for. This decides which questions below apply." />
+                               :placeholder="($levelsLimited ?? false) ? 'Choose a level' : 'Any level'"
+                               :hint="'What the scholarship pays for. This decides which questions below apply.' . (($levelsLimited ?? false) ? ' Organisations registered outside Zimbabwe can fund Certificate, Diploma, Degree and postgraduate awards.' : '')" />
             </div>
             <div class="col-md-6">
                 {{-- Asked here, before "Who is it open to?", because study abroad changes that card. --}}

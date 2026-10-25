@@ -14,8 +14,13 @@ table or workflow for foreign organisations.
 | **Study destination** — where the funded study takes place | `opportunities.country` / `target_country` (a country name from `FormOptions::countries()` - every country in `Countries`, by name - or "Any country" / "Online / distance") | The provider, per listing | Listing display, search filter, and the existing study-abroad scope rules (`ListingScopes::isAbroad`) |
 | **Applicant eligibility** — which students qualify | The listing's eligibility, academic and scope fields | The provider, per listing | ScholarFit |
 
-The country of registration never pre-fills, restricts or overrides a listing's destination or its
-eligibility rules. A listing with no destination still defaults to Zimbabwe, never to the provider's own
+The country of registration never pre-fills or overrides a listing's destination or its eligibility rules.
+It does limit the **level of study** an organisation can fund: one registered outside Zimbabwe can create
+listings for Certificate, Diploma, Degree (Undergraduate) and above (Postgraduate, Masters, PhD) only - not
+Form 1, O-Level, A-Level or "any level". The form offers only those levels and the server refuses the rest
+(`EducationLevel::ABROAD_PROVIDER_LEVELS`, `StoreOpportunityRequest::checkProviderLevel`). An organisation
+registered in Zimbabwe, or whose country was never recorded, is not limited. Listings saved before the rule
+are not changed, but cannot be re-saved at a school level. A listing with no destination still defaults to Zimbabwe, never to the provider's own
 country. ScholarFit does not read the registration country at all.
 
 Examples (all covered by `InternationalProviderPublishingTest`):

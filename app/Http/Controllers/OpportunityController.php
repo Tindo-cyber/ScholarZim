@@ -175,7 +175,8 @@ class OpportunityController extends Controller
             // Whether a new listing from this provider skips review (ProviderTrust), so the
             // form says what will happen when they submit instead of always "reviewed first".
             'providerTrusted' => \App\Support\ProviderTrust::isTrusted(request()->user()),
-            'educationLevels' => FormOptions::providerLevelGroups(forTarget: true),
+            'educationLevels' => FormOptions::providerLevelGroups(forTarget: true, provider: request()->user()),
+            'levelsLimited' => \App\Support\EducationLevel::isLimitedProvider(request()->user()),
             'minimumLevels' => FormOptions::providerLevelGroups(forTarget: false),
             'settlementTypes' => \App\Services\ScholarFit\Taxonomy\SettlementType::ALL,
             'fundingTypes' => FormOptions::FUNDING_TYPES,
@@ -260,7 +261,8 @@ class OpportunityController extends Controller
 
         return view('opportunities.edit', [
             'opportunity' => $opportunity,
-            'educationLevels' => FormOptions::providerLevelGroups(forTarget: true),
+            'educationLevels' => FormOptions::providerLevelGroups(forTarget: true, provider: request()->user()),
+            'levelsLimited' => \App\Support\EducationLevel::isLimitedProvider(request()->user()),
             'minimumLevels' => FormOptions::providerLevelGroups(forTarget: false),
             'settlementTypes' => \App\Services\ScholarFit\Taxonomy\SettlementType::ALL,
             'fundingTypes' => FormOptions::FUNDING_TYPES,

@@ -176,6 +176,7 @@ class StoreOpportunityRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
+                $this->checkProviderLevel($validator);
                 $this->checkCountryForLevel($validator);
                 $this->checkLevelCombinations($validator);
                 $this->checkLocality($validator);
@@ -183,6 +184,23 @@ class StoreOpportunityRequest extends FormRequest
                 $this->checkScope($validator);
             },
         ];
+    }
+
+    /**
+     * An organisation registered outside Zimbabwe funds Certificate, Diploma, Degree and above - not school levels, and
+     * not "any level", which would include them. The form offers only those levels; this is the server saying the same.
+     */
+    private function checkProviderLevel(Validator $validator): void
+    {
+        if (! EducationLevel::isLimitedProvider($this->user()) || $validator->errors()->has('education_level')) {
+            return;
+        }
+
+        $level = EducationLevel::canonical($this->input('education_level'));
+
+        if ($level === null || ! in_array($level, EducationLevel::ABROAD_PROVIDER_LEVELS, true)) {
+            $validator->errors()->add('education_level', 'An organisation registered outside Zimbabwe can fund Certificate, Diploma, Degree and postgraduate awards. Choose one of those levels.');
+        }
     }
 
     /** Form 1, O-Level and A-Level are for study in Zimbabwe: any other destination, "any country" and "online" included, is refused. */
