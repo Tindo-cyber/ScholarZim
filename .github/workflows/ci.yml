@@ -23,7 +23,7 @@ jobs:
           restore-keys: composer-
       - name: Install dependencies
         run: composer install --prefer-dist --no-interaction --no-progress
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           # Node 20 left security support in April 2026; Vite 8 wants
           # ^20.19 || >=22.12 in any case. Keep in step with the Dockerfile.
