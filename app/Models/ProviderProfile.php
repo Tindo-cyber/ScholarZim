@@ -90,6 +90,15 @@ class ProviderProfile extends Model
         return $this->registrationCountryName() !== null;
     }
 
+    /**
+     * Registered in a country other than Zimbabwe. False when the country was never recorded: an unknown country is not
+     * "abroad", so an older account keeps working until an administrator records it.
+     */
+    public function isRegisteredAbroad(): bool
+    {
+        return $this->hasRegistrationCountry() && strtoupper((string) $this->registration_country) !== Countries::ZIMBABWE;
+    }
+
     /** An administrator asked for more evidence and the organisation has not answered since. */
     public function isAwaitingInformation(): bool
     {

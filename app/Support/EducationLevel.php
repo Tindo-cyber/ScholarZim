@@ -77,6 +77,31 @@ final class EducationLevel
     ];
 
     /**
+     * What an organisation registered outside Zimbabwe may fund: Certificate, Diploma, Degree and anything above. School
+     * levels (Form 1, O-Level, A-Level) are for organisations registered in Zimbabwe.
+     */
+    public const ABROAD_PROVIDER_LEVELS = [
+        self::CERTIFICATE,
+        self::DIPLOMA,
+        self::UNDERGRADUATE,
+        self::POSTGRADUATE,
+        self::MASTERS,
+        self::PHD,
+    ];
+
+    /** Whether this provider is limited to ABROAD_PROVIDER_LEVELS (registered outside Zimbabwe). */
+    public static function isLimitedProvider(?\App\Models\User $provider): bool
+    {
+        return $provider?->providerProfile?->isRegisteredAbroad() === true;
+    }
+
+    /** The levels a listing from this provider may target. */
+    public static function targetLevelsFor(?\App\Models\User $provider): array
+    {
+        return self::isLimitedProvider($provider) ? self::ABROAD_PROVIDER_LEVELS : self::TARGET_LEVELS;
+    }
+
+    /**
      * Scholarships for these targets are for study in Zimbabwe, whatever the provider chooses: Primary-to-Form-1 entry,
      * O-Level and A-Level. A business rule of ScholarZim, not a default. Certificate level and above may name any country.
      */
