@@ -102,6 +102,12 @@
                     Scholarship discovery and applications for Zimbabwean students, with eligibility
                     that explains itself.
                 </p>
+                @if(filled(config('scholarzim.contact.email')))
+                    <p class="small mt-3 mb-0">
+                        <span class="text-secondary">Contact:</span>
+                        <a class="text-decoration-none" href="mailto:{{ config('scholarzim.contact.email') }}">{{ config('scholarzim.contact.email') }}</a>
+                    </p>
+                @endif
             </div>
             <div class="col-6 col-lg-2">
                 {{-- h2 carrying the h6 type scale. These are the footer's own

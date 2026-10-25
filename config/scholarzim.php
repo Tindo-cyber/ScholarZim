@@ -135,6 +135,15 @@ return [
     ],
 
     /*
+     * Who to write to about the platform. Shown in the footer. The email only: a personal phone number is deliberately not
+     * published on a public site. Set SCHOLARZIM_CONTACT_EMAIL to change it (for example to a project address) without a
+     * code change; set it empty to hide the line.
+     */
+    'contact' => [
+        'email' => env('SCHOLARZIM_CONTACT_EMAIL', 'r231425y@students.msu.ac.zw'),
+    ],
+
+    /*
      * The programme catalogue. `max_pending_per_user` is how many "my programme isn't listed"
      * suggestions one person can have waiting for an administrator at once.
      */
