@@ -97,7 +97,8 @@
 
             <h2 class="h6 fw-semibold text-uppercase text-secondary mt-4 mb-3">Contact person</h2>
 
-            <x-form.input name="contact_name" label="Your full name" required autocomplete="name" maxlength="255" />
+            <x-form.input name="contact_name" label="Your full name" required autocomplete="name" maxlength="255"
+                          pattern="{{ \App\Support\FormOptions::NAME_INPUT_PATTERN }}" data-name-input />
             <x-form.input name="contact_role" label="Your position in the organisation" required autocomplete="organization-title"
                           maxlength="150" placeholder="e.g. Scholarships Officer, Director"
                           hint="So we can see you are able to act for the organisation." />

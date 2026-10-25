@@ -376,7 +376,8 @@
                                     'idPrefix' => 'provider-reg',
                                 ])
                                 <x-form.input name="contact_name" id="provider-reg-contact-name" label="Contact person" required
-                                              :value="$profile->contact_name" bag="registration" maxlength="255" />
+                                              :value="$profile->contact_name" bag="registration" maxlength="255"
+                                              pattern="{{ \App\Support\FormOptions::NAME_INPUT_PATTERN }}" data-name-input />
                                 <x-form.input name="contact_role" id="provider-reg-contact-role" label="Their position" required
                                               :value="$profile->contact_role" bag="registration" maxlength="150" />
                                 <div class="mb-3">

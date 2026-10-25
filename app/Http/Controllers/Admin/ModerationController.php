@@ -50,8 +50,8 @@ class ModerationController extends Controller
     public function bulkReview(Request $request)
     {
         $data = $request->validate([
-            'opportunities' => ['required', 'array', 'min:1'],
-            'opportunities.*' => ['integer'],
+            'opportunities' => ['required', 'array', 'min:1', 'max:200'],
+            'opportunities.*' => ['integer', 'min:1'],
             'decision' => ['required', Rule::in(['approve', 'reject'])],
             'reason' => ['nullable', 'string', 'max:500'],
         ]);

@@ -62,11 +62,13 @@ class RegisterController extends Controller
             // on its listings. Not FormOptions::NAME_PATTERN - an organisation
             // name is free text, for the same reason institution_name is (see
             // that constant's docblock). The person registering is contact_name.
-            'full_name' => ['required', 'string', 'max:255'],
+            // Free text (digits and ampersands are fine), but it has to be a name: at least one letter.
+            'full_name' => ['required', 'string', 'max:255', 'regex:/\p{L}/u'],
             // The person registering, and their position - what an administrator
             // reads to judge whether they may act for the organisation.
-            'contact_name' => ['required', 'string', 'max:255'],
-            'contact_role' => ['required', 'string', 'max:150'],
+            // A person: the same rule as every other personal name (letters, spaces, apostrophes, hyphens, full stops).
+            'contact_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
+            'contact_role' => ['required', 'string', 'max:150', 'regex:/\p{L}/u'],
             'email' => [...\App\Rules\EmailAddress::rules(), 'unique:users,email'],
             // Not FormOptions::PHONE_PATTERN: a provider's own work/organisation
             // number is international and may be a landline, a switchboard, or
