@@ -345,6 +345,8 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
     Route::get('/reports/opportunities.pdf', [Admin\ReportController::class, 'opportunitiesPdf'])->name('reports.opportunities.pdf');
     Route::get('/reports/applications.pdf', [Admin\ReportController::class, 'applicationsPdf'])->name('reports.applications.pdf');
     Route::get('/reports/recommendations.pdf', [Admin\ReportController::class, 'recommendationsPdf'])->name('reports.recommendations.pdf');
+    Route::get('/reports/activities.pdf', [Admin\ReportController::class, 'activitiesPdf'])->name('reports.activities.pdf');
+    Route::get('/reports/activities.xlsx', [Admin\ReportController::class, 'activitiesExcel'])->name('reports.activities.xlsx');
     Route::get('/reports/users.xlsx', [Admin\ReportController::class, 'usersExcel'])->name('reports.users.xlsx');
     Route::get('/reports/opportunities.xlsx', [Admin\ReportController::class, 'opportunitiesExcel'])->name('reports.opportunities.xlsx');
     Route::get('/reports/applications.xlsx', [Admin\ReportController::class, 'applicationsExcel'])->name('reports.applications.xlsx');

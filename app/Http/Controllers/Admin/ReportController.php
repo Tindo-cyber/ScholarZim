@@ -54,6 +54,16 @@ class ReportController extends Controller
         return $this->download($this->reportService->recommendationsReportPdf(), 'recommendations-report.pdf', 'application/pdf');
     }
 
+    public function activitiesPdf(): Response
+    {
+        return $this->download($this->reportService->activitiesReportPdf(), 'system-activities-report.pdf', 'application/pdf');
+    }
+
+    public function activitiesExcel(): Response
+    {
+        return $this->download($this->excelReportService->activitiesExcel(), 'system-activities-report.xlsx', self::XLSX);
+    }
+
     public function usersExcel(): Response
     {
         return $this->download($this->excelReportService->usersExcel(), 'users-report.xlsx', self::XLSX);

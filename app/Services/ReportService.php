@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Application;
+use App\Models\AuditLog;
 use App\Models\Opportunity;
 use App\Models\User;
 use App\Support\RoleNames;
@@ -62,6 +63,28 @@ class ReportService
 
         return $this->render('Recommendation Report', 'reports.recommendations', [
             'sections' => $sections,
+        ]);
+    }
+
+    /** The most entries the PDF lists; the Excel export has no limit. A page of print has to stay printable. */
+    public const ACTIVITY_PDF_LIMIT = 1000;
+
+    /**
+     * System activities: the audit log as recorded, newest first. Read-only - it lists what is there and writes nothing.
+     */
+    public function activitiesReportPdf(): string
+    {
+        $entries = AuditLog::query()
+            ->orderByDesc('created_at')->orderByDesc('audit_id')
+            ->limit(self::ACTIVITY_PDF_LIMIT + 1)
+            ->get();
+
+        $truncated = $entries->count() > self::ACTIVITY_PDF_LIMIT;
+
+        return $this->render('System Activities Report', 'reports.activities', [
+            'entries' => $entries->take(self::ACTIVITY_PDF_LIMIT),
+            'truncated' => $truncated,
+            'limit' => self::ACTIVITY_PDF_LIMIT,
         ]);
     }
 

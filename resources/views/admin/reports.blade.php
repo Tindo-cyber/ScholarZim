@@ -36,6 +36,12 @@
             'excel' => 'admin.reports.applications.xlsx',
         ],
         [
+            'title' => 'System activities',
+            'description' => 'Who did what and when: every recorded action with its record, details, reason and (in Excel) the before-and-after values.',
+            'pdf' => 'admin.reports.activities.pdf',
+            'excel' => 'admin.reports.activities.xlsx',
+        ],
+        [
             'title' => 'Recommendations',
             'description' => 'Each applicant\'s eligible listings, with their awarding body and deadline.',
             'pdf' => 'admin.reports.recommendations.pdf',
@@ -98,8 +104,8 @@
                 <div class="min-w-0">
                     <span class="fw-semibold d-block">Audit history</span>
                     <span class="small text-secondary">
-                        Who did what, and when. Filterable by actor, action and entity, and not part of
-                        the exports above.
+                        Who did what, and when, on screen. Filterable by actor, action and entity. The
+                        System activities exports above cover the same history as a file.
                     </span>
                 </div>
                 <a class="btn btn-sm btn-outline-secondary" href="{{ route('admin.audit') }}">Open audit log</a>
