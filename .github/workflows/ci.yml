@@ -16,7 +16,7 @@ jobs:
           extensions: mbstring, bcmath, intl, zip, gd, pdo_sqlite, pdo_mysql
           coverage: xdebug
       - name: Cache composer packages
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.composer/cache
           key: composer-${{ hashFiles('composer.lock') }}
