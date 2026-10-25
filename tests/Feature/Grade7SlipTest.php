@@ -86,6 +86,9 @@ class Grade7SlipTest extends TestCase
 
     private function withSlip(): void
     {
+        Storage::disk((string) config('filesystems.default', 'local'))->put('profiles/demo/slip.pdf', "%PDF-1.4
+% test
+");
         $this->profile()->update(['grade7_slip_path' => 'profiles/demo/slip.pdf', 'grade7_slip_filename' => 'Grade 7 Results Slip.pdf']);
     }
 
@@ -118,6 +121,9 @@ class Grade7SlipTest extends TestCase
 
     public function test_it_goes_in_its_own_slot_and_leaves_the_certificate_slot_alone(): void
     {
+        Storage::disk((string) config('filesystems.default', 'local'))->put('profiles/demo/certificate.pdf', "%PDF-1.4
+% test
+");
         $this->profile()->update(['results_certificate_path' => 'profiles/demo/certificate.pdf']);
 
         $this->upload();
@@ -249,6 +255,9 @@ class Grade7SlipTest extends TestCase
 
     public function test_and_a_certificate_can_never_pass_for_a_slip(): void
     {
+        Storage::disk((string) config('filesystems.default', 'local'))->put('profiles/demo/certificate.pdf', "%PDF-1.4
+% test
+");
         $this->profile()->update(['results_certificate_path' => 'profiles/demo/certificate.pdf']);
 
         $outcome = $this->certificate($this->formOne(true));

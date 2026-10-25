@@ -217,6 +217,31 @@ class ApplicationController extends Controller
     }
 
     /**
+     * Replace a document of a pending application whose file cannot be found, so the provider can open it.
+     * ApplicationService::repairDocument decides what may be replaced; this only carries the upload there.
+     */
+    public function repairDocument(Request $request, int $applicationId, string $type)
+    {
+        $data = $request->validate([
+            'document' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
+        ]);
+
+        try {
+            $this->applicationService->repairDocument($applicationId, $request->user(), $type, $data['document']);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            // Not this applicant's application: a refusal, not a message to show - and an HttpException is also a
+            // RuntimeException, so it must be let through before the business-rule catch below.
+            throw $e;
+        } catch (\RuntimeException $e) {
+            return back()->with('errorMessage', $e->getMessage());
+        }
+
+        return redirect()
+            ->route('applications.confirmation', $applicationId)
+            ->with('successMessage', 'Your replacement was saved. The provider can now open it.');
+    }
+
+    /**
      * The applicant pulls out of a scholarship they applied to.
      *
      * A confirmation is required in the form rather than here; by the time the
@@ -248,6 +273,7 @@ class ApplicationController extends Controller
             'application' => $application,
             'timeline' => ApplicationStatus::timeline($application->application_status, $application->viewed_by_provider_at),
             'history' => $this->applicationService->history($application->application_id, $request->user()),
+            'documentIssues' => $this->applicationService->documentIssues($application),
         ]);
     }
 }

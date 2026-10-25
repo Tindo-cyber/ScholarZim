@@ -104,9 +104,7 @@ class ApplicationReviewController extends Controller
         // The file the applicant attached to the application itself.
         $rows[] = [
             'label' => $application->document_filename ?: 'Application attachment',
-            'state' => blank($application->document_path)
-                ? 'missing'
-                : ($this->fileStorage->exists($application->document_path) ? 'available' : 'unavailable'),
+            'state' => $this->stateOf($application->document_path),
             'route' => 'files.applicationDocument',
         ];
 
@@ -120,12 +118,29 @@ class ApplicationReviewController extends Controller
 
             $rows[] = [
                 'label' => ApplicantProfile::DOCUMENT_LABELS[$type],
-                'state' => $document === null ? 'missing' : ($this->fileStorage->exists($document['path']) ? 'available' : 'unavailable'),
+                'state' => $document === null ? 'missing' : $this->stateOf($document['path']),
                 'route' => $route,
             ];
         }
 
         return $rows;
+    }
+
+    /**
+     * What the provider is told about one recorded file: available, unavailable (the file is gone), unreachable
+     * (storage could not be asked, so nothing is known about the file) or missing (nothing was recorded).
+     */
+    private function stateOf(?string $path): string
+    {
+        if (blank($path)) {
+            return 'missing';
+        }
+
+        return match ($this->fileStorage->status($path)) {
+            FileStorageService::AVAILABLE => 'available',
+            FileStorageService::MISSING => 'unavailable',
+            default => 'unreachable',
+        };
     }
 
     /**

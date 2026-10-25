@@ -12,12 +12,20 @@ use RuntimeException;
  */
 class DocumentsRequired extends RuntimeException
 {
-    /** @param array<int, string> $labels the documents still missing, as the applicant knows them */
-    public function __construct(public readonly array $labels)
+    /**
+     * @param array<int, string> $labels  the documents still missing, as the applicant knows them
+     * @param array<int, string> $lost    the subset that WAS uploaded once but whose file can no longer be found
+     */
+    public function __construct(public readonly array $labels, public readonly array $lost = [])
     {
-        parent::__construct(
-            'Upload ' . self::joinWords($labels) . ' before you apply: ' . (count($labels) === 1 ? 'this scholarship needs it' : 'this scholarship needs them') . '.'
-        );
+        $message = 'Upload ' . self::joinWords($labels) . ' before you apply: ' . (count($labels) === 1 ? 'this scholarship needs it' : 'this scholarship needs them') . '.';
+
+        if ($lost !== []) {
+            $message .= ' The file you uploaded earlier for ' . self::joinWords($lost) . ' could not be found, so '
+                . (count($lost) === 1 ? 'it needs' : 'they need') . ' uploading again.';
+        }
+
+        parent::__construct($message);
     }
 
     /** @param array<int, string> $items */

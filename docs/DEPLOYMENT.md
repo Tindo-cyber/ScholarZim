@@ -107,57 +107,52 @@ php artisan tinker
 An empty `Ssl_cipher` means the connection is plaintext — check that
 `MYSQL_ATTR_SSL_CA` is set and the file exists at that path.
 
-### Uploaded files are not persistent on the free plan
+### Where uploaded documents live
 
-Uploaded documents live on the private `local` filesystem disk
-(`config/filesystems.php`, `App\Services\FileStorageService`), which by default
-resolves to `storage/app` inside the container. Render only attaches persistent
-disks to **paid** instance types, and this service is `plan: free`, so
-`render.yaml` declares no disk — see the comment block in that file.
+**Production (Render, `render.yaml`) stores every upload in a private Cloudflare R2 bucket**, not on the container.
+`render.yaml` sets `FILESYSTEM_DISK=s3` and the `AWS_*` variables that point the S3 driver at R2
+(`AWS_ENDPOINT`, `AWS_BUCKET`, `AWS_DEFAULT_REGION=us-east-1`, `AWS_USE_PATH_STYLE_ENDPOINT=true`;
+`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are `sync: false` secrets you enter in the Render dashboard).
+`App\Services\FileStorageService` reads the default disk from `config('filesystems.default')`, so no code names `s3`.
+The bucket has no public access: documents are only ever served through the application, after an authorisation check.
 
-Everything the disk writes is therefore lost on every deploy and restart, and a
-free instance also spins down after roughly 15 minutes idle and returns with a
-fresh filesystem. That is applicant documents, results certificates, transcripts
-and provider registration certificates. Rows in `document_files` (and the
-`*_path` columns on `applicant_profiles`, `provider_profiles`, `applications`)
-will still point at paths whose files are gone; the app reports a missing file
-rather than erroring — `FileStorageService::exists()` returns false and nothing
-crashes.
+The container filesystem on `plan: free` is ephemeral (wiped on every deploy and after the ~15-minute idle spin-down),
+which is why production must **not** run with `FILESYSTEM_DISK=local`: every `*_path` column and `document_files` row
+would keep pointing at files that no longer exist. The `local` disk (`storage/app`, or `FILESYSTEM_ROOT`) is what local
+development, the test suite and the VPS Docker Compose stack use.
 
-**To restore persistence:** the disk's mount path no longer has to be
-`storage/app` — the app reads `FILESYSTEM_ROOT` to find the disk (see
-`config/filesystems.php`), so any mount path works as long as the env var names
-it. Move to a paid instance type, add the disk, and set the env var together:
+Two further points that matter when documents seem to be "missing":
 
-```yaml
-plan: starter
-envVars:
-  - key: FILESYSTEM_ROOT
-    value: /var/data/scholarzim
-disk:
-  name: scholarzim-uploads
-  mountPath: /var/data/scholarzim
-  sizeGB: 1
-```
+- **Each upload records the disk it was written to** (`document_files.disk`). A file written before the move to R2 is
+  recorded against `local`. The application checks and serves a document from its *recorded* disk first, then the
+  configured default, so a legacy record is not reported missing merely because the default disk changed.
+- **A document counts as uploaded only if its file can be opened.** A path in the database is not enough: the profile,
+  the apply page, the submission check (`ApplicationService::submit`, which one-click Apply also uses) and the provider's
+  review page all read the same availability check (`ApplicantProfile::documentChecklist()` →
+  `FileStorageService::status()`). The check has three answers: *available*, *missing* (the disk answered and there is no
+  such object) and *unreachable* (the disk could not be asked - bad credentials, wrong bucket, endpoint down). An
+  unreachable store is reported as a storage problem (HTTP 503 on download, "document storage is not responding" on
+  apply), never as a missing file, and nothing is submitted on a requirement that could not be confirmed.
 
-`docker/entrypoint.sh` creates `FILESYSTEM_ROOT` and chowns it to the web
-worker on every boot when it is set, so a freshly attached (root-owned) disk
-is writable immediately — no manual `chmod`/`chown` on the box.
+#### Diagnosing "The file could not be found"
 
-Existing database rows need nothing done to them: every stored path
-(`document_files.path`, `applicant_profiles.results_certificate_path`, etc.) is
-relative, not absolute, so it resolves under whichever root the disk points at.
-What does need doing, if there are files worth keeping from a prior deploy, is
-moving the *bytes* — the disk starts empty, and Render gives no way to reach a
-free-plan container's filesystem after it has already recycled. In practice
-this means: attach the disk **before** the first real upload you need to keep,
-not after. If you ever need to move an existing populated root (e.g.
-migrating off a VPS's `storage/app` onto a newly attached disk), copy the
-directory tree across with the service stopped or in maintenance mode - `rsync
--a` or `cp -a` the old root's contents into the new one, preserving the
-relative paths exactly - then set `FILESYSTEM_ROOT` and restart. Never delete
-the old copy until a spot-check confirms a few real documents open correctly
-through the app from the new location.
+1. Look in the application log for `Could not check whether a stored file exists` - it carries the disk, driver and the
+   full exception chain (the S3 error code such as `AccessDenied` / `NoSuchBucket`; never credentials). If that line is
+   present the problem is the store (credentials, bucket, endpoint), not the document.
+2. Sign in as an administrator and use `/admin/storage-diagnostics/write-test`: it does a real write/exists/delete round
+   trip with the configured credentials and returns fingerprints (never values) of the keys.
+3. If the store answers and the object is simply absent, the document is genuinely missing. The usual causes are
+   (a) demo records: `DatabaseSeeder` used to write document *paths* for the demo accounts with no files behind them
+   (it now writes small placeholder PDFs to the configured disk when it runs outside the test suite; re-run it, or
+   upload real documents), and (b) uploads made while the container's local disk was the target, before R2 was
+   configured - those objects were lost with the container and cannot be recovered from the database.
+4. Genuinely missing documents cannot be reconstructed. The applicant re-uploads: for a *pending* application the
+   confirmation page ("A document needs your attention") replaces that document on the application itself, so the
+   provider can open it; for a new application the apply page asks for the document again. Decided and withdrawn
+   applications are final and are not rewritten.
+
+Do **not** make the bucket public or serve R2 URLs directly to "fix" a missing document: applicant documents are
+private by design.
 
 ### Cloudflare R2 (S3) storage - verified on the real service by the maintainer (2026-10-18)
 
@@ -184,8 +179,8 @@ bucket or credentials:
 | 500 with no detail | Expected in production — `APP_DEBUG=false` hides traces. Read the container logs; the app logs to stderr. |
 | `SQLSTATE[HY000] [2002] Connection refused` | Database host/port wrong, or the managed database has not finished provisioning. The entrypoint retries for 60 seconds before giving up. |
 | Migration fails midway | Inspect the `migrations` table, fix the cause, then redeploy. `php artisan migrate:status` shows exactly what ran. |
-| Uploads disappear after deploy | Expected on `plan: free` — there is no persistent disk. See "Uploaded files are not persistent" above. |
-| Uploads fail with a permission error after attaching a disk | `FILESYSTEM_ROOT` is set but the entrypoint never ran as root against it (e.g. a manual restart bypassing the image's normal boot). Redeploy so `docker/entrypoint.sh` chowns the mount to `www-data` again. |
+| Uploads disappear after deploy | `FILESYSTEM_DISK` is not `s3` (or the `AWS_*` secrets are missing), so uploads went to the container's ephemeral disk. Restore the R2 settings from `render.yaml`; see "Where uploaded documents live" above. Objects already lost cannot be recovered - applicants re-upload. |
+| Uploads fail with a permission error on a mounted `FILESYSTEM_ROOT` (VPS/local only) | The entrypoint never ran as root against it (e.g. a manual restart bypassing the image's normal boot). Redeploy so `docker/entrypoint.sh` chowns the mount to `www-data` again. Not applicable to R2. |
 | `SQLSTATE[HY000] [2002] Cannot connect to MySQL using SSL` | `MYSQL_ATTR_SSL_CA` points at a file that is missing or is not a valid CA. On Render check the Secret File is named `aiven-ca.pem`; locally check the path resolves from the project root. |
 | Connection times out against Aiven | `DB_PORT` is almost certainly still 3306. Aiven assigns a per-service port. |
 | Stale config or routes after a change | The entrypoint warms `config:cache`, `route:cache` and `view:cache`. Redeploy to rebuild them; never edit cached config in place. |
@@ -460,13 +455,14 @@ DB_DATABASE=scholarzim
 DB_USERNAME=scholarzim
 DB_PASSWORD=...
 
-# Where private documents are actually written (config/filesystems.php's
-# "local" disk - results certificates, transcripts, application attachments,
-# provider certificates). Unset, it defaults to storage/app inside the
-# container, which is what the Docker Compose volumes below already mount -
-# leave it unset for both the VPS stack and Render's free plan. Set it only
-# when the disk is mounted somewhere else, e.g. a Render Persistent Disk at
-# /var/data/scholarzim - see "Uploaded files are not persistent" above.
+# Where the "local" disk writes private documents (results certificates,
+# transcripts, application attachments, provider certificates) when
+# FILESYSTEM_DISK=local - the VPS Docker Compose stack and local development.
+# Unset, it defaults to storage/app inside the container, which the Compose
+# volumes below already mount. It has no effect on Render, where
+# FILESYSTEM_DISK=s3 sends every upload to Cloudflare R2 (render.yaml) - see
+# "Where uploaded documents live" above. Set it only when the local disk is
+# mounted somewhere else.
 # FILESYSTEM_ROOT=/var/data/scholarzim
 
 # TLS to a managed MySQL. Unset for a plain local/compose MySQL - with no value

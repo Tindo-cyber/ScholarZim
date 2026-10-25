@@ -15,6 +15,7 @@ use App\Support\OpportunityStatus;
 use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Support\GivesRequiredDocuments;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 /**
@@ -48,6 +49,9 @@ class FundedLevelEligibilityTest extends TestCase
         $this->oLevelLeaver = User::where('email', 'farai.sibanda@scholarzim.co.zw')->firstOrFail();
 
         // Both hold the proof of results the listings below ask for, so what is under test is never a missing file.
+        Storage::disk((string) config('filesystems.default', 'local'))->put('profiles/test/slip.pdf', "%PDF-1.4
+% test
+");
         ApplicantProfile::where('user_id', $this->primaryPupil->user_id)->firstOrFail()->forceFill([
             'grade7_slip_path' => 'profiles/test/slip.pdf', 'grade7_slip_filename' => 'slip.pdf', 'grade7_slip_uploaded_at' => now(),
         ])->save();

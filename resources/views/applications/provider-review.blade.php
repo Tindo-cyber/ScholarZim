@@ -136,6 +136,8 @@
                                         <x-status-badge label="Uploaded" tone="success" />
                                     @elseif($document['state'] === 'unavailable')
                                         <x-status-badge label="File unavailable" tone="warning" />
+                                    @elseif($document['state'] === 'unreachable')
+                                        <x-status-badge label="Could not be checked" tone="warning" />
                                     @else
                                         <x-status-badge label="Not provided" tone="secondary" />
                                     @endif
@@ -151,6 +153,8 @@
                                         </a>
                                     @elseif($document['state'] === 'unavailable')
                                         <span class="small text-secondary ms-auto">The file could not be found. Ask the applicant to upload it again.</span>
+                                    @elseif($document['state'] === 'unreachable')
+                                        <span class="small text-secondary ms-auto">Document storage is not responding right now. Try again shortly.</span>
                                     @endif
                                 </li>
                             @endforeach

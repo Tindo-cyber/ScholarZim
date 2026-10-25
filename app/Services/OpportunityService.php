@@ -122,7 +122,7 @@ class OpportunityService
             );
         }
 
-        $country = $this->normalizeCountry($data['country'] ?? null);
+        $country = $this->normalizeCountry($data['country'] ?? null, $data['education_level'] ?? null);
         $identity = $this->identityAttributes($data, $provider);
         $award = $this->awardAttributes($data);
 
@@ -415,7 +415,7 @@ class OpportunityService
      */
     private function proposedChange(Opportunity $opportunity, array $data, User $provider): array
     {
-        $country = $this->normalizeCountry($data['country'] ?? null);
+        $country = $this->normalizeCountry($data['country'] ?? null, $data['education_level'] ?? null);
         $attributes = [
             'title' => $data['title'] ?? $opportunity->title,
             'description' => $data['description'] ?? null,
@@ -896,8 +896,16 @@ class OpportunityService
         Cache::forget('opportunities.target_fields');
     }
 
-    private function normalizeCountry(?string $value): string
+    /**
+     * The country of study to save. Form 1, O-Level and A-Level are always Zimbabwe: the request refuses anything else, and this
+     * keeps `country` and its legacy twin `target_country` right for any caller that did not come through it.
+     */
+    private function normalizeCountry(?string $value, ?string $level = null): string
     {
+        if (\App\Support\EducationLevel::requiresZimbabwe($level)) {
+            return FormOptions::DEFAULT_COUNTRY;
+        }
+
         $trimmed = trim((string) $value);
 
         return $trimmed !== '' ? $trimmed : FormOptions::DEFAULT_COUNTRY;

@@ -132,7 +132,8 @@ class ApplicationDocumentSnapshotTest extends TestCase
         $application = $this->applyWithDocuments();
         $profile = $this->profile();
 
-        $held = collect(ApplicationDocument::TYPES)->filter(fn ($columns) => filled($profile->{$columns[0]}))->keys()->all();
+        // Only a document whose file is really there goes in: a seeded path with nothing behind it is not a document.
+        $held = collect(ApplicationDocument::TYPES)->filter(fn ($columns, $type) => $profile->hasDocument($type))->keys()->all();
 
         $this->assertContains('passport', $held);
         $this->assertContains('recommendation', $held);

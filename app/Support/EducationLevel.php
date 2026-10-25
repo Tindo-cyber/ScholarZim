@@ -76,6 +76,29 @@ final class EducationLevel
         self::PHD,
     ];
 
+    /**
+     * Scholarships for these targets are for study in Zimbabwe, whatever the provider chooses: Primary-to-Form-1 entry,
+     * O-Level and A-Level. A business rule of ScholarZim, not a default. Certificate level and above may name any country.
+     */
+    public const ZIMBABWE_ONLY_LEVELS = [
+        self::FORM_1,
+        self::O_LEVEL,
+        self::A_LEVEL,
+    ];
+
+    /** Whether a scholarship targeting this level (a legacy spelling included) must be for study in Zimbabwe. */
+    public static function requiresZimbabwe(mixed $level): bool
+    {
+        // Anything but text (a hand-made request can send an array) is not a level.
+        if (! is_string($level)) {
+            return false;
+        }
+
+        $canonical = self::canonical($level);
+
+        return $canonical !== null && in_array($canonical, self::ZIMBABWE_ONLY_LEVELS, true);
+    }
+
     public const TIER_PRIMARY = 'PRIMARY';
 
     public const TIER_SECONDARY = 'SECONDARY';

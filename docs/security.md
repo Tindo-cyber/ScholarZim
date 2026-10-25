@@ -32,7 +32,7 @@ Enforced by route middleware groups (`auth`, `role:ROLE_*`, and `account.active`
   (`FILESYSTEM_DISK`; `FileStorageService::diskName()`), never under `public/`.
   That is the private `local` disk (root `storage/app`, or `FILESYSTEM_ROOT`)
   unless the environment sets another: `render.yaml` and `.env.prod.example`
-  set `FILESYSTEM_DISK=s3`, intended for a private Cloudflare R2 bucket - see
+  set `FILESYSTEM_DISK=s3` for the private Cloudflare R2 bucket production uses - see
   `config/filesystems.php` and `docs/DEPLOYMENT.md`. Either way files are only
   read back through the controllers below. Nginx additionally denies any request
   under `/storage/`.
@@ -160,12 +160,12 @@ Production: set `SESSION_SECURE_COOKIE=true` so session cookies are only sent ov
 | `APP_DEBUG` / stack traces | Enabled | **Disabled** |
 | Config, route and view caches | Off, so edits apply live | Warmed on boot |
 | DB credentials | Local defaults | Environment variables |
-| Uploads path | Local `storage/app` (unset `FILESYSTEM_ROOT`) | On Render's current `plan: free`, still `storage/app` inside the container - not persistent; see `docs/DEPLOYMENT.md` for what upgrading to a paid plan and setting `FILESYSTEM_ROOT` to a mounted disk requires |
+| Uploads path | Local `storage/app` (unset `FILESYSTEM_ROOT`) | Private Cloudflare R2 bucket (`FILESYSTEM_DISK=s3` and the `AWS_*` variables in `render.yaml`); the container's own disk is ephemeral and is not used for documents - see `docs/DEPLOYMENT.md`, "Where uploaded documents live" |
 
 ## Known limitations (future work)
 
 - **Cluster rate limiting** — per-instance cache only.
 - **`composer audit` is non-blocking** — `audit.block-insecure=false` remains in `composer.json` from the Laravel 10 era, when every release carried an advisory with no fix to move to. The framework is now Laravel 12 and the audit reports nothing; the setting is stale rather than load-bearing and should be removed.
-- **Ephemeral uploads on free Render** — the disk root is configurable (`FILESYSTEM_ROOT`), but no disk is actually attached on `plan: free`, so uploads still do not survive a redeploy today. Upgrading the plan, attaching a Render Persistent Disk, and setting `FILESYSTEM_ROOT` to its mount path (see `docs/DEPLOYMENT.md`) is what closes this - it is configuration, not a code change, but it has not been done because the current deployment stays on the free plan.
+- **Uploads depend on R2 being configured** — documents survive a redeploy only because `render.yaml` sets `FILESYSTEM_DISK=s3` and the `AWS_*` secrets point at the R2 bucket. If `FILESYSTEM_DISK` is ever `local` on Render, the container's ephemeral disk is used and uploads are lost on the next deploy or idle spin-down; the application then treats those documents as missing (an applicant is asked to upload them again) rather than counting a stale path as an upload. Objects already lost cannot be recovered from the database.
 - **Admin PDF/Excel reports** — current exporters load full tables into memory; fine for FYP scale; paginate or stream before large production datasets.
 - **`style-src 'unsafe-inline'`** — inline `style="..."` attributes remain across a number of views; extracting them is future work.

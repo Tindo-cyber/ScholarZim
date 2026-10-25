@@ -53,6 +53,8 @@ use RuntimeException;
  */
 class ScholarFitTestSeeder extends Seeder
 {
+    use WritesDemoDocuments;
+
     private const PASSWORD = 'ChangeMe123';
 
     public function run(): void
@@ -68,6 +70,7 @@ class ScholarFitTestSeeder extends Seeder
         $applicants = $this->applicants();
         $providers = $this->providers();
         $this->listings($providers);
+        $this->demoDocuments();
 
         $this->command?->info('Seeded ' . count($applicants) . ' applicants and ' . count($providers) . ' providers (password ' . self::PASSWORD . ').');
         $this->report(array_values($applicants));

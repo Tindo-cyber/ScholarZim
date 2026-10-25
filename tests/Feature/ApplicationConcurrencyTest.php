@@ -549,7 +549,10 @@ class ApplicationConcurrencyTest extends TestCase
 
         $this->assertSame(
             [],
-            Storage::disk($this->testDisk())->allFiles('provider-certificates'),
+            array_values(array_filter(
+                Storage::disk($this->testDisk())->allFiles('provider-certificates'),
+                fn (string $file) => ! str_contains($file, '/demo')   // the demo accounts' own seeded certificates
+            )),
             'the certificate must not outlive the registration that rolled back'
         );
         $this->assertDatabaseMissing('users', ['email' => 'chiedza-trust@example.test']);

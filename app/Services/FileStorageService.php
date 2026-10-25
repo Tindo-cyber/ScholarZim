@@ -31,6 +31,15 @@ class FileStorageService
 
     public const MAX_BYTES = 5 * 1024 * 1024;
 
+    /** The object was found on the disk that holds it. */
+    public const AVAILABLE = 'available';
+
+    /** The disk answered and there is no such object: it was never written there, or it has gone. */
+    public const MISSING = 'missing';
+
+    /** The disk could not be asked (credentials, bucket, network). Says nothing about whether the object exists. */
+    public const UNREACHABLE = 'unreachable';
+
     public const ALLOWED_MIME = [
         'application/pdf',
         'image/jpeg',
@@ -124,8 +133,17 @@ class FileStorageService
 
         $disk = $this->resolveDiskForPath($path);
 
-        if (Storage::disk($disk)->exists($path)) {
-            Storage::disk($disk)->delete($path);
+        // Cleanup after a commit must never turn a finished request into a 500 because the store is unreachable
+        // right now: the row that referred to the file is already gone, and a stray object is harmless.
+        try {
+            if (Storage::disk($disk)->exists($path)) {
+                Storage::disk($disk)->delete($path);
+            }
+        } catch (\Throwable $e) {
+            Log::warning('Could not remove a stored file; it was left in place.', [
+                'disk' => $disk,
+                'exception_chain' => $this->exceptionChain($e),
+            ]);
         }
 
         DocumentFile::where('disk', $disk)->where('path', $path)->delete();
@@ -182,11 +200,13 @@ class FileStorageService
     {
         $record = $this->metadataFor($path);
 
-        if ($record === null || ! $this->exists($path)) {
+        [$diskName] = $this->locate($path);
+
+        if ($record === null || $diskName === null) {
             return false;
         }
 
-        $stream = Storage::disk($record->disk)->readStream($path);
+        $stream = Storage::disk($diskName)->readStream($path);
 
         if ($stream === false) {
             return false;
@@ -204,36 +224,80 @@ class FileStorageService
     }
 
     /**
-     * Whether a path exists on the configured disk - false if it genuinely
-     * does not, and also false (logged) if the disk could not even be asked.
+     * Whether the file is there and can be opened: the disk that actually holds it says so.
      *
-     * exists() is not one of the methods Illuminate\Filesystem\FilesystemAdapter
-     * wraps in its own try/catch (that is readStream()/mimeType()/put() only)
-     * - it calls straight through to League\Flysystem, whose S3 adapter
-     * re-throws anything that is not a clean "no such key" from the API
-     * (wrong credentials, wrong bucket, an endpoint that stopped resolving)
-     * as UnableToCheckFileExistence. Left unguarded, every caller of this
-     * method - including the abort_unless() checks in FileDownloadController
-     * - would turn a storage-layer problem into an uncaught 500 instead of
-     * the 404 they are written to produce for a merely-missing file.
+     * "Not available" covers both a file that is gone and a store that could not be asked. Callers that must tell
+     * those apart - to say "upload it again" for one and "try again shortly" for the other - use status().
      */
     public function exists(?string $path): bool
     {
+        return $this->status($path) === self::AVAILABLE;
+    }
+
+    /**
+     * AVAILABLE, MISSING or UNREACHABLE for a stored path.
+     *
+     * The disk is the one the file was recorded against (see locate()), not simply the configured default: a
+     * document written before the move to R2 is recorded against "local", and checking only the default disk
+     * reported such a file as gone while download() - which does honour the record - could still have served it.
+     * UNREACHABLE is only returned when no disk could be asked AND none of them found the file, so a store outage is
+     * never reported as a missing document, and a missing document is never hidden by an outage on another disk.
+     */
+    public function status(?string $path): string
+    {
+        return $this->locate($path)[1];
+    }
+
+    /**
+     * Which disk holds this path, and what became of the lookup.
+     *
+     * The recorded disk is asked first, then the configured default if it differs (an object written under a
+     * different configuration than today's). exists() is not wrapped by Laravel's adapter - the S3 driver re-throws
+     * anything that is not a clean "no such key" - so every failure is caught here and logged with the whole
+     * exception chain, which is where the real S3/R2 error code lives. Nothing sensitive is logged: no credentials,
+     * no URLs, only the disk name, the driver and the private object key.
+     *
+     * @return array{0: ?string, 1: string} the disk name when found, and the status
+     */
+    private function locate(?string $path): array
+    {
         if (blank($path)) {
-            return false;
+            return [null, self::MISSING];
         }
 
+        // The recorded disk is a hint, not a requirement: if the metadata cannot be read, the configured disk is asked.
         try {
-            return $this->disk()->exists($path);
-        } catch (FilesystemException $e) {
-            Log::warning('Could not check whether a file exists on the configured disk.', [
-                'path' => $path,
-                'disk' => $this->diskName(),
-                'exception_chain' => $this->exceptionChain($e),
-            ]);
-
-            return false;
+            $record = DocumentFile::where('path', $path)->first();
+        } catch (\Throwable) {
+            $record = null;
         }
+
+        $candidates = array_values(array_unique(array_filter([
+            $record !== null && $record->disk !== '' ? $record->disk : null,
+            $this->diskName(),
+        ])));
+
+        $unreachable = false;
+
+        foreach ($candidates as $name) {
+            try {
+                if (Storage::disk($name)->exists($path)) {
+                    return [$name, self::AVAILABLE];
+                }
+            } catch (\Throwable $e) {
+                $unreachable = true;
+
+                Log::warning('Could not check whether a stored file exists; reporting storage as unavailable, not the file as missing.', [
+                    'disk' => $name,
+                    'driver' => config("filesystems.disks.$name.driver"),
+                    'document_file_id' => $record?->document_file_id,
+                    'path' => $path,
+                    'exception_chain' => $this->exceptionChain($e),
+                ]);
+            }
+        }
+
+        return [null, $unreachable ? self::UNREACHABLE : self::MISSING];
     }
 
     /**
@@ -296,33 +360,20 @@ class FileStorageService
             abort(403, 'This file was quarantined and cannot be downloaded.');
         }
 
-        $disk = $record !== null && $record->disk !== ''
-            ? Storage::disk($record->disk)
-            : $this->disk();
+        // The disk the file is actually on, and a storage-layer problem told apart from a missing file: a store
+        // that cannot be asked (wrong credentials, wrong bucket, an endpoint that stopped resolving) is a 503, not
+        // the same 404 a file that is genuinely gone gets.
+        [$diskName, $status] = $this->locate($path);
 
-        // Not $this->exists(): that method's own try/catch would report
-        // "false" here the same as a file that is genuinely missing. This
-        // caller can tell the two apart, and should - a storage-layer
-        // problem (wrong credentials, wrong bucket, an endpoint that
-        // stopped resolving) is not the same fact as "no such file", and
-        // collapsing them into the same 404 is exactly what left this kind
-        // of failure undiagnosable before 'report' => true on the s3 disk
-        // (see config/filesystems.php) gave it anywhere to be logged.
-        try {
-            $fileExists = $disk->exists($path);
-        } catch (FilesystemException $e) {
-            Log::error('Could not check whether a document exists on the configured disk.', [
-                'path' => $path,
-                'disk' => $record->disk ?? $this->diskName(),
-                'exception_chain' => $this->exceptionChain($e),
-            ]);
-
+        if ($status === self::UNREACHABLE) {
             abort(503, 'Unable to reach document storage right now. Please try again shortly.');
         }
 
-        if (! $fileExists) {
+        if ($diskName === null) {
             abort(404, 'File not found.');
         }
+
+        $disk = Storage::disk($diskName);
 
         $mime = $record !== null && $record->mime_type !== ''
             ? $record->mime_type
@@ -336,7 +387,8 @@ class FileStorageService
         $stream = $disk->readStream($path);
 
         if ($stream === false) {
-            abort(404, 'File not found.');
+            // Found a moment ago and unreadable now: the store, not the document, is the likelier fault.
+            abort(503, 'Unable to read the document right now. Please try again shortly.');
         }
 
         $headers = [
@@ -361,7 +413,7 @@ class FileStorageService
         } catch (FilesystemException $e) {
             Log::warning('Could not determine file size while serving a download; continuing without Content-Length.', [
                 'path' => $path,
-                'disk' => $record->disk ?? $this->diskName(),
+                'disk' => $diskName,
                 'exception' => $e->getMessage(),
             ]);
         }

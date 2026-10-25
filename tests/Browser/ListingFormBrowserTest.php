@@ -51,6 +51,34 @@ class ListingFormBrowserTest extends DuskTestCase
         });
     }
 
+    public function test_school_levels_fix_the_country_to_zimbabwe_and_higher_levels_offer_every_country_again(): void
+    {
+        $country = '#field-country';
+        $foreignDisabled = "return document.querySelector('#field-country option[value=\"South Africa\"]').disabled;";
+
+        $this->browse(function (Browser $browser) use ($country, $foreignDisabled) {
+            $browser->loginAs($this->provider())
+                ->visit('/opportunities/create')
+                ->waitFor(self::LEVEL, self::WAIT)
+                ->assertAttribute('#field-award_slots', 'required', 'true');
+
+            // Undergraduate: study abroad is offered and can be chosen.
+            $browser->select(self::LEVEL, EducationLevel::UNDERGRADUATE)->select($country, 'South Africa')->assertSelected($country, 'South Africa');
+            $this->assertFalse($browser->script($foreignDisabled)[0]);
+
+            // Switching to a school level puts Zimbabwe back, with no foreign choice left to make, and says why.
+            foreach ([EducationLevel::O_LEVEL, EducationLevel::A_LEVEL, EducationLevel::FORM_1] as $level) {
+                $browser->select(self::LEVEL, $level)->assertSelected($country, 'Zimbabwe')->assertSee('are for study in Zimbabwe');
+                $this->assertTrue($browser->script($foreignDisabled)[0], $level . ' offers no foreign country');
+            }
+
+            // And back up: every country is offered again, and what is selected is Zimbabwe, not a stale foreign value.
+            $browser->select(self::LEVEL, EducationLevel::MASTERS)->assertSelected($country, 'Zimbabwe');
+            $this->assertFalse($browser->script($foreignDisabled)[0]);
+            $browser->select($country, 'South Africa')->assertSelected($country, 'South Africa');
+        });
+    }
+
     public function test_the_stricter_rules_are_folded_away_and_open_on_a_failed_save(): void
     {
         $this->browse(function (Browser $browser) {

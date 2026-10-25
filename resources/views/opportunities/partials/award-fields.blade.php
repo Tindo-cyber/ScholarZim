@@ -68,8 +68,8 @@
                                :placeholder="null" />
             </div>
             <div class="col-md-4">
-                <x-form.input name="award_slots" label="Number of awards" type="number"
-                              min="1" step="1"
+                <x-form.input name="award_slots" label="Number of awards" type="number" required
+                              min="1" max="5000" step="1"
                               :value="$value('award_slots')"
                               hint="How many students will be funded." />
             </div>

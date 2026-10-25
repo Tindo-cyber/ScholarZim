@@ -366,8 +366,14 @@ class ApplicationService
             $profile = $this->storeSuppliedDocuments($profile, $user, $opportunity, $profileDocuments);
         }
 
-        if (! $profile->isComplete()) {
-            throw new ProfileIncompleteException($profile->missingFields());
+        // Only what is NOT a document is held against the profile here. A required document that is absent, or whose
+        // file has gone from storage, is answered below with the document's own name and an upload to put it right
+        // (DocumentsRequired) - and a document whose store could not be asked is answered as a storage fault, not as
+        // an incomplete profile.
+        $profileGaps = $profile->missingFields();
+
+        if (array_diff($profileGaps, array_values(ApplicantProfile::DOCUMENT_LABELS)) !== []) {
+            throw new ProfileIncompleteException($profileGaps);
         }
 
         // The same hard requirements ScholarFit already showed the applicant on
@@ -387,10 +393,27 @@ class ApplicationService
         // apply page show. Enforced here - not only in the wizard - so a one-click Apply, which has no form to carry
         // an upload, cannot go ahead without a passport or a recommendation letter the page calls required. Asked for
         // after eligibility: nobody is told to upload a certificate for an award they cannot be considered for.
-        $missingDocuments = $profile->documentChecklist($opportunity)->missing();
+        //
+        // "Available" means the file can be opened from the disk it is recorded on - a path in the database is not
+        // enough. A document the store could not be asked about fails the submission safely rather than being
+        // counted as there, or declared missing.
+        $checklist = $profile->documentChecklist($opportunity);
+        $missingDocuments = $checklist->missing();
 
         if ($missingDocuments !== []) {
-            throw new \App\Exceptions\DocumentsRequired(array_column($missingDocuments, 'label'));
+            throw new \App\Exceptions\DocumentsRequired(
+                array_column($missingDocuments, 'label'),
+                array_column(array_filter($missingDocuments, static fn (array $item) => $item['state'] === \App\Support\DocumentChecklist::FILE_MISSING), 'label')
+            );
+        }
+
+        if ($checklist->storageUnavailable()) {
+            throw new \App\Exceptions\DocumentStorageUnavailable();
+        }
+
+        // Anything still outstanding is something the checks above did not name; never let it through.
+        if (! $profile->isComplete()) {
+            throw new ProfileIncompleteException($profile->missingFields());
         }
 
         // The upload happens before the transaction because writing a file is not
@@ -556,6 +579,155 @@ class ApplicationService
         }
 
         return $application;
+    }
+
+    /**
+     * The documents of a pending application that cannot be opened, so the applicant can put them right.
+     *
+     * Every file here is one the provider would find unavailable: recorded against the application but gone from its
+     * disk ('file_missing'), asked of this applicant at their submitted level but never recorded ('not_provided'), or
+     * a file whose store could not be asked just now ('storage_error' - listed so it is not hidden, but never offered
+     * for replacement: nothing is known to be wrong with it). A decided or withdrawn application has no issues: a
+     * decision is final and what the provider reviewed is not rewritten afterwards.
+     *
+     * @return array<int, array{type: string, label: string, state: string}>
+     */
+    public function documentIssues(Application $application): array
+    {
+        if (! $application->isPending()) {
+            return [];
+        }
+
+        $level = $application->submittedLevel();
+        $asked = $level !== null ? array_keys(ApplicantProfile::documentRequirementsAt($level, $application->opportunity)) : [];
+        $issues = [];
+
+        foreach (array_keys(\App\Models\ApplicationDocument::TYPES) as $type) {
+            $document = $application->documentFor($type);
+
+            if ($document === null) {
+                if (in_array($type, $asked, true)) {
+                    $issues[] = ['type' => $type, 'label' => ApplicantProfile::DOCUMENT_LABELS[$type], 'state' => 'not_provided'];
+                }
+
+                continue;
+            }
+
+            $state = $this->issueState($document['path']);
+
+            if ($state !== null) {
+                $issues[] = ['type' => $type, 'label' => ApplicantProfile::DOCUMENT_LABELS[$type], 'state' => $state];
+            }
+        }
+
+        // The file attached to the application itself is only a problem if one was attached and has gone.
+        if (filled($application->document_path) && ($state = $this->issueState($application->document_path)) !== null) {
+            $issues[] = ['type' => self::ATTACHMENT, 'label' => $application->document_filename ?: 'Application attachment', 'state' => $state];
+        }
+
+        return $issues;
+    }
+
+    private function issueState(string $path): ?string
+    {
+        return match ($this->fileStorage->status($path)) {
+            FileStorageService::AVAILABLE => null,
+            FileStorageService::MISSING => 'file_missing',
+            default => 'storage_error',
+        };
+    }
+
+    /** The pseudo-type for the file attached to an application, as opposed to a profile document. */
+    public const ATTACHMENT = 'attachment';
+
+    /**
+     * Replace a document of a PENDING application whose file cannot be found, so the provider can open it.
+     *
+     * Uploading to the profile alone does not repair an application: the provider is shown the file the application
+     * recorded when it was sent (ApplicationDocument), never the profile's current one. So the replacement is stored
+     * through the profile's one writer and then the application's own record is pointed at it - and only for a
+     * document that is actually broken, so this cannot be used to swap a good file after the provider has seen it.
+     * Refused once the application is decided or withdrawn, and while the store cannot be asked.
+     */
+    public function repairDocument(int $applicationId, User $user, string $type, UploadedFile $file): Application
+    {
+        $application = $this->findForApplicant($applicationId, $user);
+
+        if (! $application->isPending()) {
+            throw new RuntimeException('Documents can only be replaced while the application is pending. A decided or withdrawn application is final.');
+        }
+
+        $issue = collect($this->documentIssues($application))->firstWhere('type', $type);
+
+        if ($issue === null) {
+            throw new RuntimeException('That document does not need replacing: the provider can already open it.');
+        }
+
+        if ($issue['state'] === 'storage_error') {
+            throw new \App\Exceptions\DocumentStorageUnavailable();
+        }
+
+        $isAttachment = $type === self::ATTACHMENT;
+        $previous = $isAttachment ? $application->document_path : ($application->documentFor($type)['path'] ?? null);
+
+        if ($isAttachment) {
+            $newPath = $this->fileStorage->store($file, 'applications', $user);
+            $filename = $file->getClientOriginalName();
+            $uploadedAt = Carbon::now();
+        } else {
+            $profile = $this->profileService->storeDocument($user, $type, $file);
+            $newPath = $profile->documentPath($type);
+            $filename = $profile->documentFilename($type);
+            $uploadedAt = $profile->documentUploadedAt($type);
+        }
+
+        try {
+            DB::transaction(function () use ($application, $type, $isAttachment, $newPath, $filename, $uploadedAt, $user) {
+                // Locked and re-read: a provider may have decided in the moment since the checks above.
+                $locked = Application::whereKey($application->application_id)->lockForUpdate()->firstOrFail();
+
+                if (! $locked->isPending()) {
+                    throw new RuntimeException('Documents can only be replaced while the application is pending. A decided or withdrawn application is final.');
+                }
+
+                if ($isAttachment) {
+                    $locked->update(['document_path' => $newPath, 'document_filename' => $filename]);
+                } else {
+                    \App\Models\ApplicationDocument::updateOrCreate(
+                        ['application_id' => $locked->application_id, 'type' => $type],
+                        ['path' => $newPath, 'filename' => $filename, 'uploaded_at' => $uploadedAt, 'recorded_at' => Carbon::now()]
+                    );
+                }
+
+                $this->auditService->logOrFail(
+                    $user->email,
+                    AuditAction::REPLACE_APPLICATION_DOCUMENT,
+                    'APPLICATION',
+                    $locked->application_id,
+                    'Replaced ' . ($isAttachment ? 'the application attachment' : ApplicantProfile::DOCUMENT_LABELS[$type]) . ' on an application whose file could not be found'
+                );
+            });
+        } catch (\Throwable $e) {
+            // The attachment is only ever this application's, so a failed rebind leaves it an orphan. A profile
+            // document stays: the applicant did upload it to their profile, and the profile row still refers to it.
+            if ($isAttachment) {
+                $this->fileStorage->delete($newPath);
+            }
+
+            throw $e;
+        }
+
+        // Committed: the file this application used to point at is released unless something else still does.
+        if (filled($previous) && $previous !== $newPath) {
+            $held = $isAttachment ? null : $this->profileService->forUser($user)->documentPath($type);
+
+            if ($previous !== $held && ! \App\Models\ApplicationDocument::isReferenced($previous)
+                && ! Application::where('document_path', $previous)->exists()) {
+                $this->fileStorage->delete($previous);
+            }
+        }
+
+        return $application->refresh();
     }
 
     /**

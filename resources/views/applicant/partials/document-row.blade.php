@@ -19,6 +19,10 @@
         <span class="fw-semibold small">{{ $label }}</span>
         @if($item['present'])
             <x-status-badge label="Uploaded" tone="success" icon="check" />
+        @elseif($item['state'] === 'file_missing')
+            <x-status-badge label="File not found" tone="danger" />
+        @elseif($item['state'] === 'storage_error')
+            <x-status-badge label="Could not be checked" tone="warning" />
         @elseif($item['required'])
             <x-status-badge label="Required" tone="danger" />
         @else
@@ -38,12 +42,22 @@
         </p>
     @endif
 
+    @if($item['state'] === 'file_missing')
+        <p class="small text-danger mb-2" id="document-{{ $type }}-lost">
+            The file you uploaded earlier could not be found. Please upload it again.
+        </p>
+    @elseif($item['state'] === 'storage_error')
+        <p class="small text-secondary mb-2">
+            Document storage is not responding right now, so this document could not be checked. Try again shortly.
+        </p>
+    @endif
+
     <form method="POST" action="{{ route('applicant.profile.documents', $type) }}"
           enctype="multipart/form-data" class="d-flex gap-2">
         @csrf
         <input class="form-control form-control-sm @error('document') is-invalid @enderror" type="file" name="document"
                accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required aria-label="Upload {{ $label }}">
-        <x-submit-button :label="$item['present'] ? 'Replace' : 'Upload'" busy-label="Uploading..."
+        <x-submit-button :label="$item['present'] || $item['state'] === 'storage_error' ? 'Replace' : 'Upload'" busy-label="Uploading..."
                          tone="outline-primary" size="sm" class="flex-shrink-0" />
     </form>
 </div>

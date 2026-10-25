@@ -44,7 +44,10 @@
                                :options="$countries"
                                :value="$opportunity?->country ?: \App\Support\FormOptions::DEFAULT_COUNTRY"
                                :placeholder="null"
-                               hint="Where the student will study. Defaults to Zimbabwe." />
+                               hint="Where the student will study. Defaults to Zimbabwe."
+                               data-zimbabwe-only-hint="Form 1, O-Level and A-Level scholarships are for study in Zimbabwe." />
+                {{-- Which levels fix the country to Zimbabwe: the same list the server enforces (EducationLevel::ZIMBABWE_ONLY_LEVELS). --}}
+                <script type="application/json" id="zimbabwe-only-levels">@json(\App\Support\EducationLevel::ZIMBABWE_ONLY_LEVELS)</script>
             </div>
         </div>
     </div>

@@ -554,11 +554,20 @@ class ApplicationReuseTest extends TestCase
         return $this->listing(['required_province' => 'ZZZ-Not-A-Real-Province']);
     }
 
+    /** Files the application itself wrote - not the fixtures the test put in place under profiles/test/. */
+    private function filesUploadedByTheApp(): array
+    {
+        return array_values(array_filter(
+            Storage::disk((string) config('filesystems.default', 'local'))->allFiles(),
+            fn (string $file) => ! str_starts_with($file, 'profiles/test/')
+        ));
+    }
+
     private function assertNothingWasKept(): void
     {
         $this->assertSame(0, $this->applicationsMade(), 'no application');
         $this->assertNull($this->profile()->recommendation_letter_path, 'no document on the profile');
-        $this->assertSame([], Storage::disk((string) config('filesystems.default', 'local'))->allFiles(), 'no file in storage');
+        $this->assertSame([], $this->filesUploadedByTheApp(), 'no file in storage');
     }
 
     public function test_a_crafted_submission_from_an_ineligible_applicant_stores_no_document(): void
@@ -615,7 +624,7 @@ class ApplicationReuseTest extends TestCase
         $this->submitFor($listing, ['documents' => ['recommendation' => $this->pdf('letter.pdf')]])->assertSessionHas('errorMessage');
 
         $this->assertNull($this->profile()->recommendation_letter_path);
-        $this->assertSame([], Storage::disk((string) config('filesystems.default', 'local'))->allFiles());
+        $this->assertSame([], $this->filesUploadedByTheApp());
         $this->assertSame(1, $this->applicationsMade());
     }
 
@@ -747,7 +756,7 @@ class ApplicationReuseTest extends TestCase
 
         // Submitting an application, one-click apply, saving the details it asks for, and the applicant's own withdrawal -
         // and nothing that lets a person enter where they have applied.
-        $this->assertSame(['applications.details', 'applications.quick', 'applications.submit', 'applications.withdraw'], $writers);
+        $this->assertSame(['applications.details', 'applications.quick', 'applications.repairDocument', 'applications.submit', 'applications.withdraw'], $writers);
     }
 
     public function test_a_second_application_to_the_same_scholarship_is_still_refused(): void

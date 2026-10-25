@@ -25,6 +25,17 @@ use Tests\TestCase;
  */
 class ScholarFitEligibilityTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // A document counts only when its file is there: the profiles below hold these paths, so the files exist.
+        foreach (['certs/results.pdf', 'certs/transcript.pdf', 'profiles/demo/slip.pdf'] as $path) {
+            \Illuminate\Support\Facades\Storage::disk((string) config('filesystems.default', 'local'))->put($path, "%PDF-1.4
+");
+        }
+    }
+
     use BuildsAcademicRecords;
 
     /**

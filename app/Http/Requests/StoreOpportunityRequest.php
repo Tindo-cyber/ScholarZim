@@ -66,6 +66,20 @@ class StoreOpportunityRequest extends FormRequest
         if ($this->boolean('level_driven') && filled($level) && in_array($level, EducationLevel::TARGET_LEVELS, true)) {
             $this->merge(OpportunityLevelRules::clearInapplicable($this->all(), $level));
         }
+
+        // Form 1, O-Level and A-Level scholarships are for study in Zimbabwe. A country left out is Zimbabwe. The form's script
+        // fixes the field to Zimbabwe and marks itself with level_driven, so a different country still in the request is a
+        // value left over from an earlier level and is replaced; without the marker (no script, or a hand-made request) a
+        // foreign country is a contradiction and is refused in checkCountryForLevel() rather than quietly changed.
+        if (EducationLevel::requiresZimbabwe($level)) {
+            $sent = $this->input('country');
+            $country = is_string($sent) ? trim($sent) : ($sent === null ? '' : null);
+
+            // A non-text country is left for its own rule to refuse.
+            if ($country !== null && ($country === '' || ($this->boolean('level_driven') && strcasecmp($country, FormOptions::DEFAULT_COUNTRY) !== 0))) {
+                $this->merge(['country' => FormOptions::DEFAULT_COUNTRY]);
+            }
+        }
     }
 
     /** @return array<string, mixed> */
@@ -87,7 +101,9 @@ class StoreOpportunityRequest extends FormRequest
             // Digits with at most two decimals, written plainly: no exponent (1e3), sign (+5), bare dot (.5 or 5.) or three decimals.
             'award_amount' => ['nullable', 'regex:/^\d{1,8}(\.\d{1,2})?$/'],
             'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
-            'award_slots' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:1', 'max:5000'],
+            // Required: a scholarship says how many students it will fund. A draft may omit it (ListingDraftService), but nothing
+            // leaves draft - published, or sent for review - without it, because every such path validates here.
+            'award_slots' => ['required', 'regex:/^\d+$/', 'integer', 'min:1', 'max:5000'],
             'is_renewable' => ['nullable', 'boolean'],
             'external_url' => ['nullable', 'string', 'url:http,https', 'max:500'],
             'min_academic_points' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:1', 'max:' . AcademicCatalogue::maxZimsecALevelPoints()],
@@ -134,6 +150,11 @@ class StoreOpportunityRequest extends FormRequest
     public function messages(): array
     {
         return OpportunityFormMessages::subjectRequirements() + [
+            'award_slots.required' => 'Enter the number of awards - how many students this scholarship will fund.',
+            'award_slots.regex' => 'Enter the number of awards as a whole number, for example 5.',
+            'award_slots.integer' => 'Enter the number of awards as a whole number, for example 5.',
+            'award_slots.min' => 'There must be at least 1 award.',
+            'award_slots.max' => 'The number of awards cannot be more than 5000.',
             'deadline.after' => 'The deadline must be after today. Choose tomorrow or later.',
             'deadline.date_format' => 'Enter the deadline as a date.',
             'max_age.min' => 'The maximum age must be at least ' . EducationLevel::MINIMUM_APPLICANT_AGE
@@ -155,12 +176,29 @@ class StoreOpportunityRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
+                $this->checkCountryForLevel($validator);
                 $this->checkLevelCombinations($validator);
                 $this->checkLocality($validator);
                 $this->checkSubjectRows($validator);
                 $this->checkScope($validator);
             },
         ];
+    }
+
+    /** Form 1, O-Level and A-Level are for study in Zimbabwe: any other destination, "any country" and "online" included, is refused. */
+    private function checkCountryForLevel(Validator $validator): void
+    {
+        if (! EducationLevel::requiresZimbabwe($this->input('education_level')) || $validator->errors()->has('country')) {
+            return;
+        }
+
+        $country = $this->input('country');
+
+        if (! is_string($country) || strcasecmp(trim($country), FormOptions::DEFAULT_COUNTRY) !== 0) {
+            $validator->errors()->add('country', EducationLevel::label(EducationLevel::canonical($this->input('education_level')))
+                . ' scholarships are for study in Zimbabwe, so the country of study must be Zimbabwe. '
+                . 'To fund study abroad, choose Certificate level or above.');
+        }
     }
 
     private function checkLevelCombinations(Validator $validator): void

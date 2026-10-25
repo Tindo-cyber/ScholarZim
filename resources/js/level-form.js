@@ -105,10 +105,51 @@
             }
         }
 
+        // Form 1, O-Level and A-Level are for study in Zimbabwe (the list is the server's own: #zimbabwe-only-levels). For those the
+        // country field shows Zimbabwe and offers nothing else; for any other level every country is offered again and the
+        // choice is left as it is - it is already Zimbabwe, never a foreign value carried over. The server enforces the rule
+        // regardless: this only stops the form offering what would be refused.
+        var zimbabweOnly = [];
+
+        try {
+            zimbabweOnly = JSON.parse((document.getElementById('zimbabwe-only-levels') || {}).textContent || '[]');
+        } catch (e) {
+            zimbabweOnly = [];
+        }
+
+        var country = form.querySelector('[name="country"]');
+        var countryHint = country ? document.getElementById(country.id + '-hint') : null;
+        var countryHintText = countryHint ? countryHint.textContent : '';
+
+        function followCountry() {
+            if (!country) return;
+
+            var fixed = zimbabweOnly.indexOf(select.value) !== -1;
+
+            Array.prototype.forEach.call(country.options, function (option) {
+                option.disabled = fixed && option.value !== 'Zimbabwe';
+                option.hidden = option.disabled;
+            });
+
+            if (fixed && country.value !== 'Zimbabwe') {
+                country.value = 'Zimbabwe';
+
+                // The open-to section follows the country, so tell it.
+                country.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+
+            country.setAttribute('data-country-fixed', fixed ? '1' : '0');
+
+            if (countryHint) {
+                countryHint.textContent = fixed ? (country.getAttribute('data-zimbabwe-only-hint') || countryHintText) : countryHintText;
+            }
+        }
+
         function apply() {
             var uses = capabilities[select.value] || capabilities[''];
 
             followAge();
+            followCountry();
 
             sections.forEach(function (section) {
                 var needed = uses[section.getAttribute('data-level-needs')] !== false;

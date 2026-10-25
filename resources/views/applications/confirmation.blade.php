@@ -88,6 +88,47 @@
                 </div>
             @endif
 
+            @if(! empty($documentIssues))
+                {{--
+                    A document the provider cannot open - its file is gone from storage, or it was never recorded for this
+                    application. Uploading a replacement here repairs THIS application's own record; a new file on the
+                    profile alone would not reach the provider. Offered only while the application is pending, and only
+                    for what is actually broken. A file whose storage could not be checked is shown but not replaceable.
+                --}}
+                <div class="card mb-4 border-warning" id="document-issues">
+                    <div class="card-header bg-warning-subtle">
+                        <h2 class="h6 fw-semibold mb-0">A document needs your attention</h2>
+                    </div>
+                    <div class="card-body d-grid gap-3">
+                        <p class="small text-secondary mb-0">
+                            The provider cannot open the documents below. Upload a replacement and it is attached to this application straight away.
+                        </p>
+                        @foreach($documentIssues as $issue)
+                            <div id="document-issue-{{ $issue['type'] }}">
+                                <div class="fw-semibold small mb-1">{{ $issue['label'] }}</div>
+                                @if($issue['state'] === 'storage_error')
+                                    <p class="small text-secondary mb-0">
+                                        Document storage is not responding right now, so this could not be checked. Try again shortly.
+                                    </p>
+                                @else
+                                    <p class="small text-danger mb-2">
+                                        {{ $issue['state'] === 'file_missing' ? 'The file could not be found.' : 'No file was sent with this application.' }}
+                                    </p>
+                                    <form method="POST" action="{{ route('applications.repairDocument', [$application->application_id, $issue['type']]) }}"
+                                          enctype="multipart/form-data" class="d-flex gap-2">
+                                        @csrf
+                                        <input class="form-control form-control-sm @error('document') is-invalid @enderror" type="file" name="document"
+                                               accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required aria-label="Upload {{ $issue['label'] }}">
+                                        <x-submit-button label="Upload" busy-label="Uploading..." tone="outline-primary" size="sm" class="flex-shrink-0" />
+                                    </form>
+                                @endif
+                            </div>
+                        @endforeach
+                        @error('document')<div class="text-danger small">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+            @endif
+
             @if(! empty($history))
                 <div class="card mb-4">
                     <div class="card-header">

@@ -210,6 +210,10 @@ Route::middleware(['auth', 'role:' . RoleNames::APPLICANT, 'cache.headers:no_sto
     Route::post('/applications/{applicationId}/withdraw', [ApplicationController::class, 'withdraw'])
         ->whereNumber('applicationId')
         ->name('applications.withdraw');
+    Route::post('/applications/{applicationId}/documents/{type}/replace', [ApplicationController::class, 'repairDocument'])
+        ->whereNumber('applicationId')
+        ->whereIn('type', [...array_keys(\App\Models\ApplicationDocument::TYPES), \App\Services\ApplicationService::ATTACHMENT])
+        ->name('applications.repairDocument');
     Route::get('/apply/{opportunityId}', [ApplicationController::class, 'showWizard'])
         ->whereNumber('opportunityId')
         ->name('applications.wizard');

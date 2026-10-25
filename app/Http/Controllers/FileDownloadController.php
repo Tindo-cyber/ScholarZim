@@ -33,7 +33,7 @@ class FileDownloadController extends Controller
             ? $this->applicationService->findForProvider($applicationId, $user)
             : $this->applicationService->findForApplicant($applicationId, $user);
 
-        abort_unless($this->fileStorage->exists($application->document_path), 404, 'No document attached.');
+        $this->requireAvailable($application->document_path, 'No document attached.');
 
         return $this->fileStorage->respond($application->document_path, $application->document_filename ?: 'application-document');
     }
@@ -84,7 +84,8 @@ class FileDownloadController extends Controller
         $application = $this->applicationService->findForProvider($applicationId, $user);
 
         $document = $application->documentFor($type);
-        abort_unless($document !== null && $this->fileStorage->exists($document['path']), 404);
+        abort_if($document === null, 404);
+        $this->requireAvailable($document['path']);
 
         $this->auditService->log(
             $user->email,
@@ -96,6 +97,19 @@ class FileDownloadController extends Controller
 
         return $this->fileStorage->respond($document['path'], $document['filename'] ?: $fallbackName);
     }
+
+    /**
+     * 404 for a file that is not there, 503 for a store that could not be asked - the two are different facts, and the
+     * person opening a document is told which. Authorisation has already happened by the time this runs.
+     */
+    private function requireAvailable(?string $path, string $notFound = 'File not found.'): void
+    {
+        $status = $this->fileStorage->status($path);
+
+        abort_if($status === FileStorageService::UNREACHABLE, 503, 'Unable to reach document storage right now. Please try again shortly.');
+        abort_unless($status === FileStorageService::AVAILABLE, 404, $notFound);
+    }
+
     /** Admin-only: the registration certificate a provider uploaded at signup. */
     public function providerCertificate(Request $request, int $userId)
     {
@@ -109,7 +123,7 @@ class FileDownloadController extends Controller
             403
         );
 
-        abort_unless($this->fileStorage->exists($profile->certificate_path), 404);
+        $this->requireAvailable($profile->certificate_path);
 
         $this->auditService->log(
             $request->user()->email,
@@ -127,7 +141,7 @@ class FileDownloadController extends Controller
         $profile = ApplicantProfile::where('user_id', $request->user()->user_id)->firstOrFail();
         $path = $profile->documentPath($documentType);
 
-        abort_unless($this->fileStorage->exists($path), 404);
+        $this->requireAvailable($path);
 
         return $this->fileStorage->respond($path, $profile->documentFilename($documentType) ?: $documentType);
     }

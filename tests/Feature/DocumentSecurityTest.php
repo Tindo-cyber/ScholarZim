@@ -327,7 +327,7 @@ class DocumentSecurityTest extends TestCase
             ->andThrow($this->wrappedExistenceFailure());
         Storage::shouldReceive('disk')->with($this->testDisk())->andReturn($failingDisk);
 
-        Log::shouldReceive('error')->once()->withArgs(
+        Log::shouldReceive('warning')->once()->withArgs(
             fn (string $message, array $context) => $this->assertsFullExceptionChain($message, $context)
         );
 

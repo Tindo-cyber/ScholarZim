@@ -8,6 +8,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\GivesRequiredDocuments;
 use Tests\TestCase;
 
 /**
@@ -21,6 +22,7 @@ use Tests\TestCase;
  */
 class DocumentCompletenessTest extends TestCase
 {
+    use GivesRequiredDocuments;
     use RefreshDatabase;
 
     private const LABELS = [
@@ -35,6 +37,7 @@ class DocumentCompletenessTest extends TestCase
     {
         parent::setUp();
         $this->seed(DatabaseSeeder::class);
+        Storage::fake((string) config('filesystems.default', 'local'));
 
         // Undergraduate: transcript + ID + recommendation letter.
         $this->student = User::where('email', 'student@scholarzim.co.zw')->firstOrFail();
@@ -125,6 +128,8 @@ class DocumentCompletenessTest extends TestCase
         $profile = ApplicantProfile::where('user_id', $tanaka->user_id)->firstOrFail();
         $profile->update(['recommendation_letter_path' => null]);
         $profile = $profile->fresh();
+        // The seeded certificate is a path; only a file that is really there counts as uploaded.
+        $this->storeDocumentFile($profile->results_certificate_path);
 
         $this->assertSame(['results', 'recommendation'], $profile->requiredDocumentTypes());
         $documentItems = array_values(array_filter($profile->completionChecklist(), fn ($i) => $i['anchor'] === 'documents'));
@@ -313,7 +318,7 @@ class DocumentCompletenessTest extends TestCase
         $profile = $this->profile();
 
         foreach ($types as $type) {
-            $profile->{ApplicantProfile::DOCUMENT_TYPES[$type] . '_path'} = 'profiles/demo/' . $type . '.pdf';
+            $profile->{ApplicantProfile::DOCUMENT_TYPES[$type] . '_path'} = $this->storeDocumentFile('profiles/demo/' . $type . '.pdf');
         }
 
         $profile->save();

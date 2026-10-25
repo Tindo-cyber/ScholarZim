@@ -85,6 +85,13 @@
                                         Anything already on your profile is used as it is.
                                     </p>
 
+                                    @php $lost = array_column(array_filter($missingDocuments, fn ($d) => $d['state'] === 'file_missing'), 'label'); @endphp
+                                    @if($lost !== [])
+                                        <p class="small text-danger" id="lost-documents">
+                                            We could not find the file you uploaded earlier for {{ implode(', ', $lost) }}. Please upload it again.
+                                        </p>
+                                    @endif
+
                                     @foreach($missingDocuments as $document)
                                         <div class="mb-3">
                                             <label class="form-label" for="documents-{{ $document['type'] }}">
@@ -134,6 +141,25 @@
                         <div class="mt-4">
                             <a class="btn btn-outline-secondary" href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
                         </div>
+                    </div>
+                </div>
+            @elseif($readiness->storageUnavailable())
+                {{--
+                    A required document could not be checked because document storage did not answer. It is not said to
+                    be missing - it may be fine - and the application is not sent on a requirement nobody could confirm.
+                    The server refuses it the same way (DocumentStorageUnavailable).
+                --}}
+                <div class="card border-warning" id="storage-unavailable">
+                    <div class="card-header bg-warning-subtle">
+                        <h2 class="h6 fw-semibold mb-0">We could not check your documents</h2>
+                    </div>
+                    <div class="card-body">
+                        <p>
+                            Document storage is not responding right now, so we cannot confirm your documents are in place.
+                            Nothing has been changed and nothing has been submitted. Please try again in a few minutes.
+                        </p>
+                        <a class="btn btn-primary" href="{{ route('applications.wizard', $opportunity->opportunity_id) }}">Try again</a>
+                        <a class="btn btn-outline-secondary" href="{{ route('scholarships.show', $opportunity->opportunity_id) }}">Back to listing</a>
                     </div>
                 </div>
             @elseif($readiness->isIneligible())

@@ -78,6 +78,14 @@ trait LoadsScholarFitFixtures
 
         $documents = $spec['documents'] ?? [];
 
+        // A document counts only when its file is there, so each one this applicant holds is really on the (faked) disk.
+        foreach (['results_certificate' => 'fixtures/results.pdf', 'transcript' => 'fixtures/transcript.pdf'] as $type => $path) {
+            if (in_array($type, $documents, true)) {
+                \Illuminate\Support\Facades\Storage::disk((string) config('filesystems.default', 'local'))->put($path, "%PDF-1.4
+");
+            }
+        }
+
         $profile = ApplicantProfile::create([
             'user_id' => $user->user_id,
             'education_level' => $spec['level'],

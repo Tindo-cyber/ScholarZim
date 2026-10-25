@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\FileStorageService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -56,8 +57,13 @@ class ApplicationDocument extends Model
     {
         static::where('application_id', $application->application_id)->delete();
 
+        $storage = app(FileStorageService::class);
+
         foreach (self::TYPES as $type => [$path, $filename, $uploadedAt]) {
-            if (filled($profile->{$path})) {
+            // A path whose file the store says is gone is not something the application was sent with: recording it
+            // would hand the provider a link to nothing. A store that merely could not be asked is not "gone", so
+            // that file is still recorded.
+            if (filled($profile->{$path}) && $storage->status($profile->{$path}) !== FileStorageService::MISSING) {
                 static::create([
                     'application_id' => $application->application_id,
                     'type' => $type,

@@ -32,6 +32,8 @@ use RuntimeException;
 
 class DatabaseSeeder extends Seeder
 {
+    use WritesDemoDocuments;
+
     /**
      * Demo fixtures for a local database: three accounts, six applicants across
      * the education pathway spectrum, a few listings, and applications in three
@@ -90,6 +92,7 @@ class DatabaseSeeder extends Seeder
         $mastersApplicant = $this->mastersApplicant();
 
         $this->academicResults();
+        $this->demoDocuments();
 
         $this->opportunities($provider);
         $this->applications($applicant, $incompleteApplicant);

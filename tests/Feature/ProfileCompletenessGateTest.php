@@ -23,6 +23,7 @@ use Database\Seeders\DatabaseSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use RuntimeException;
+use Tests\Support\GivesRequiredDocuments;
 use Tests\TestCase;
 
 /**
@@ -37,6 +38,7 @@ use Tests\TestCase;
  */
 class ProfileCompletenessGateTest extends TestCase
 {
+    use GivesRequiredDocuments;
     use RefreshDatabase;
 
     private User $provider;
@@ -245,7 +247,7 @@ class ProfileCompletenessGateTest extends TestCase
                 // on top of this, which is what the eligibility check itself
                 // actually reads.
                 'degree_classification' => 'Upper Second (2:1)',
-                'results_certificate_path' => 'profiles/demo/gate-test-results.pdf',
+                'results_certificate_path' => $this->storeDocumentFile('profiles/demo/gate-test-results.pdf'),
                 'results_certificate_filename' => 'gate-test-results.pdf',
                 'results_uploaded_at' => Carbon::now(),
                 // The O-Level document checklist also asks for a
@@ -253,7 +255,7 @@ class ProfileCompletenessGateTest extends TestCase
                 // - set here so tests isolating a different field (institution,
                 // biography, ...) are not also, incidentally, missing a document
                 // unrelated to what they are actually exercising.
-                'recommendation_letter_path' => 'profiles/demo/gate-test-recommendation.pdf',
+                'recommendation_letter_path' => $this->storeDocumentFile('profiles/demo/gate-test-recommendation.pdf'),
                 'recommendation_letter_filename' => 'gate-test-recommendation.pdf',
                 'recommendation_letter_uploaded_at' => Carbon::now(),
             ], $overrides)

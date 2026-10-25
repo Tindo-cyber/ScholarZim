@@ -225,6 +225,15 @@ final class ApplicationReadiness
         return array_column($this->missingDocuments(), 'type');
     }
 
+    /**
+     * True when a required document could not be checked because storage did not answer. Nothing is asked for in that
+     * case - the document may be fine - but the application waits, exactly as the server will refuse it.
+     */
+    public function storageUnavailable(): bool
+    {
+        return ! $this->isIneligible() && $this->documents->storageUnavailable();
+    }
+
     /** True when the applicant can be asked for something in place (as opposed to being sent to their profile). */
     public function hasInlineQuestions(): bool
     {
@@ -234,7 +243,7 @@ final class ApplicationReadiness
     /** True while the statement and Submit must wait: something is missing, or the applicant cannot be considered. */
     public function blocks(): bool
     {
-        return $this->needsDetails() || $this->isIneligible() || $this->missingDocuments() !== [] || $this->fit?->needsProfileInformation() === true;
+        return $this->needsDetails() || $this->isIneligible() || $this->missingDocuments() !== [] || $this->storageUnavailable() || $this->fit?->needsProfileInformation() === true;
     }
 
     /** Where the profile page holds something, for a link back to this application afterwards. */

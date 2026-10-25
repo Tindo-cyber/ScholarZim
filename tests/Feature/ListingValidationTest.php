@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\Academic\AcademicCatalogue;
 use App\Support\AwardSanity;
 use App\Support\EducationLevel;
+use App\Support\FormOptions;
 use App\Support\OpportunityLevelRules;
 use App\Support\OpportunityModerationStatus;
 use App\Support\OpportunityStatus;
@@ -475,6 +476,218 @@ class ListingValidationTest extends TestCase
     // ------------------------------------------------------------- helpers --
 
     /** A second actingAs() in one test ends the session rather than switching users, so flush first. */
+    // ------------------------------------------------ number of awards is required --
+
+    public function test_a_listing_cannot_be_published_without_a_number_of_awards(): void
+    {
+        $this->withoutAwardCountAnswer();
+
+        $this->submit(EducationLevel::UNDERGRADUATE)->assertSessionHasErrors(['award_slots' => 'Enter the number of awards - how many students this scholarship will fund.']);
+        $this->submit(EducationLevel::UNDERGRADUATE, ['award_slots' => ''])->assertSessionHasErrors('award_slots');
+        $this->assertSame(0, $this->createdListings());
+    }
+
+    #[DataProvider('badAwardCounts')]
+    public function test_a_number_of_awards_must_be_a_whole_number_from_1_to_5000(string|int $value): void
+    {
+        $this->withoutAwardCountAnswer();
+
+        $this->submit(EducationLevel::UNDERGRADUATE, ['award_slots' => $value])->assertSessionHasErrors('award_slots');
+        $this->assertSame(0, $this->createdListings());
+    }
+
+    /** @return array<string, array{0: string|int}> */
+    public static function badAwardCounts(): array
+    {
+        return ['zero' => [0], 'negative' => ['-3'], 'decimal' => ['2.5'], 'text' => ['many'], 'malformed' => ['1e3'], 'padded' => [' 4 x'], 'too many' => [5001]];
+    }
+
+    #[DataProvider('goodAwardCounts')]
+    public function test_whole_number_award_counts_are_accepted_and_stored(int $value): void
+    {
+        $this->withoutAwardCountAnswer();
+
+        $this->submit(EducationLevel::UNDERGRADUATE, ['award_slots' => $value])->assertSessionHasNoErrors();
+
+        $this->assertSame($value, Opportunity::where('provider_user_id', $this->provider->user_id)->latest('opportunity_id')->firstOrFail()->award_slots);
+    }
+
+    /** @return array<string, array{0: int}> */
+    public static function goodAwardCounts(): array
+    {
+        return ['one' => [1], 'some' => [25], 'the most' => [5000]];
+    }
+
+    public function test_the_award_count_is_required_for_trusted_and_untrusted_providers_alike(): void
+    {
+        $this->withoutAwardCountAnswer();
+
+        foreach ([false, true] as $trusted) {
+            $this->provider->providerProfile->update(['trusted_override' => $trusted]);
+
+            $this->submit(EducationLevel::UNDERGRADUATE)->assertSessionHasErrors('award_slots');
+        }
+
+        $this->assertSame(0, $this->createdListings());
+    }
+
+    public function test_a_draft_saves_without_an_award_count_but_cannot_be_published_until_it_has_one(): void
+    {
+        $this->withoutAwardCountAnswer();
+
+        $this->as($this->provider)->post(route('opportunities.draft.save'), ['title' => 'Validation Fixture draft'])->assertSessionHasNoErrors();
+        $draft = Opportunity::where('title', 'Validation Fixture draft')->firstOrFail();
+        $this->assertSame(OpportunityModerationStatus::DRAFT, $draft->moderation_status);
+        $this->assertNull($draft->award_slots);
+
+        $form = [
+            'draft_id' => $draft->opportunity_id, 'title' => 'Validation Fixture draft', 'description' => 'Ready to go.',
+            'education_level' => EducationLevel::UNDERGRADUATE, 'funding_type' => 'Full Scholarship',
+            'deadline' => Carbon::today()->addDays(30)->toDateString(),
+        ];
+
+        $this->as($this->provider)->post('/opportunities/create', $form)->assertSessionHasErrors('award_slots');
+        $this->assertSame(OpportunityModerationStatus::DRAFT, $draft->fresh()->moderation_status, 'still a draft');
+
+        $this->as($this->provider)->post('/opportunities/create', $form + ['award_slots' => 3])->assertSessionHasNoErrors();
+        $this->assertNotSame(OpportunityModerationStatus::DRAFT, $draft->fresh()->moderation_status);
+        $this->assertSame(3, $draft->fresh()->award_slots);
+    }
+
+    public function test_editing_cannot_remove_or_skip_the_award_count_and_does_not_invent_one(): void
+    {
+        $this->withoutAwardCountAnswer();
+        $legacy = $this->listing(); // saved before the rule: no award_slots
+
+        $this->as($this->provider)->put('/opportunities/' . $legacy->opportunity_id, $this->editPayload($legacy, ['description' => 'Edited.']))
+            ->assertSessionHasErrors('award_slots');
+        $this->assertNull($legacy->fresh()->award_slots, 'no number is made up for it');
+
+        $this->as($this->provider)->put('/opportunities/' . $legacy->opportunity_id, $this->editPayload($legacy, ['description' => 'Edited.', 'award_slots' => 7]))
+            ->assertSessionHasNoErrors();
+        $this->assertSame(7, $legacy->fresh()->award_slots);
+    }
+
+    public function test_the_form_marks_the_number_of_awards_as_required(): void
+    {
+        $html = $this->as($this->provider)->get('/opportunities/create')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('#<input[^>]*name="award_slots"[^>]*required#', $html);
+    }
+
+    // ---------------------------------- Form 1, O-Level and A-Level are for Zimbabwe --
+
+    /** @return array<string, array{0: string}> */
+    public static function zimbabweOnlyLevels(): array
+    {
+        return ['Form 1' => [EducationLevel::FORM_1], 'O-Level' => [EducationLevel::O_LEVEL], 'A-Level' => [EducationLevel::A_LEVEL]];
+    }
+
+    #[DataProvider('zimbabweOnlyLevels')]
+    public function test_a_school_level_scholarship_cannot_be_for_study_abroad(string $level): void
+    {
+        foreach (['South Africa', 'United Kingdom', FormOptions::COUNTRY_ANY, FormOptions::COUNTRY_ONLINE] as $country) {
+            $this->submit($level, ['country' => $country])->assertSessionHasErrors('country');
+        }
+
+        $this->assertSame(0, $this->createdListings());
+    }
+
+    #[DataProvider('zimbabweOnlyLevels')]
+    public function test_a_school_level_scholarship_is_saved_as_zimbabwe_both_fields(string $level): void
+    {
+        $this->submit($level, ['country' => 'Zimbabwe'])->assertSessionHasNoErrors();
+        $listing = Opportunity::where('provider_user_id', $this->provider->user_id)->latest('opportunity_id')->firstOrFail();
+        $this->assertSame('Zimbabwe', $listing->country);
+        $this->assertSame('Zimbabwe', $listing->target_country);
+
+        // Leaving the country out cannot leave the destination unspecified or wrong.
+        $this->submit($level, [])->assertSessionHasNoErrors();
+        $listing = Opportunity::where('provider_user_id', $this->provider->user_id)->latest('opportunity_id')->firstOrFail();
+        $this->assertSame('Zimbabwe', $listing->country);
+        $this->assertSame('Zimbabwe', $listing->target_country);
+    }
+
+    public function test_the_forms_script_marker_replaces_a_stale_foreign_country_rather_than_saving_it(): void
+    {
+        $this->submit(EducationLevel::O_LEVEL, ['country' => 'South Africa', 'level_driven' => '1'])->assertSessionHasNoErrors();
+
+        $listing = Opportunity::where('provider_user_id', $this->provider->user_id)->latest('opportunity_id')->firstOrFail();
+        $this->assertSame('Zimbabwe', $listing->country);
+        $this->assertSame('Zimbabwe', $listing->target_country);
+    }
+
+    #[DataProvider('unrestrictedLevels')]
+    public function test_study_abroad_stays_possible_from_certificate_level_up(string $level): void
+    {
+        $this->submit($level, ['country' => 'South Africa'])->assertSessionHasNoErrors();
+
+        $listing = Opportunity::where('provider_user_id', $this->provider->user_id)->latest('opportunity_id')->firstOrFail();
+        $this->assertSame('South Africa', $listing->country);
+        $this->assertSame('South Africa', $listing->target_country);
+    }
+
+    /** @return array<string, array{0: string}> */
+    public static function unrestrictedLevels(): array
+    {
+        return [
+            'Certificate' => [EducationLevel::CERTIFICATE], 'Diploma' => [EducationLevel::DIPLOMA],
+            'Undergraduate' => [EducationLevel::UNDERGRADUATE], 'Masters' => [EducationLevel::MASTERS], 'PhD' => [EducationLevel::PHD],
+        ];
+    }
+
+    public function test_a_listing_with_no_level_keeps_its_country_choice(): void
+    {
+        $this->submit(null, ['country' => 'Germany'])->assertSessionHasNoErrors();
+
+        $this->assertSame('Germany', Opportunity::where('provider_user_id', $this->provider->user_id)->latest('opportunity_id')->firstOrFail()->country);
+    }
+
+    public function test_a_legacy_spelling_of_a_school_level_is_held_to_the_same_rule(): void
+    {
+        $this->assertTrue(EducationLevel::requiresZimbabwe('Form 1'));
+        $this->assertTrue(EducationLevel::requiresZimbabwe(EducationLevel::A_LEVEL));
+        $this->assertFalse(EducationLevel::requiresZimbabwe(EducationLevel::CERTIFICATE));
+        $this->assertFalse(EducationLevel::requiresZimbabwe(null));
+    }
+
+    public function test_editing_cannot_move_a_school_level_listing_abroad_or_a_foreign_one_to_a_school_level(): void
+    {
+        $school = $this->listing(['education_level' => EducationLevel::A_LEVEL, 'award_slots' => 2]);
+
+        $this->as($this->provider)->put('/opportunities/' . $school->opportunity_id, $this->editPayload($school, ['country' => 'South Africa']))
+            ->assertSessionHasErrors('country');
+        $this->assertSame('Zimbabwe', $school->fresh()->country);
+
+        $abroad = $this->listing(['education_level' => EducationLevel::MASTERS, 'country' => 'Germany', 'target_country' => 'Germany', 'award_slots' => 2]);
+        $this->as($this->provider)->put('/opportunities/' . $abroad->opportunity_id, $this->editPayload($abroad, ['education_level' => EducationLevel::O_LEVEL]))
+            ->assertSessionHasErrors('country');
+        $this->assertSame('Germany', $abroad->fresh()->country, 'a refused edit changes nothing');
+    }
+
+    public function test_a_draft_cannot_be_published_with_a_foreign_school_level_destination(): void
+    {
+        $this->as($this->provider)->post(route('opportunities.draft.save'), [
+            'title' => 'Validation Fixture abroad draft', 'education_level' => EducationLevel::O_LEVEL, 'country' => 'South Africa',
+        ])->assertSessionHasNoErrors();
+        $draft = Opportunity::where('title', 'Validation Fixture abroad draft')->firstOrFail();
+
+        $this->as($this->provider)->post('/opportunities/create', [
+            'draft_id' => $draft->opportunity_id, 'title' => $draft->title, 'description' => 'Ready.', 'education_level' => EducationLevel::O_LEVEL,
+            'country' => 'South Africa', 'funding_type' => 'Full Scholarship', 'deadline' => Carbon::today()->addDays(30)->toDateString(),
+        ])->assertSessionHasErrors('country');
+
+        $this->assertSame(OpportunityModerationStatus::DRAFT, $draft->fresh()->moderation_status);
+    }
+
+    public function test_the_form_carries_the_zimbabwe_only_levels_for_its_script(): void
+    {
+        $html = $this->as($this->provider)->get('/opportunities/create')->assertOk()->getContent();
+
+        $this->assertMatchesRegularExpression('#id="zimbabwe-only-levels">\["FORM_1","O_LEVEL","A_LEVEL"\]</script>#', $html);
+        $this->assertStringContainsString('data-zimbabwe-only-hint=', $html);
+    }
+
     private function as(User $user): self
     {
         $this->flushSession();

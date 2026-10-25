@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Services\ScholarFit\Taxonomy\EducationLadder;
 use App\Support\Academic\AcademicCatalogue;
+use App\Services\FileStorageService;
 use App\Support\DocumentChecklist;
 use App\Support\EducationLevel;
 use App\Support\Gender;
@@ -418,19 +419,52 @@ class ApplicantProfile extends Model
         return $this->{$column};
     }
 
+    /**
+     * Where a document of this type stands: DocumentChecklist::AVAILABLE, NOT_UPLOADED, FILE_MISSING or STORAGE_ERROR.
+     *
+     * A path in the database only says an upload was once recorded. The file has to be on its disk for the document
+     * to count, and a store that cannot be asked is reported as such rather than as a missing file. This is the one
+     * answer every "is it uploaded?" question reads - the checklist, the completion ring, the eligibility check and
+     * the submission gate - so none of them can be satisfied by a path that points at nothing.
+     */
+    public function documentState(string $type): string
+    {
+        $path = $this->documentPath($type);
+
+        if (blank($path)) {
+            return DocumentChecklist::NOT_UPLOADED;
+        }
+
+        // Asked once per file per instance: a page reads the same document several times, and each ask is a round
+        // trip to the object store. A different path (a replacement) is a different key, so it is always asked afresh.
+        return $this->documentStateCache[$path] ??= match (app(FileStorageService::class)->status($path)) {
+            FileStorageService::AVAILABLE => DocumentChecklist::AVAILABLE,
+            FileStorageService::MISSING => DocumentChecklist::FILE_MISSING,
+            default => DocumentChecklist::STORAGE_ERROR,
+        };
+    }
+
+    /** @var array<string, string> path => state, for this instance only; never persisted */
+    protected array $documentStateCache = [];
+
+    public function hasDocument(string $type): bool
+    {
+        return $this->documentState($type) === DocumentChecklist::AVAILABLE;
+    }
+
     public function hasResultsCertificate(): bool
     {
-        return filled($this->results_certificate_path);
+        return $this->hasDocument('results');
     }
 
     public function hasGrade7Slip(): bool
     {
-        return filled($this->grade7_slip_path);
+        return $this->hasDocument('grade7_slip');
     }
 
     public function hasTranscript(): bool
     {
-        return filled($this->transcript_path);
+        return $this->hasDocument('transcript');
     }
 
     /**
@@ -527,7 +561,8 @@ class ApplicantProfile extends Model
             'required' => isset($required[$type]),
             'reason' => $required[$type] ?? null,
             'group' => in_array($type, DocumentChecklist::ACADEMIC_TYPES, true) ? 'academic' : 'other',
-            'present' => filled($this->documentPath($type)),
+            'state' => $state = $this->documentState($type),
+            'present' => $state === DocumentChecklist::AVAILABLE,
             'filename' => $this->documentFilename($type),
             'uploaded_at' => $this->documentUploadedAt($type),
         ], $types);
@@ -545,7 +580,7 @@ class ApplicantProfile extends Model
         return array_keys($this->documentRequirementsFor($for));
     }
 
-    /** @return array<int, string> the required types that have nothing stored yet */
+    /** @return array<int, string> the required types with no usable file: never uploaded, or uploaded and gone */
     public function missingRequiredDocumentTypes(?Opportunity $for = null): array
     {
         return $this->documentChecklist($for)->missingTypes();
@@ -707,7 +742,7 @@ class ApplicantProfile extends Model
             $academicEvidence = EducationLevel::usesSchoolResults($this->education_level) ? 'results' : 'transcript';
 
             foreach ($this->requiredDocumentTypes() as $type) {
-                $items[] = ['label' => self::DOCUMENT_LABELS[$type], 'value' => $this->documentPath($type), 'anchor' => 'documents',
+                $items[] = ['label' => self::DOCUMENT_LABELS[$type], 'value' => $this->hasDocument($type) ? $this->documentPath($type) : null, 'anchor' => 'documents',
                     'hint' => 'Required for your education level before you can apply.',
                     // Only the academic evidence gates isComplete(), exactly as
                     // before - see isComplete().

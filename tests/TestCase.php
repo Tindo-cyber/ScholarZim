@@ -30,6 +30,23 @@ abstract class TestCase extends BaseTestCase
         return $this;
     }
 
+    /**
+     * Whether listing forms posted by this test get a number of awards.
+     *
+     * The number of awards became required to publish (StoreOpportunityRequest). The many tests written before it are about
+     * something else and post a form without it, so a listing form that does not answer is sent with one award - the same
+     * convention as the "open to" answer above. Drafts are not affected (they are saved by their own route and may omit it).
+     * Tests about the rule itself switch this off with withoutAwardCountAnswer().
+     */
+    private bool $fillAwardCount = true;
+
+    protected function withoutAwardCountAnswer(): static
+    {
+        $this->fillAwardCount = false;
+
+        return $this;
+    }
+
     /** @param  array<string, mixed>  $parameters */
     public function call($method, $uri, $parameters = [], $cookies = [], $files = [], $server = [], $content = null)
     {
@@ -44,6 +61,18 @@ abstract class TestCase extends BaseTestCase
 
             if (! array_key_exists('institutions_open_to', $parameters) && ! $chose('scope_institutions')) {
                 $parameters['institutions_open_to'] = \App\Services\Catalogue\ListingScopes::INSTITUTIONS_ANY;
+            }
+        }
+
+        if ($this->fillAwardCount && in_array(strtoupper($method), ['POST', 'PUT'], true)
+            && preg_match('#/opportunities/(create|preview|\d+)/?$#', (string) parse_url((string) $uri, PHP_URL_PATH))
+            && is_array($parameters) && ! array_key_exists('award_slots', $parameters)) {
+            $parameters['award_slots'] = '1';
+
+            // An edit of a listing that has no count yet would otherwise change it (null -> 1), which is a material edit and
+            // not what those tests are about; the listing is given the same count first, so the edit leaves it as it was.
+            if (strtoupper($method) === 'PUT' && preg_match('#/opportunities/(\d+)/?$#', (string) parse_url((string) $uri, PHP_URL_PATH), $m)) {
+                \App\Models\Opportunity::whereKey((int) $m[1])->whereNull('award_slots')->update(['award_slots' => 1]);
             }
         }
 
@@ -83,6 +112,10 @@ abstract class TestCase extends BaseTestCase
         // Every seeded test loads the programme catalogue. The shipped one has over a thousand programmes, so tests
         // use a small copy of the original starter list unless they ask for the real thing.
         config(['scholarzim.catalogue.path' => base_path('tests/Fixtures/catalogue')]);
+
+        // Documents live on a disk, and a document counts only when its file is there. Every test starts on a faked
+        // one, so the seeder's demo documents (written to the configured disk) land in it and never in storage/app.
+        \Illuminate\Support\Facades\Storage::fake((string) config('filesystems.default', 'local'));
 
         $this->app->instance(HttpClientInterface::class, new MockHttpClient(
             fn () => new MockResponse(
