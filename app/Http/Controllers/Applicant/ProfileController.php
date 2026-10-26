@@ -169,6 +169,14 @@ class ProfileController extends Controller
                 foreach (ProfileDetailRules::crossChecks($data, null) as $field => $message) {
                     $validator->errors()->add($field, $message);
                 }
+
+                // A minor cannot save the profile without a guardian's details (and the date of birth that says whether they
+                // are one is judged as it will be after this save). Only fields that passed their own rules are added to.
+                foreach (ProfileDetailRules::guardianProblems($data, $currentProfile) as $field => $message) {
+                    if (! $validator->errors()->has($field)) {
+                        $validator->errors()->add($field, $message);
+                    }
+                }
                 $this->assertProgressionIsSequential($validator, $data, $currentProfile);
             })
             ->validate();

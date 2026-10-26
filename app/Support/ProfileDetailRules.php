@@ -34,7 +34,8 @@ final class ProfileDetailRules
     public static function base(): array
     {
         return [
-            'institution_name' => ['nullable', 'string', 'max:255'],
+            // A name has letters in it: "12345" is not a school. (Digits and symbols may be part of one.)
+            'institution_name' => ['nullable', 'string', 'max:255', 'regex:/\p{L}/u'],
             // Free text everywhere: the platform does not require an institution to exist in a fixed list
             // (FormOptions::INSTITUTIONS is suggestions only), and a Grade 7 pupil's primary school is exactly as valid
             // an answer here as a university's full name.
@@ -44,17 +45,68 @@ final class ProfileDetailRules
             'province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), not a fixed list - Zimbabwe has far more towns and growth points than
             // any dropdown would sensibly enumerate, and this is the applicant's own claim about where they live.
-            'locality' => ['nullable', 'string', 'max:100'],
+            'locality' => ['nullable', 'string', 'max:100', 'regex:/\p{L}/u'],
             'settlement_type' => ['nullable', Rule::in(SettlementType::ALL)],
             // Exactly Y-m-d, as the date picker sends it: `date` alone also reads "17-05-2000x", "tomorrow" and the like.
             'date_of_birth' => ['bail', 'nullable', 'string', 'date_format:Y-m-d', 'before:today', 'after:1920-01-01'],
             'guardian_name' => ['nullable', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
             'guardian_phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
-            'guardian_relationship' => ['nullable', 'string', 'max:100'],
+            'guardian_relationship' => ['nullable', 'string', 'max:100', 'regex:/\p{L}/u'],
             'guardian_confirmed' => ['nullable', 'boolean'],
             'biography' => ['nullable', 'string', 'max:5000'],
             'gender' => ['required', Rule::in(Gender::ALL)],
         ];
+    }
+
+    /**
+     * What a minor must give for the profile to be saved: a guardian's name, phone number and relationship, and the tick
+     * confirming a parent or guardian is aware of and involved in their applications.
+     *
+     * Judged on the profile AS IT WILL BE after this save, with the same rule everything else uses (ApplicantProfile::isMinor:
+     * under 18 by date of birth, and with no date of birth a pupil at a school level is treated as a minor). So an adult who
+     * states a date of birth is never asked, a minor cannot avoid the question by leaving the date of birth blank, and one
+     * field changed in a request that does not mention the guardian is judged against what is already saved.
+     *
+     * @param  array<string, mixed>  $data     what the request carried
+     * @param  ApplicantProfile|null $current  the profile as it stands now
+     * @return array<string, string> field => message, empty for an adult or a minor who has given everything
+     */
+    public static function guardianProblems(array $data, ?ApplicantProfile $current = null): array
+    {
+        $held = static fn (string $key) => array_key_exists($key, $data) ? $data[$key] : $current?->{$key};
+
+        $after = new ApplicantProfile(['date_of_birth' => $held('date_of_birth'), 'education_level' => $held('education_level')]);
+
+        if (! $after->isMinor()) {
+            return [];
+        }
+
+        $problems = [];
+        $text = static fn (string $key) => trim(is_scalar($held($key)) ? (string) $held($key) : '');
+        $adultHint = blank($held('date_of_birth')) ? ' If you are 18 or over, add your date of birth instead.' : '';
+
+        if ($text('guardian_name') === '') {
+            $problems['guardian_name'] = 'Enter your parent or guardian\'s full name. You are under 18, so guardian details are required.' . $adultHint;
+        }
+
+        if ($text('guardian_phone') === '') {
+            $problems['guardian_phone'] = 'Enter your parent or guardian\'s phone number.';
+        }
+
+        if ($text('guardian_relationship') === '') {
+            $problems['guardian_relationship'] = 'Say how your parent or guardian is related to you, for example Mother, Father or Aunt.';
+        }
+
+        // The tick: stated in this request, or already given on the saved profile when the request does not mention it.
+        $ticked = array_key_exists('guardian_confirmed', $data)
+            ? filter_var($data['guardian_confirmed'], FILTER_VALIDATE_BOOLEAN)
+            : $current?->guardian_confirmed_at !== null;
+
+        if (! $ticked) {
+            $problems['guardian_confirmed'] = 'Tick the box to confirm a parent or guardian is aware of and involved in your applications.';
+        }
+
+        return $problems;
     }
 
     /**

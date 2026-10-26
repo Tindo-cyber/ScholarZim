@@ -18,8 +18,9 @@ use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 /**
- * A minor must have a parent or guardian involved before they can SUBMIT an application - and not before
- * they can browse, read a listing, or build a profile. Minor means under 18 by date of birth; with no date
+ * A minor must have a parent or guardian involved before they can SAVE a profile or SUBMIT an application - and not before
+ * they can browse or read a listing. (Saving the profile used to be allowed without one; MinorGuardianProfileTest covers the
+ * profile rule in full.) Minor means under 18 by date of birth; with no date
  * of birth, a pupil at school (Primary, O-Level, A-Level) counts as one.
  */
 class GuardianGateTest extends TestCase
@@ -88,20 +89,21 @@ class GuardianGateTest extends TestCase
         $this->actingAs($this->student)->get('/applicant/dashboard')->assertOk();
     }
 
-    public function test_a_minor_can_build_and_save_a_profile_without_a_guardian(): void
+    public function test_a_minor_cannot_save_a_profile_without_a_guardian(): void
     {
         $this->asMinor();
+        $before = $this->profile()->biography;
 
         $this->actingAs($this->student)->post('/applicant/profile', [
             'full_name' => $this->student->full_name, 'gender' => 'male',
             'education_level' => EducationLevel::UNDERGRADUATE, 'date_of_birth' => Carbon::today()->subYears(16)->toDateString(),
             'province' => 'Harare', 'biography' => 'Hello',
-        ])->assertSessionHasNoErrors();
+        ])->assertSessionHasErrors(['guardian_name', 'guardian_phone', 'guardian_relationship', 'guardian_confirmed']);
 
-        $this->assertSame('Hello', $this->profile()->biography);
+        $this->assertSame($before, $this->profile()->biography);
     }
 
-    public function test_a_primary_pupil_can_save_a_profile_without_a_guardian_too(): void
+    public function test_a_primary_pupil_cannot_save_a_profile_without_a_guardian_either(): void
     {
         $pupil = User::where('email', 'kudzai.marufu@scholarzim.co.zw')->firstOrFail();
         ApplicantProfile::where('user_id', $pupil->user_id)->update(['guardian_name' => null, 'guardian_phone' => null, 'guardian_relationship' => null]);
@@ -110,7 +112,7 @@ class GuardianGateTest extends TestCase
             'full_name' => $pupil->full_name, 'gender' => 'male',
             'education_level' => EducationLevel::PRIMARY, 'date_of_birth' => Carbon::today()->subYears(12)->toDateString(),
             'province' => 'Harare',
-        ])->assertSessionHasNoErrors();
+        ])->assertSessionHasErrors(['guardian_name', 'guardian_phone', 'guardian_relationship']);
     }
 
     // ------------------------------------------------------------- what it blocks --
@@ -252,7 +254,7 @@ class GuardianGateTest extends TestCase
 
         $this->assertMatchesRegularExpression('#id="sz-guardian-card"(?![^>]*hidden)#', $html);
         $this->assertStringContainsString('under 18', $html);
-        $this->assertStringContainsString('when you submit an application', $html);
+        $this->assertStringContainsString('required to save your profile', preg_replace('/\s+/', ' ', $html));
         $this->assertStringContainsString('providers', strtolower($html));
         $this->assertStringNotContainsString('Form 1 awards', $html, 'the old, out-of-date wording is gone');
         $this->assertStringNotContainsString('only be able to apply to scholarships for Form 1', $html);
@@ -297,14 +299,25 @@ class GuardianGateTest extends TestCase
         $this->assertSame([], $profile->missingGuardianDetails());
     }
 
-    public function test_unticking_the_confirmation_takes_it_back(): void
+    public function test_a_minor_cannot_untick_the_confirmation(): void
     {
         $this->asMinor($this->fullGuardian());
 
+        // Withdrawing the confirmation would leave an incomplete profile, which a minor cannot save; an adult's is cleared.
         $this->saveProfile(['guardian_name' => 'Grace Moyo', 'guardian_phone' => '0771234567', 'guardian_relationship' => 'Mother', 'guardian_confirmed' => '0'])
-            ->assertSessionHasNoErrors();
+            ->assertSessionHasErrors('guardian_confirmed');
+
+        $this->assertNotNull($this->profile()->guardian_confirmed_at);
+    }
+
+    public function test_an_applicant_who_becomes_an_adult_has_the_guardian_confirmation_cleared(): void
+    {
+        $this->asMinor($this->fullGuardian());
+
+        $this->saveProfile(['date_of_birth' => Carbon::today()->subYears(30)->toDateString(), 'guardian_confirmed' => '0'])->assertSessionHasNoErrors();
 
         $this->assertNull($this->profile()->guardian_confirmed_at);
+        $this->assertNull($this->profile()->guardian_name);
     }
 
     public function test_a_save_that_does_not_mention_the_tick_leaves_it_alone(): void

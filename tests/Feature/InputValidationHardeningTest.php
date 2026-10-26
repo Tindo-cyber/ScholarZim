@@ -315,6 +315,7 @@ class InputValidationHardeningTest extends TestCase
             'guardian_name' => 'A Guardian',
             'guardian_phone' => '0771000000',
             'guardian_relationship' => 'Mother',
+            'guardian_confirmed' => '1',
         ], $overrides);
     }
 }

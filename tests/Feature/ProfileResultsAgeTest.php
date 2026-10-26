@@ -341,7 +341,11 @@ class ProfileResultsAgeTest extends TestCase
 
     private function alevelDob(int $years, string $level = EducationLevel::A_LEVEL)
     {
-        return $this->save($this->withoutApplication, ['education_level' => $level, 'date_of_birth' => Deadlines::today()->subYears($years)->subDays(3)->toDateString()]);
+        // A guardian's details travel with it: someone under 18 cannot save without them, and an adult's request ignores them.
+        return $this->save($this->withoutApplication, [
+            'education_level' => $level, 'date_of_birth' => Deadlines::today()->subYears($years)->subDays(3)->toDateString(),
+            'guardian_name' => 'Grace Moyo', 'guardian_phone' => '0771234567', 'guardian_relationship' => 'Mother', 'guardian_confirmed' => '1',
+        ]);
     }
 
     public static function ages(): array

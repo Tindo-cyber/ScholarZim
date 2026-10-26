@@ -61,6 +61,8 @@ class FriendlyValidationMessagesTest extends TestCase
             'province' => 'Manicaland',
             'biography' => 'Aspiring doctor, typed this time.',
             'academic_results_submitted' => '1',
+            // A guardian's details, which a profile for anyone under 18 must carry to be saved (an adult's request ignores them).
+            'guardian_name' => 'Grace Moyo', 'guardian_phone' => '0771234567', 'guardian_relationship' => 'Mother', 'guardian_confirmed' => '1',
         ], $overrides);
     }
 

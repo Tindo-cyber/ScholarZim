@@ -179,6 +179,12 @@ return [
     */
 
     'custom' => [
+        'institution_name' => ['regex' => 'Enter the name of your school or institution - it needs letters, not only numbers or symbols.'],
+        'profile.institution_name' => ['regex' => 'Enter the name of your school or institution - it needs letters, not only numbers or symbols.'],
+        'locality' => ['regex' => 'Enter the name of your town or city - it needs letters, not only numbers or symbols.'],
+        'profile.locality' => ['regex' => 'Enter the name of your town or city - it needs letters, not only numbers or symbols.'],
+        'guardian_relationship' => ['regex' => 'Say how they are related to you in words, for example Mother, Father or Aunt.'],
+        'profile.guardian_relationship' => ['regex' => 'Say how they are related to you in words, for example Mother, Father or Aunt.'],
         'current_programme_id' => [
             'required' => 'Please choose your programme from the list.',
             'integer' => 'Please choose your programme from the list.',
