@@ -2,16 +2,180 @@
 
 namespace App\Models;
 
+use App\Services\Catalogue\FieldIndex;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/** An ISCED-F 2013 field of study: broad (no parent) or narrow (parent is a broad field). */
+/**
+ * An ISCED-F 2013 field of education and training, at one of its three levels:
+ *
+ *   broad     2 digits, no parent        07 Engineering, manufacturing and construction
+ *   narrow    3 digits, parent: broad    071 Engineering and engineering trades
+ *   detailed  4 digits, parent: narrow   0713 Electricity and energy
+ *
+ * plus the supplementary codes UNESCO defines for programmes that cannot be placed more exactly (see KIND_*). The code is the
+ * official one and never changes; the name is the official one; display_name is an optional shorter label for screens.
+ *
+ * The hierarchy is for finding things and for matching (a field contains everything below it). Whether a provider may CHOOSE a
+ * field is a separate question, answered by is_selectable: a parent that gathers materially different disciplines is a
+ * heading, not a choice.
+ */
 class Field extends Model
 {
+    public const LEVEL_BROAD = 'broad';
+
+    public const LEVEL_NARROW = 'narrow';
+
+    public const LEVEL_DETAILED = 'detailed';
+
+    public const LEVELS = [self::LEVEL_BROAD, self::LEVEL_NARROW, self::LEVEL_DETAILED];
+
+    /** The code length at each level - the official codes are 2, 3 and 4 digits. */
+    public const CODE_LENGTH = [self::LEVEL_BROAD => 2, self::LEVEL_NARROW => 3, self::LEVEL_DETAILED => 4];
+
+    /** A field in the classification proper. */
+    public const KIND_OFFICIAL = 'official';
+
+    /** "... not further defined": the code ends in 0 - nothing more is known than the level above. */
+    public const KIND_NOT_FURTHER_DEFINED = 'not_further_defined';
+
+    /** "Inter-disciplinary programmes and qualifications involving ...": the code ends in 8. */
+    public const KIND_INTERDISCIPLINARY = 'interdisciplinary';
+
+    /** "... not elsewhere classified": the code ends in 9. */
+    public const KIND_NOT_ELSEWHERE_CLASSIFIED = 'not_elsewhere_classified';
+
+    public const KINDS = [
+        self::KIND_OFFICIAL, self::KIND_NOT_FURTHER_DEFINED, self::KIND_INTERDISCIPLINARY, self::KIND_NOT_ELSEWHERE_CLASSIFIED,
+    ];
+
     protected $table = 'fields';
 
-    protected $fillable = ['code', 'name', 'parent_id', 'display_name'];
+    protected $fillable = ['code', 'name', 'parent_id', 'level', 'kind', 'is_selectable', 'is_active', 'display_name', 'synonyms'];
+
+    protected $casts = [
+        'is_selectable' => 'boolean',
+        'is_active' => 'boolean',
+        'synonyms' => 'array',
+    ];
+
+    protected static function booted(): void
+    {
+        // Nothing invalid reaches the table, whichever door it came through (the importer, the admin screen, a script).
+        static::saving(function (self $field) {
+            $field->deriveMissing();
+
+            $problem = self::integrityProblem($field);
+
+            if ($problem !== null) {
+                throw new \InvalidArgumentException($problem);
+            }
+        });
+
+        // A field that is still in use is never deleted from under what refers to it: retire it with is_active = false.
+        static::deleting(function (self $field) {
+            if ($field->children()->exists() || $field->programmes()->exists()
+                || OpportunityScope::where('field_id', $field->id)->exists()
+                || ApplicantTargetField::where('field_id', $field->id)->exists()) {
+                throw new \DomainException('Field ' . $field->code . ' is still used by other fields, programmes or scholarships, so it cannot be deleted. Switch it off instead.');
+            }
+        });
+
+        static::saved(fn () => app(FieldIndex::class)->flush());
+        static::deleted(fn () => app(FieldIndex::class)->flush());
+    }
+
+    /**
+     * What a caller need not say: the level is the length of the code, the kind is read from UNESCO's own wording, and a new
+     * parent is the code's own prefix. A field made with just a code, a name and a parent therefore still comes out valid.
+     */
+    private function deriveMissing(): void
+    {
+        $code = (string) $this->code;
+
+        if (blank($this->level) && isset(self::CODE_LENGTH[array_search(strlen($code), self::CODE_LENGTH, true) ?: ''])) {
+            $this->level = array_search(strlen($code), self::CODE_LENGTH, true);
+        }
+
+        if (blank($this->kind)) {
+            $lower = mb_strtolower((string) $this->name);
+            $this->kind = match (true) {
+                str_ends_with($lower, 'not further defined') => self::KIND_NOT_FURTHER_DEFINED,
+                str_ends_with($lower, 'not elsewhere classified') => self::KIND_NOT_ELSEWHERE_CLASSIFIED,
+                str_starts_with($lower, 'inter-disciplinary') => self::KIND_INTERDISCIPLINARY,
+                default => self::KIND_OFFICIAL,
+            };
+        }
+
+        $this->is_selectable ??= true;
+        $this->is_active ??= true;
+    }
+
+    /**
+     * Why these values cannot be a field, or null when they can. The one place the rules are written: the importer reports
+     * it against a row, the admin screen against a form field, and the model refuses it outright.
+     */
+    public static function integrityProblem(self $field): ?string
+    {
+        $code = (string) $field->code;
+        $level = (string) $field->level;
+
+        if (! preg_match('/^\d{2,4}$/', $code)) {
+            return 'The code must be 2 to 4 digits (an ISCED-F code such as 07, 071 or 0713).';
+        }
+
+        if (! in_array($level, self::LEVELS, true)) {
+            return 'The level must be broad, narrow or detailed.';
+        }
+
+        if (strlen($code) !== self::CODE_LENGTH[$level]) {
+            return 'A ' . $level . ' field\'s code has ' . self::CODE_LENGTH[$level] . ' digits (' . $code . ' has ' . strlen($code) . ').';
+        }
+
+        if (! in_array((string) $field->kind, self::KINDS, true)) {
+            return 'The kind must be one of: ' . implode(', ', self::KINDS) . '.';
+        }
+
+        if (trim((string) $field->name) === '' || mb_strlen((string) $field->name) > 150) {
+            return 'The name is required and must be at most 150 characters.';
+        }
+
+        if (mb_strlen((string) $field->display_name) > 100) {
+            return 'The display name must be at most 100 characters.';
+        }
+
+        if ($level === self::LEVEL_BROAD) {
+            return $field->parent_id === null ? null : 'A broad field has no parent.';
+        }
+
+        $parent = $field->parent_id === null ? null : self::find($field->parent_id);
+
+        if ($parent === null) {
+            return 'A ' . $level . ' field needs a parent field.';
+        }
+
+        if ($field->exists && (int) $field->parent_id === (int) $field->id) {
+            return 'A field cannot be its own parent.';
+        }
+
+        $expected = $level === self::LEVEL_NARROW ? self::LEVEL_BROAD : self::LEVEL_NARROW;
+
+        if ($parent->level !== $expected) {
+            return 'A ' . $level . ' field belongs under a ' . $expected . ' field, not a ' . $parent->level . ' one.';
+        }
+
+        if (! str_starts_with($code, (string) $parent->code)) {
+            return 'A ' . $level . ' field\'s code must start with its parent\'s (' . $parent->code . ').';
+        }
+
+        // No field may be placed under itself or anything below it.
+        if ($field->exists && in_array((int) $field->id, app(FieldIndex::class)->ancestorIds((int) $parent->id), true)) {
+            return 'That would make the field part of its own ancestry.';
+        }
+
+        return null;
+    }
 
     public function parent(): BelongsTo
     {
@@ -28,10 +192,27 @@ class Field extends Model
         return $this->hasMany(Programme::class, 'field_id');
     }
 
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
+
+    /** The fields a provider may choose as a target. */
+    public function scopeSelectable($query)
+    {
+        return $query->where('is_active', true)->where('is_selectable', true);
+    }
+
     /** What people see: the short display name when there is one, otherwise the official name. */
     public function label(): string
     {
         return filled($this->display_name) ? $this->display_name : $this->name;
+    }
+
+    /** Whether the field belongs to the classification proper rather than being a supplementary code. */
+    public function isOfficial(): bool
+    {
+        return $this->kind === self::KIND_OFFICIAL;
     }
 
     public function isBroad(): bool
@@ -39,16 +220,72 @@ class Field extends Model
         return $this->parent_id === null;
     }
 
+    public function isNarrow(): bool
+    {
+        return $this->level === self::LEVEL_NARROW;
+    }
+
+    public function isDetailed(): bool
+    {
+        return $this->level === self::LEVEL_DETAILED;
+    }
+
+    /** Everything below this field, at any depth. @return array<int, int> */
+    public function descendantIds(): array
+    {
+        return app(FieldIndex::class)->descendantIds((int) $this->id);
+    }
+
+    /** This field and everything below it - what choosing it covers. @return array<int, int> */
+    public function selfAndDescendantIds(): array
+    {
+        return app(FieldIndex::class)->selfAndDescendantIds((int) $this->id);
+    }
+
+    /** The fields above this one, nearest first. @return array<int, int> */
+    public function ancestorIds(): array
+    {
+        return app(FieldIndex::class)->ancestorIds((int) $this->id);
+    }
+
+    /** Whether this field is $ancestor itself or lies anywhere below it. */
+    public function isWithin(self $ancestor): bool
+    {
+        return app(FieldIndex::class)->isWithin((int) $this->id, (int) $ancestor->id);
+    }
+
     /** The broad field this belongs to (itself, when it is broad). */
     public function broad(): self
     {
-        return $this->isBroad() ? $this : ($this->parent ?? $this);
+        if ($this->isBroad()) {
+            return $this;
+        }
+
+        return self::find(app(FieldIndex::class)->rootId((int) $this->id)) ?? $this;
     }
 
-    /** "Engineering, manufacturing and construction > Engineering and engineering trades" */
+    /** The narrow field this belongs to (itself when narrow; null for a broad field). */
+    public function narrow(): ?self
+    {
+        return match ($this->level) {
+            self::LEVEL_NARROW => $this,
+            self::LEVEL_DETAILED => $this->parent,
+            default => null,
+        };
+    }
+
+    /** "Engineering, manufacturing and construction > Engineering and engineering trades > Electricity and energy" */
     public function trail(): string
     {
-        return $this->isBroad() ? $this->label() : $this->broad()->label() . ' > ' . $this->label();
+        $parts = [$this->label()];
+        $parent = $this->parent;
+
+        while ($parent !== null) {
+            array_unshift($parts, $parent->label());
+            $parent = $parent->parent;
+        }
+
+        return implode(' > ', $parts);
     }
 
     /**

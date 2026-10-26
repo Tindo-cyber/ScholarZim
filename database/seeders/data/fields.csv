@@ -1,41 +1,217 @@
-code,name,parent_code,display_name
-00,Generic programmes and qualifications,,Generic programmes
-001,Basic programmes and qualifications,00,Basic programmes
-002,Literacy and numeracy,00,Literacy and numeracy
-003,Personal skills and development,00,Personal skills
-01,Education,,Education
-011,Education,01,Education
-02,Arts and humanities,,Arts and humanities
-021,Arts,02,Arts
-022,Humanities (except languages),02,Humanities
-023,Languages,02,Languages
-03,"Social sciences, journalism and information",,Social sciences and media
-031,Social and behavioural sciences,03,Social sciences
-032,Journalism and information,03,Journalism and information
-04,"Business, administration and law",,Business and law
-041,Business and administration,04,Business and administration
-042,Law,04,Law
-05,"Natural sciences, mathematics and statistics",,Sciences and mathematics
-051,Biological and related sciences,05,Biological sciences
-052,Environment,05,Environment
-053,Physical sciences,05,Physical sciences
-054,Mathematics and statistics,05,Mathematics and statistics
-06,Information and Communication Technologies (ICTs),,Computing and ICT
-061,Information and Communication Technologies (ICTs),06,Computing and ICT
-07,"Engineering, manufacturing and construction",,Engineering and construction
-071,Engineering and engineering trades,07,"Electrical, mechanical and other engineering"
-072,Manufacturing and processing,07,Manufacturing and mining
-073,Architecture and construction,07,Architecture and construction
-08,"Agriculture, forestry, fisheries and veterinary",,Agriculture and veterinary
-081,Agriculture,08,Agriculture
-082,Forestry,08,Forestry
-083,Fisheries,08,Fisheries
-084,Veterinary,08,Veterinary
-09,Health and welfare,,Health and welfare
-091,Health,09,Health
-092,Welfare,09,Social work and welfare
-10,Services,,Services
-101,Personal services,10,Personal services
-102,Hygiene and occupational health services,10,Health and safety services
-103,Security services,10,Security
-104,Transport services,10,Transport and logistics
+code,name,parent_code,level,kind,selectable,display_name,synonyms
+00,Generic programmes and qualifications,,broad,official,0,Generic programmes,
+000,Generic programmes and qualifications not further defined,00,narrow,not_further_defined,0,,
+001,Basic programmes and qualifications,00,narrow,official,1,Basic programmes,
+002,Literacy and numeracy,00,narrow,official,1,Literacy and numeracy,
+003,Personal skills and development,00,narrow,official,1,Personal skills,
+009,Generic programmes and qualifications not elsewhere classified,00,narrow,not_elsewhere_classified,0,,
+0000,Generic programmes and qualifications not further defined,000,detailed,not_further_defined,0,,
+0011,Basic programmes and qualifications,001,detailed,official,1,,
+0021,Literacy and numeracy,002,detailed,official,1,,
+0031,Personal skills and development,003,detailed,official,1,,
+0099,Generic programmes and qualifications not elsewhere classified,009,detailed,not_elsewhere_classified,0,,
+01,Education,,broad,official,1,Education,
+011,Education,01,narrow,official,1,Education,teaching;teacher education;education;educational studies
+018,Inter-disciplinary programmes and qualifications involving education,01,narrow,interdisciplinary,0,,
+0110,Education not further defined,011,detailed,not_further_defined,0,,
+0111,Education science,011,detailed,official,1,,pedagogy;curriculum studies;educational psychology;education studies;educational management
+0112,Training for pre-school teachers,011,detailed,official,1,,early childhood development;ECD;early childhood education;nursery teacher;pre-school teacher
+0113,Teacher training without subject specialisation,011,detailed,official,1,,primary teacher training;primary education;generalist teacher;teacher training
+0114,Teacher training with subject specialisation,011,detailed,official,1,,secondary teacher training;subject teacher;science education;mathematics education;english education;bachelor of education
+0119,Education not elsewhere classified,011,detailed,not_elsewhere_classified,0,,
+0188,Inter-disciplinary programmes and qualifications involving education,018,detailed,interdisciplinary,0,,
+02,Arts and humanities,,broad,official,0,Arts and humanities,
+020,Arts and humanities not further defined,02,narrow,not_further_defined,0,,
+021,Arts,02,narrow,official,1,Arts,arts;creative arts;visual and performing arts
+022,Humanities (except languages),02,narrow,official,1,Humanities,humanities;religious studies;history;philosophy
+023,Languages,02,narrow,official,1,Languages,languages;linguistics;modern languages
+028,Inter-disciplinary programmes and qualifications involving arts and humanities,02,narrow,interdisciplinary,0,,
+029,Arts and humanities not elsewhere classified,02,narrow,not_elsewhere_classified,0,,
+0200,Arts and humanities not further defined,020,detailed,not_further_defined,0,,
+0210,Arts not further defined,021,detailed,not_further_defined,0,,
+0211,Audio-visual techniques and media production,021,detailed,official,1,,film;television;radio;photography;video production;multimedia;broadcast production;media production
+0212,"Fashion, interior and industrial design",021,detailed,official,1,,graphic design;product design;interior design;fashion design;industrial design;textile design
+0213,Fine arts,021,detailed,official,1,,painting;sculpture;visual arts;art;fine art
+0214,Handicrafts,021,detailed,official,1,,crafts;pottery;weaving;jewellery;handicraft
+0215,Music and performing arts,021,detailed,official,1,,music;drama;theatre;dance;performing arts;film acting
+0219,Arts not elsewhere classified,021,detailed,not_elsewhere_classified,0,,
+0220,Humanities (except languages) not further defined,022,detailed,not_further_defined,0,,
+0221,Religion and theology,022,detailed,official,1,,divinity;theology;religious studies;biblical studies;ministry;pastoral studies
+0222,History and archaeology,022,detailed,official,1,,heritage;history;archaeology;museum studies
+0223,Philosophy and ethics,022,detailed,official,1,,philosophy;ethics;moral philosophy
+0229,Humanities (except languages) not elsewhere classified,022,detailed,not_elsewhere_classified,0,,
+0230,Languages not further defined,023,detailed,not_further_defined,0,,
+0231,Language acquisition,023,detailed,official,1,,English language;Shona;Ndebele;French;Portuguese;Chinese;translation;interpreting;language teaching
+0232,Literature and linguistics,023,detailed,official,1,,linguistics;literature;English literature;African languages;creative writing;communication skills
+0239,Languages not elsewhere classified,023,detailed,not_elsewhere_classified,0,,
+0288,Inter-disciplinary programmes and qualifications involving arts and humanities,028,detailed,interdisciplinary,0,,
+0299,Arts and humanities not elsewhere classified,029,detailed,not_elsewhere_classified,0,,
+03,"Social sciences, journalism and information",,broad,official,0,Social sciences and media,
+030,"Social sciences, journalism and information not further defined",03,narrow,not_further_defined,0,,
+031,Social and behavioural sciences,03,narrow,official,1,Social sciences,social sciences;behavioural sciences;economics;psychology;sociology
+032,Journalism and information,03,narrow,official,1,Journalism and information,media;communication;journalism;information science
+038,"Inter-disciplinary programmes and qualifications involving social sciences, journalism and information",03,narrow,interdisciplinary,0,,
+039,"Social sciences, journalism and information not elsewhere classified",03,narrow,not_elsewhere_classified,0,,
+0300,"Social sciences, journalism and information not further defined",030,detailed,not_further_defined,0,,
+0310,Social and behavioural sciences not further defined,031,detailed,not_further_defined,0,,
+0311,Economics,031,detailed,official,1,,econometrics;development economics;economic science;economics
+0312,Political sciences and civics,031,detailed,official,1,,politics;political science;international relations;public policy;governance;peace studies;diplomacy;civics
+0313,Psychology,031,detailed,official,1,,counselling psychology;clinical psychology;industrial psychology;psychology
+0314,Sociology and cultural studies,031,detailed,official,1,,sociology;anthropology;gender studies;development studies;cultural studies;social studies;demography
+0319,Social and behavioural sciences not elsewhere classified,031,detailed,not_elsewhere_classified,0,,
+0320,Journalism and information not further defined,032,detailed,not_further_defined,0,,
+0321,Journalism and reporting,032,detailed,official,1,,media studies;mass communication;communication;journalism;public relations;broadcasting;reporting
+0322,"Library, information and archival studies",032,detailed,official,1,,records management;archives;information science;library science;knowledge management;records and archives
+0329,Journalism and information not elsewhere classified,032,detailed,not_elsewhere_classified,0,,
+0388,"Inter-disciplinary programmes and qualifications involving social sciences, journalism and information",038,detailed,interdisciplinary,0,,
+0399,"Social sciences, journalism and information not elsewhere classified",039,detailed,not_elsewhere_classified,0,,
+04,"Business, administration and law",,broad,official,0,Business and law,
+040,"Business, administration and law not further defined",04,narrow,not_further_defined,0,,
+041,Business and administration,04,narrow,official,1,Business and administration,business;commerce;management sciences;business studies
+042,Law,04,narrow,official,1,Law,legal;law
+048,"Inter-disciplinary programmes and qualifications involving business, administration and law",04,narrow,interdisciplinary,0,,
+049,"Business, administration and law not elsewhere classified",04,narrow,not_elsewhere_classified,0,,
+0400,"Business, administration and law not further defined",040,detailed,not_further_defined,0,,
+0410,Business and administration not further defined,041,detailed,not_further_defined,0,,
+0411,Accounting and taxation,041,detailed,official,1,,accounting;accountancy;auditing;taxation;bookkeeping;ACCA;CIMA;financial accounting;chartered accountancy
+0412,"Finance, banking and insurance",041,detailed,official,1,,finance;banking;insurance;actuarial science;investment;risk management;financial management;microfinance;financial engineering
+0413,Management and administration,041,detailed,official,1,,management;business administration;human resources;HR;public administration;entrepreneurship;project management;procurement;leadership;MBA;commerce;business management;operations management
+0414,Marketing and advertising,041,detailed,official,1,,marketing;advertising;branding;public relations;sales and marketing;digital marketing
+0415,Secretarial and office work,041,detailed,official,1,,secretarial;office administration;office management;personal assistant;administrative assistant
+0416,Wholesale and retail sales,041,detailed,official,1,,retail;sales;merchandising;purchasing;wholesale;trade
+0417,Work skills,041,detailed,official,1,,business skills;entrepreneurial skills;work skills;vocational business skills
+0419,Business and administration not elsewhere classified,041,detailed,not_elsewhere_classified,0,,
+0421,Law,042,detailed,official,1,,legal studies;LLB;jurisprudence;law;juridical studies;legal practice
+0488,"Inter-disciplinary programmes and qualifications involving business, administration and law",048,detailed,interdisciplinary,0,,
+0499,"Business, administration and law not elsewhere classified",049,detailed,not_elsewhere_classified,0,,
+05,"Natural sciences, mathematics and statistics",,broad,official,0,Sciences and mathematics,
+050,"Natural sciences, mathematics and statistics not further defined",05,narrow,not_further_defined,0,,
+051,Biological and related sciences,05,narrow,official,1,Biological sciences,biology;life sciences;biological sciences
+052,Environment,05,narrow,official,1,Environment,environment;environmental studies
+053,Physical sciences,05,narrow,official,1,Physical sciences,physical sciences;chemistry;physics;earth science
+054,Mathematics and statistics,05,narrow,official,1,Mathematics and statistics,mathematics;statistics;mathematical sciences
+058,"Inter-disciplinary programmes and qualifications involving natural sciences, mathematics and statistics",05,narrow,interdisciplinary,0,,
+059,"Natural sciences, mathematics and statistics not elsewhere classified",05,narrow,not_elsewhere_classified,0,,
+0500,"Natural sciences, mathematics and statistics not further defined",050,detailed,not_further_defined,0,,
+0510,Biological and related sciences not further defined,051,detailed,not_further_defined,0,,
+0511,Biology,051,detailed,official,1,,biological sciences;zoology;botany;microbiology;genetics;biotechnology;ecology;biology
+0512,Biochemistry,051,detailed,official,1,,biochemistry;molecular biology;biotechnology
+0519,Biological and related sciences not elsewhere classified,051,detailed,not_elsewhere_classified,0,,
+0520,Environment not further defined,052,detailed,not_further_defined,0,,
+0521,Environmental sciences,052,detailed,official,1,,environmental science;environmental management;climate change;sustainability;natural resources management;environmental studies
+0522,Natural environments and wildlife,052,detailed,official,1,,wildlife;ecology;nature conservation;wildlife management;game ranching;conservation biology;parks and wildlife
+0529,Environment not elsewhere classified,052,detailed,not_elsewhere_classified,0,,
+0530,Physical sciences not further defined,053,detailed,not_further_defined,0,,
+0531,Chemistry,053,detailed,official,1,,chemical sciences;analytical chemistry;chemistry
+0532,Earth sciences,053,detailed,official,1,,geology;geography;geophysics;meteorology;hydrology;geospatial;earth science;surveying
+0533,Physics,053,detailed,official,1,,physical sciences;astronomy;applied physics;physics
+0539,Physical sciences not elsewhere classified,053,detailed,not_elsewhere_classified,0,,
+0540,Mathematics and statistics not further defined,054,detailed,not_further_defined,0,,
+0541,Mathematics,054,detailed,official,1,,applied mathematics;pure mathematics;mathematical sciences;mathematics
+0542,Statistics,054,detailed,official,1,,data analysis;biostatistics;statistics;actuarial;analytics
+0588,"Inter-disciplinary programmes and qualifications involving natural sciences, mathematics and statistics",058,detailed,interdisciplinary,0,,
+0599,"Natural sciences, mathematics and statistics not elsewhere classified",059,detailed,not_elsewhere_classified,0,,
+06,Information and Communication Technologies (ICTs),,broad,official,1,Computing and ICT,
+061,Information and Communication Technologies (ICTs),06,narrow,official,1,Computing and ICT,computing;ICT;information technology;computer science
+068,Inter-disciplinary programmes and qualifications involving Information and Communication Technologies (ICTs),06,narrow,interdisciplinary,0,,
+0610,Information and Communication Technologies (ICTs) not further defined,061,detailed,not_further_defined,0,,
+0611,Computer use,061,detailed,official,1,,computer literacy;ICT skills;computer applications;computer use
+0612,Database and network design and administration,061,detailed,official,1,,networking;systems administration;cyber security;cybersecurity;database;information security;cloud computing;network engineering
+0613,Software and applications development and analysis,061,detailed,official,1,,computer science;software engineering;information technology;information systems;IT;computing;data science;artificial intelligence;programming;web development;mobile apps;software development
+0619,Information and Communication Technologies (ICTs) not elsewhere classified,061,detailed,not_elsewhere_classified,0,,
+0688,Inter-disciplinary programmes and qualifications involving Information and Communication Technologies (ICTs),068,detailed,interdisciplinary,0,,
+07,"Engineering, manufacturing and construction",,broad,official,0,Engineering and construction,
+070,"Engineering, manufacturing and construction not further defined",07,narrow,not_further_defined,0,,
+071,Engineering and engineering trades,07,narrow,official,1,"Electrical, mechanical and other engineering",engineering;engineering trades;technician
+072,Manufacturing and processing,07,narrow,official,1,Manufacturing and mining,manufacturing;processing;mining;food technology;textiles
+073,Architecture and construction,07,narrow,official,1,Architecture and construction,architecture;construction;civil engineering;building
+078,"Inter-disciplinary programmes and qualifications involving engineering, manufacturing and construction",07,narrow,interdisciplinary,0,,
+079,"Engineering, manufacturing and construction not elsewhere classified",07,narrow,not_elsewhere_classified,0,,
+0700,"Engineering, manufacturing and construction not further defined",070,detailed,not_further_defined,0,,
+0710,Engineering and engineering trades not further defined,071,detailed,not_further_defined,0,,
+0711,Chemical engineering and processes,071,detailed,official,1,,chemical engineering;process engineering;metallurgy;petroleum engineering;chemical technology
+0712,Environmental protection technology,071,detailed,official,1,,environmental engineering;water treatment;pollution control;waste management;environmental technology
+0713,Electricity and energy,071,detailed,official,1,,electrical engineering;power engineering;renewable energy;energy engineering;solar;electricity
+0714,Electronics and automation,071,detailed,official,1,,electronic engineering;telecommunications;mechatronics;control engineering;instrumentation;computer engineering;automation;robotics
+0715,Mechanics and metal trades,071,detailed,official,1,,mechanical engineering;industrial engineering;welding;fitting and turning;manufacturing engineering;engineering technician;metal trades;production engineering
+0716,"Motor vehicles, ships and aircraft",071,detailed,official,1,,automotive engineering;motor mechanics;aeronautical engineering;aircraft maintenance;marine engineering;aviation engineering;motor vehicle
+0719,Engineering and engineering trades not elsewhere classified,071,detailed,not_elsewhere_classified,0,,
+0720,Manufacturing and processing not further defined,072,detailed,not_further_defined,0,,
+0721,Food processing,072,detailed,official,1,,food science;food technology;food science and nutrition;baking;food processing;dairy
+0722,"Materials (glass, paper, plastic and wood)",072,detailed,official,1,,wood technology;paper technology;plastics;furniture making;carpentry;polymer;forest products;materials science
+0723,"Textiles (clothes, footwear and leather)",072,detailed,official,1,,clothing;textile technology;leather;footwear;tailoring;clothing and textiles;fashion technology
+0724,Mining and extraction,072,detailed,official,1,,mining engineering;mineral processing;mine surveying;metallurgy;geology and mining;minerals engineering
+0729,Manufacturing and processing not elsewhere classified,072,detailed,not_elsewhere_classified,0,,
+0730,Architecture and construction not further defined,073,detailed,not_further_defined,0,,
+0731,Architecture and town planning,073,detailed,official,1,,architecture;urban planning;town planning;regional planning;landscape architecture;spatial planning
+0732,Building and civil engineering,073,detailed,official,1,,civil engineering;construction management;quantity surveying;building technology;land surveying;construction;structural engineering;water engineering;building
+0788,"Inter-disciplinary programmes and qualifications involving engineering, manufacturing and construction",078,detailed,interdisciplinary,0,,
+0799,"Engineering, manufacturing and construction not elsewhere classified",079,detailed,not_elsewhere_classified,0,,
+08,"Agriculture, forestry, fisheries and veterinary",,broad,official,0,Agriculture and veterinary,
+080,"Agriculture, forestry, fisheries and veterinary not further defined",08,narrow,not_further_defined,0,,
+081,Agriculture,08,narrow,official,1,Agriculture,agriculture;farming;agricultural sciences
+082,Forestry,08,narrow,official,1,Forestry,forestry;forests
+083,Fisheries,08,narrow,official,1,Fisheries,fisheries;aquaculture
+084,Veterinary,08,narrow,official,1,Veterinary,veterinary;animal health
+088,"Inter-disciplinary programmes and qualifications involving agriculture, forestry, fisheries and veterinary",08,narrow,interdisciplinary,0,,
+089,"Agriculture, forestry, fisheries and veterinary not elsewhere classified",08,narrow,not_elsewhere_classified,0,,
+0800,"Agriculture, forestry, fisheries and veterinary not further defined",080,detailed,not_further_defined,0,,
+0810,Agriculture not further defined,081,detailed,not_further_defined,0,,
+0811,Crop and livestock production,081,detailed,official,1,,agriculture;agronomy;crop science;animal science;livestock;farming;agribusiness;agricultural economics;soil science;agricultural engineering;agricultural education;dairy science
+0812,Horticulture,081,detailed,official,1,,horticultural science;floriculture;gardening;horticulture
+0819,Agriculture not elsewhere classified,081,detailed,not_elsewhere_classified,0,,
+0821,Forestry,082,detailed,official,1,,forest management;agroforestry;forestry
+0831,Fisheries,083,detailed,official,1,,aquaculture;fish farming;fisheries science;fisheries
+0841,Veterinary,084,detailed,official,1,,veterinary medicine;animal health;veterinary science;vet;veterinary
+0888,"Inter-disciplinary programmes and qualifications involving agriculture, forestry, fisheries and veterinary",088,detailed,interdisciplinary,0,,
+0899,"Agriculture, forestry, fisheries and veterinary not elsewhere classified",089,detailed,not_elsewhere_classified,0,,
+09,Health and welfare,,broad,official,0,Health and welfare,
+090,Health and welfare not further defined,09,narrow,not_further_defined,0,,
+091,Health,09,narrow,official,1,Health,health;medical;health sciences;clinical
+092,Welfare,09,narrow,official,1,Social work and welfare,welfare;social work;care
+098,Inter-disciplinary programmes and qualifications involving health and welfare,09,narrow,interdisciplinary,0,,
+099,Health and welfare not elsewhere classified,09,narrow,not_elsewhere_classified,0,,
+0900,Health and welfare not further defined,090,detailed,not_further_defined,0,,
+0910,Health not further defined,091,detailed,not_further_defined,0,,
+0911,Dental studies,091,detailed,official,1,,dentistry;dental surgery;oral health;dental therapy
+0912,Medicine,091,detailed,official,1,,MBChB;medical doctor;surgery;medical sciences;public health;clinical medicine;physician;medicine;health sciences
+0913,Nursing and midwifery,091,detailed,official,1,,nursing;midwifery;primary care nursing;registered nurse;general nursing;mental health nursing
+0914,Medical diagnostic and treatment technology,091,detailed,official,1,,medical laboratory science;radiography;biomedical science;health technology;optometry;medical imaging;biomedical technology
+0915,Therapy and rehabilitation,091,detailed,official,1,,physiotherapy;occupational therapy;speech therapy;audiology;rehabilitation;therapy
+0916,Pharmacy,091,detailed,official,1,,pharmaceutical sciences;pharmacology;pharmacist;pharmacy
+0917,Traditional and complementary medicine and therapy,091,detailed,official,1,,traditional medicine;herbal medicine;naturopathy;complementary medicine
+0919,Health not elsewhere classified,091,detailed,not_elsewhere_classified,0,,
+0920,Welfare not further defined,092,detailed,not_further_defined,0,,
+0921,Care of the elderly and of disabled adults,092,detailed,official,1,,disability studies;elderly care;gerontology;care of the elderly
+0922,Child care and youth services,092,detailed,official,1,,child care;early childhood care;youth work;youth development;child welfare
+0923,Social work and counselling,092,detailed,official,1,,social work;counselling;community development;psychosocial support;social development
+0929,Welfare not elsewhere classified,092,detailed,not_elsewhere_classified,0,,
+0988,Inter-disciplinary programmes and qualifications involving health and welfare,098,detailed,interdisciplinary,0,,
+0999,Health and welfare not elsewhere classified,099,detailed,not_elsewhere_classified,0,,
+10,Services,,broad,official,0,Services,
+100,Services not further defined,10,narrow,not_further_defined,0,,
+101,Personal services,10,narrow,official,1,Personal services,personal services;hospitality;tourism;sport
+102,Hygiene and occupational health services,10,narrow,official,1,Health and safety services,hygiene;occupational health;health and safety
+103,Security services,10,narrow,official,1,Security,security;defence;policing
+104,Transport services,10,narrow,official,1,Transport and logistics,transport;logistics;aviation
+108,Inter-disciplinary programmes and qualifications involving services,10,narrow,interdisciplinary,0,,
+109,Services not elsewhere classified,10,narrow,not_elsewhere_classified,0,,
+1000,Services not further defined,100,detailed,not_further_defined,0,,
+1010,Personal services not further defined,101,detailed,not_further_defined,0,,
+1011,Domestic services,101,detailed,official,1,,housekeeping;domestic science;home economics
+1012,Hair and beauty services,101,detailed,official,1,,cosmetology;hairdressing;beauty therapy;beauty
+1013,"Hotel, restaurants and catering",101,detailed,official,1,,hospitality;catering;culinary;hotel management;food and beverage;hotel and restaurant;chef
+1014,Sports,101,detailed,official,1,,sport science;sports management;physical education;recreation;coaching;exercise science;sports
+1015,"Travel, tourism and leisure",101,detailed,official,1,,tourism;travel;leisure;ecotourism;hospitality and tourism;tourism management
+1019,Personal services not elsewhere classified,101,detailed,not_elsewhere_classified,0,,
+1020,Hygiene and occupational health services not further defined,102,detailed,not_further_defined,0,,
+1021,Community sanitation,102,detailed,official,1,,environmental health;sanitation;public health inspector;community health
+1022,Occupational health and safety,102,detailed,official,1,,OHS;occupational safety;health and safety;occupational hygiene
+1029,Hygiene and occupational health services not elsewhere classified,102,detailed,not_elsewhere_classified,0,,
+1030,Security services not further defined,103,detailed,not_further_defined,0,,
+1031,Military and defence,103,detailed,official,1,,defence studies;military science;strategic studies;defence
+1032,Protection of persons and property,103,detailed,official,1,,security studies;policing;criminology;law enforcement;fire fighting;disaster management;safety and security;criminal justice
+1039,Security services not elsewhere classified,103,detailed,not_elsewhere_classified,0,,
+1041,Transport services,104,detailed,official,1,,logistics;transport;aviation;maritime;shipping;aviation management;railway;supply chain logistics;transport management
+1088,Inter-disciplinary programmes and qualifications involving services,108,detailed,interdisciplinary,0,,
+1099,Services not elsewhere classified,109,detailed,not_elsewhere_classified,0,,

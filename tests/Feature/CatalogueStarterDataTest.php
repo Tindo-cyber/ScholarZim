@@ -38,7 +38,8 @@ class CatalogueStarterDataTest extends TestCase
         (new CatalogueSeeder())->load();
 
         $this->assertSame(11, Field::whereNull('parent_id')->count(), 'broad fields 00 to 10');
-        $this->assertSame(29, Field::whereNotNull('parent_id')->count(), 'narrow fields');
+        $this->assertSame(57, Field::where('level', Field::LEVEL_NARROW)->count(), 'narrow fields');
+        $this->assertSame(148, Field::where('level', Field::LEVEL_DETAILED)->count(), 'detailed fields');
         $this->assertSame(['00', '01', '02', '03', '04', '05', '06', '07', '08', '09', '10'], Field::whereNull('parent_id')->orderBy('code')->pluck('code')->all());
     }
 
@@ -92,9 +93,9 @@ class CatalogueStarterDataTest extends TestCase
         (new CatalogueSeeder())->load();
 
         foreach (Field::all() as $field) {
-            $this->assertNotEmpty($field->display_name, $field->code);
             $this->assertNotEmpty($field->name, $field->code);
-            $this->assertLessThanOrEqual(50, mb_strlen($field->display_name), $field->code . ' is not short');
+            $this->assertNotEmpty($field->label(), $field->code);
+            $this->assertLessThanOrEqual(50, mb_strlen((string) $field->display_name), $field->code . ' is not short');
         }
 
         $engineering = Field::where('code', '071')->firstOrFail();

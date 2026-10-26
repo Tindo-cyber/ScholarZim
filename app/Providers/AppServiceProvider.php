@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Reads the whole programme catalogue once per request; anything that changes it flushes it.
         $this->app->singleton(\App\Services\Catalogue\CatalogueMentions::class);
+        $this->app->singleton(\App\Services\Catalogue\FieldIndex::class);
 
         // Bound for MailCheck, which talks to the Mailgun API directly.
         //
