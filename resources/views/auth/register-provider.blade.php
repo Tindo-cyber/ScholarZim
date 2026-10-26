@@ -66,10 +66,6 @@
             <x-form.select name="organisation_type" label="Organisation type" :options="$orgTypes"
                            placeholder="Select a type" required />
 
-            <x-form.input name="website" label="Organisation website (optional)" type="text" inputmode="url"
-                          autocomplete="url" placeholder="kariba-trust.org"
-                          hint="Checked when we verify you." />
-
             <div class="mb-4">
                 <label class="form-label" for="certificate">
                     Registration certificate or equivalent document <span class="text-danger" aria-hidden="true">*</span>

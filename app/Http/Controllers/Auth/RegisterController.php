@@ -52,8 +52,6 @@ class RegisterController extends Controller
 
     public function registerProvider(Request $request)
     {
-        // "kariba-trust.org" and "https://kariba-trust.org" are the same answer; accept both.
-        $request->merge(['website' => \App\Support\WebsiteAddress::normalise($request->input('website'))]);
         $request->merge(ProviderRegistrationDetails::prepare($request->all()));
 
         $data = $request->validate([
@@ -79,8 +77,6 @@ class RegisterController extends Controller
             // there is none. Where the organisation is registered says nothing
             // about where the scholarships it posts are held.
             ...ProviderRegistrationDetails::rules(),
-            // Optional, and unconfirmed until an administrator says it is theirs.
-            'website' => \App\Support\WebsiteAddress::rules(),
             'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
             // The organisation's confirmation that it is registered and that this

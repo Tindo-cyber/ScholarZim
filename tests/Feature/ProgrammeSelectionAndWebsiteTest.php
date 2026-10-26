@@ -537,20 +537,12 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
         $this->get(route('scholarships.show', $listing->opportunity_id))->assertNotFound();
     }
 
-    public function test_a_provider_saving_their_website_is_normalised_stored_and_then_shown(): void
+    public function test_a_stored_provider_website_is_shown_on_the_listing(): void
     {
-        $this->actingAs($this->provider)->post(route('provider.website.update'), ['website' => 'www.zimedtrust.org/'])
-            ->assertSessionHasNoErrors();
-
-        $this->assertSame('https://www.zimedtrust.org', ProviderProfile::where('user_id', $this->provider->user_id)->value('website'));
+        // Providers can no longer add one themselves; one already on record is still shown.
+        ProviderProfile::where('user_id', $this->provider->user_id)->update(['website' => 'https://www.zimedtrust.org']);
 
         auth()->logout();
         $this->get(route('scholarships.show', $this->publicListing()->opportunity_id))->assertOk()->assertSee('https://www.zimedtrust.org');
-    }
-
-    public function test_a_website_that_is_not_an_address_is_refused_on_save(): void
-    {
-        $this->actingAs($this->provider)->post(route('provider.website.update'), ['website' => 'javascript:alert(1)'])
-            ->assertSessionHasErrors('website', errorBag: 'website');
     }
 }

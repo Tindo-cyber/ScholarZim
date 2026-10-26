@@ -590,7 +590,6 @@ class FormInputAuditTest extends TestCase
             'unknown registration country' => [['registration_country' => 'XX'], 'registration_country'],
             'registration number with a script' => [['registration_number' => '<script>alert(1)</script>'], 'registration_number'],
             'phone with letters' => [['phone' => 'call me'], 'phone'],
-            'website that is not a web address' => [['website' => 'javascript:alert(1)'], 'website'],
             'authorisation not ticked' => [['authorised' => ''], 'authorised'],
             'a certificate that is not a document' => [['certificate' => 'plain text'], 'certificate'],
             'no certificate' => [['certificate' => null], 'certificate'],

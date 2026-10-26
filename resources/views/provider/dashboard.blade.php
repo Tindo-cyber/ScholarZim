@@ -413,31 +413,6 @@
                     </div>
                 </div>
             @endif
-            <div class="card mb-4" id="organisation-website">
-                <div class="card-header">
-                    <h2 class="h6 fw-semibold mb-0">Organisation website</h2>
-                </div>
-                <div class="card-body">
-                    <form method="POST" action="{{ route('provider.website.update') }}">
-                        @csrf
-                        <x-form.input name="website" label="Website" type="text" inputmode="url"
-                                      :value="$profile?->website" bag="website"
-                                      placeholder="kariba-trust.org"
-                                      hint="Used to pre-fill the link on new listings, and to check the links you post." />
-                        <x-submit-button label="Save website" size="sm" tone="outline-primary" busy-label="Saving..." />
-                    </form>
-
-                    @if($profile?->website)
-                        <p class="small mb-0 mt-3 {{ $profile->hasConfirmedWebsite() ? 'text-success' : 'text-secondary' }}">
-                            @if($profile->hasConfirmedWebsite())
-                                Confirmed by an administrator.
-                            @else
-                                Waiting for an administrator to confirm.
-                            @endif
-                        </p>
-                    @endif
-                </div>
-            </div>
             <div class="card mb-4">
                 <div class="card-header d-flex align-items-center justify-content-between">
                     <h2 class="h6 fw-semibold mb-0">Recent applications</h2>
