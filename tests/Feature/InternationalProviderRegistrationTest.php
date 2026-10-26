@@ -193,18 +193,6 @@ class InternationalProviderRegistrationTest extends TestCase
             ->assertSessionHasNoErrors();
     }
 
-    public function test_the_website_is_still_validated_and_normalised(): void
-    {
-        $this->post('/register/provider', $this->payload(['email' => 'bad-site@example.test', 'website' => 'not a website']))
-            ->assertSessionHasErrors('website');
-
-        $this->post('/register/provider', $this->payload(['email' => 'good-site@example.test', 'website' => 'northumbria.ac.uk']))
-            ->assertSessionHasNoErrors();
-
-        $this->assertSame('https://northumbria.ac.uk', $this->profileFor('good-site@example.test')->website);
-        $this->assertNull($this->profileFor('good-site@example.test')->website_verified_at, 'typed in is not confirmed');
-    }
-
     public function test_registration_is_audited_and_announced_with_the_country(): void
     {
         $this->post('/register/provider', $this->payload(['email' => 'audited@example.test', 'registration_country' => 'ZA']))
@@ -238,7 +226,7 @@ class InternationalProviderRegistrationTest extends TestCase
 
     public function test_an_administrator_sees_the_full_verification_record(): void
     {
-        $provider = $this->register('GB', 'record@example.test', ['website' => 'northumbria.ac.uk', 'phone' => '+44 20 7946 0000']);
+        $provider = $this->register('GB', 'record@example.test', ['phone' => '+44 20 7946 0000']);
 
         $this->as($this->admin)->get(route('admin.providers.show', $provider->user_id))
             ->assertOk()
@@ -250,7 +238,6 @@ class InternationalProviderRegistrationTest extends TestCase
             ->assertSee('Scholarships Officer')
             ->assertSee('record@example.test')
             ->assertSee('+44 20 7946 0000')
-            ->assertSee('https://northumbria.ac.uk')
             ->assertSee('registration.pdf')
             ->assertSee(route('admin.providers.certificate', $provider->user_id))
             ->assertSee('Awaiting review')

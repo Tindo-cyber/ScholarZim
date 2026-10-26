@@ -244,8 +244,6 @@ Route::middleware(['auth', 'role:' . RoleNames::PROVIDER, 'cache.headers:no_stor
 
     Route::get('/provider/analytics', [Provider\AnalyticsController::class, 'index'])->name('provider.analytics');
 
-    // The organisation's website, which an administrator then confirms.
-    Route::post('/provider/website', [Provider\WebsiteController::class, 'update'])->name('provider.website.update');
 
     // Registration details, while still awaiting verification (e.g. answering a request for more information).
     Route::post('/provider/registration', [Provider\RegistrationDetailsController::class, 'update'])

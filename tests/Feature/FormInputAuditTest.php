@@ -590,7 +590,6 @@ class FormInputAuditTest extends TestCase
             'unknown registration country' => [['registration_country' => 'XX'], 'registration_country'],
             'registration number with a script' => [['registration_number' => '<script>alert(1)</script>'], 'registration_number'],
             'phone with letters' => [['phone' => 'call me'], 'phone'],
-            'website that is not a web address' => [['website' => 'javascript:alert(1)'], 'website'],
             'authorisation not ticked' => [['authorised' => ''], 'authorised'],
             'a certificate that is not a document' => [['certificate' => 'plain text'], 'certificate'],
             'no certificate' => [['certificate' => null], 'certificate'],
@@ -632,5 +631,25 @@ class FormInputAuditTest extends TestCase
             ->assertRedirect(route('password.request'));
 
         $this->assertSame($before, $this->student->fresh()->password_hash);
+    }
+    // ================================================================ wording on the browse page --
+
+    public function test_the_browse_page_filter_button_is_not_called_apply(): void
+    {
+        foreach ([$this->provider, $this->student] as $user) {
+            $html = $this->as($user)->get('/opportunities')->assertOk()->getContent();
+
+            $this->assertMatchesRegularExpression('#<button[^>]*type="submit"[^>]*>\s*Filter\b#', $html);
+            $this->assertDoesNotMatchRegularExpression('#<button[^>]*>\s*Apply\b#', $html);
+        }
+    }
+
+    public function test_a_provider_is_never_offered_an_apply_link_on_the_browse_page(): void
+    {
+        $html = $this->as($this->provider)->get('/opportunities')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('>Apply</a>', $html);
+        $this->assertStringNotContainsString('Sign in to apply', $html);
+        $this->assertStringNotContainsString('/apply/', $html);
     }
 }

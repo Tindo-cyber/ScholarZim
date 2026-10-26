@@ -52,19 +52,6 @@ class ProviderWebsiteTest extends TestCase
 
     // -------------------------------------------------------- registration --
 
-    public function test_registration_accepts_an_optional_website_and_it_starts_unconfirmed(): void
-    {
-        Storage::fake();
-
-        $this->post(route('register.provider'), $this->registration(['website' => 'www.kariba-trust.org']))
-            ->assertSessionHasNoErrors();
-
-        $profile = User::where('email', 'new@kariba-trust.org')->firstOrFail()->providerProfile;
-
-        $this->assertSame('https://www.kariba-trust.org', $profile->website, 'a missing scheme is added');
-        $this->assertNull($profile->website_verified_at, 'what somebody typed is not yet confirmed');
-    }
-
     public function test_registration_works_without_a_website(): void
     {
         Storage::fake();
@@ -74,72 +61,29 @@ class ProviderWebsiteTest extends TestCase
         $this->assertNull(User::where('email', 'new@kariba-trust.org')->firstOrFail()->providerProfile->website);
     }
 
-    public function test_a_website_that_is_not_a_web_address_is_refused(): void
+    // --------------------------------------------------- the provider's side --
+
+    public function test_a_provider_can_no_longer_add_a_website(): void
+    {
+        // The registration form has no website field, and the dashboard has no website section.
+        $this->get(route('register.provider'))->assertOk()->assertDontSee('name="website"', false)->assertDontSee('Organisation website');
+        $this->actingAs($this->provider)->get(route('provider.dashboard'))->assertOk()
+            ->assertDontSee('id="organisation-website"', false)->assertDontSee('Save website');
+
+        // The endpoint that saved one is gone, so a hand-made request changes nothing either.
+        $before = $this->profile()->website;
+        $this->actingAs($this->provider)->post('/provider/website', ['website' => 'https://sneaky.example.org'])->assertStatus(404);
+        $this->assertSame($before, $this->profile()->website);
+        $this->assertFalse(\Illuminate\Support\Facades\Route::has('provider.website.update'));
+    }
+
+    public function test_a_website_posted_with_a_registration_is_ignored(): void
     {
         Storage::fake();
 
-        $this->post(route('register.provider'), $this->registration(['website' => 'not a website']))
-            ->assertSessionHasErrors('website');
-    }
+        $this->post(route('register.provider'), $this->registration(['website' => 'www.kariba-trust.org']))->assertSessionHasNoErrors();
 
-    // --------------------------------------------------- the provider's side --
-
-    public function test_a_provider_can_set_their_website_from_the_dashboard(): void
-    {
-        $this->actingAs($this->provider)
-            ->post(route('provider.website.update'), ['website' => 'scholarzim.co.zw'])
-            ->assertSessionHasNoErrors()
-            ->assertSessionHas('successMessage');
-
-        $this->assertSame('https://scholarzim.co.zw', $this->profile()->website);
-    }
-
-    public function test_changing_the_website_withdraws_the_confirmation(): void
-    {
-        $this->profile()->update(['website' => 'https://old.example.org', 'website_verified_at' => Carbon::now(), 'website_verified_by' => $this->admin->email]);
-
-        $this->actingAs($this->provider)->post(route('provider.website.update'), ['website' => 'https://new.example.org']);
-
-        $profile = $this->profile();
-        $this->assertSame('https://new.example.org', $profile->website);
-        $this->assertNull($profile->website_verified_at, 'the administrator confirmed the old address, not this one');
-        $this->assertNull($profile->website_verified_by);
-    }
-
-    public function test_saving_the_same_website_keeps_the_confirmation(): void
-    {
-        $this->profile()->update(['website' => 'https://trust.org', 'website_verified_at' => Carbon::now(), 'website_verified_by' => $this->admin->email]);
-
-        $this->actingAs($this->provider)->post(route('provider.website.update'), ['website' => 'trust.org']);
-
-        $this->assertNotNull($this->profile()->website_verified_at);
-    }
-
-    public function test_a_provider_can_remove_their_website(): void
-    {
-        $this->profile()->update(['website' => 'https://trust.org', 'website_verified_at' => Carbon::now()]);
-
-        $this->actingAs($this->provider)->post(route('provider.website.update'), ['website' => ''])->assertSessionHasNoErrors();
-
-        $this->assertNull($this->profile()->website);
-        $this->assertNull($this->profile()->website_verified_at);
-    }
-
-    public function test_the_dashboard_says_whether_the_website_is_confirmed(): void
-    {
-        $this->profile()->update(['website' => 'https://trust.org', 'website_verified_at' => null]);
-        $this->actingAs($this->provider)->get(route('provider.dashboard'))->assertOk()->assertSee('Waiting for an administrator to confirm');
-
-        $this->profile()->update(['website_verified_at' => Carbon::now()]);
-        // A fresh user: the first request cached the profile on the acting instance.
-        $this->actingAs($this->provider->fresh())->get(route('provider.dashboard'))->assertOk()->assertSee('Confirmed by an administrator');
-    }
-
-    public function test_only_a_provider_can_set_a_website(): void
-    {
-        $student = User::whereHas('role', fn ($q) => $q->where('role_name', 'ROLE_APPLICANT'))->firstOrFail();
-
-        $this->actingAs($student)->post(route('provider.website.update'), ['website' => 'x.org'])->assertForbidden();
+        $this->assertNull(User::where('email', 'new@kariba-trust.org')->firstOrFail()->providerProfile->website);
     }
 
     // ---------------------------------------------------- the admin's side --
