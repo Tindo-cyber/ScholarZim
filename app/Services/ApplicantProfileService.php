@@ -213,7 +213,7 @@ class ApplicantProfileService
                 // level, entered once for each board. That is a duplicate unless the rows are genuinely different sittings -
                 // each with its own year - which is how a real re-sit with another board looks.
                 $levelKey = (\App\Support\EducationLevel::canonical($qualification->education_level) ?? $qualification->education_level)
-                    . ':' . mb_strtolower(trim($subject->name));
+                    . ':' . $this->subjectKey($subject->name);
                 $year = $this->resultYear($row['year'] ?? null);
 
                 foreach ($sittings[$levelKey] ?? [] as $earlier) {
@@ -261,6 +261,20 @@ class ApplicantProfileService
         });
 
         return $profile->refresh();
+    }
+
+    /**
+     * What makes two subject names the same subject: the name without its bracketed syllabus note, in lower case.
+     *
+     * Boards name one subject differently - ZIMSEC's "Mathematics", Cambridge O Level's "Mathematics (Syllabus D)", IGCSE's
+     * "Mathematics" and "Mathematics (9-1)" - and the bracket only says which syllabus or scale. "Additional Mathematics"
+     * and "International Mathematics" are different subjects and keep their own keys.
+     */
+    private function subjectKey(string $name): string
+    {
+        $bare = (string) preg_replace('/\s*\([^)]*\)/u', '', $name);
+
+        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $bare)));
     }
 
     /**
