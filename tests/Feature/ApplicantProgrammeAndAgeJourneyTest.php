@@ -69,6 +69,8 @@ class ApplicantProgrammeAndAgeJourneyTest extends TestCase
         return $this->actingAs($this->student->fresh())->post(route('applicant.profile.update'), array_merge([
             'full_name' => $this->student->full_name, 'gender' => 'male', 'province' => 'Harare',
             'institution_name' => 'Some College', 'biography' => 'Keen to learn.',
+            // A guardian's details, which a profile for anyone under 18 must carry to be saved (an adult's request ignores them).
+            'guardian_name' => 'Grace Moyo', 'guardian_phone' => '0771234567', 'guardian_relationship' => 'Mother', 'guardian_confirmed' => '1',
         ], $more));
     }
 

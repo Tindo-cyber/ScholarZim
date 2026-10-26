@@ -134,6 +134,8 @@ class ScholarFitLocationTest extends TestCase
             'education_level' => EducationLevel::UNDERGRADUATE,
             'gender' => 'male',
             'field_of_study' => 'Computer Science & IT',
+            // A guardian's details, which a profile for anyone under 18 must carry to be saved (an adult's request ignores them).
+            'guardian_name' => 'Grace Moyo', 'guardian_phone' => '0771234567', 'guardian_relationship' => 'Mother', 'guardian_confirmed' => '1',
         ], $overrides);
     }
 

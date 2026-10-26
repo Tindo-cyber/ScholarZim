@@ -143,6 +143,11 @@
 
             minorFor.forEach((el) => {
                 el.hidden = !isMinor();
+
+                // The guardian's details are required while they are shown, so the browser says so before the server has to.
+                // Only while shown: a required field inside a hidden card would stop an adult saving, and nobody could see why.
+                el.querySelectorAll('input[name=guardian_name], input[name=guardian_phone], input[name=guardian_relationship], input[type=checkbox][name=guardian_confirmed]')
+                    .forEach((input) => { input.required = !el.hidden; });
             });
 
             syncQualifications();

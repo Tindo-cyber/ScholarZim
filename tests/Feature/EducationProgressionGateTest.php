@@ -251,6 +251,8 @@ class EducationProgressionGateTest extends TestCase
             'full_name' => $applicant->full_name,
             'gender' => 'male',
             'province' => 'Harare',
+            // A guardian's details, which a profile for anyone under 18 must carry to be saved (an adult's request ignores them).
+            'guardian_name' => 'Grace Moyo', 'guardian_phone' => '0771234567', 'guardian_relationship' => 'Mother', 'guardian_confirmed' => '1',
         ], $overrides);
     }
 

@@ -51,7 +51,7 @@
                             <div class="col-md-6">
                                 <x-form.input name="date_of_birth" label="Date of birth" type="date"
                                               :value="$profile->date_of_birth?->format('Y-m-d')"
-                                              max="{{ now()->subYears(12)->toDateString() }}"
+                                              min="1920-01-02" max="{{ now()->subYears(12)->toDateString() }}"
                                               hint="Used to check age limits." />
                             </div>
                             <div class="col-md-6">
@@ -194,16 +194,17 @@
                 </div>
 
                 {{-- Under 18 (or at school with no date of birth): shown and hidden live from the date of birth. --}}
-                <div class="card mb-4" data-sz-minor id="sz-guardian-card" @if(! $profile->isMinor()) hidden @endif>
+                <div class="card mb-4" data-sz-minor id="sz-guardian-card"
+                     @if(! $profile->isMinor() && ! $errors->hasAny(['guardian_name', 'guardian_phone', 'guardian_relationship', 'guardian_confirmed'])) hidden @endif>
                     <span id="guardian"></span>
                     <div class="card-header">
                         <h2 class="h6 fw-semibold mb-0">Guardian details</h2>
                     </div>
                     <div class="card-body">
                         <div class="alert alert-info small">
-                            You are under 18, so a parent or guardian must be involved in your applications. You can browse and
-                            build your profile without these details, but they are needed when you submit an application. A
-                            provider reviewing your application sees your guardian's name, phone number and relationship to you.
+                            You are under 18, so a parent or guardian must be involved in your applications. These details are
+                            required to save your profile. A provider reviewing your application sees your guardian's name,
+                            phone number and relationship to you.
                         </div>
                         <div class="row">
                             <div class="col-md-4">
