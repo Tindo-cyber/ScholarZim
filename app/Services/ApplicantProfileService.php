@@ -106,11 +106,22 @@ class ApplicantProfileService
             'biography' => $preserve('biography'),
         ]);
 
-        if (filled($data['full_name'] ?? null) || filled($data['phone'] ?? null)) {
-            $user->update(array_filter([
-                'full_name' => $data['full_name'] ?? null,
-                'phone' => $data['phone'] ?? null,
-            ], static fn ($v) => $v !== null));
+        // The name is required, so only a name that was given replaces it. The phone number is optional: a number that was
+        // given replaces the old one, and one that was submitted EMPTY clears it - it used to be skipped as "nothing to
+        // save", so the page said "Profile saved" and the old number came back. A request that does not carry the key at
+        // all (a partial update from another form) leaves it alone.
+        $account = [];
+
+        if (filled($data['full_name'] ?? null)) {
+            $account['full_name'] = $data['full_name'];
+        }
+
+        if (array_key_exists('phone', $data)) {
+            $account['phone'] = filled($data['phone']) ? $data['phone'] : null;
+        }
+
+        if ($account !== []) {
+            $user->update($account);
         }
 
         // The field of study is a programme chosen from the catalogue (Certificate and above). Judged on the profile as it
@@ -172,6 +183,8 @@ class ApplicantProfileService
         DB::transaction(function () use ($profile, $rows, $user, $allowedQualificationIds) {
             $keptIds = [];
             $seen = [];
+            // level + subject name => the sittings already accepted in this submission, for the cross-board check below
+            $sittings = [];
 
             foreach ($rows as $index => $row) {
                 [$qualification, $subject, $grade] = $this->resolveResultRow(
@@ -194,6 +207,26 @@ class ApplicantProfileService
                 }
 
                 $seen[$pair] = true;
+
+                // One qualification holds one result per subject (the table's own key; a re-sit replaces the grade). But
+                // "Mathematics" sat under ZIMSEC A Level, Cambridge AS and Cambridge A Level is the same subject at the same
+                // level, entered once for each board. That is a duplicate unless the rows are genuinely different sittings -
+                // each with its own year - which is how a real re-sit with another board looks.
+                $levelKey = (\App\Support\EducationLevel::canonical($qualification->education_level) ?? $qualification->education_level)
+                    . ':' . mb_strtolower(trim($subject->name));
+                $year = $this->resultYear($row['year'] ?? null);
+
+                foreach ($sittings[$levelKey] ?? [] as $earlier) {
+                    if ($year === null || $earlier['year'] === null || $year === $earlier['year']) {
+                        throw ValidationException::withMessages([
+                            "academic_subject_results.$index.subject_id" => $subject->name . ' is already recorded under '
+                                . $earlier['qualification'] . '. Record each subject once - or, if these are different sittings, '
+                                . 'give the year of each.',
+                        ]);
+                    }
+                }
+
+                $sittings[$levelKey][] = ['year' => $year, 'qualification' => $qualification->name];
 
                 $result = AcademicResult::updateOrCreate(
                     [

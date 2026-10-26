@@ -98,7 +98,7 @@ final class ProfileDetailRules
         $dateOfBirth = $data['date_of_birth'] ?? null;
 
         if (filled($dateOfBirth)) {
-            $age = Carbon::parse($dateOfBirth)->age;
+            $age = \App\Models\ApplicantProfile::ageBetween(Carbon::parse($dateOfBirth), \App\Support\Deadlines::today());
 
             if ($age < EducationLevel::MINIMUM_APPLICANT_AGE) {
                 $problems['date_of_birth'] = 'You must be at least ' . EducationLevel::MINIMUM_APPLICANT_AGE . ' years old to use this platform.';

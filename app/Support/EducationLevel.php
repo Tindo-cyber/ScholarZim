@@ -342,7 +342,9 @@ final class EducationLevel
      */
     private const AGE_RANGES = [
         self::TIER_PRIMARY => [4, 16],
-        self::TIER_SECONDARY => [9, 25],
+        // No bounds: adults hold O-Level and A-Level (resitters, mature and returning students, people who finished school late),
+        // and a date of birth says nothing about whether somebody holds a qualification. Neither end is a rule.
+        self::TIER_SECONDARY => [0, null],
         self::TIER_TERTIARY => [14, null],
         self::TIER_POSTGRADUATE => [18, null],
     ];
