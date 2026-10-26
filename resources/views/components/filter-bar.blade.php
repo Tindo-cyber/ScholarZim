@@ -128,8 +128,9 @@
                 </div>
 
                 <div class="col-6 col-lg-2 d-flex gap-2">
+                    {{-- "Filter", not "Apply": on a page of scholarships "Apply" reads as applying for one, which a provider cannot do. --}}
                     <button class="btn btn-primary flex-grow-1" type="submit">
-                        Apply
+                        Filter
                         @if($activeCount > 0)
                             <span class="badge bg-white text-primary ms-1">{{ $activeCount }}</span>
                         @endif

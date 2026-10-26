@@ -633,4 +633,24 @@ class FormInputAuditTest extends TestCase
 
         $this->assertSame($before, $this->student->fresh()->password_hash);
     }
+    // ================================================================ wording on the browse page --
+
+    public function test_the_browse_page_filter_button_is_not_called_apply(): void
+    {
+        foreach ([$this->provider, $this->student] as $user) {
+            $html = $this->as($user)->get('/opportunities')->assertOk()->getContent();
+
+            $this->assertMatchesRegularExpression('#<button[^>]*type="submit"[^>]*>\s*Filter\b#', $html);
+            $this->assertDoesNotMatchRegularExpression('#<button[^>]*>\s*Apply\b#', $html);
+        }
+    }
+
+    public function test_a_provider_is_never_offered_an_apply_link_on_the_browse_page(): void
+    {
+        $html = $this->as($this->provider)->get('/opportunities')->assertOk()->getContent();
+
+        $this->assertStringNotContainsString('>Apply</a>', $html);
+        $this->assertStringNotContainsString('Sign in to apply', $html);
+        $this->assertStringNotContainsString('/apply/', $html);
+    }
 }
