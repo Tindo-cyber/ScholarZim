@@ -586,9 +586,10 @@ class ApplicantProfile extends Model
         return $this->documentChecklist($for)->missingTypes();
     }
 
+    /** Today's age, by Harare's calendar (the same day a listing's deadline is judged by). */
     public function age(): ?int
     {
-        return $this->date_of_birth?->age;
+        return $this->ageOn(\App\Support\Deadlines::today());
     }
 
     public const AGE_OF_MAJORITY = 18;
@@ -650,12 +651,15 @@ class ApplicantProfile extends Model
      */
     public function ageOn(\Carbon\CarbonInterface $day): ?int
     {
-        $born = $this->date_of_birth;
+        return $this->date_of_birth === null ? null : self::ageBetween($this->date_of_birth, $day);
+    }
 
-        if ($born === null) {
-            return null;
-        }
-
+    /**
+     * Whole years from a date of birth to a day - the one calculation behind every age in ScholarZim (the profile's age, the
+     * check on a date of birth, a listing's age limit at its deadline), so two places can never give two ages for one person.
+     */
+    public static function ageBetween(\Carbon\CarbonInterface $born, \Carbon\CarbonInterface $day): int
+    {
         $years = $day->year - $born->year;
 
         if ($day->month < $born->month || ($day->month === $born->month && $day->day < $born->day)) {
