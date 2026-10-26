@@ -4,6 +4,9 @@
         <span class="d-flex gap-3">
             <a class="link-secondary text-decoration-none" href="{{ route('scholarships.index') }}">Public listings</a>
             <a class="link-secondary text-decoration-none" href="{{ route('account.security') }}">Privacy</a>
+            @if(filled(config('scholarzim.contact.email')))
+                <a class="link-secondary text-decoration-none" href="mailto:{{ config('scholarzim.contact.email') }}">Contact</a>
+            @endif
         </span>
     </div>
 </footer>

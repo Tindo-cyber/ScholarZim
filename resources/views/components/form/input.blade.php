@@ -48,6 +48,8 @@
      * differently from the browser.
      */
     $id = $attributes->get('id', 'field-' . $name);
+    // The longest the server accepts (App\Support\FieldLimits), unless the page set its own.
+    $limit = $attributes->has('maxlength') ? null : \App\Support\FieldLimits::for($name);
     // Old input belongs to the form that was submitted: a field in a named bag
     // takes it only when that bag is the one that failed.
     $current = ($bag === 'default' || $errors->hasBag($bag)) ? old($name, $value) : $value;
@@ -79,7 +81,7 @@
     @endif
 
     <div @if($isPassword) class="input-group" @endif>
-        <input {{ $attributes->except('id')->merge(['class' => 'form-control' . $stateClass]) }}
+        <input {{ $attributes->except('id')->merge($limit ? ['maxlength' => $limit] : [])->merge(['class' => 'form-control' . $stateClass]) }}
                type="{{ $type }}"
                id="{{ $id }}"
                name="{{ $name }}"

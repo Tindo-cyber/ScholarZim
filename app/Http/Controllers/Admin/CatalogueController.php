@@ -371,7 +371,7 @@ class CatalogueController extends Controller
             'synonyms' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $data['name'] = trim((string) preg_replace('/\s+/', ' ', strip_tags($data['name'])));
+        $data['name'] = $this->cleanName($data['name']);
 
         $clash = Programme::whereRaw('LOWER(name) = ?', [mb_strtolower($data['name'])])
             ->where('education_level', $data['education_level'])
@@ -439,10 +439,25 @@ class CatalogueController extends Controller
             }
         }
 
-        $data['name'] = trim(strip_tags($data['name']));
+        $data['name'] = $this->cleanName($data['name']);
         $data['parent_id'] = filled($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null;
 
         return $data;
+    }
+
+    /**
+     * A name with the markup taken out of it. A name that was nothing but markup ("<b></b>") is empty once it is clean, and
+     * an empty name is refused on the field it came from, never saved blank.
+     */
+    private function cleanName(string $value): string
+    {
+        $name = trim((string) preg_replace('/\s+/', ' ', strip_tags($value)));
+
+        if ($name === '') {
+            throw \Illuminate\Validation\ValidationException::withMessages(['name' => 'Enter a name made of words or letters, not just formatting.']);
+        }
+
+        return $name;
     }
 
     /** @return array<string, mixed> */
@@ -458,7 +473,7 @@ class CatalogueController extends Controller
 
         return [
             'code' => strtoupper($data['code']),
-            'name' => trim(strip_tags($data['name'])),
+            'name' => $this->cleanName($data['name']),
             'type' => $data['type'],
             'province' => filled($data['province'] ?? null) ? $data['province'] : null,
             'is_active' => (bool) ($data['is_active'] ?? false),

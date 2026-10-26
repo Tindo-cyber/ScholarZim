@@ -21,7 +21,7 @@ class PasswordResetController extends Controller
     public function sendResetLink(Request $request)
     {
         $data = $request->validate([
-            'email' => ['required', 'string', 'email'],
+            'email' => ['required', 'string', 'max:254', 'email'],
         ]);
 
         $this->passwordResetService->request($data['email']);
