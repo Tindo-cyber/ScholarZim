@@ -13,6 +13,7 @@ import './scholarzim';
 import './navigation';
 import './flash-alerts';
 import './submit-state';
+import './document-upload';
 import './name-input';
 import './phone-input';
 import './profile-form';
