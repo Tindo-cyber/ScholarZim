@@ -37,8 +37,10 @@ class NoRequirementsEligibilityTest extends TestCase
     use RefreshDatabase;
     use GivesRequiredDocuments;
 
-    private const MESSAGE = 'No specific eligibility requirements have been provided by the scholarship provider. '
-        . 'You appear eligible to apply based on the available information.';
+    private const MESSAGE = 'This scholarship has not stated any entry requirements. '
+        . 'You can apply. ScholarZim cannot assess your profile against requirements the provider '
+        . 'did not give, so nothing has been checked. The provider and the university decide who is '
+        . 'awarded and admitted.';
 
     private User $provider;
 
@@ -155,12 +157,12 @@ class NoRequirementsEligibilityTest extends TestCase
         $this->assertTrue($fit->isEligibleWithoutRequirements());
         $this->assertFalse($fit->isIneligible());
         $this->assertFalse($fit->needsInformation());
-        $this->assertSame('ELIGIBLE', $fit->explanationLines()[0]);
+        $this->assertSame('NO REQUIREMENTS STATED - YOU CAN APPLY', $fit->explanationLines()[0]);
         $this->assertContains($listing->opportunity_id, $this->recommendedIds());
         $this->assertNotContains($listing->opportunity_id, $this->refusedIds());
 
         $html = $this->actingAs($this->student)->get('/scholarships/' . $listing->opportunity_id)->assertOk()->getContent();
-        $this->assertStringContainsString('ELIGIBLE', $html);
+        $this->assertStringContainsString('NO REQUIREMENTS STATED - YOU CAN APPLY', $html);
         $this->assertStringContainsString(self::MESSAGE, $html);
     }
 
@@ -403,8 +405,8 @@ class NoRequirementsEligibilityTest extends TestCase
             return substr($html, $at, 2500);
         };
 
-        $this->assertStringContainsString('Eligible', $card($bare->title));
-        $this->assertStringContainsString('No specific requirements were provided. You appear eligible to apply.', $card($bare->title));
+        $this->assertStringContainsString('No stated requirements', $card($bare->title));
+        $this->assertStringContainsString('No requirements were stated, so nothing was checked. You can apply.', $card($bare->title));
         $this->assertStringNotContainsString('You meet', $card($bare->title));
         $this->assertStringContainsString('You meet the one requirement', $card($met->title));
         // Refusals are listed apart, in full: the verdict and the one figure that fell short.
@@ -419,7 +421,7 @@ class NoRequirementsEligibilityTest extends TestCase
 
         $html = $this->actingAs($this->student)->get('/apply/' . $listing->opportunity_id)->assertOk()->getContent();
 
-        $this->assertStringContainsString('ELIGIBLE', $html);
+        $this->assertStringContainsString('NO REQUIREMENTS STATED - YOU CAN APPLY', $html);
         $this->assertStringContainsString(self::MESSAGE, $html);
         $this->assertStringContainsString('Submit application', $html);
     }

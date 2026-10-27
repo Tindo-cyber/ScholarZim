@@ -142,10 +142,10 @@ class EligibilityExplanationTest extends TestCase
 
         $html = $this->detail($bare);
 
-        // Nothing stands in the way of an open listing, so the student is eligible to apply - and told why.
-        $this->assertStringContainsString('ELIGIBLE', $html);
-        $this->assertStringContainsString('No specific eligibility requirements have been provided by the scholarship provider.', $html);
-        $this->assertStringContainsString('You appear eligible to apply based on the available information.', $html);
+        // Nothing stands in the way of an open listing, so the student can apply - and is told nothing was checked.
+        $this->assertStringContainsString('NO REQUIREMENTS STATED - YOU CAN APPLY', $html);
+        $this->assertStringContainsString('This scholarship has not stated any entry requirements.', $html);
+        $this->assertStringContainsString('nothing has been checked', $html);
     }
 
     /**
@@ -158,7 +158,7 @@ class EligibilityExplanationTest extends TestCase
         $this->giveResults(['Mathematics' => 'A']);
 
         foreach ([$this->detail($bare), $this->wizard($bare)] as $html) {
-            $this->assertStringContainsString('No specific eligibility requirements have been provided', $html);
+            $this->assertStringContainsString('This scholarship has not stated any entry requirements', $html);
             $this->assertStringNotContainsString('You meet every requirement', $html);
             $this->assertStringNotContainsString('required, you have', $html);
             $this->assertStringNotContainsString('Why you qualify', $html);
@@ -200,8 +200,8 @@ class EligibilityExplanationTest extends TestCase
             ->assertOk()
             ->getContent();
 
-        $this->assertStringContainsString('ELIGIBLE', $html);
-        $this->assertStringContainsString('You appear eligible to apply based on the available information.', $html);
+        $this->assertStringContainsString('NO REQUIREMENTS STATED - YOU CAN APPLY', $html);
+        $this->assertStringContainsString('nothing has been checked', $html);
         $this->assertStringContainsString('Complete your profile', $html);
         $this->assertStringContainsString('before you submit', $html);
         $this->assertStringNotContainsString('Complete your profile to determine eligibility', $html);

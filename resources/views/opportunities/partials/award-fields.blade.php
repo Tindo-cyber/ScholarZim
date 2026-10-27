@@ -96,7 +96,7 @@
     <div class="card-body">
         <x-form.textarea name="other_conditions" label="Conditions students must check for themselves" :rows="3"
                          :value="$opportunity?->other_conditions"
-                         hint="One a line, for example: IELTS 6.5 or higher / Two years of work experience / Return to Zimbabwe after studying. Students see these as &quot;Also check yourself&quot;; they never decide whether a student qualifies." />
+                         hint="One a line, for example: IELTS 6.5 or higher / Two years of work experience / Return to Zimbabwe after studying. For a listing abroad, use this to specify what our field list cannot - 'MBBS or MBChB students only', 'must be accepted to a UK medical school'. Students see these as &quot;Also check yourself&quot;; they never decide whether a student qualifies." />
     </div>
 </div>
 

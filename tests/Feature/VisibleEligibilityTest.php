@@ -32,7 +32,7 @@ class VisibleEligibilityTest extends TestCase
     use RefreshDatabase;
     use GivesRequiredDocuments;
 
-    private const NO_REQUIREMENTS = 'No specific requirements were provided. You appear eligible to apply.';
+    private const NO_REQUIREMENTS = 'No requirements were stated, so nothing was checked. You can apply.';
 
     protected function setUp(): void
     {
@@ -117,7 +117,7 @@ class VisibleEligibilityTest extends TestCase
         $matches = $this->sections($html)['matches'];
 
         $this->assertStringContainsString('FIT Open Doors Bursary', $matches, 'it is under "Matches for you"');
-        $this->assertStringContainsString('Eligible', $card);
+        $this->assertStringContainsString('No stated requirements', $card);
         $this->assertStringContainsString(self::NO_REQUIREMENTS, $card);
         $this->assertStringContainsString(route('applications.wizard', $this->listing('Open Doors Bursary')->opportunity_id), $card);
         $this->assertStringContainsString('>Apply</a>', $card);
@@ -148,8 +148,8 @@ class VisibleEligibilityTest extends TestCase
 
         $html = $this->actingAs($this->user('rudo.mutasa'))->get(route('scholarships.show', $listing->opportunity_id))->assertOk()->getContent();
 
-        $this->assertStringContainsString('ELIGIBLE', $html);
-        $this->assertStringContainsString('No specific eligibility requirements have been provided by the scholarship provider. You appear eligible to apply based on the available information.', $html);
+        $this->assertStringContainsString('NO REQUIREMENTS STATED - YOU CAN APPLY', $html);
+        $this->assertStringContainsString('This scholarship has not stated any entry requirements. You can apply. ScholarZim cannot assess your profile against requirements the provider did not give, so nothing has been checked.', $html);
         $this->assertStringNotContainsString('You meet every requirement', $html);
         $this->assertStringContainsString('Apply now', $html);
         $this->assertStringContainsString(route('applications.wizard', $listing->opportunity_id), $html);
@@ -294,7 +294,7 @@ class VisibleEligibilityTest extends TestCase
         $html = $this->recommendations('nyasha.hove');
         $card = $this->card($html, 'Open Doors Bursary');
 
-        $this->assertStringContainsString('Eligible', $card);
+        $this->assertStringContainsString('No stated requirements', $card);
         $this->assertStringContainsString(self::NO_REQUIREMENTS, $card);
         $this->assertStringNotContainsString('You meet', $card);
         $this->assertTrue($this->fit('nyasha.hove', 'Open Doors Bursary')->isEligibleWithoutRequirements());

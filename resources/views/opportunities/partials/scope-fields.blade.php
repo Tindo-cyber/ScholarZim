@@ -78,6 +78,12 @@
     </div>
     <div class="card-body">
         <p class="small text-secondary">
+            If this scholarship is for particular programmes or fields, choose them below
+            or say so in the description. A scholarship for Medicine should say so - otherwise
+            students whose subjects don't fit may apply, only to find the university will not
+            admit them.
+        </p>
+        <p class="small text-secondary">
             Required for Certificate, Diploma, degree and postgraduate awards. ScholarFit uses these answers to check each student.
         </p>
 
@@ -123,6 +129,10 @@
         <div class="alert alert-info small" data-abroad-only role="note" @unless($abroad) hidden @endunless>
             For study outside Zimbabwe, choose <strong>An entire field of study</strong> and enter the universities under
             "Institution not listed?". Our programme and institution lists are Zimbabwean only.
+            Fields are ISCED-F codes and are hierarchical: a broad field like "Health
+            and welfare" includes Nursing, Pharmacy and Physiotherapy. If you need a
+            specific degree (MBBS, not Nursing), choose the most detailed field
+            available, or say so in "Other conditions".
         </div>
 
         <div data-open-programmes data-home-only @if($hideProgrammesList) hidden @endif>

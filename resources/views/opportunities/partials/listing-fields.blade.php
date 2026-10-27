@@ -66,7 +66,7 @@
 
         <x-form.textarea name="description" label="Full description" :rows="8" required
                          :value="$opportunity?->description"
-                         hint="Cover what the award pays for, who it is aimed at, and what applicants must submit." />
+                         hint="Cover what the award pays for, who it is aimed at, and what applicants must submit. If it is for specific programmes, say so - 'for Medicine students' is read and checked automatically." />
 
         <x-form.input name="provider_display_name" label="Awarding on behalf of another organisation (optional)"
                       :value="$opportunity?->on_behalf_of"

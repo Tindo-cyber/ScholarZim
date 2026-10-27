@@ -8,7 +8,8 @@
      */
     'variant' => 'full',
     /**
-     * 'student'  the person the result is about: a listing with no requirements reads "Eligible".
+     * 'student'  the person the result is about. A listing with no requirements reads "no requirements stated - you can apply":
+     *            nothing was checked, so it is not called "Eligible".
      * 'provider' someone reviewing an application: there it is only a fact about the listing, "no stated requirements".
      */
     'audience' => 'student',
@@ -28,9 +29,10 @@
      * The third is not the first. "Nothing was asked of you" and "you meet what
      * was asked" are different facts. A student is told they are eligible to
      * apply - nothing stands in the way, and the listing is open - together with
-     * the plain statement that the provider gave no requirements; this never
-     * renders a tick or "you meet" for a requirement nobody set. What the student's
-     * profile holds does not change that. A closed listing is not called eligible.
+     * the plain statement that the provider gave no requirements and so nothing was
+     * checked; this never renders a tick, "Eligible" or "you meet" for a requirement
+     * nobody set. What the student's profile holds does not change that. A closed
+     * listing is not called anything but closed.
      *
      * Every sentence comes from the RequirementOutcome objects the evaluator
      * produced, so what an applicant is told here is what the gate will say
@@ -73,8 +75,8 @@
             <x-status-badge label="Not open" tone="secondary" icon="shield" />
             <span class="small text-secondary">This scholarship is no longer open for applications.</span>
         @elseif(! $stated)
-            <x-status-badge label="Eligible" tone="success" />
-            <span class="small text-secondary">No specific requirements were provided. You appear eligible to apply.</span>
+            <x-status-badge label="No stated requirements" tone="secondary" icon="shield" />
+            <span class="small text-secondary">No requirements were stated, so nothing was checked. You can apply.</span>
         @elseif($eligible)
             <x-status-badge label="Eligible" tone="success" />
             <span class="small text-secondary">
@@ -228,15 +230,15 @@
     </div>
 @else
     {{--
-        Eligible to apply, and honestly so: nothing was asked, so nothing is ticked and
-        nothing is said to be met. The profile does not change this (there is nothing to
-        check it against); it is only needed to submit, which is the application's own gate.
+        Open to apply, and honestly so: nothing was asked, so nothing is ticked, nothing is said to be met and the
+        student is not called eligible - nothing was checked. A neutral note, not a success. The profile does not
+        change this (there is nothing to check it against); it is only needed to submit, which is the application's own gate.
     --}}
-    <div {{ $attributes->merge(['class' => 'alert mb-3 alert-success']) }} role="alert">
+    <div {{ $attributes->merge(['class' => 'alert mb-3 alert-secondary']) }} role="note">
         <div class="d-flex gap-2 align-items-start">
-            <x-icon name="check-circle" :size="20" class="flex-shrink-0 mt-1" />
+            <x-icon name="shield" :size="20" class="flex-shrink-0 mt-1" />
             <div>
-                <div class="fw-semibold mb-1">ELIGIBLE</div>
+                <div class="fw-semibold mb-1">NO REQUIREMENTS STATED - YOU CAN APPLY</div>
                 <p class="small mb-0">{{ \App\Services\ScholarFit\EligibilityResult::NO_REQUIREMENTS_MESSAGE }}</p>
                 @unless($fit->profileComplete)
                     <p class="small mb-0 mt-2">

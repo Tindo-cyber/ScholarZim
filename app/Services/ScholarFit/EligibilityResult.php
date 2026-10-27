@@ -117,8 +117,10 @@ final class EligibilityResult
      * What a student is told about a listing whose provider stated no requirement. It says what was not
      * provided and that eligibility rests on the information available; it never says a requirement was met.
      */
-    public const NO_REQUIREMENTS_MESSAGE = 'No specific eligibility requirements have been provided by the scholarship provider. '
-        . 'You appear eligible to apply based on the available information.';
+    public const NO_REQUIREMENTS_MESSAGE = 'This scholarship has not stated any entry requirements. '
+        . 'You can apply. ScholarZim cannot assess your profile against requirements the provider '
+        . 'did not give, so nothing has been checked. The provider and the university decide who is '
+        . 'awarded and admitted.';
 
     /** Whether the listing can still take applications: active, approved and not past its deadline. */
     public function listingIsOpen(): bool
@@ -205,6 +207,7 @@ final class EligibilityResult
         $eligible = $this->meetsRequirements();
         $lines = [match (true) {
             $bare && ! $this->listingIsOpen() => 'NOT OPEN FOR APPLICATIONS',
+            $bare && $this->listingIsOpen() => 'NO REQUIREMENTS STATED - YOU CAN APPLY',
             $eligible => 'ELIGIBLE',
             $this->needsReview() => 'NEEDS REVIEW',
             $this->needsInformation() => 'NEEDS INFORMATION',
