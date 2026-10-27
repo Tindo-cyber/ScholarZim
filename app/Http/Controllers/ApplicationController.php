@@ -102,7 +102,7 @@ class ApplicationController extends Controller
         foreach ($fields as $field) {
             $rules['profile.' . $field] = ProfileDetailRules::forMissing($field);
         }
-        foreach ($documents as $type) {
+        foreach (array_unique($documents) as $type) {
             $rules['documents.' . $type] = ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'];
         }
 
@@ -157,8 +157,8 @@ class ApplicationController extends Controller
             ->missingRequiredDocumentTypes(\App\Models\Opportunity::find($opportunityId));
 
         $rules = [
-            'personal_statement' => ['required', 'string', 'min:100', 'max:5000'],
-            'document' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
+            'personal_statement' => ['bail', 'required', 'string', 'min:100', 'max:5000'],
+            'document' => ['bail', 'nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
             'confirm' => ['accepted'],
         ];
         foreach ($missingDocumentTypes as $type) {

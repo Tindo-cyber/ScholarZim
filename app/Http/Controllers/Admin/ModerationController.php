@@ -50,10 +50,10 @@ class ModerationController extends Controller
     public function bulkReview(Request $request)
     {
         $data = $request->validate([
-            'opportunities' => ['required', 'array', 'min:1', 'max:200'],
-            'opportunities.*' => ['integer', 'min:1'],
+            'opportunities' => ['bail', 'required', 'array', 'min:1', 'max:200'],
+            'opportunities.*' => ['bail', 'integer', 'min:1'],
             'decision' => ['required', Rule::in(['approve', 'reject'])],
-            'reason' => ['nullable', 'string', 'max:500'],
+            'reason' => ['bail', 'nullable', 'string', 'max:500'],
         ]);
 
         $result = $this->moderationService->bulkReview(
@@ -90,7 +90,7 @@ class ModerationController extends Controller
     public function reject(Request $request, int $id)
     {
         $data = $request->validate([
-            'reason' => ['required', 'string', 'max:500'],
+            'reason' => ['bail', 'required', 'string', 'max:500'],
         ]);
 
         try {

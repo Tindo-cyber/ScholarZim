@@ -80,7 +80,11 @@ class OpportunityController extends Controller
         $this->authorize('create', Opportunity::class);
 
         $request->validate([
-            'title' => ['required', 'string', 'max:255'],
+            'title' => ['bail', 'required', 'string', 'max:255'],
+            'subject_requirements' => ['nullable', 'array'],
+            'subject_requirements.*.qualification_id' => ['nullable', 'integer', 'exists:academic_qualifications,id'],
+            'subject_requirements.*.subject_id' => ['nullable', 'integer', 'exists:academic_subjects,id'],
+            'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
         ], [
             'title.required' => 'Give the draft a title, so you can find it again.',
         ]);

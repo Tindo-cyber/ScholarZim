@@ -86,8 +86,8 @@ class StoreOpportunityRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'title' => ['required', 'string', 'max:255'],
-            'description' => ['required', 'string', 'max:10000'],
+            'title' => ['bail', 'required', 'string', 'max:255'],
+            'description' => ['bail', 'required', 'string', 'max:10000'],
             'provider_display_name' => ['nullable', 'string', 'max:255'],
             'country' => ['nullable', Rule::in(FormOptions::countries())],
             'education_level' => ['nullable', Rule::in(EducationLevel::TARGET_LEVELS)],
@@ -99,15 +99,15 @@ class StoreOpportunityRequest extends FormRequest
             'funding_type' => ['nullable', Rule::in(FormOptions::FUNDING_TYPES)],
             'deadline' => $this->deadlineRules(),
             // Digits with at most two decimals, written plainly: no exponent (1e3), sign (+5), bare dot (.5 or 5.) or three decimals.
-            'award_amount' => ['nullable', 'regex:/^\d{1,8}(\.\d{1,2})?$/'],
+            'award_amount' => ['bail', 'nullable', 'regex:/^\d{1,8}(\.\d{1,2})?$/'],
             'award_currency' => ['nullable', Rule::in(FormOptions::CURRENCIES)],
             // Required: a scholarship says how many students it will fund. A draft may omit it (ListingDraftService), but nothing
             // leaves draft - published, or sent for review - without it, because every such path validates here.
-            'award_slots' => ['required', 'regex:/^\d+$/', 'integer', 'min:1', 'max:5000'],
+            'award_slots' => ['bail', 'required', 'regex:/^\d+$/', 'integer', 'min:1', 'max:5000'],
             'is_renewable' => ['nullable', 'boolean'],
-            'external_url' => ['nullable', 'string', 'url:http,https', 'max:500'],
-            'min_academic_points' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:1', 'max:' . AcademicCatalogue::maxZimsecALevelPoints()],
-            'max_age' => ['nullable', 'regex:/^\d+$/', 'integer', 'min:' . EducationLevel::MINIMUM_APPLICANT_AGE, 'max:99'],
+            'external_url' => ['bail', 'nullable', 'string', 'url:http,https', 'max:500'],
+            'min_academic_points' => ['bail', 'nullable', 'regex:/^\d+$/', 'integer', 'min:1', 'max:' . AcademicCatalogue::maxZimsecALevelPoints()],
+            'max_age' => ['bail', 'nullable', 'regex:/^\d+$/', 'integer', 'min:' . EducationLevel::MINIMUM_APPLICANT_AGE, 'max:99'],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), free text for the same reason
             // the applicant's own locality field is - no fixed list of every
@@ -117,7 +117,7 @@ class StoreOpportunityRequest extends FormRequest
             'requires_results_certificate' => ['nullable', 'boolean'],
             'subject_requirements' => ['nullable', 'array'],
             'subject_requirements.*.qualification_id' => ['required', 'integer', 'exists:academic_qualifications,id'],
-            'subject_requirements.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
+            'subject_requirements.*.subject_id' => ['bail', 'required', 'integer', 'exists:academic_subjects,id'],
             'subject_requirements.*.minimum_grade' => ['nullable', 'string', 'max:20'],
             // What the listing is open to. Checked as a whole in checkScope().
             'scope_programmes' => ['nullable', 'array'],
@@ -129,7 +129,7 @@ class StoreOpportunityRequest extends FormRequest
             'custom_institutions.*.name' => ['nullable', 'string', 'max:300'],
             'custom_institutions.*.country' => ['nullable', 'string', 'max:100'],
             'programme_suggestion' => ['nullable', 'string', 'max:200'],
-            'programme_suggestion_field' => ['nullable', 'integer'],
+            'programme_suggestion_field' => ['nullable', 'integer', 'exists:fields,id'],
             // The answer to "who is this open to?" - required at Certificate level and above, checked in checkScope().
             'open_to' => ['nullable', Rule::in(ListingScopes::OPEN_ANSWERS)],
             'institutions_open_to' => ['nullable', Rule::in([ListingScopes::INSTITUTIONS_CHOSEN, ListingScopes::INSTITUTIONS_ANY])],

@@ -39,16 +39,14 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        // A provider account created here uses full_name as an organisation
-        // or contact name ("Chikafu Education Trust"), the same field
-        // provider self-registration leaves unrestricted - the letters-only
-        // rule is a person-name rule and would reject a legitimate
-        // organisation name that happens to contain a digit.
+        // A provider account created here uses full_name as an organisation name ("Chikafu Education Trust"): free
+        // text, but it has to contain a letter, the same as at self-registration (UserValidationRules). The
+        // person-name rule would reject a legitimate organisation name that happens to contain a digit.
         $isProvider = $request->input('role_name') === RoleNames::PROVIDER;
 
         $nameRule = $isProvider
-            ? ['required', 'string', 'max:255']
-            : ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN];
+            ? \App\Support\UserValidationRules::organisationName()
+            : \App\Support\UserValidationRules::personName();
 
         // Same reasoning as the name rule above: a provider account's phone
         // is a work/organisation number, international and possibly a
@@ -61,8 +59,8 @@ class UserController extends Controller
             'full_name' => $nameRule,
             'email' => [...\App\Rules\EmailAddress::rules(), 'unique:users,email'],
             'phone' => $phoneRule,
-            'role_name' => ['required', Rule::in(RoleNames::ALL)],
-            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'role_name' => ['bail', 'required', Rule::in(RoleNames::ALL)],
+            'password' => \App\Support\UserValidationRules::password(),
         ]);
 
         $user = $this->adminUserService->createUser($data, $request->user());
@@ -88,7 +86,7 @@ class UserController extends Controller
 
     public function rejectProvider(Request $request, int $id)
     {
-        $data = $request->validate(['reason' => ['required', 'string', 'max:500']]);
+        $data = $request->validate(['reason' => ['bail', 'required', 'string', 'max:500']]);
 
         try {
             $user = $this->adminUserService->rejectProvider($id, $request->user(), $data['reason']);

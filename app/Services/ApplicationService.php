@@ -330,6 +330,8 @@ class ApplicationService
      */
     public function submit(int $opportunityId, User $user, array $data, ?UploadedFile $document = null, array $profileDocuments = []): Application
     {
+        $this->assertSubmissionInput($data, $document, $profileDocuments);
+
         $opportunity = Opportunity::find($opportunityId);
 
         // An unapproved post is treated as non-existent rather than forbidden, so
@@ -381,12 +383,23 @@ class ApplicationService
         // real rather than advisory - a direct POST cannot buy its way past a
         // pathway rule, a minimum level, or any other stated requirement just
         // because the frontend happened not to enforce it.
-        $unmet = $this->eligibilityEvaluator->unmetReasons($profile, $opportunity, AcademicRecord::fromProfile($profile));
+        //
+        // A failure and a requirement that could not be checked are different things: the first is the applicant's answer
+        // and nothing they fill in repairs it; the second is "add this to your profile", and is reported as an incomplete
+        // profile so the applicant is sent to fix it rather than told they do not qualify.
+        $record = AcademicRecord::fromProfile($profile);
+        $failures = $this->eligibilityEvaluator->failureMessages($profile, $opportunity, $record);
 
-        if ($unmet !== []) {
+        if ($failures !== []) {
             throw new RuntimeException(
-                "You do not meet this scholarship's requirements: " . implode(' ', $unmet)
+                "You do not meet this scholarship's requirements: " . implode(' ', $failures)
             );
+        }
+
+        $pending = $this->eligibilityEvaluator->pendingMessages($profile, $opportunity, $record);
+
+        if ($pending !== []) {
+            throw ProfileIncompleteException::forPendingRequirements($pending);
         }
 
         // Every document this applicant and this scholarship require, from the same checklist the profile and the
@@ -757,9 +770,7 @@ class ApplicationService
             throw new ProfileIncompleteException($otherwiseMissing);
         }
 
-        $refused = \App\Services\ScholarFit\RequirementOutcome::failureMessages(
-            $this->eligibilityEvaluator->evaluate($profile, $opportunity, AcademicRecord::fromProfile($profile))
-        );
+        $refused = $this->eligibilityEvaluator->failureMessages($profile, $opportunity, AcademicRecord::fromProfile($profile));
 
         if ($refused !== []) {
             throw new RuntimeException("You do not meet this scholarship's requirements: " . implode(' ', $refused));
@@ -780,6 +791,42 @@ class ApplicationService
         }
 
         return $this->profileService->forUser($user);
+    }
+
+    /**
+     * The shape of what a caller hands to submit(), checked again here.
+     *
+     * The controller validates the request, but quickApply(), a command or any future caller reaches this service directly,
+     * and a service that trusted its arguments would store whatever it was given. Only the shape is judged here: the
+     * personal statement is text within the form's length cap (or absent, as in a one-click apply; its minimum is the wizard's
+     * rule, in the controller), the application document and
+     * each profile document are real uploads of an accepted type and size, and a profile document is one of the types the
+     * profile actually has a slot for. Eligibility, documents required and guardian checks are unchanged and run after.
+     *
+     * @param  array<string, mixed>  $profileDocuments
+     *
+     * @throws ValidationException
+     */
+    private function assertSubmissionInput(array $data, ?UploadedFile $document, array $profileDocuments): void
+    {
+        $file = ['file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'];
+
+        $rules = [
+            'personal_statement' => ['bail', 'nullable', 'string', 'max:5000'],
+            'document' => ['nullable', ...$file],
+        ];
+        $input = ['personal_statement' => $data['personal_statement'] ?? null, 'document' => $document];
+
+        foreach ($profileDocuments as $type => $upload) {
+            if (! is_string($type) || ! array_key_exists($type, ApplicantProfile::DOCUMENT_TYPES)) {
+                throw ValidationException::withMessages(['documents' => 'That is not a document this profile holds.']);
+            }
+
+            $rules["documents.$type"] = ['bail', 'required', ...$file];
+            $input['documents'][$type] = $upload;
+        }
+
+        \Illuminate\Support\Facades\Validator::make($input, $rules)->validate();
     }
 
     private function reapplicationRefusal(Application $existing): string
