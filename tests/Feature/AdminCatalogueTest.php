@@ -39,7 +39,7 @@ class AdminCatalogueTest extends TestCase
         $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
         $student = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
 
-        foreach (['', '/programmes', '/programmes/create', '/fields', '/institutions', '/pending', '/export/programmes.csv'] as $path) {
+        foreach (['', '/programmes', '/programmes/create', '/fields', '/institutions', '/pending', '/field-reviews', '/export/programmes.csv'] as $path) {
             $this->flushSession();
             $this->app['auth']->forgetGuards();
             $this->get('/admin/catalogue' . $path)->assertRedirect('/login');

@@ -60,7 +60,7 @@ code,name,parent_code,level,kind,selectable,display_name,synonyms
 0314,Sociology and cultural studies,031,detailed,official,1,,sociology;anthropology;gender studies;development studies;cultural studies;social studies;demography
 0319,Social and behavioural sciences not elsewhere classified,031,detailed,not_elsewhere_classified,0,,
 0320,Journalism and information not further defined,032,detailed,not_further_defined,0,,
-0321,Journalism and reporting,032,detailed,official,1,,media studies;mass communication;communication;journalism;public relations;broadcasting;reporting
+0321,Journalism and reporting,032,detailed,official,1,,media studies;mass communication;communication;journalism;broadcasting;reporting
 0322,"Library, information and archival studies",032,detailed,official,1,,records management;archives;information science;library science;knowledge management;records and archives
 0329,Journalism and information not elsewhere classified,032,detailed,not_elsewhere_classified,0,,
 0388,"Inter-disciplinary programmes and qualifications involving social sciences, journalism and information",038,detailed,interdisciplinary,0,,
@@ -94,7 +94,7 @@ code,name,parent_code,level,kind,selectable,display_name,synonyms
 059,"Natural sciences, mathematics and statistics not elsewhere classified",05,narrow,not_elsewhere_classified,0,,
 0500,"Natural sciences, mathematics and statistics not further defined",050,detailed,not_further_defined,0,,
 0510,Biological and related sciences not further defined,051,detailed,not_further_defined,0,,
-0511,Biology,051,detailed,official,1,,biological sciences;zoology;botany;microbiology;genetics;biotechnology;ecology;biology
+0511,Biology,051,detailed,official,1,,biological sciences;zoology;botany;microbiology;genetics;biology
 0512,Biochemistry,051,detailed,official,1,,biochemistry;molecular biology;biotechnology
 0519,Biological and related sciences not elsewhere classified,051,detailed,not_elsewhere_classified,0,,
 0520,Environment not further defined,052,detailed,not_further_defined,0,,
@@ -129,7 +129,7 @@ code,name,parent_code,level,kind,selectable,display_name,synonyms
 079,"Engineering, manufacturing and construction not elsewhere classified",07,narrow,not_elsewhere_classified,0,,
 0700,"Engineering, manufacturing and construction not further defined",070,detailed,not_further_defined,0,,
 0710,Engineering and engineering trades not further defined,071,detailed,not_further_defined,0,,
-0711,Chemical engineering and processes,071,detailed,official,1,,chemical engineering;process engineering;metallurgy;petroleum engineering;chemical technology
+0711,Chemical engineering and processes,071,detailed,official,1,,chemical engineering;process engineering;petroleum engineering;chemical technology
 0712,Environmental protection technology,071,detailed,official,1,,environmental engineering;water treatment;pollution control;waste management;environmental technology
 0713,Electricity and energy,071,detailed,official,1,,electrical engineering;power engineering;renewable energy;energy engineering;solar;electricity
 0714,Electronics and automation,071,detailed,official,1,,electronic engineering;telecommunications;mechatronics;control engineering;instrumentation;computer engineering;automation;robotics

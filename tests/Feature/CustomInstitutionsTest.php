@@ -114,7 +114,7 @@ class CustomInstitutionsTest extends TestCase
         $this->create([
             'country' => 'Botswana',
             'open_to' => 'fields',
-            'scope_fields' => [$this->field('07')],
+            'scope_fields' => [$this->field('071')],
             'custom_institutions' => [$this->typed('University of Botswana'), $this->typed('Botswana Open University', 'South Africa')],
         ])->assertSessionHasNoErrors();
 
@@ -142,7 +142,7 @@ class CustomInstitutionsTest extends TestCase
         $this->create([
             'country' => 'United Kingdom',
             'open_to' => 'fields',
-            'scope_fields' => [$this->field('07')],
+            'scope_fields' => [$this->field('071')],
             'custom_institutions' => [$this->typed('University of Edinburgh', 'United Kingdom'), $this->typed('Imperial College London', 'United Kingdom')],
         ])->assertSessionHasNoErrors();
 

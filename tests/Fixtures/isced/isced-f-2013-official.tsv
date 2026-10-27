@@ -1,0 +1,217 @@
+# ISCED-F 2013 as published by the UNESCO Institute for Statistics (ISCED-F 2013 manual, Appendix I); 99/999/9999 (field unknown) excluded.
+00	Generic programmes and qualifications
+000	Generic programmes and qualifications not further defined
+0000	Generic programmes and qualifications not further defined
+001	Basic programmes and qualifications
+0011	Basic programmes and qualifications
+002	Literacy and numeracy
+0021	Literacy and numeracy
+003	Personal skills and development
+0031	Personal skills and development
+009	Generic programmes and qualifications not elsewhere classified
+0099	Generic programmes and qualifications not elsewhere classified
+01	Education
+011	Education
+0110	Education not further defined
+0111	Education science
+0112	Training for pre-school teachers
+0113	Teacher training without subject specialisation
+0114	Teacher training with subject specialisation
+0119	Education not elsewhere classified
+018	Inter-disciplinary programmes and qualifications involving education
+0188	Inter-disciplinary programmes and qualifications involving education
+02	Arts and humanities
+020	Arts and humanities not further defined
+0200	Arts and humanities not further defined
+021	Arts
+0210	Arts not further defined
+0211	Audio-visual techniques and media production
+0212	Fashion, interior and industrial design
+0213	Fine arts
+0214	Handicrafts
+0215	Music and performing arts
+0219	Arts not elsewhere classified
+022	Humanities (except languages)
+0220	Humanities (except languages) not further defined
+0221	Religion and theology
+0222	History and archaeology
+0223	Philosophy and ethics
+0229	Humanities (except languages) not elsewhere classified
+023	Languages
+0230	Languages not further defined
+0231	Language acquisition
+0232	Literature and linguistics
+0239	Languages not elsewhere classified
+028	Inter-disciplinary programmes and qualifications involving arts and humanities
+0288	Inter-disciplinary programmes and qualifications involving arts and humanities
+029	Arts and humanities not elsewhere classified
+0299	Arts and humanities not elsewhere classified
+03	Social sciences, journalism and information
+030	Social sciences, journalism and information not further defined
+0300	Social sciences, journalism and information not further defined
+031	Social and behavioural sciences
+0310	Social and behavioural sciences not further defined
+0311	Economics
+0312	Political sciences and civics
+0313	Psychology
+0314	Sociology and cultural studies
+0319	Social and behavioural sciences not elsewhere classified
+032	Journalism and information
+0320	Journalism and information not further defined
+0321	Journalism and reporting
+0322	Library, information and archival studies
+0329	Journalism and information not elsewhere classified
+038	Inter-disciplinary programmes and qualifications involving social sciences, journalism and information
+0388	Inter-disciplinary programmes and qualifications involving social sciences, journalism and information
+039	Social sciences, journalism and information not elsewhere classified
+0399	Social sciences, journalism and information not elsewhere classified
+04	Business, administration and law
+040	Business, administration and law not further defined
+0400	Business, administration and law not further defined
+041	Business and administration
+0410	Business and administration not further defined
+0411	Accounting and taxation
+0412	Finance, banking and insurance
+0413	Management and administration
+0414	Marketing and advertising
+0415	Secretarial and office work
+0416	Wholesale and retail sales
+0417	Work skills
+0419	Business and administration not elsewhere classified
+042	Law
+0421	Law
+048	Inter-disciplinary programmes and qualifications involving business, administration and law
+0488	Inter-disciplinary programmes and qualifications involving business, administration and law
+049	Business, administration and law not elsewhere classified
+0499	Business, administration and law not elsewhere classified
+05	Natural sciences, mathematics and statistics
+050	Natural sciences, mathematics and statistics not further defined
+0500	Natural sciences, mathematics and statistics not further defined
+051	Biological and related sciences
+0510	Biological and related sciences not further defined
+0511	Biology
+0512	Biochemistry
+0519	Biological and related sciences not elsewhere classified
+052	Environment
+0520	Environment not further defined
+0521	Environmental sciences
+0522	Natural environments and wildlife
+0529	Environment not elsewhere classified
+053	Physical sciences
+0530	Physical sciences not further defined
+0531	Chemistry
+0532	Earth sciences
+0533	Physics
+0539	Physical sciences not elsewhere classified
+054	Mathematics and statistics
+0540	Mathematics and statistics not further defined
+0541	Mathematics
+0542	Statistics
+058	Inter-disciplinary programmes and qualifications involving natural sciences, mathematics and statistics
+0588	Inter-disciplinary programmes and qualifications involving natural sciences, mathematics and statistics
+059	Natural sciences, mathematics and statistics not elsewhere classified
+0599	Natural sciences, mathematics and statistics not elsewhere classified
+06	Information and Communication Technologies (ICTs)
+061	Information and Communication Technologies (ICTs)
+0610	Information and Communication Technologies (ICTs) not further defined
+0611	Computer use
+0612	Database and network design and administration
+0613	Software and applications development and analysis
+0619	Information and Communication Technologies (ICTs) not elsewhere classified
+068	Inter-disciplinary programmes and qualifications involving Information and Communication Technologies (ICTs)
+0688	Inter-disciplinary programmes and qualifications involving Information and Communication Technologies (ICTs)
+07	Engineering, manufacturing and construction
+070	Engineering, manufacturing and construction not further defined
+0700	Engineering, manufacturing and construction not further defined
+071	Engineering and engineering trades
+0710	Engineering and engineering trades not further defined
+0711	Chemical engineering and processes
+0712	Environmental protection technology
+0713	Electricity and energy
+0714	Electronics and automation
+0715	Mechanics and metal trades
+0716	Motor vehicles, ships and aircraft
+0719	Engineering and engineering trades not elsewhere classified
+072	Manufacturing and processing
+0720	Manufacturing and processing not further defined
+0721	Food processing
+0722	Materials (glass, paper, plastic and wood)
+0723	Textiles (clothes, footwear and leather)
+0724	Mining and extraction
+0729	Manufacturing and processing not elsewhere classified
+073	Architecture and construction
+0730	Architecture and construction not further defined
+0731	Architecture and town planning
+0732	Building and civil engineering
+078	Inter-disciplinary programmes and qualifications involving engineering, manufacturing and construction
+0788	Inter-disciplinary programmes and qualifications involving engineering, manufacturing and construction
+079	Engineering, manufacturing and construction not elsewhere classified
+0799	Engineering, manufacturing and construction not elsewhere classified
+08	Agriculture, forestry, fisheries and veterinary
+080	Agriculture, forestry, fisheries and veterinary not further defined
+0800	Agriculture, forestry, fisheries and veterinary not further defined
+081	Agriculture
+0810	Agriculture not further defined
+0811	Crop and livestock production
+0812	Horticulture
+0819	Agriculture not elsewhere classified
+082	Forestry
+0821	Forestry
+083	Fisheries
+0831	Fisheries
+084	Veterinary
+0841	Veterinary
+088	Inter-disciplinary programmes and qualifications involving agriculture, forestry, fisheries and veterinary
+0888	Inter-disciplinary programmes and qualifications involving agriculture, forestry, fisheries and veterinary
+089	Agriculture, forestry, fisheries and veterinary not elsewhere classified
+0899	Agriculture, forestry, fisheries and veterinary not elsewhere classified
+09	Health and welfare
+090	Health and welfare not further defined
+0900	Health and welfare not further defined
+091	Health
+0910	Health not further defined
+0911	Dental studies
+0912	Medicine
+0913	Nursing and midwifery
+0914	Medical diagnostic and treatment technology
+0915	Therapy and rehabilitation
+0916	Pharmacy
+0917	Traditional and complementary medicine and therapy
+0919	Health not elsewhere classified
+092	Welfare
+0920	Welfare not further defined
+0921	Care of the elderly and of disabled adults
+0922	Child care and youth services
+0923	Social work and counselling
+0929	Welfare not elsewhere classified
+098	Inter-disciplinary programmes and qualifications involving health and welfare
+0988	Inter-disciplinary programmes and qualifications involving health and welfare
+099	Health and welfare not elsewhere classified
+0999	Health and welfare not elsewhere classified
+10	Services
+100	Services not further defined
+1000	Services not further defined
+101	Personal services
+1010	Personal services not further defined
+1011	Domestic services
+1012	Hair and beauty services
+1013	Hotel, restaurants and catering
+1014	Sports
+1015	Travel, tourism and leisure
+1019	Personal services not elsewhere classified
+102	Hygiene and occupational health services
+1020	Hygiene and occupational health services not further defined
+1021	Community sanitation
+1022	Occupational health and safety
+1029	Hygiene and occupational health services not elsewhere classified
+103	Security services
+1030	Security services not further defined
+1031	Military and defence
+1032	Protection of persons and property
+1039	Security services not elsewhere classified
+104	Transport services
+1041	Transport services
+108	Inter-disciplinary programmes and qualifications involving services
+1088	Inter-disciplinary programmes and qualifications involving services
+109	Services not elsewhere classified
+1099	Services not elsewhere classified

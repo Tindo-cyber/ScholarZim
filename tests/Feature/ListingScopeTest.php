@@ -96,11 +96,11 @@ class ListingScopeTest extends TestCase
         }
     }
 
-    public function test_a_broad_field_is_a_valid_choice(): void
+    public function test_a_narrow_field_is_a_valid_choice(): void
     {
-        $this->create(['scope_fields' => [$this->field('07')]])->assertSessionHasNoErrors();
+        $this->create(['scope_fields' => [$this->field('071')]])->assertSessionHasNoErrors();
 
-        $this->assertSame($this->field('07'), $this->listing()->scopes->first()->field_id);
+        $this->assertSame($this->field('071'), $this->listing()->scopes->first()->field_id);
     }
 
     public function test_choosing_nothing_means_open_to_anyone(): void
@@ -138,7 +138,7 @@ class ListingScopeTest extends TestCase
     public function test_school_level_awards_cannot_be_narrowed_to_programmes(): void
     {
         foreach ([EducationLevel::FORM_1, EducationLevel::O_LEVEL, EducationLevel::A_LEVEL] as $level) {
-            $this->create(['education_level' => $level, 'scope_fields' => [$this->field('07')]])
+            $this->create(['education_level' => $level, 'scope_fields' => [$this->field('071')]])
                 ->assertSessionHasErrors('scope_fields');
         }
     }
@@ -146,7 +146,7 @@ class ListingScopeTest extends TestCase
     public function test_when_the_page_script_has_hidden_the_picker_a_stale_choice_is_dropped(): void
     {
         $this->create([
-            'education_level' => EducationLevel::O_LEVEL, 'level_driven' => '1', 'scope_fields' => [$this->field('07')],
+            'education_level' => EducationLevel::O_LEVEL, 'level_driven' => '1', 'scope_fields' => [$this->field('071')],
         ])->assertSessionHasNoErrors();
 
         $this->assertCount(0, $this->listing()->scopes);
@@ -243,7 +243,7 @@ class ListingScopeTest extends TestCase
     {
         $listing = $this->live();
 
-        $this->update($listing, ['scope_fields' => [$this->field('07')]])->assertSessionHasNoErrors();
+        $this->update($listing, ['scope_fields' => [$this->field('071')]])->assertSessionHasNoErrors();
 
         $this->assertTrue(OpportunityModerationStatus::isPending($listing->fresh()->moderation_status), 'who it is open to is material');
         $this->assertCount(1, $listing->fresh()->scopes);
@@ -307,7 +307,6 @@ class ListingScopeTest extends TestCase
 
         $this->assertMatchesRegularExpression('#id="scope-engineering-hint"[^>]*hidden#', $html);
         $this->assertStringContainsString('data-hint="engineering"', $html, 'the narrow option is what triggers it');
-        $this->assertStringContainsString('data-covers="engineering"', $html, 'the broad option is what cancels it');
     }
 
     public function test_the_hint_is_shown_on_a_saved_listing_that_chose_only_the_narrow_field(): void
@@ -318,12 +317,11 @@ class ListingScopeTest extends TestCase
 
         $this->assertDoesNotMatchRegularExpression('#id="scope-engineering-hint"[^>]*hidden#', $html);
         $this->assertStringContainsString('civil and mining engineering are not included', $html);
-        $this->assertStringContainsString('All of Engineering and construction', $html);
-    }
+            }
 
     public function test_the_hint_stays_hidden_when_the_broad_field_is_chosen_too(): void
     {
-        $listing = $this->live(['field_id' => $this->field('071')]);
+        $listing = $this->live(['field_id' => $this->field('07')]);
         OpportunityScope::create(['opportunity_id' => $listing->opportunity_id, 'field_id' => $this->field('07')]);
 
         $html = $this->actingAs($this->provider)->get('/opportunities/' . $listing->opportunity_id . '/edit')->getContent();
@@ -368,7 +366,7 @@ class ListingScopeTest extends TestCase
     public function test_the_preview_carries_the_scope(): void
     {
         $listing = ListingPreview::build($this->form([
-            'scope_fields' => [$this->field('07')], 'scope_institutions' => [$this->institution('MSU')],
+            'scope_fields' => [$this->field('071')], 'scope_institutions' => [$this->institution('MSU')],
         ]), $this->provider);
 
         $this->assertCount(2, $listing->scopes);

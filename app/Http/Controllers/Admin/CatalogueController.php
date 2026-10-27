@@ -68,7 +68,7 @@ class CatalogueController extends Controller
 
         if (filled($request->query('field'))) {
             $field = Field::find((int) $request->query('field'));
-            $ids = $field ? ($field->isBroad() ? $field->children()->pluck('id')->push($field->id)->all() : [$field->id]) : [];
+            $ids = $field ? $field->selfAndDescendantIds() : [];
             $query->whereIn('field_id', $ids);
         }
 
@@ -138,7 +138,9 @@ class CatalogueController extends Controller
     {
         // The institutions page needs these too; fields only needs `broad`.
         return view('admin.catalogue.fields', [
-            'broad' => Field::whereNull('parent_id')->with(['children' => fn ($q) => $q->withCount('programmes')->orderBy('code')])->orderBy('code')->get(),
+            'broad' => Field::whereNull('parent_id')->orderBy('code')->get(),
+            'below' => Field::whereNotNull('parent_id')->withCount('programmes')->orderBy('code')->get()->groupBy(fn (Field $f) => substr($f->code, 0, 2)),
+            'parents' => Field::whereIn('level', [Field::LEVEL_BROAD, Field::LEVEL_NARROW])->orderBy('code')->get(),
         ]);
     }
 
@@ -203,6 +205,38 @@ class CatalogueController extends Controller
             'targets' => Programme::inCatalogue()->whereIn('education_level', $pending->pluck('education_level')->unique())
                 ->orderBy('name')->get(['id', 'name', 'education_level'])->groupBy('education_level'),
         ]);
+    }
+
+    // ----------------------------------------------------------- field reviews --
+
+    /** Programmes whose name suggests a more exact field than the one they are filed under, waiting for a person. */
+    public function fieldReviews()
+    {
+        return view('admin.catalogue.field-reviews', [
+            'reviews' => \App\Models\ProgrammeFieldReview::where('status', \App\Models\ProgrammeFieldReview::PENDING)
+                ->with(['programme', 'from', 'to'])->orderByRaw("CASE confidence WHEN 'high' THEN 0 ELSE 1 END")->orderBy('id')->paginate(40),
+        ]);
+    }
+
+    public function acceptFieldReview(Request $request, \App\Services\Catalogue\ProgrammeReclassifier $reclassifier, int $id)
+    {
+        $review = \App\Models\ProgrammeFieldReview::where('status', \App\Models\ProgrammeFieldReview::PENDING)->with(['programme.field', 'to'])->findOrFail($id);
+
+        $reclassifier->apply($review->programme, [
+            'to' => $review->to, 'from' => $review->programme->field, 'reason' => 'Confirmed by an administrator: ' . $review->reason,
+        ], $request->user()->email);
+
+        return back()->with('successMessage', '"' . $review->programme->name . '" is now filed under ' . $review->to->code . ' ' . $review->to->label() . '.');
+    }
+
+    public function dismissFieldReview(Request $request, int $id)
+    {
+        $review = \App\Models\ProgrammeFieldReview::where('status', \App\Models\ProgrammeFieldReview::PENDING)->with('programme')->findOrFail($id);
+        $review->update(['status' => \App\Models\ProgrammeFieldReview::DISMISSED, 'decided_by' => $request->user()->email, 'decided_at' => now()]);
+
+        $this->audit->log($request->user()->email, AuditAction::CATALOGUE_CHANGED, 'Programme', $review->programme_id, 'Kept in its field: dismissed the proposal to file it under ' . $review->to_field_id);
+
+        return back()->with('successMessage', 'Kept as it is.');
     }
 
     public function approve(Request $request, int $id)
@@ -419,7 +453,7 @@ class CatalogueController extends Controller
     /** @return \Illuminate\Support\Collection<int, Field> narrow fields, with their broad parent loaded */
     private function fieldOptions()
     {
-        return Field::with('parent')->whereNotNull('parent_id')->orderBy('code')->get();
+        return Field::with('parent.parent')->whereNotNull('parent_id')->orderBy('code')->get();
     }
 
     /** @return array<string, mixed> */
@@ -428,18 +462,49 @@ class CatalogueController extends Controller
         $data = $request->validate([
             'code' => ['required', 'regex:/^\d{2,4}$/', Rule::unique('fields', 'code')->ignore($existing?->id)],
             'name' => ['required', 'string', 'max:150'],
-            'parent_id' => ['nullable', 'integer', Rule::exists('fields', 'id')->whereNull('parent_id')],
+            'parent_id' => ['nullable', 'integer', Rule::exists('fields', 'id')->whereIn('level', [Field::LEVEL_BROAD, Field::LEVEL_NARROW])],
+            'display_name' => ['nullable', 'string', 'max:100'],
+            'is_selectable' => ['nullable', 'boolean'],
+            'is_active' => ['nullable', 'boolean'],
         ]);
+
+        $data['name'] = $this->cleanName($data['name']);
+
+        // An edit that does not mention the parent leaves the field where it is.
+        if ($existing !== null && ! $request->has('parent_id')) {
+            $data['parent_id'] = $existing->parent_id;
+        }
+
+        $length = strlen($data['code']);
+
+        if (blank($data['parent_id'] ?? null) && $length !== 2) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['parent_id' => 'A field with no parent is a broad field, whose code has 2 digits. Choose the field this one is inside.']);
+        }
 
         if (filled($data['parent_id'] ?? null)) {
             $parent = Field::find($data['parent_id']);
+            $expected = strlen($parent->code) + 1;
 
-            if (! str_starts_with($data['code'], $parent->code) || strlen($data['code']) <= strlen($parent->code)) {
-                throw \Illuminate\Validation\ValidationException::withMessages(['code' => 'A narrow field\'s code must start with its broad field\'s code (' . $parent->code . ').']);
+            if (! str_starts_with($data['code'], $parent->code) || $length !== $expected) {
+                throw \Illuminate\Validation\ValidationException::withMessages(['code' => 'A field inside ' . $parent->code . ' has a ' . $expected . '-digit code that starts with ' . $parent->code . '.']);
             }
         }
 
-        $data['name'] = $this->cleanName($data['name']);
+        // Only what the form sent is changed: a rename must not switch a field off.
+        foreach (['is_selectable', 'is_active'] as $flag) {
+            if ($request->has($flag)) {
+                $data[$flag] = $request->boolean($flag);
+            } else {
+                unset($data[$flag]);
+            }
+        }
+
+        if ($request->has('display_name')) {
+            $data['display_name'] = filled($data['display_name'] ?? null) ? $this->cleanName($data['display_name']) : null;
+        } else {
+            unset($data['display_name']);
+        }
+
         $data['parent_id'] = filled($data['parent_id'] ?? null) ? (int) $data['parent_id'] : null;
 
         return $data;

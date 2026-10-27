@@ -341,7 +341,7 @@ class StoreOpportunityRequest extends FormRequest
             }
         }
 
-        foreach (app(ListingScopes::class)->problems($this->all(), $this->targetLevel($errors), $this->user()) as $key => $message) {
+        foreach (app(ListingScopes::class)->problems($this->all(), $this->targetLevel($errors), $this->user(), $this->keptFieldIds()) as $key => $message) {
             $errors->add($key, $message);
         }
 
@@ -354,6 +354,14 @@ class StoreOpportunityRequest extends FormRequest
                 $errors->add($key, $message);
             }
         }
+    }
+
+    /** The fields an edited listing already has, which stay valid even if the catalogue has since retired them. */
+    private function keptFieldIds(): array
+    {
+        $id = $this->route('id');
+
+        return $id === null ? [] : \App\Models\OpportunityScope::where('opportunity_id', $id)->whereNotNull('field_id')->pluck('field_id')->map(fn ($i) => (int) $i)->all();
     }
 
     private function targetLevel($errors): ?string

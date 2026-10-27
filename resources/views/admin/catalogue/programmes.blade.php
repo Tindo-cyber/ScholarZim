@@ -30,7 +30,7 @@
             <label class="visually-hidden" for="field">Field</label>
             <select class="form-select" id="field" name="field">
                 <option value="">Any field</option>
-                @foreach($fields->groupBy(fn ($f) => $f->parent->name) as $broad => $narrow)
+                @foreach($fields->groupBy(fn ($f) => ($f->parent->parent ?? $f->parent)->name) as $broad => $narrow)
                     <optgroup label="{{ $broad }}">
                         @foreach($narrow as $field)
                             <option value="{{ $field->id }}" @selected((int) request('field') === $field->id)>{{ $field->name }}</option>

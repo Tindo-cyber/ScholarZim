@@ -289,31 +289,37 @@ class Field extends Model
     }
 
     /**
-     * The fields as a picker lists them: one group per broad field, "All of X" first, then its narrow fields.
+     * The fields as a picker lists them: one group per broad field, then the fields under it that a provider may choose.
+     *
+     * The classification has three levels, so a group lists the choosable narrow and detailed fields beneath its broad
+     * field (a detailed field shows the narrow field it sits in). A field that only heads a mixed set (Business,
+     * administration and law is not one discipline) is not itself offered; its disciplines are. A choosable field that has
+     * choosable fields under it reads "All of X", and choosing it covers them. Business and Law sit under the same broad
+     * heading but are separate choices.
      *
      * A broad field with a single narrow field of the same name (Education, ICT) would list the same word
      * twice, as "All of Education" and "Education", so it is listed once. The one option stands for both: it
      * keeps whichever was saved, and is the narrow field when nothing was, which is the stricter reading.
      * The two cover exactly the same programmes, so nothing a listing or a student matches on changes.
      *
-     * @param  iterable<int, self>  $broads  broad fields with `children` loaded
+     * @param  iterable<int, self>  $broads  the broad fields to list
      * @param  array<int, int>  $selected  ids already chosen
      * @return array<int, array{label: string, options: array<int, array{id: int, label: string, search: string, selected: bool, code: string, broad: bool}>}>
      */
     public static function pickerGroups(iterable $broads, array $selected = []): array
     {
-        return self::buildGroups($broads, $selected);
+        return self::buildGroups($broads, $selected, null);
     }
 
     /**
      * The same picker, split by level and holding only the fields that have a programme at that level.
      *
      * Read from the catalogue itself (each programme's own field), so a level lists what it can actually be open to
-     * instead of every field there is. Field-wide targeting is unchanged: "All of X" and the narrow fields are still
-     * there wherever the level has programmes in them. A field already chosen on a saved listing that has none at that
-     * level is kept, in a group of its own at the listing's level, so editing never silently drops it.
+     * instead of every field there is. A field is listed when a programme at the level is filed in it or anywhere below
+     * it, so "All of Finance" is there once a Finance programme is. A field already chosen on a saved listing that has
+     * none at that level is kept, in a group of its own at the listing's level, so editing never silently drops it.
      *
-     * @param  iterable<int, self>  $broads  broad fields with `children` loaded
+     * @param  iterable<int, self>  $broads  the broad fields to list
      * @param  iterable<int, Programme>  $programmes  the catalogue's programmes (only approved, active ones count)
      * @param  array<int, int>  $selected  ids already chosen
      * @param  ?string  $keepAtLevel  the level a chosen field with no programmes there is filed under
@@ -321,6 +327,7 @@ class Field extends Model
      */
     public static function pickerGroupsByLevel(iterable $broads, iterable $programmes, array $selected = [], ?string $keepAtLevel = null): array
     {
+        $index = app(FieldIndex::class);
         $offered = [];
 
         foreach ($programmes as $programme) {
@@ -330,34 +337,17 @@ class Field extends Model
         }
 
         $groups = [];
-        $listed = [];
         $listedAtKeep = [];
 
         foreach (Programme::LEVELS as $level) {
-            $ids = $offered[$level] ?? [];
+            $present = self::withAncestors(array_keys($offered[$level] ?? []), $index);
 
-            if ($ids === []) {
+            if ($present === []) {
                 continue;
             }
 
-            $levelBroads = [];
-
-            foreach ($broads as $broad) {
-                $children = $broad->children->filter(fn (self $child) => isset($ids[$child->id]))->values();
-
-                if ($children->isEmpty() && ! isset($ids[$broad->id])) {
-                    continue;
-                }
-
-                $copy = clone $broad;
-                $copy->setRelation('children', $children);
-                $levelBroads[] = $copy;
-            }
-
-            foreach (self::buildGroups($levelBroads, $selected) as $group) {
+            foreach (self::buildGroups($broads, $selected, $present) as $group) {
                 foreach ($group['options'] as $option) {
-                    $listed[$option['id']] = true;
-
                     if ($level === ($keepAtLevel ?? Programme::LEVELS[0])) {
                         $listedAtKeep[$option['id']] = true;
                     }
@@ -372,19 +362,7 @@ class Field extends Model
         $orphans = array_values(array_filter($selected, fn (int $id) => ! isset($listedAtKeep[$id])));
 
         if ($orphans !== []) {
-            $kept = [];
-
-            foreach ($broads as $broad) {
-                $children = $broad->children->filter(fn (self $child) => in_array($child->id, $orphans, true))->values();
-
-                if ($children->isNotEmpty() || in_array($broad->id, $orphans, true)) {
-                    $copy = clone $broad;
-                    $copy->setRelation('children', $children);
-                    $kept[] = $copy;
-                }
-            }
-
-            foreach (self::buildGroups($kept, $selected) as $group) {
+            foreach (self::buildGroups($broads, $selected, self::withAncestors($orphans, $index), true) as $group) {
                 $group['options'] = array_values(array_filter($group['options'], fn (array $o) => $o['selected']));
 
                 if ($group['options'] !== []) {
@@ -396,52 +374,153 @@ class Field extends Model
         return $groups;
     }
 
-    private static function buildGroups(iterable $broads, array $selected): array
+    /**
+     * @param  array<int, int>  $ids
+     * @return array<int, int> the ids and everything above them, as a set keyed by id
+     */
+    private static function withAncestors(array $ids, FieldIndex $index): array
     {
+        $set = [];
+
+        foreach ($ids as $id) {
+            $set[$id] = $id;
+
+            foreach ($index->ancestorIds((int) $id) as $ancestor) {
+                $set[$ancestor] = $ancestor;
+            }
+        }
+
+        return $set;
+    }
+
+    /**
+     * @param  iterable<int, self>  $broads
+     * @param  array<int, int>  $selected
+     * @param  ?array<int, int>  $present  the ids (and their ancestors) to list, or null for every field
+     * @param  bool  $keepRetired  whether a field that is switched off or only a heading is still listed when it is chosen
+     */
+    private static function buildGroups(iterable $broads, array $selected, ?array $present, bool $keepRetired = false): array
+    {
+        $all = self::query()->orderBy('code')->get();
+        $byParent = $all->groupBy('parent_id');
         $groups = [];
 
         foreach ($broads as $broad) {
-            $children = $broad->children;
+            $nodes = [];
+            $walk = function (self $field) use (&$walk, &$nodes, $byParent, $present) {
+                foreach ($byParent->get($field->id, collect()) as $child) {
+                    if ($present === null || isset($present[$child->id])) {
+                        $nodes[] = $child;
+                        $walk($child);
+                    }
+                }
+            };
+            $walk($broad);
+
+            $usable = fn (self $f) => ($f->is_active && $f->is_selectable) || ($keepRetired && in_array($f->id, $selected, true));
+            $choosableUnder = fn (self $f) => collect($nodes)->filter(fn (self $n) => $n->parent_id === $f->id && $usable($n));
+            // A narrow field whose only choosable detailed field has the same name (Law, 042 and 0421) is listed once, as the
+            // narrow field, which covers exactly the same programmes.
+            $redundant = function (self $n) use ($choosableUnder, $all) {
+                $parent = $n->level === self::LEVEL_DETAILED ? $all->firstWhere('id', $n->parent_id) : null;
+
+                return $parent !== null && $choosableUnder($parent)->count() === 1 && mb_strtolower($n->label()) === mb_strtolower($parent->label());
+            };
+            $hasChoosableBelow = fn (self $f) => $choosableUnder($f)->reject($redundant)->isNotEmpty();
             $options = [];
 
-            if ($children->count() === 1 && mb_strtolower($children->first()->label()) === mb_strtolower($broad->label())) {
-                $narrow = $children->first();
+            $narrows = collect($nodes)->where('parent_id', $broad->id)->values();
+            $collapse = $narrows->count() === 1 && mb_strtolower($narrows->first()->label()) === mb_strtolower($broad->label())
+                && $usable($narrows->first());
+
+            if ($collapse) {
+                $narrow = $narrows->first();
                 $useBroad = in_array($broad->id, $selected, true) && ! in_array($narrow->id, $selected, true);
                 $chosen = $useBroad ? $broad : $narrow;
 
                 $options[] = [
                     'id' => $chosen->id,
                     'label' => $broad->label(),
-                    'search' => mb_strtolower($broad->label() . ' ' . $broad->name),
+                    'search' => mb_strtolower($broad->label() . ' ' . $broad->name . ' ' . $narrow->searchWords()),
                     'selected' => in_array($broad->id, $selected, true) || in_array($narrow->id, $selected, true),
                     'code' => $chosen->code,
                     'broad' => $useBroad,
                 ];
+                $skip = $narrow->id;
             } else {
-                $options[] = [
-                    'id' => $broad->id,
-                    'label' => 'All of ' . $broad->label(),
-                    'search' => mb_strtolower($broad->label() . ' ' . $broad->name),
-                    'selected' => in_array($broad->id, $selected, true),
-                    'code' => $broad->code,
-                    'broad' => true,
-                ];
+                $skip = null;
 
-                foreach ($children as $narrow) {
+                if ($usable($broad) && ($hasChoosableBelow($broad) || $keepRetired)) {
                     $options[] = [
-                        'id' => $narrow->id,
-                        'label' => $narrow->label(),
-                        'search' => mb_strtolower($narrow->label() . ' ' . $narrow->name . ' ' . $broad->label()),
-                        'selected' => in_array($narrow->id, $selected, true),
-                        'code' => $narrow->code,
-                        'broad' => false,
+                        'id' => $broad->id,
+                        'label' => 'All of ' . $broad->label(),
+                        'search' => mb_strtolower($broad->label() . ' ' . $broad->name . ' ' . $broad->searchWords()),
+                        'selected' => in_array($broad->id, $selected, true),
+                        'code' => $broad->code,
+                        'broad' => true,
                     ];
                 }
+            }
+
+            foreach ($nodes as $node) {
+                if ($node->id === $skip || ! $usable($node) || $redundant($node)) {
+                    continue;
+                }
+
+                $parent = $node->parent_id === $broad->id ? null : $all->firstWhere('id', $node->parent_id);
+
+                $options[] = [
+                    'id' => $node->id,
+                    'label' => ($hasChoosableBelow($node) ? 'All of ' : '') . $node->label(),
+                    'sub' => $parent?->label(),
+                    'search' => mb_strtolower($node->label() . ' ' . $node->name . ' ' . $node->code . ' ' . ($parent?->label() ?? '') . ' ' . $broad->label() . ' ' . $node->searchWords()),
+                    'selected' => in_array($node->id, $selected, true),
+                    'code' => $node->code,
+                    'broad' => false,
+                ];
             }
 
             $groups[] = ['label' => $broad->label(), 'options' => $options];
         }
 
         return $groups;
+    }
+
+    /**
+     * Where a programme can be filed, for the select a suggestion uses: the narrow and detailed fields (never a broad
+     * heading), grouped under their broad field, each labelled with the narrow field it sits in.
+     *
+     * @return array<int, array{label: string, fields: array<int, array{id: int, label: string}>}>
+     */
+    public static function filingOptions(): array
+    {
+        $all = self::query()->active()->orderBy('code')->get();
+        $names = $all->keyBy('id');
+        $groups = [];
+
+        foreach ($all->where('level', self::LEVEL_BROAD) as $broad) {
+            $fields = [];
+
+            foreach ($all as $field) {
+                if ($field->level === self::LEVEL_BROAD || ! str_starts_with($field->code, $broad->code)) {
+                    continue;
+                }
+
+                $parent = $field->level === self::LEVEL_DETAILED ? $names->get($field->parent_id) : null;
+                $fields[] = ['id' => $field->id, 'label' => $field->label() . ($parent ? ' (' . $parent->label() . ')' : '')];
+            }
+
+            if ($fields !== []) {
+                $groups[] = ['label' => $broad->label(), 'fields' => $fields];
+            }
+        }
+
+        return $groups;
+    }
+
+    /** The extra words people look a field up by (its synonyms), as one string for a picker's search. */
+    public function searchWords(): string
+    {
+        return implode(' ', (array) $this->synonyms);
     }
 }

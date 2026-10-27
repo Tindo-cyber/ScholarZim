@@ -458,9 +458,13 @@ class ListingScopes
     /**
      * Why a submission's choices cannot be saved, keyed by the form field. Empty when fine.
      *
+     * $keptFieldIds are fields the listing already has: a field retired or turned into a heading since is not taken away
+     * from a listing that was saved with it, but nobody can newly choose it.
+     *
+     * @param  array<int, int>  $keptFieldIds
      * @return array<string, string>
      */
-    public function problems(array $input, ?string $level, User $provider): array
+    public function problems(array $input, ?string $level, User $provider, array $keptFieldIds = []): array
     {
         $problems = [];
         $input = $this->answered($input);
@@ -523,11 +527,16 @@ class ListingScopes
             }
         }
 
-        $fields = Field::whereIn('id', $choices['fields'])->pluck('id')->all();
+        $fields = Field::whereIn('id', $choices['fields'])->get()->keyBy('id');
 
         foreach (array_values($choices['fields']) as $i => $id) {
-            if (! in_array($id, $fields, true)) {
+            $field = $fields->get($id);
+
+            if ($field === null) {
                 $problems["scope_fields.$i"] = 'That field does not exist.';
+            } elseif (! in_array($id, $keptFieldIds, true) && (! $field->is_active || ! $field->is_selectable)) {
+                $problems["scope_fields.$i"] = $field->label() . ' is '
+                    . ($field->is_active ? 'a heading only: choose one of the fields under it.' : 'no longer available.');
             }
         }
 

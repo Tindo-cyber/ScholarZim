@@ -47,7 +47,7 @@
                         <label class="visually-hidden" for="map-{{ $loop->index }}">Means</label>
                         <select class="form-select form-select-sm" id="map-{{ $loop->index }}" name="field_id" required>
                             <option value="">It means...</option>
-                            @foreach($fields->groupBy(fn ($f) => $f->parent->label()) as $broad => $narrow)
+                            @foreach($fields->groupBy(fn ($f) => ($f->parent->parent ?? $f->parent)->label()) as $broad => $narrow)
                                 <optgroup label="{{ $broad }}">
                                     @foreach($narrow as $field)
                                         <option value="{{ $field->id }}">{{ $field->label() }}</option>
