@@ -247,10 +247,10 @@
                                         <span>At least {{ $opportunity->min_academic_points }} ZIMSEC A-Level points (A=5, B=4, C=3, D=2, E=1).</span>
                                     </li>
                                 @endif
-                                @if($opportunity->max_age)
+                                @if($opportunity->min_age !== null || $opportunity->max_age !== null)
                                     <li class="d-flex gap-2 align-items-start">
                                         <x-icon name="check" :size="16" class="text-primary mt-1" />
-                                        <span>Aged {{ $opportunity->max_age }} or under.</span>
+                                        <span>Aged @if($opportunity->min_age !== null && $opportunity->max_age !== null){{ $opportunity->min_age }} to {{ $opportunity->max_age }}.@elseif($opportunity->min_age !== null){{ $opportunity->min_age }} or older.@else{{ $opportunity->max_age }} or under.@endif</span>
                                     </li>
                                 @endif
                                 @if($opportunity->required_province)

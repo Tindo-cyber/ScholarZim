@@ -238,6 +238,7 @@ class ListingDraftService
             'external_url' => $text('external_url', 'Application page link', 500),
             'min_academic_points' => $integer('min_academic_points', 'Minimum A-Level points', 0, 255),
             'max_age' => $integer('max_age', 'Maximum age', 0, 255),
+            'min_age' => $integer('min_age', 'Minimum age', 0, 255),
             'required_province' => $option('required_province', 'Required province', FormOptions::ZIMBABWE_PROVINCES, 'provinces'),
             'target_locality' => $text('target_locality', 'Target locality', 100),
             'target_settlement_type' => $option('target_settlement_type', 'Settlement type', SettlementType::ALL, 'settlement types'),

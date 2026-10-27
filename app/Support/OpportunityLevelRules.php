@@ -102,6 +102,38 @@ final class OpportunityLevelRules
             . ' awards: nobody younger than ' . $youngest . ' studies at that level, so nobody could qualify.';
     }
 
+    /** A floor above the ceiling: nobody could qualify. Only the two limits are compared; no per-level bound exists for a minimum. */
+    public static function minAgeProblem(?int $minAge, ?int $maxAge): ?string
+    {
+        if ($minAge === null || $maxAge === null || $minAge <= $maxAge) {
+            return null;
+        }
+
+        return 'The minimum age (' . $minAge . ') is above the maximum age (' . $maxAge
+            . '), so nobody could qualify. Raise the maximum or lower the minimum.';
+    }
+
+    /**
+     * How an age limit reads, written once for the eligibility message and the listing's own wording.
+     * The ceiling alone reads "25 and under" - the phrase ScholarFit has always used.
+     */
+    public static function ageRangeLabel(?int $minAge, ?int $maxAge): ?string
+    {
+        if ($minAge !== null && $maxAge !== null) {
+            return $minAge . ' to ' . $maxAge;
+        }
+
+        if ($minAge !== null) {
+            return $minAge . ' or older';
+        }
+
+        if ($maxAge !== null) {
+            return $maxAge . ' and under';
+        }
+
+        return null;
+    }
+
     /**
      * The lowest maximum age a listing can ask for at each target level (and with none chosen, under ''), for the form
      * to follow as the level changes. EducationLevel::minimumAge is the one source, so the form and the server agree.

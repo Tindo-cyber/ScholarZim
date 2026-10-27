@@ -65,8 +65,8 @@ final class ListingReading
             $add(($requirement->subject?->name ?? 'A subject') . $grade . ' (' . ($requirement->qualification?->name ?? 'results') . ')');
         }
 
-        if ($listing->max_age !== null) {
-            $add('Aged ' . $listing->max_age . ' or under when applications close');
+        if ($listing->max_age !== null || $listing->min_age !== null) {
+            $add('Aged ' . \App\Support\OpportunityLevelRules::ageRangeLabel($listing->min_age, $listing->max_age) . ' when applications close');
         }
 
         if (filled($listing->required_province)) {

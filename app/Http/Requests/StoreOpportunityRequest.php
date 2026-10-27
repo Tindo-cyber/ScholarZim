@@ -108,6 +108,7 @@ class StoreOpportunityRequest extends FormRequest
             'external_url' => ['bail', 'nullable', 'string', 'url:http,https', 'max:500'],
             'min_academic_points' => ['bail', 'nullable', 'regex:/^\d+$/', 'integer', 'min:1', 'max:' . AcademicCatalogue::maxZimsecALevelPoints()],
             'max_age' => ['bail', 'nullable', 'regex:/^\d+$/', 'integer', 'min:' . EducationLevel::MINIMUM_APPLICANT_AGE, 'max:99'],
+            'min_age' => ['bail', 'nullable', 'regex:/^\d+$/', 'integer', 'min:' . EducationLevel::MINIMUM_APPLICANT_AGE, 'max:99'],
             'required_province' => ['nullable', Rule::in(FormOptions::ZIMBABWE_PROVINCES)],
             // A specific place (e.g. "Gweru"), free text for the same reason
             // the applicant's own locality field is - no fixed list of every
@@ -162,6 +163,11 @@ class StoreOpportunityRequest extends FormRequest
             'max_age.max' => 'The maximum age cannot be more than 99.',
             'max_age.regex' => 'Enter the maximum age as a whole number, for example 25.',
             'max_age.integer' => 'Enter the maximum age as a whole number, for example 25.',
+            'min_age.min' => 'The minimum age must be at least ' . EducationLevel::MINIMUM_APPLICANT_AGE
+                . ' because ScholarZim applicants must be at least ' . EducationLevel::MINIMUM_APPLICANT_AGE . ' years old.',
+            'min_age.max' => 'The minimum age cannot be more than 99.',
+            'min_age.regex' => 'Enter the minimum age as a whole number, for example 18.',
+            'min_age.integer' => 'Enter the minimum age as a whole number, for example 18.',
         ];
     }
 
@@ -234,6 +240,16 @@ class StoreOpportunityRequest extends FormRequest
 
         if ($problem = OpportunityLevelRules::maxAgeProblem($maxAge, $target)) {
             $errors->add('max_age', $problem);
+        }
+
+        $minAge = $errors->has('min_age') || ! filled($this->input('min_age'))
+            ? null : (int) $this->input('min_age');
+
+        $maxAgeForRange = $errors->has('max_age') || ! filled($this->input('max_age'))
+            ? null : (int) $this->input('max_age');
+
+        if ($problem = OpportunityLevelRules::minAgeProblem($minAge, $maxAgeForRange)) {
+            $errors->add('min_age', $problem);
         }
 
         $points = $errors->has('min_academic_points') || ! filled($this->input('min_academic_points'))

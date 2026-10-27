@@ -54,6 +54,7 @@ class Opportunity extends Model
         'external_url',
         'min_academic_points',
         'max_age',
+        'min_age',
         'required_province',
         'target_locality',
         'target_settlement_type',
@@ -78,6 +79,7 @@ class Opportunity extends Model
         'is_renewable' => 'boolean',
         'min_academic_points' => 'integer',
         'max_age' => 'integer',
+        'min_age' => 'integer',
         'requires_results_certificate' => 'boolean',
         'open_to_all_programmes' => 'boolean',
         'any_institution' => 'boolean',
@@ -540,6 +542,7 @@ class Opportunity extends Model
     {
         return $this->min_academic_points !== null
             || $this->max_age !== null
+            || $this->min_age !== null
             || filled($this->required_province)
             || filled($this->target_locality)
             || filled($this->minimum_education_level)
