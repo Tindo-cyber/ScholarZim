@@ -5,6 +5,7 @@
         'fields' => ['Fields', route('admin.catalogue.fields')],
         'institutions' => ['Institutions', route('admin.catalogue.institutions')],
         'pending' => ['Waiting for approval', route('admin.catalogue.pending')],
+        'reviews' => ['Field reviews', route('admin.catalogue.fieldReviews')],
         'old' => ['Old values', route('admin.catalogue.oldValues')],
     ];
 @endphp
