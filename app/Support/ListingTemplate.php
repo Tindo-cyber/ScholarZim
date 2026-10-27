@@ -45,6 +45,7 @@ final class ListingTemplate
         'external_url',
         'min_academic_points',
         'max_age',
+        'min_age',
         'required_province',
         'target_locality',
         'target_settlement_type',

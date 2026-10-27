@@ -22,7 +22,7 @@
     // The lowest maximum age anyone could meet at the level chosen above; level-form.js keeps it in step.
     $minAge = \App\Support\EducationLevel::minimumAge(old('education_level', $opportunity?->education_level));
 
-    $advancedKeys = ['max_age', 'required_province', 'target_locality', 'target_settlement_type', 'min_academic_points', 'minimum_education_level'];
+    $advancedKeys = ['min_age', 'max_age', 'required_province', 'target_locality', 'target_settlement_type', 'min_academic_points', 'minimum_education_level'];
 
     $advancedOpen = collect($advancedKeys)->contains(fn ($key) => filled(old($key, $value($key))))
         || (bool) old('requires_results_certificate', $value('requires_results_certificate', false))
@@ -127,6 +127,12 @@
                                :value="$value('minimum_education_level')"
                                placeholder="No extra minimum"
                                hint="Only set this if your listing is stricter than the general pathway - for example, an Undergraduate award that requires A-Level rather than accepting O-Level applicants directly." />
+            </div>
+            <div class="col-md-6">
+                <x-form.input name="min_age" label="Minimum age" type="number"
+                              :min="\App\Support\EducationLevel::MINIMUM_APPLICANT_AGE" max="99" step="1"
+                              :value="$value('min_age')"
+                              hint="The youngest an applicant can be. Leave blank for no lower limit." />
             </div>
             <div class="col-md-6">
                 <x-form.input name="max_age" label="Maximum age" type="number"

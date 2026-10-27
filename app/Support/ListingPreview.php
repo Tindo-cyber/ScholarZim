@@ -70,6 +70,7 @@ final class ListingPreview
             'external_url' => $text('external_url'),
             'min_academic_points' => $integer('min_academic_points'),
             'max_age' => $integer('max_age'),
+            'min_age' => $integer('min_age'),
             'required_province' => $oneOf('required_province', FormOptions::ZIMBABWE_PROVINCES),
             'target_locality' => $text('target_locality'),
             'target_settlement_type' => $text('target_settlement_type'),

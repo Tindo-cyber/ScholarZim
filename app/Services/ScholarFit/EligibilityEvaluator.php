@@ -550,9 +550,19 @@ final class EligibilityEvaluator
      */
     private function age(ApplicantProfile $profile, Opportunity $opportunity): ?RequirementOutcome
     {
-        if ($opportunity->max_age === null) {
+        $minAge = $opportunity->min_age;
+        $maxAge = $opportunity->max_age;
+
+        // An outcome is emitted whenever either limit is set - the pass as well as the fail - because that outcome is what
+        // makes a listing count as having stated requirements. Returning null for a floor alone would show "no specific
+        // requirements" to someone the submission then refuses.
+        if ($minAge === null && $maxAge === null) {
             return null;
         }
+
+        $label = \App\Support\OpportunityLevelRules::ageRangeLabel($minAge, $maxAge);
+        // A single limit is reported as that number, as it always was; a range has no single number, so it carries its label.
+        $required = ($minAge === null || $maxAge === null) ? ($maxAge ?? $minAge) : $label;
 
         $on = $opportunity->deadline !== null ? Carbon::parse($opportunity->deadline)->startOfDay() : \App\Support\Deadlines::today();
         $age = $profile->ageOn($on);
@@ -560,9 +570,9 @@ final class EligibilityEvaluator
         if ($age === null) {
             return RequirementOutcome::needsInfo(
                 RequirementOutcome::TYPE_AGE,
-                'Age: '.$opportunity->max_age.' and under required - add your date of birth so we can check it.',
+                'Age: '.$label.' required - add your date of birth so we can check it.',
                 ScholarFitFieldNames::DATE_OF_BIRTH,
-                required: $opportunity->max_age,
+                required: $required,
             );
         }
 
@@ -570,19 +580,19 @@ final class EligibilityEvaluator
             ? 'you will be '.$age.' when applications close on '.$on->format('d M Y')
             : 'you are '.$age;
 
-        if ($age > $opportunity->max_age) {
+        if (($minAge !== null && $age < $minAge) || ($maxAge !== null && $age > $maxAge)) {
             return RequirementOutcome::fail(
                 RequirementOutcome::TYPE_AGE,
-                'Age: '.$opportunity->max_age.' and under required, '.$when.'.',
-                required: $opportunity->max_age,
+                'Age: '.$label.' required, '.$when.'.',
+                required: $required,
                 actual: $age,
             );
         }
 
         return RequirementOutcome::pass(
             RequirementOutcome::TYPE_AGE,
-            'Age: '.$opportunity->max_age.' and under required, '.$when.'.',
-            required: $opportunity->max_age,
+            'Age: '.$label.' required, '.$when.'.',
+            required: $required,
             actual: $age,
         );
     }
