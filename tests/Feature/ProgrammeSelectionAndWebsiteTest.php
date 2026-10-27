@@ -183,8 +183,9 @@ class ProgrammeSelectionAndWebsiteTest extends TestCase
 
         $this->assertSame(1, substr_count($group[1], 'type="checkbox"'), 'Education is not offered as both "All of Education" and "Education"');
         $this->assertStringNotContainsString('All of Education', $picker[0]);
-        // A field with several narrow fields keeps its "All of ..." choice.
-        $this->assertStringContainsString('All of Engineering and construction', $picker[0]);
+        // A broad field that mixes disciplines is a heading only: its fields are offered, not "All of" it.
+        $this->assertStringNotContainsString('All of Engineering and construction', $picker[0]);
+        $this->assertStringContainsString('Electrical, mechanical and other engineering', $picker[0]);
     }
 
     public function test_the_picker_keeps_whichever_of_the_two_fields_was_saved(): void

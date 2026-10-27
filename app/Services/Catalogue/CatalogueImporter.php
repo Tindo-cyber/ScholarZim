@@ -41,7 +41,7 @@ class CatalogueImporter
 
     /** kind => columns, in file order. The first ones are required. */
     public const COLUMNS = [
-        self::FIELDS => ['code', 'name', 'parent_code', 'display_name'],
+        self::FIELDS => ['code', 'name', 'parent_code', 'display_name', 'level', 'kind', 'selectable', 'active', 'synonyms'],
         self::INSTITUTIONS => ['code', 'name', 'type', 'province'],
         self::PROGRAMMES => ['name', 'level', 'field_code', 'institutions', 'synonyms'],
     ];
@@ -167,8 +167,8 @@ class CatalogueImporter
 
     private function importFields(array $rows, ImportReport $report): void
     {
-        // Parents before children, whatever order the file lists them in; rows keep their
-        // original number for the report.
+        // Parents before children, whatever order the file lists them in: broad (2 digits), then narrow (3), then detailed
+        // (4). Rows keep their original number for the report.
         $order = array_keys($rows);
         usort($order, fn ($a, $b) => strlen($this->cell($rows[$a], 'code')) <=> strlen($this->cell($rows[$b], 'code')) ?: $a <=> $b);
 
@@ -180,23 +180,71 @@ class CatalogueImporter
             $parentCode = $this->cell($row, 'parent_code');
             $display = $this->cell($row, 'display_name');
 
-            $problem = match (true) {
-                ! preg_match('/^\d{2,4}$/', $code) => 'The code must be 2 to 4 digits (an ISCED-F code such as 07 or 071).',
-                $name === '' || mb_strlen($name) > 150 => 'The name is required and must be at most 150 characters.',
-                mb_strlen($display) > 100 => 'The display name must be at most 100 characters.',
-                default => null,
-            };
+            if (! preg_match('/^\d{2,4}$/', $code)) {
+                $report->reject($number, 'The code must be 2 to 4 digits (an ISCED-F code such as 07, 071 or 0713).', $this->plain($row));
+
+                continue;
+            }
+
+            // What a file need not say: the level is the length of the code, the parent is the code's own prefix, and the
+            // kind is read from the official wording. Older four-column files therefore still import.
+            $levelCell = strtolower($this->cell($row, 'level'));
+            $level = $levelCell !== '' ? $levelCell : (['2' => Field::LEVEL_BROAD, '3' => Field::LEVEL_NARROW, '4' => Field::LEVEL_DETAILED][(string) strlen($code)]);
+            $kindCell = strtolower($this->cell($row, 'kind'));
+            $kind = $kindCell !== '' ? $kindCell : $this->kindFromName($name);
+
+            $existing = Field::where('code', $code)->first();
+            $field = $existing ?? new Field(['code' => $code]);
 
             $parent = null;
+            $problem = null;
 
-            if ($problem === null && $parentCode !== '') {
-                $parent = Field::where('code', $parentCode)->first();
+            if ($level !== Field::LEVEL_BROAD) {
+                $wanted = $parentCode !== '' ? $parentCode : substr($code, 0, strlen($code) - 1);
+                $parent = Field::where('code', $wanted)->first();
 
-                $problem = match (true) {
-                    $parent === null => 'The parent field ' . $parentCode . ' does not exist.',
-                    ! str_starts_with($code, $parentCode) || strlen($code) <= strlen($parentCode) => 'A narrow field\'s code must start with its parent\'s (' . $parentCode . ').',
-                    default => null,
-                };
+                if ($parent === null) {
+                    $problem = 'The parent field ' . $wanted . ' does not exist.';
+                } elseif ($parentCode !== '' && ! str_starts_with($code, $parentCode)) {
+                    $problem = 'A ' . $level . ' field\'s code must start with its parent\'s (' . $parentCode . ').';
+                }
+            }
+
+            $selectable = $this->flag($this->cell($row, 'selectable'));
+            $active = $this->flag($this->cell($row, 'active'));
+            $synonymCell = $this->cell($row, 'synonyms');
+            $synonyms = $synonymCell === '' ? null : $this->list($synonymCell);
+
+            if ($problem === null && $synonyms !== null && (count($synonyms) > 40 || collect($synonyms)->contains(fn ($s) => mb_strlen($s) > 100))) {
+                $problem = 'At most 40 synonyms, each up to 100 characters.';
+            }
+
+            if ($problem === null && ($selectable === 'bad' || $active === 'bad')) {
+                $problem = 'selectable and active must be 1 or 0 (or yes / no).';
+            }
+
+            if ($problem === null) {
+                $field->fill(['name' => $name, 'parent_id' => $parent?->id, 'level' => $level, 'kind' => $kind]);
+
+                // A blank display name, synonyms, selectable or active cell in the file leaves an existing value alone: adding a
+                // column to a spreadsheet must not wipe what an administrator set on screen.
+                if ($display !== '') {
+                    $field->display_name = $display;
+                }
+
+                if ($synonyms !== null) {
+                    $field->synonyms = $synonyms;
+                }
+
+                if (! $field->exists) {
+                    $field->is_selectable = $selectable === null ? ($kind === Field::KIND_OFFICIAL && $level !== Field::LEVEL_BROAD) : $selectable;
+                    $field->is_active = $active === null ? true : $active;
+                } else {
+                    $selectable === null || $field->is_selectable = $selectable;
+                    $active === null || $field->is_active = $active;
+                }
+
+                $problem = Field::integrityProblem($field);
             }
 
             if ($problem !== null) {
@@ -205,21 +253,36 @@ class CatalogueImporter
                 continue;
             }
 
-            $field = Field::firstOrNew(['code' => $code]);
             $isNew = ! $field->exists;
-            $field->fill(['name' => $name, 'parent_id' => $parent?->id]);
-
-            // A blank display name in the file leaves an existing one alone: adding a column to a
-            // spreadsheet must not wipe what an administrator typed on screen.
-            if ($display !== '') {
-                $field->display_name = $display;
-            }
-
             $changed = $field->isDirty();
             $field->save();
 
             $isNew ? $report->created++ : ($changed ? $report->updated++ : null);
         }
+    }
+
+    /** "... not further defined" / "... not elsewhere classified" / "Inter-disciplinary ..." are UNESCO's own wording. */
+    private function kindFromName(string $name): string
+    {
+        $lower = mb_strtolower($name);
+
+        return match (true) {
+            str_ends_with($lower, 'not further defined') => Field::KIND_NOT_FURTHER_DEFINED,
+            str_ends_with($lower, 'not elsewhere classified') => Field::KIND_NOT_ELSEWHERE_CLASSIFIED,
+            str_starts_with($lower, 'inter-disciplinary') => Field::KIND_INTERDISCIPLINARY,
+            default => Field::KIND_OFFICIAL,
+        };
+    }
+
+    /** null when the cell is blank, otherwise true or false; 'bad' for anything that is neither. @return bool|string|null */
+    private function flag(string $value): bool|string|null
+    {
+        return match (strtolower($value)) {
+            '' => null,
+            '1', 'yes', 'y', 'true' => true,
+            '0', 'no', 'n', 'false' => false,
+            default => 'bad',
+        };
     }
 
     // ----------------------------------------------------------- institutions --
@@ -502,7 +565,10 @@ class CatalogueImporter
 
         if ($kind === self::FIELDS) {
             foreach (Field::with('parent')->orderBy('code')->get() as $field) {
-                $rows[] = [$field->code, $field->name, $field->parent?->code ?? '', $field->display_name ?? ''];
+                $rows[] = [
+                    $field->code, $field->name, $field->parent?->code ?? '', $field->display_name ?? '', $field->level, $field->kind,
+                    $field->is_selectable ? '1' : '0', $field->is_active ? '1' : '0', implode(';', $field->synonyms ?? []),
+                ];
             }
         } elseif ($kind === self::INSTITUTIONS) {
             foreach (Institution::orderBy('code')->get() as $i) {

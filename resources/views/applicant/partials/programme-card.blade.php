@@ -70,10 +70,10 @@
                         <label class="form-label small" for="programme_suggestion_field">Its field</label>
                         <select class="form-select @error('programme_suggestion_field') is-invalid @enderror" id="programme_suggestion_field" name="programme_suggestion_field">
                             <option value="">Choose a field</option>
-                            @foreach($narrowFields as $broad)
-                                <optgroup label="{{ $broad->label() }}">
-                                    @foreach($broad->children as $narrow)
-                                        <option value="{{ $narrow->id }}" @selected((int) old('programme_suggestion_field') === $narrow->id)>{{ $narrow->label() }}</option>
+                            @foreach(\App\Models\Field::filingOptions() as $group)
+                                <optgroup label="{{ $group['label'] }}">
+                                    @foreach($group['fields'] as $option)
+                                        <option value="{{ $option['id'] }}" @selected((int) old('programme_suggestion_field') === $option['id'])>{{ $option['label'] }}</option>
                                     @endforeach
                                 </optgroup>
                             @endforeach

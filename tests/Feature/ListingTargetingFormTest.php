@@ -131,19 +131,19 @@ class ListingTargetingFormTest extends TestCase
 
     public function test_an_entire_field_needs_no_individual_programme(): void
     {
-        $this->create(['open_to' => 'fields', 'scope_fields' => [$this->field('07')]])->assertSessionHasNoErrors();
+        $this->create(['open_to' => 'fields', 'scope_fields' => [$this->field('071')]])->assertSessionHasNoErrors();
 
         $scopes = $this->saved()->scopes;
 
         $this->assertCount(1, $scopes);
-        $this->assertSame($this->field('07'), $scopes->first()->field_id);
-        $this->assertSame([Field::where('code', '07')->firstOrFail()->label()], $this->saved()->subjectFields());
+        $this->assertSame($this->field('071'), $scopes->first()->field_id);
+        $this->assertSame([Field::where('code', '071')->firstOrFail()->label()], $this->saved()->subjectFields());
     }
 
     public function test_each_answer_is_refused_beside_a_choice_that_belongs_to_another(): void
     {
         $programme = $this->programme('BSc Computer Science');
-        $field = $this->field('07');
+        $field = $this->field('071');
 
         $this->create(['open_to' => 'programmes', 'scope_programmes' => [$programme], 'scope_fields' => [$field]])->assertSessionHasErrors('scope_fields');
         $this->create(['open_to' => 'fields', 'scope_programmes' => [$programme], 'scope_fields' => [$field]])->assertSessionHasErrors('scope_programmes');
@@ -159,7 +159,7 @@ class ListingTargetingFormTest extends TestCase
     {
         $listing = $this->live(['programme_id' => $this->programme('BSc Computer Science')]);
 
-        $this->update($listing, ['open_to' => 'fields', 'scope_fields' => [$this->field('07')]])->assertSessionHasNoErrors();
+        $this->update($listing, ['open_to' => 'fields', 'scope_fields' => [$this->field('071')]])->assertSessionHasNoErrors();
 
         $scopes = $listing->fresh()->scopes;
         $this->assertCount(1, $scopes);
@@ -200,7 +200,7 @@ class ListingTargetingFormTest extends TestCase
         $html = $this->actingAs($this->provider)->get('/opportunities/' . $listing->opportunity_id . '/edit')->assertOk()->getContent();
         $this->assertMatchesRegularExpression('/id="open-to-chosen"[^>]*checked/', $html, 'its own answer is offered, not one that would change it');
 
-        $this->update($listing, ['open_to' => 'chosen', 'scope_programmes' => [$this->programme('BSc Computer Science')], 'scope_fields' => [$this->field('07')]])
+        $this->update($listing, ['open_to' => 'chosen', 'scope_programmes' => [$this->programme('BSc Computer Science')], 'scope_fields' => [$this->field('071')]])
             ->assertSessionHasNoErrors();
 
         $scopes = $listing->fresh()->scopes;

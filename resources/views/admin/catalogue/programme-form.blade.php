@@ -34,7 +34,7 @@
         <div class="mb-3">
             <label class="form-label" for="field_id">Field</label>
             <select class="form-select @error('field_id') is-invalid @enderror" id="field_id" name="field_id">
-                @foreach($fields->groupBy(fn ($f) => $f->parent->name) as $broad => $narrow)
+                @foreach($fields->groupBy(fn ($f) => ($f->parent->parent ?? $f->parent)->name) as $broad => $narrow)
                     <optgroup label="{{ $broad }}">
                         @foreach($narrow as $field)
                             <option value="{{ $field->id }}" @selected((int) old('field_id', $programme->field_id) === $field->id)>{{ $field->code }} {{ $field->name }}</option>

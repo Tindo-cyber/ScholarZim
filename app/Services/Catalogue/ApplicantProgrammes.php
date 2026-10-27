@@ -138,6 +138,13 @@ class ApplicantProgrammes
                 $errors['target_field_ids'] = 'Choose up to ' . \App\Models\ApplicantTargetField::MAX . ' fields - the ones you most want to study next.';
             } elseif (\App\Models\Field::whereIn('id', $targets)->count() !== count($targets)) {
                 $errors['target_field_ids'] = 'Choose fields from the list.';
+            } else {
+                // A heading, or a field since switched off, cannot be newly chosen; one already saved stays.
+                $kept = \App\Models\ApplicantTargetField::where('profile_id', $profile->profile_id)->pluck('field_id')->map(fn ($i) => (int) $i)->all();
+
+                if (\App\Models\Field::whereIn('id', array_diff($targets, $kept))->where(fn ($q) => $q->where('is_active', false)->orWhere('is_selectable', false))->exists()) {
+                    $errors['target_field_ids'] = 'Choose fields from the list: a heading that groups several subjects cannot be chosen, choose the subject under it.';
+                }
             }
         }
 

@@ -404,6 +404,9 @@ Route::middleware(['auth', 'role:' . RoleNames::ADMIN, 'cache.headers:no_store']
         Route::post('/institutions', [Admin\CatalogueController::class, 'storeInstitution'])->name('catalogue.institutions.store');
         Route::post('/institutions/{id}', [Admin\CatalogueController::class, 'updateInstitution'])->whereNumber('id')->name('catalogue.institutions.update');
         Route::get('/pending', [Admin\CatalogueController::class, 'pending'])->name('catalogue.pending');
+        Route::get('/field-reviews', [Admin\CatalogueController::class, 'fieldReviews'])->name('catalogue.fieldReviews');
+        Route::post('/field-reviews/{id}/accept', [Admin\CatalogueController::class, 'acceptFieldReview'])->whereNumber('id')->name('catalogue.fieldReviews.accept');
+        Route::post('/field-reviews/{id}/dismiss', [Admin\CatalogueController::class, 'dismissFieldReview'])->whereNumber('id')->name('catalogue.fieldReviews.dismiss');
         Route::get('/old-values', [Admin\CatalogueController::class, 'oldValues'])->name('catalogue.oldValues');
         Route::post('/old-values', [Admin\CatalogueController::class, 'mapOldValue'])->name('catalogue.oldValues.map');
         Route::post('/old-values/migrate', [Admin\CatalogueController::class, 'migrateOldFields'])->name('catalogue.oldValues.migrate');

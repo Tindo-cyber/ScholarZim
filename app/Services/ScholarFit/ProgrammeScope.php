@@ -9,6 +9,7 @@ use App\Models\OpportunityScope;
 use App\Models\Programme;
 use App\Services\Catalogue\ApplicantProgrammes;
 use App\Services\Catalogue\CatalogueMentions;
+use App\Services\Catalogue\FieldIndex;
 use App\Services\Catalogue\LegacyFieldMap;
 use App\Services\Catalogue\ListingScopes;
 use App\Support\EducationLevel;
@@ -496,18 +497,24 @@ class ProgrammeScope
         return $field === null ? null : $this->rankField($field, $fields);
     }
 
+    /**
+     * How closely a field sits to what the listing names: 1 = the same specific field, or a narrow field it is in; 2 = a
+     * broad field it is in. A field that is only a broader heading than the one listed never matches (a programme filed under
+     * "Business and administration" is not thereby "Finance"), and neighbouring fields never match each other.
+     */
     private function rankField(Field $field, Collection $listed): ?int
     {
+        $index = app(FieldIndex::class);
         $best = null;
 
         foreach ($listed as $wanted) {
-            $rank = match (true) {
-                $wanted->id === $field->id => $field->isBroad() ? 2 : 1,
-                $wanted->isBroad() && $field->parent_id === $wanted->id => 2,
-                default => null,
-            };
+            if (! $index->isWithin($field->id, $wanted->id)) {
+                continue;
+            }
 
-            if ($rank !== null && ($best === null || $rank < $best)) {
+            $rank = $index->levelOf($wanted->id) === Field::LEVEL_BROAD ? 2 : 1;
+
+            if ($best === null || $rank < $best) {
                 $best = $rank;
             }
         }

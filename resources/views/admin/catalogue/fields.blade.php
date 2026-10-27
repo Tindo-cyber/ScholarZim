@@ -5,7 +5,7 @@
 @section('content')
 
     <x-page-header title="Fields of study"
-                   subtitle="The ISCED-F 2013 classification: broad fields, each split into narrow ones."
+                   subtitle="The ISCED-F 2013 classification: broad, narrow and detailed fields. Providers can only target fields marked as targetable."
                    eyebrow="Governance" />
 
     @include('admin.catalogue.nav', ['active' => 'fields'])
@@ -29,8 +29,8 @@
                     <label class="form-label small" for="new-parent">Inside (leave empty for a broad field)</label>
                     <select class="form-select @error('parent_id') is-invalid @enderror" id="new-parent" name="parent_id">
                         <option value="">- broad field -</option>
-                        @foreach($broad as $b)
-                            <option value="{{ $b->id }}" @selected((int) old('parent_id') === $b->id)>{{ $b->code }} {{ $b->name }}</option>
+                        @foreach($parents as $p)
+                            <option value="{{ $p->id }}" @selected((int) old('parent_id') === $p->id)>{{ $p->level === 'narrow' ? '— ' : '' }}{{ $p->code }} {{ $p->name }}</option>
                         @endforeach
                     </select>
                     @error('parent_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -54,10 +54,15 @@
                 </details>
             </div>
             <ul class="list-group list-group-flush small">
-                @foreach($b->children as $n)
-                    <li class="list-group-item d-flex justify-content-between">
-                        <span>{{ $n->code }} &middot; {{ $n->name }}</span>
-                        <span class="text-secondary">{{ $n->programmes_count }} {{ \Illuminate\Support\Str::plural('programme', $n->programmes_count) }}</span>
+                @foreach($below->get($b->code, collect()) as $n)
+                    <li class="list-group-item d-flex justify-content-between gap-2 @if(! $n->is_active) text-secondary @endif">
+                        <span style="padding-left: {{ $n->level === 'detailed' ? '1.5rem' : '0' }}">
+                            {{ $n->code }} &middot; {{ $n->name }}
+                            @if($n->kind !== 'official')<span class="badge text-bg-light border">{{ str_replace('_', ' ', $n->kind) }}</span>@endif
+                            @if(! $n->is_selectable)<span class="badge text-bg-light border">heading only</span>@endif
+                            @if(! $n->is_active)<span class="badge text-bg-secondary">switched off</span>@endif
+                        </span>
+                        <span class="text-secondary text-nowrap">{{ $n->programmes_count }} {{ \Illuminate\Support\Str::plural('programme', $n->programmes_count) }}</span>
                     </li>
                 @endforeach
             </ul>

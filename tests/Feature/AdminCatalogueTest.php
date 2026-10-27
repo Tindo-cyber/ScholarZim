@@ -39,7 +39,7 @@ class AdminCatalogueTest extends TestCase
         $provider = User::where('email', 'provider@scholarzim.co.zw')->firstOrFail();
         $student = User::where('email', 'tanaka.chirwa@scholarzim.co.zw')->firstOrFail();
 
-        foreach (['', '/programmes', '/programmes/create', '/fields', '/institutions', '/pending', '/export/programmes.csv'] as $path) {
+        foreach (['', '/programmes', '/programmes/create', '/fields', '/institutions', '/pending', '/field-reviews', '/export/programmes.csv'] as $path) {
             $this->flushSession();
             $this->app['auth']->forgetGuards();
             $this->get('/admin/catalogue' . $path)->assertRedirect('/login');
@@ -156,10 +156,10 @@ class AdminCatalogueTest extends TestCase
     public function test_a_narrow_field_can_be_added_under_a_broad_one(): void
     {
         $this->asAdmin()->post('/admin/catalogue/fields', [
-            'code' => '0710', 'name' => 'Test narrow field', 'parent_id' => Field::where('code', '07')->value('id'),
+            'code' => '079', 'name' => 'Test narrow field', 'parent_id' => Field::where('code', '07')->value('id'),
         ])->assertSessionHasNoErrors();
 
-        $this->assertSame(Field::where('code', '07')->value('id'), Field::where('code', '0710')->value('parent_id'));
+        $this->assertSame(Field::where('code', '07')->value('id'), Field::where('code', '079')->value('parent_id'));
     }
 
     public function test_a_field_code_must_be_unique_and_start_with_its_parents(): void

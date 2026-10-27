@@ -12,9 +12,9 @@ Files
 
 | File | Columns |
 |---|---|
-| `fields.csv` | `code`, `name`, `parent_code` - the ISCED-F 2013 broad (2-digit) and narrow (3-digit) fields. Complete. |
+| `fields.csv` | `code`, `name`, `parent_code`, `level` (broad/narrow/detailed), `kind` (official, not_further_defined, interdisciplinary, not_elsewhere_classified), `selectable` (1 = providers and students may choose it; 0 = a heading), `display_name`, `synonyms` (`;`-separated). The whole of ISCED-F 2013: 11 broad, 57 narrow and 148 detailed codes. Listed in `docs/field-classification.md`. Only `code` and `name` are required; the rest are worked out from the code when left blank. |
 | `institutions.csv` | `code`, `name`, `type` (university / polytechnic / teachers_college / other), `province` (blank where unsure) |
-| `programmes.csv` | `name`, `level`, `field_code` (a narrow field), `institutions` (institution codes, `;`-separated), `synonyms` (`;`-separated) |
+| `programmes.csv` | `name`, `level`, `field_code` (a narrow or detailed field; a narrow one means the programme has not yet been placed more exactly), `institutions` (institution codes, `;`-separated), `synonyms` (`;`-separated) |
 
 What is most likely to be wrong or missing
 
