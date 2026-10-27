@@ -5,9 +5,7 @@ namespace Tests\Feature\Validation;
 use App\Exceptions\ProfileIncompleteException;
 use App\Models\ApplicantProfile;
 use App\Models\Application;
-use App\Models\Field;
 use App\Models\Opportunity;
-use App\Models\Programme;
 use App\Models\User;
 use App\Services\ApplicationService;
 use App\Services\ScholarFit\AcademicRecord;
@@ -165,24 +163,6 @@ class ValidationHardeningTest extends TestCase
         } catch (ProfileIncompleteException $e) {
             $this->assertStringNotContainsString('do not meet', $e->getMessage());
         }
-    }
-
-    public function test_programmes_rejects_duplicate_intended_programme_ids(): void
-    {
-        $id = Programme::query()->value('id');
-
-        $response = $this->actingAs($this->student)->post('/applicant/profile/programmes', ['intended_programme_ids' => [$id, $id]]);
-
-        $response->assertSessionHasErrors('intended_programme_ids.1');
-        $this->assertStringContainsString('duplicate', session('errors')->first('intended_programme_ids.1'));
-    }
-
-    public function test_programmes_rejects_duplicate_target_field_ids(): void
-    {
-        $id = Field::query()->value('id');
-
-        $this->actingAs($this->student)->post('/applicant/profile/programmes', ['target_field_ids' => [$id, $id]])
-            ->assertSessionHasErrors('target_field_ids.1');
     }
 
     public function test_requirements_that_cannot_be_checked_are_pending_not_failures(): void

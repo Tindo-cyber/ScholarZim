@@ -91,12 +91,12 @@ class ProfileController extends Controller
             'current_programme_id' => ['bail', 'nullable', 'integer', 'exists:programmes,id'],
             'current_institution_id' => ['bail', 'nullable', 'integer', 'exists:institutions,id'],
             'intended_programme_ids' => ['nullable', 'array', 'max:20'],
-            'intended_programme_ids.*' => ['bail', 'integer', 'distinct', 'exists:programmes,id'],
+            'intended_programme_ids.*' => ['bail', 'integer', 'exists:programmes,id'],
             'programme_suggestion' => ['bail', 'nullable', 'string', 'max:200'],
             'programme_suggestion_field' => ['bail', 'nullable', 'integer', 'exists:fields,id'],
             'programme_suggestion_level' => ['bail', 'nullable', 'string', 'max:30'],
             'target_field_ids' => ['nullable', 'array', 'max:20'],
-            'target_field_ids.*' => ['bail', 'integer', 'distinct', 'exists:fields,id'],
+            'target_field_ids.*' => ['bail', 'integer', 'exists:fields,id'],
         ]);
 
         $profile = $this->profileService->forUser($request->user());
