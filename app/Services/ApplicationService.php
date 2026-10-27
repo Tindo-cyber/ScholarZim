@@ -803,6 +803,9 @@ class ApplicationService
      * each profile document are real uploads of an accepted type and size, and a profile document is one of the types the
      * profile actually has a slot for. Eligibility, documents required and guardian checks are unchanged and run after.
      *
+     * The 100-character minimum is a wizard-policy rule enforced by the controller; the service enforces the shape
+     * (nullable string, at most 5,000 characters) because quickApply() deliberately submits a null statement.
+     *
      * @param  array<string, mixed>  $profileDocuments
      *
      * @throws ValidationException

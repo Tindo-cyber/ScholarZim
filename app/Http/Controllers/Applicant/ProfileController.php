@@ -91,12 +91,12 @@ class ProfileController extends Controller
             'current_programme_id' => ['bail', 'nullable', 'integer', 'exists:programmes,id'],
             'current_institution_id' => ['bail', 'nullable', 'integer', 'exists:institutions,id'],
             'intended_programme_ids' => ['nullable', 'array', 'max:20'],
-            'intended_programme_ids.*' => ['bail', 'integer', 'exists:programmes,id'],
+            'intended_programme_ids.*' => ['bail', 'integer', 'distinct', 'exists:programmes,id'],
             'programme_suggestion' => ['bail', 'nullable', 'string', 'max:200'],
             'programme_suggestion_field' => ['bail', 'nullable', 'integer', 'exists:fields,id'],
             'programme_suggestion_level' => ['bail', 'nullable', 'string', 'max:30'],
             'target_field_ids' => ['nullable', 'array', 'max:20'],
-            'target_field_ids.*' => ['bail', 'integer', 'exists:fields,id'],
+            'target_field_ids.*' => ['bail', 'integer', 'distinct', 'exists:fields,id'],
         ]);
 
         $profile = $this->profileService->forUser($request->user());
@@ -180,6 +180,8 @@ class ProfileController extends Controller
                 // A degree classification means something only at a level that has a degree: judged against the level as it will
                 // be after this save (the one posted, else the one already on file). Without this the value was accepted
                 // and then silently cleared by the service, leaving the person to think it had been recorded.
+                // Deliberately here and not `prohibited_unless:education_level,...`: that rule reads only the posted level, so a
+                // form that leaves the level blank (meaning "unchanged") would be refused for a student who is at a degree level.
                 $levelAfterSave = filled($data['education_level'] ?? null) ? $data['education_level'] : $currentProfile->education_level;
 
                 if (filled($data['degree_classification'] ?? null)
