@@ -97,12 +97,6 @@
             if (!input || typeof age !== 'number') return;
 
             input.min = age;
-
-            var hint = document.getElementById(input.id + '-hint');
-
-            if (hint) {
-                hint.textContent = hint.textContent.replace(/^At least \d+/, 'At least ' + age);
-            }
         }
 
         // Form 1, O-Level and A-Level are for study in Zimbabwe (the list is the server's own: #zimbabwe-only-levels). For those the

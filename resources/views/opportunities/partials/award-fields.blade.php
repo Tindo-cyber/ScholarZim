@@ -132,7 +132,7 @@
                 <x-form.input name="max_age" label="Maximum age" type="number"
                               :min="$minAge" max="99" step="1"
                               :value="$value('max_age')" data-max-age
-                              :hint="'At least ' . $minAge . ' for the level chosen above. Checked against the date of birth.'" />
+                              :hint="'The oldest an applicant can be. Leave blank for no upper limit.'" />
             </div>
             <div class="col-md-6">
                 <x-form.select name="required_province" label="Student must live in this province"

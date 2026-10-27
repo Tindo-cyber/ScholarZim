@@ -486,7 +486,8 @@ class ProgrammeTargetingAndAgeTest extends TestCase
         $html = $this->actingAs($this->provider)->get('/opportunities/create')->assertOk()->getContent();
 
         $this->assertMatchesRegularExpression('#<input[^>]*min="12"[^>]*id="field-max_age"#', $html);
-        $this->assertStringContainsString('At least 12 for the level chosen above', $html);
+        $this->assertStringContainsString('The oldest an applicant can be', $html);
+        $this->assertStringNotContainsString('At least 12 for the level chosen above', $html);
 
         $map = json_decode(preg_match('#<script type="application/json" id="level-min-ages">(.*?)</script>#s', $html, $m) ? $m[1] : '{}', true);
 
