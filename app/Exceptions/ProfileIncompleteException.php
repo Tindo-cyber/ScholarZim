@@ -23,11 +23,20 @@ use RuntimeException;
  */
 class ProfileIncompleteException extends RuntimeException
 {
-    /** @param array<int, string> $missingFields */
-    public function __construct(public readonly array $missingFields)
+    /**
+     * @param array<int, string> $missingFields what is missing, by name; or, when $message is given, the sentences that say
+     *                                          what to add (ScholarFit's "add your education level..." wording)
+     */
+    public function __construct(public readonly array $missingFields, ?string $message = null)
     {
         parent::__construct(
-            'Please complete your profile before applying: ' . implode(', ', $missingFields) . '.'
+            $message ?? 'Please complete your profile before applying: ' . implode(', ', $missingFields) . '.'
         );
+    }
+
+    /** Requirements ScholarFit could not check because the profile does not say enough - already sentences. */
+    public static function forPendingRequirements(array $sentences): self
+    {
+        return new self($sentences, 'Add a little more to your profile so this scholarship can be checked: ' . implode(' ', $sentences));
     }
 }

@@ -15,10 +15,10 @@ use Illuminate\Contracts\Validation\ValidationRule;
  */
 class EmailAddress implements ValidationRule
 {
-    /** The rules to use wherever an address is asked for: required, a string, its length, Laravel's own check, and this shape. */
+    /** The rules to use wherever an address is asked for: bail on the first failure, required, a string, its length, Laravel's own check, and this shape. */
     public static function rules(bool $required = true): array
     {
-        return [$required ? 'required' : 'nullable', 'string', 'max:254', 'email', new self()];
+        return ['bail', $required ? 'required' : 'nullable', 'string', 'max:254', 'email', new self()];
     }
 
     public function validate(string $attribute, mixed $value, Closure $fail): void

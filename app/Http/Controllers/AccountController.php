@@ -29,7 +29,7 @@ class AccountController extends Controller
     {
         $data = $request->validate([
             'current_password' => ['bail', 'required', 'string', 'current_password'],
-            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'password' => \App\Support\UserValidationRules::password(),
         ]);
 
         $request->user()->update(['password_hash' => Hash::make($data['password'])]);
@@ -99,7 +99,7 @@ class AccountController extends Controller
 
         $request->validate([
             'current_password' => ['bail', 'required', 'string', 'current_password'],
-            'confirm_email' => ['required', 'string'],
+            'confirm_email' => ['bail', 'required', 'string'],
         ]);
 
         if (strcasecmp(trim($request->input('confirm_email')), (string) $user->email) !== 0) {

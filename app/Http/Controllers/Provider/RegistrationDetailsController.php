@@ -24,7 +24,7 @@ class RegistrationDetailsController extends Controller
 
         $data = $request->validateWithBag('registration', [
             ...ProviderRegistrationDetails::rules(),
-            'contact_name' => ['required', 'string', 'max:255', 'regex:' . \App\Support\FormOptions::NAME_PATTERN],
+            'contact_name' => \App\Support\UserValidationRules::personName(),
             'contact_role' => ['required', 'string', 'max:150', 'regex:/\p{L}/u'],
             // The same file rules as registration.
             'certificate' => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],

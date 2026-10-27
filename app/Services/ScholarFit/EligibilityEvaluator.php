@@ -120,14 +120,32 @@ final class EligibilityEvaluator
      */
     public function unmetReasons(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
     {
-        $outcomes = $this->evaluate($profile, $opportunity, $record);
-
         return array_merge(
-            RequirementOutcome::failureMessages($outcomes),
-            // Only what the applicant's profile could settle. A listing whose wording could not be read is not theirs to fix,
-            // and must not stop them applying.
-            RequirementOutcome::messages(RequirementOutcome::blockingPending($outcomes))
+            $this->failureMessages($profile, $opportunity, $record),
+            $this->pendingMessages($profile, $opportunity, $record)
         );
+    }
+
+    /**
+     * What the applicant definitely does not meet, as sentences. Nothing here is repaired by filling in a field.
+     *
+     * @return array<int, string>
+     */
+    public function failureMessages(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
+    {
+        return RequirementOutcome::failureMessages($this->evaluate($profile, $opportunity, $record));
+    }
+
+    /**
+     * What could not be checked, as sentences: the information the applicant's profile would have to state before a
+     * requirement can be judged. Not a refusal - only what the applicant could settle. A listing whose wording could not
+     * be read is not theirs to fix, and must not stop them applying.
+     *
+     * @return array<int, string>
+     */
+    public function pendingMessages(ApplicantProfile $profile, Opportunity $opportunity, AcademicRecord $record): array
+    {
+        return RequirementOutcome::messages(RequirementOutcome::blockingPending($this->evaluate($profile, $opportunity, $record)));
     }
 
     /**

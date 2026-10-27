@@ -39,8 +39,8 @@ class LoginController extends Controller
     public function login(Request $request)
     {
         $credentials = $request->validate([
-            'email' => ['required', 'string', 'max:254', 'email'],
-            'password' => ['required', 'string', 'max:255'],
+            'email' => ['bail', 'required', 'string', 'max:254', 'email'],
+            'password' => ['bail', 'required', 'string', 'max:255'],
         ]);
 
         $throttleKey = strtolower($credentials['email']) . '|' . $request->ip();

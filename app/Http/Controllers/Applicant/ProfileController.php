@@ -88,15 +88,15 @@ class ProfileController extends Controller
     public function programmes(Request $request, \App\Services\Catalogue\ApplicantProgrammes $programmes)
     {
         $request->validate([
-            'current_programme_id' => ['nullable', 'integer'],
-            'current_institution_id' => ['nullable', 'integer'],
+            'current_programme_id' => ['bail', 'nullable', 'integer', 'exists:programmes,id'],
+            'current_institution_id' => ['bail', 'nullable', 'integer', 'exists:institutions,id'],
             'intended_programme_ids' => ['nullable', 'array', 'max:20'],
-            'intended_programme_ids.*' => ['integer'],
-            'programme_suggestion' => ['nullable', 'string', 'max:200'],
-            'programme_suggestion_field' => ['nullable', 'integer'],
-            'programme_suggestion_level' => ['nullable', 'string', 'max:30'],
+            'intended_programme_ids.*' => ['bail', 'integer', 'exists:programmes,id'],
+            'programme_suggestion' => ['bail', 'nullable', 'string', 'max:200'],
+            'programme_suggestion_field' => ['bail', 'nullable', 'integer', 'exists:fields,id'],
+            'programme_suggestion_level' => ['bail', 'nullable', 'string', 'max:30'],
             'target_field_ids' => ['nullable', 'array', 'max:20'],
-            'target_field_ids.*' => ['integer'],
+            'target_field_ids.*' => ['bail', 'integer', 'exists:fields,id'],
         ]);
 
         $profile = $this->profileService->forUser($request->user());
@@ -125,9 +125,9 @@ class ProfileController extends Controller
         $this->setAsideUntouchedResultRows($request);
 
         $data = $request->validate([
-            'full_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
-            'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
-            'education_level' => ['nullable', Rule::in(EducationLevel::APPLICANT_LEVELS)],
+            'full_name' => \App\Support\UserValidationRules::personName(),
+            'phone' => ['bail', 'nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
+            'education_level' => ['bail', 'nullable', Rule::in(EducationLevel::APPLICANT_LEVELS)],
             // The simple profile details (institution, field of study, province, town, home area, date of birth,
             // gender, guardian, biography) are validated by ProfileDetailRules, which the apply wizard's
             // "add what is missing" step uses too.
@@ -142,13 +142,13 @@ class ProfileController extends Controller
             'academic_results_submitted' => ['nullable', 'boolean'],
 
             'academic_subject_results' => ['nullable', 'array', 'max:40'],
-            'academic_subject_results.*.qualification_id' => ['required', 'integer', 'exists:academic_qualifications,id'],
-            'academic_subject_results.*.subject_id' => ['required', 'integer', 'exists:academic_subjects,id'],
+            'academic_subject_results.*.qualification_id' => ['bail', 'required', 'integer', 'exists:academic_qualifications,id'],
+            'academic_subject_results.*.subject_id' => ['bail', 'required', 'integer', 'exists:academic_subjects,id'],
             // A grade is required: a subject row with no result states nothing.
             // Which grades are acceptable depends on the qualification, so that
             // is checked in the service against the qualification's own scheme
             // rather than against a list of every symbol any board awards.
-            'academic_subject_results.*.result' => ['required', 'string', 'max:20'],
+            'academic_subject_results.*.result' => ['bail', 'required', 'string', 'max:20'],
             'academic_subject_results.*.year' => ['nullable', 'integer', 'min:1950', 'max:'.(((int) date('Y')) + 1)],
             // There is deliberately no `points` rule. Points are derived from
             // the grade by the platform; an applicant who could post a points
@@ -176,6 +176,18 @@ class ProfileController extends Controller
                     if (! $validator->errors()->has($field)) {
                         $validator->errors()->add($field, $message);
                     }
+                }
+                // A degree classification means something only at a level that has a degree: judged against the level as it will
+                // be after this save (the one posted, else the one already on file). Without this the value was accepted
+                // and then silently cleared by the service, leaving the person to think it had been recorded.
+                // Deliberately here and not `prohibited_unless:education_level,...`: that rule reads only the posted level, so a
+                // form that leaves the level blank (meaning "unchanged") would be refused for a student who is at a degree level.
+                $levelAfterSave = filled($data['education_level'] ?? null) ? $data['education_level'] : $currentProfile->education_level;
+
+                if (filled($data['degree_classification'] ?? null)
+                    && ! $validator->errors()->has('degree_classification')
+                    && ! EducationLevel::usesTranscript($levelAfterSave)) {
+                    $validator->errors()->add('degree_classification', 'A degree classification applies only to degree and postgraduate levels. Leave it blank for your level.');
                 }
                 $this->assertProgressionIsSequential($validator, $data, $currentProfile);
             })

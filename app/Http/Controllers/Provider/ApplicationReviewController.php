@@ -152,10 +152,10 @@ class ApplicationReviewController extends Controller
     public function review(Request $request, int $id)
     {
         $data = $request->validate([
-            'status' => ['required', Rule::in(ApplicationStatus::DECISIONS)],
-            'reason' => ['required', 'string', 'max:500'],
+            'status' => ['bail', 'required', Rule::in(ApplicationStatus::DECISIONS)],
+            'reason' => ['bail', 'required', 'string', 'max:500'],
             // Optional, and only kept with an acceptance (ApplicationService::decide).
-            'message' => ['nullable', 'string', 'max:' . ApplicationService::MAX_ACCEPTANCE_MESSAGE],
+            'message' => ['bail', 'nullable', 'string', 'max:' . ApplicationService::MAX_ACCEPTANCE_MESSAGE],
         ], [
             'message.max' => 'Keep the message to ' . ApplicationService::MAX_ACCEPTANCE_MESSAGE . ' characters or fewer.',
         ]);

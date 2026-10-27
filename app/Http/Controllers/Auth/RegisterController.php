@@ -29,10 +29,10 @@ class RegisterController extends Controller
     public function registerApplicant(Request $request)
     {
         $data = $request->validate([
-            'full_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
+            'full_name' => \App\Support\UserValidationRules::personName(),
             'email' => [...\App\Rules\EmailAddress::rules(), 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
-            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'phone' => ['bail', 'nullable', 'string', 'regex:' . FormOptions::PHONE_PATTERN],
+            'password' => \App\Support\UserValidationRules::password(),
         ]);
 
         $this->registrationService->registerApplicant($data);
@@ -61,24 +61,24 @@ class RegisterController extends Controller
             // name is free text, for the same reason institution_name is (see
             // that constant's docblock). The person registering is contact_name.
             // Free text (digits and ampersands are fine), but it has to be a name: at least one letter.
-            'full_name' => ['required', 'string', 'max:255', 'regex:/\p{L}/u'],
+            'full_name' => \App\Support\UserValidationRules::organisationName(),
             // The person registering, and their position - what an administrator
             // reads to judge whether they may act for the organisation.
             // A person: the same rule as every other personal name (letters, spaces, apostrophes, hyphens, full stops).
-            'contact_name' => ['required', 'string', 'max:255', 'regex:' . FormOptions::NAME_PATTERN],
-            'contact_role' => ['required', 'string', 'max:150', 'regex:/\p{L}/u'],
+            'contact_name' => \App\Support\UserValidationRules::personName(),
+            'contact_role' => ['bail', 'required', 'string', 'max:150', 'regex:/\p{L}/u'],
             'email' => [...\App\Rules\EmailAddress::rules(), 'unique:users,email'],
             // Not FormOptions::PHONE_PATTERN: a provider's own work/organisation
             // number is international and may be a landline, a switchboard, or
             // carry an extension - see InternationalPhoneNumber's own docblock.
-            'phone' => ['nullable', 'string', new InternationalPhoneNumber()],
-            'organisation_type' => ['required', Rule::in(ProviderOrgType::ALL)],
+            'phone' => ['bail', 'nullable', 'string', new InternationalPhoneNumber()],
+            'organisation_type' => ['bail', 'required', Rule::in(ProviderOrgType::ALL)],
             // Country of registration, and the registration number or the reason
             // there is none. Where the organisation is registered says nothing
             // about where the scholarships it posts are held.
             ...ProviderRegistrationDetails::rules(),
-            'certificate' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
-            'password' => ['required', 'string', 'max:72', 'confirmed', 'regex:/[A-Z]/', Password::min(8)->letters()->numbers()],
+            'certificate' => ['bail', 'required', 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120'],
+            'password' => \App\Support\UserValidationRules::password(),
             // The organisation's confirmation that it is registered and that this
             // person may act for it. Not terms of use: the admin still verifies
             // the uploaded certificate, this is the applicant's own statement.

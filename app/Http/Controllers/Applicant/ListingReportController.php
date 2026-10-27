@@ -35,8 +35,8 @@ class ListingReportController extends Controller
     public function store(Request $request, int $id)
     {
         $data = $request->validateWithBag('report-' . $id, [
-            'reason' => ['required', Rule::in(ReportReason::values())],
-            'details' => ['nullable', 'string', 'max:1000'],
+            'reason' => ['bail', 'required', Rule::in(ReportReason::values())],
+            'details' => ['bail', 'nullable', 'string', 'max:1000'],
         ], [
             'reason.required' => 'Choose what is wrong with this listing.',
             'reason.in' => 'Choose one of the reasons listed.',
